@@ -1,0 +1,62 @@
+{
+  "description": "Benchmark corpus for council meeting minutes extraction evaluation. Keep diverse — add PDFs from different years, meeting types, and complexity levels. Do NOT add a PDF immediately after using it for prompt development without first verifying it generalises.",
+  "pdfs": [
+    {
+      "filename": "bde23c99.pdf",
+      "council": "cambridge",
+      "council_name": "City of Cambridge",
+      "label": "Special Meeting (simple, no votes)",
+      "notes": "5 procedural motions, no vote rolls published, no planning apps. Tests basic extraction without vote/planning noise.",
+      "expected": {
+        "meeting_type_contains": "Special",
+        "has_planning_apps": false,
+        "has_vote_rolls": false,
+        "has_contested_vote": false,
+        "min_motions": 4
+      }
+    },
+    {
+      "filename": "2c941f9c.pdf",
+      "council": "cambridge",
+      "council_name": "City of Cambridge",
+      "label": "Ordinary Meeting (complex, planning + contested vote)",
+      "notes": "Planning apps, admin rec LOST 4/5 + foreshadowed CARRIED 5/4, full 9-member vote rolls, conflict of interest declarations.",
+      "expected": {
+        "meeting_type_contains": "Ordinary",
+        "has_planning_apps": true,
+        "has_vote_rolls": true,
+        "has_contested_vote": true,
+        "min_motions": 5
+      }
+    }
+    ,
+    {
+      "filename": "e14035ad.pdf",
+      "council": "cambridge",
+      "council_name": "City of Cambridge",
+      "label": "Special Meeting (contested vote + planning reference, complete doc)",
+      "notes": "40k chars — fits entirely in 80k window. Underground Power and City Beach school items. Contested vote: first motion LOST 2/7, new motion CARRIED 7/1. Full 9-member vote rolls. Planning reference to DV15.152. Good test for vote scores without truncation.",
+      "expected": {
+        "meeting_type_contains": "Special",
+        "has_planning_apps": false,
+        "has_vote_rolls": true,
+        "has_contested_vote": true,
+        "min_motions": 4
+      }
+    },
+    {
+      "filename": "01d431f0.pdf",
+      "council": "cambridge",
+      "council_name": "City of Cambridge",
+      "label": "Special Meeting (casting vote, no planning, complete doc)",
+      "notes": "11k chars — tiny, fits entirely in 80k window. Mayor uses casting vote to break 4/4 tie. Multiple contested motions, full vote rolls. No planning apps. Tests casting-vote edge case.",
+      "expected": {
+        "meeting_type_contains": "Special",
+        "has_planning_apps": false,
+        "has_vote_rolls": true,
+        "has_contested_vote": true,
+        "min_motions": 3
+      }
+    }
+  ]
+}

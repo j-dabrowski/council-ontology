@@ -1,0 +1,32 @@
+# Environment                                                                             
+.env
+                                                                                            
+# Python        
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+src/__init__.pyc
+
+# macOS
+.DS_Store
+
+# Claude Code (personal settings)                                                         
+.claude/
+                                                                                            
+# Generated data — too large or transient
+data/raw/cambridge/*.pdf
+data/council.db                                                                           
+data/eval/eval_*.json
+data/eval/eval_*.txt                                                                      
+data/eval/latest.json
+data/eval/latest.txt
+data/eval/quick_state.json
+data/cost_estimates/                                                                      
+data/model_comparison/
+data/extraction_errors.json                                                               
+                  
+# Generated outputs
+cost_report.txt
+council.log
