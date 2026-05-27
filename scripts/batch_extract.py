@@ -333,6 +333,52 @@ def run_batch(
 # Entry point
 # ---------------------------------------------------------------------------
 
+
+def run(args) -> None:
+    """Core logic — callable from the CLI or run standalone via main()."""
+    report = run_batch(
+        council_key=args.council,
+        model=args.model,
+        limit=args.limit,
+        from_year=args.from_year,
+        to_year=args.to_year,
+        files=args.files,
+        force=args.force,
+    )
+
+    ERROR_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    ERROR_REPORT_PATH.write_text(
+        json.dumps(report, indent=2, default=str),
+        encoding="utf-8",
+    )
+
+    n_ok = report["succeeded"]
+    n_fail = report["failed"]
+    n_skip = report["skipped"]
+    n_total = report["attempted"]
+    remaining = report["total_pending_before_run"] - n_ok
+
+    hr = "─" * 52
+    print(f"\n{hr}")
+    print(f"  Attempted : {n_total}")
+    print(f"  Succeeded : {n_ok}")
+    print(f"  Failed    : {n_fail}")
+    if n_skip:
+        print(f"  Skipped   : {n_skip}  (already extracted, use --force to re-run)")
+
+    if report["errors_by_class"]:
+        print(f"\n  Error breakdown:")
+        for cls, entries in report["errors_by_class"].items():
+            print(f"    {len(entries):3d}×  {cls}")
+        print(f"\n  Full report → {ERROR_REPORT_PATH}")
+    else:
+        print("\n  No errors.")
+
+    if not report["targeted_files"]:
+        print(f"\n  Docs still pending: {remaining}")
+    print(hr)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Iterative batch extraction runner. Safe to re-run — skips already-extracted docs.",
@@ -384,50 +430,7 @@ Typical workflow:
     args = parser.parse_args()
 
     _setup_logging(verbose=args.verbose)
-
-    report = run_batch(
-        council_key=args.council,
-        model=args.model,
-        limit=args.limit,
-        from_year=args.from_year,
-        to_year=args.to_year,
-        files=args.files,
-        force=args.force,
-    )
-
-    # Persist report
-    ERROR_REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    ERROR_REPORT_PATH.write_text(
-        json.dumps(report, indent=2, default=str),
-        encoding="utf-8",
-    )
-
-    # Summary
-    n_ok = report["succeeded"]
-    n_fail = report["failed"]
-    n_skip = report["skipped"]
-    n_total = report["attempted"]
-    remaining = report["total_pending_before_run"] - n_ok
-
-    hr = "─" * 52
-    print(f"\n{hr}")
-    print(f"  Attempted : {n_total}")
-    print(f"  Succeeded : {n_ok}")
-    print(f"  Failed    : {n_fail}")
-    if n_skip:
-        print(f"  Skipped   : {n_skip}  (already extracted, use --force to re-run)")
-
-    if report["errors_by_class"]:
-        print(f"\n  Error breakdown:")
-        for cls, entries in report["errors_by_class"].items():
-            print(f"    {len(entries):3d}×  {cls}")
-        print(f"\n  Full report → {ERROR_REPORT_PATH}")
-    else:
-        print("\n  No errors.")
-
-    if not report["targeted_files"]:
-        print(f"\n  Docs still pending: {remaining}")
-    print(hr)
+    run(args)
 
 
 if __name__ == "__main__":

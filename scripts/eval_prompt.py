@@ -625,19 +625,8 @@ def pick_quick_entry(entries: list[dict], last_score: float | None, current_fnam
 # Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Evaluate extraction prompt quality across benchmark PDFs.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__,
-    )
-    parser.add_argument("--quick",   action="store_true", help="Random PDF from benchmark, all 3 models (faster sanity check)")
-    parser.add_argument("--compare", action="store_true", help="Show delta vs previous run")
-    parser.add_argument("--show",    action="store_true", help="Print latest saved report, no API calls")
-    parser.add_argument("--history", action="store_true", help="Show score history across all saved runs")
-    parser.add_argument("--no-save", action="store_true", help="Don't write report to disk")
-    args = parser.parse_args()
-
+def run(args) -> None:
+    """Core logic — callable from the CLI or run standalone via main()."""
     all_runs = load_all_runs()
 
     if args.history:
@@ -817,6 +806,21 @@ def main() -> None:
         path = save_run(run, console.export_text(clear=False))
         console.print(f"[dim]Saved → {path}[/dim]")
         console.print(f"[dim]     → {EVAL_DIR / 'latest.txt'} (plain text, readable by Claude)[/dim]\n")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Evaluate extraction prompt quality across benchmark PDFs.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=__doc__,
+    )
+    parser.add_argument("--quick",   action="store_true", help="Random PDF from benchmark, all 3 models (faster sanity check)")
+    parser.add_argument("--compare", action="store_true", help="Show delta vs previous run")
+    parser.add_argument("--show",    action="store_true", help="Print latest saved report, no API calls")
+    parser.add_argument("--history", action="store_true", help="Show score history across all saved runs")
+    parser.add_argument("--no-save", action="store_true", dest="no_save", help="Don't write report to disk")
+    args = parser.parse_args()
+    run(args)
 
 
 if __name__ == "__main__":

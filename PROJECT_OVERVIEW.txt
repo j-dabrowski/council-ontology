@@ -1,0 +1,278 @@
+COUNCIL ONTOLOGY — PROJECT OVERVIEW
+=====================================
+Generated: 2026-05-28
+
+
+PURPOSE
+-------
+Data pipeline that turns City of Cambridge (WA) council meeting minutes PDFs into a
+structured SQLite database, with the goal of analysing voting patterns, planning
+decisions, and councillor behaviour over time.
+
+Three-layer ontology:
+  Semantic  — entities and relationships (councils, councillors, sites)
+  Kinetic   — actions and events (motions, votes, planning applications)
+  Dynamic   — feedback loops and emergent patterns (voting blocs, relationship edges)
+
+
+CURRENT STATE (as of 2026-05-28)
+----------------------------------
+  537 PDFs downloaded (Cambridge, 1995–2026)
+  537 in manifest
+  196 ingested into DB
+  341 pending extraction
+
+  949 motions extracted
+  330 votes recorded
+   54 councillors seen
+  Prompt eval score: 100/100 (benchmark saturated)
+
+
+PARTS OF THE PROJECT
+=====================
+
+1. SCRAPER — src/scraper/cambridge.py
+--------------------------------------
+Downloads minutes PDFs from the Cambridge council website using four sources:
+  - Sitemap (1994–2021, comprehensive)
+  - Playwright headless browser (2022+, primary — handles JS/Akamai)
+  - Wayback Machine CDX API (2022+, fallback when Playwright not installed)
+  - Site search (live tail: most recent ~10 meetings)
+
+Output: data/raw/cambridge/*.pdf + data/raw/cambridge/manifest.json
+  manifest maps filename → { meeting_date, meeting_type }
+
+Browse what's been downloaded:
+  council status
+  council docs cambridge
+  council docs cambridge --filter pending
+  council docs cambridge --filter no-manifest
+  ls data/raw/cambridge/*.pdf | wc -l
+  cat data/raw/cambridge/manifest.json | python -m json.tool | head -60
+
+
+2. EXTRACTOR — src/extraction/
+--------------------------------
+  extractor.py      — sends PDF text to Claude, parses JSON response
+  schemas.py        — Pydantic models for extraction output (deliberately lenient)
+  system_prompt.txt — full extraction instructions and output schema
+
+Pipeline:
+  PDF → pypdf text extraction → truncate to 80,000 chars → Claude API call
+  → strip markdown fences → Pydantic validation → save_extraction() → DB
+
+Current model: claude-haiku-4-5-20251001 (Sonnet/Opus also supported)
+Max tokens: 64,000 output (streams to avoid truncated JSON)
+Retry: 3 attempts with exponential backoff on connection/status errors
+
+Schema extracts: council name, meeting date/type, location, councillors present/apology,
+motions (with motion text, outcome, mover, votes, planning application, community
+submissions, tags), and other_items (catch-all for non-motion content).
+
+Browse what's been extracted:
+  council status
+  sqlite3 data/council.db "SELECT meeting_date, meeting_type FROM meetings ORDER BY meeting_date DESC LIMIT 20"
+  sqlite3 data/council.db "SELECT COUNT(*) FROM motions"
+  sqlite3 data/council.db "SELECT COUNT(*) FROM votes"
+  cat data/extraction_errors.json
+
+
+3. DATABASE / ONTOLOGY — src/models/ontology.py
+-------------------------------------------------
+SQLite at data/council.db. Tables:
+
+  Semantic layer:
+    councils          — council registry (name, short_name, website)
+    councillors       — persons who have voted (given_name, family_name, slug)
+    councillor_terms  — tenure per council (ward, role, term_start/end) [NEVER POPULATED]
+    sites             — physical addresses from planning applications
+
+  Kinetic layer:
+    meetings              — one row per meeting (date, type, location, pdf_path)
+    motions               — formal motions (text, outcome, mover, seconder, tags)
+    votes                 — individual councillor votes (for/against/abstain/absent)
+    planning_applications — DA/DV details (reference, address, applicant, status, value)
+    community_submissions — public submissions on planning applications
+
+  Dynamic layer:
+    relationships  — typed edges between any entities [ALWAYS EMPTY — not yet populated]
+      RelationshipKind values: ALLY, OPPONENT, COALITION, DECLARED_INTEREST,
+                               AMENDS, SUPERSEDES, RELATES_TO, SUBJECT_OF
+
+Useful DB queries:
+  sqlite3 data/council.db ".tables"
+  sqlite3 data/council.db "SELECT outcome, COUNT(*) FROM motions GROUP BY outcome"
+  sqlite3 data/council.db "SELECT c.given_name, c.family_name, COUNT(v.id) as n FROM councillors c JOIN votes v ON v.councillor_id=c.id GROUP BY c.id ORDER BY n DESC LIMIT 10"
+  sqlite3 data/council.db "SELECT pa.reference_number, pa.status, s.address FROM planning_applications pa LEFT JOIN sites s ON s.id=pa.site_id LIMIT 20"
+  sqlite3 data/council.db "SELECT meeting_date, meeting_type, id FROM meetings ORDER BY meeting_date DESC LIMIT 20"
+
+
+4. CLI — src/cli.py
+---------------------
+All commands are invoked as: council <command>  (or: python -m src <command>)
+
+  — PIPELINE —
+
+  council run cambridge [--limit N] [--since-year YYYY]
+      Full pipeline: scrape → extract → save to DB.
+
+  council scrape cambridge [--since-year YYYY]
+      Download PDFs only, no Claude calls.
+
+  council extract cambridge [--limit N] [--from-year YYYY] [--to-year YYYY]
+                            [--files a.pdf b.pdf ...] [--force]
+      Process already-downloaded PDFs. --files targets specific PDFs.
+      --force re-extracts PDFs already in the DB.
+
+  council status
+      Pipeline summary and per-year breakdown for all councils.
+
+  council docs cambridge [--filter all|pending|ingested|no-manifest]
+      Per-file table: filename, date, type, manifest ✓/–, DB ✓/pending, meeting ID.
+
+  — SCRIPTS —
+
+  council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
+                          [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
+      Batch extraction with structured error report. Preferred over 'extract'
+      for bulk runs. Writes error breakdown to data/extraction_errors.json.
+
+  council eval [--quick] [--compare] [--show] [--history] [--no-save]
+      Evaluate prompt quality across benchmark PDFs (4 PDFs × 2 models).
+      --quick: one sticky PDF until all models score 95+, then rotate.
+      --compare: show delta vs previous run. --show: print latest (no API calls).
+      --history: score trend across all saved runs.
+
+  council compare <pdf.pdf> [--council cambridge] [--no-save]
+      Run all three models (Haiku/Sonnet/Opus) on one PDF and print a
+      side-by-side comparison. Does not write to the DB.
+
+  council costs [--from-year YYYY] [--to-year YYYY] [--max-chars N|full] [--quiet] [--show]
+      Estimate Anthropic API cost for pending PDFs without making any API calls.
+      --show: print the last saved estimate.
+
+  — ANALYSIS —
+
+  council analyse cambridge <query> [options]
+      Run analysis queries against the DB. Queries:
+        councillors              — all councillors sorted by vote count
+        alignment                — pairwise voting agreement (--min-shared, --limit)
+        contested                — carried motions with opposition (--min-against, --limit)
+        planning                 — top sites by application count (--limit)
+        councillor --name NAME   — one councillor's vote summary (partial family name)
+        motions --tag TAG        — motions filtered by tag (--limit)
+
+  — OPTIONS —
+
+  council -v <command>
+      Enable verbose (DEBUG) logging. Applies to all commands.
+      All runs also write DEBUG logs to council.log.
+
+
+5. SCRIPTS — scripts/ and estimate_costs.py
+---------------------------------------------
+Each script is callable both via the CLI (see section 4) and standalone.
+Each has a run(args) function that does the work; main() handles argparse.
+
+  scripts/batch_extract.py  →  council batch cambridge ...
+  scripts/eval_prompt.py    →  council eval ...
+  scripts/compare_models.py →  council compare <pdf> ...
+  estimate_costs.py         →  council costs ...
+
+Standalone usage (equivalent to CLI):
+  python scripts/batch_extract.py [--limit N] [--model MODEL] [--council cambridge]
+                                  [--from-year YYYY] [--to-year YYYY]
+                                  [--files a.pdf b.pdf ...] [--force] [--verbose]
+  python scripts/eval_prompt.py [--quick] [--compare] [--show] [--history] [--no-save]
+  python scripts/compare_models.py <pdf_basename.pdf> [--council cambridge] [--no-save]
+  python estimate_costs.py [--from-year YYYY] [--to-year YYYY] [--max-chars N|full] [--quiet] [--show]
+
+Eval reports:    data/eval/eval_YYYYMMDD_HHMMSS.{json,txt} + latest.{json,txt}
+Compare reports: data/model_comparison/<stem>_<timestamp>.json
+Cost reports:    data/cost_estimates/estimate_<timestamp>.json + latest.json
+
+Browse eval history:
+  cat data/eval/latest.txt
+  council eval --history
+
+
+6. ANALYSIS — src/analysis/queries.py + council analyse
+---------------------------------------------------------
+Query helpers exposed via `council analyse <council> <query>`.
+
+  council analyse cambridge councillors
+      All councillors seen in votes, sorted by vote count.
+
+  council analyse cambridge alignment [--min-shared N] [--limit N]
+      Pairwise voting agreement matrix. Green ≥85%, yellow 50-85%, red <50%.
+      --min-shared filters out pairs with too few shared votes (default: 5).
+
+  council analyse cambridge contested [--min-against N] [--limit N]
+      Motions that carried but had meaningful opposition (default: ≥2 against).
+
+  council analyse cambridge planning [--limit N]
+      Top sites by number of planning applications.
+
+  council analyse cambridge councillor --name <family-name>
+      One councillor's vote summary: totals, dissent rate, declared interests.
+      Partial family name match (e.g. --name Brad).
+
+  council analyse cambridge motions --tag <tag> [--limit N]
+      Motions filtered by LLM-assigned tag (e.g. planning, budget, governance).
+
+Underlying library functions (callable from Python directly):
+  get_council_by_name, list_councillors, meetings_in_range, motions_by_tag,
+  planning_motions, contested_motions, voting_alignment_matrix,
+  councillor_vote_summary, top_planning_sites
+
+
+WHAT IS UNFINISHED
+===================
+
+1. EXTRACTION BACKLOG (341 PDFs)
+   Most years have only a handful ingested — the bulk of the archive is pending.
+   Prompt eval is at 100/100 so quality is good enough to proceed.
+     council batch cambridge --limit 341
+
+2. DYNAMIC LAYER IS EMPTY
+   The relationships table and RelationshipKind enum are fully modelled.
+   voting_alignment_matrix() in queries.py computes pairwise agreement in memory.
+   Nothing ever writes to the relationships table.
+   Next step: script that thresholds alignment scores and persists edges
+     (e.g. agreement_rate > 0.85 → ALLY, < 0.40 → OPPONENT).
+
+3. COUNCILLOR_TERMS NEVER POPULATED
+   The model has ward/role/term dates per councillor per council.
+   Councillors are created from vote records only — no ward, no role, no dates.
+
+4. THREE MEETING FIELDS ALWAYS NULL
+   minutes_pdf_url  — source URL is in the manifest but never written to DB
+   minutes_text     — raw extracted text is discarded after extraction
+   extracted_at     — timestamp is never set
+
+5. LONG DOCUMENTS SILENTLY TRUNCATED
+   extractor.py only processes chunks[0] (first 80,000 chars).
+   Comment says "future: merge multi-chunk results".
+   Some older/longer PDFs may be missing agenda items from the second half.
+
+6. OTHER_ITEMS NOT PERSISTED
+   The other_items field was added to the schema (2026-05-27) to capture
+   non-motion content that would otherwise be silently discarded.
+   save_extraction() does not yet write it anywhere.
+   Needs either a new DB table or a log/JSON dump.
+
+7. ONLY ONE COUNCIL
+   The COUNCILS dict in cli.py has a single entry with a "add new councils here"
+   comment. The full architecture supports multiple councils.
+
+
+DATA DIRECTORIES
+=================
+  data/raw/cambridge/          — 537 downloaded PDFs + manifest.json
+  data/council.db              — SQLite database
+  data/eval/                   — prompt eval reports (JSON + plain text)
+  data/model_comparison/       — per-PDF model comparison reports
+  data/cost_estimates/         — cost estimation reports
+  data/extraction_errors.json  — latest batch error report
+  data/processed/              — exists but empty (unused)
+  council.log                  — DEBUG-level pipeline log

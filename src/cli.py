@@ -533,6 +533,166 @@ def cmd_docs(args) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Script-backed sub-commands
+# ---------------------------------------------------------------------------
+
+
+def cmd_batch(args) -> None:
+    from scripts.batch_extract import run
+    run(args)
+
+
+def cmd_eval(args) -> None:
+    from scripts.eval_prompt import run
+    run(args)
+
+
+def cmd_compare(args) -> None:
+    from scripts.compare_models import run
+    run(args)
+
+
+def cmd_costs(args) -> None:
+    import estimate_costs
+    estimate_costs.run(args)
+
+
+def cmd_analyse(args) -> None:
+    from sqlalchemy import func
+    from src.analysis.queries import (
+        voting_alignment_matrix,
+        contested_motions,
+        top_planning_sites,
+        councillor_vote_summary,
+        motions_by_tag,
+    )
+    from src.models import Councillor, Meeting, Motion, Vote
+    from src.storage.database import init_db, make_session_factory
+
+    short_name = COUNCILS[args.council]["short_name"]
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council = _get_council(session, short_name)
+    council_id = council.id
+    q = args.query
+
+    if q == "councillors":
+        rows = (
+            session.query(Councillor, func.count(Vote.id).label("n"))
+            .join(Vote, Vote.councillor_id == Councillor.id)
+            .join(Motion, Vote.motion_id == Motion.id)
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(Meeting.council_id == council_id)
+            .group_by(Councillor.id)
+            .order_by(func.count(Vote.id).desc())
+            .all()
+        )
+        table = Table(title=f"{short_name} — Councillors ({len(rows)})")
+        table.add_column("Name")
+        table.add_column("Votes", justify="right")
+        for c, n in rows:
+            table.add_row(f"{c.given_name} {c.family_name}".strip(), str(n))
+        console.print(table)
+
+    elif q == "alignment":
+        pairs = voting_alignment_matrix(session, council_id)
+        pairs = [p for p in pairs if p.total_shared_votes >= args.min_shared]
+        table = Table(title=f"{short_name} — Voting Alignment (≥{args.min_shared} shared votes)")
+        table.add_column("Councillor A")
+        table.add_column("Councillor B")
+        table.add_column("Shared", justify="right")
+        table.add_column("Agree", justify="right")
+        table.add_column("Rate", justify="right")
+        for p in pairs[:args.limit]:
+            rate = p.agreement_rate
+            color = "green" if rate >= 0.85 else "red" if rate < 0.5 else "yellow"
+            table.add_row(
+                p.councillor_a, p.councillor_b,
+                str(p.total_shared_votes), str(p.agreements),
+                f"[{color}]{rate:.0%}[/{color}]",
+            )
+        console.print(table)
+
+    elif q == "contested":
+        motions = contested_motions(session, council_id, min_against=args.min_against)
+        table = Table(title=f"{short_name} — Contested Motions (≥{args.min_against} against)")
+        table.add_column("Date")
+        table.add_column("Item")
+        table.add_column("Title")
+        table.add_column("For", justify="right")
+        table.add_column("Against", justify="right")
+        for m in motions[:args.limit]:
+            mtg = session.get(Meeting, m.meeting_id)
+            table.add_row(
+                str(mtg.meeting_date) if mtg else "?",
+                m.item_number or "–",
+                (m.title or "")[:60],
+                str(m.votes_for) if m.votes_for is not None else "–",
+                str(m.votes_against) if m.votes_against is not None else "–",
+            )
+        console.print(table)
+
+    elif q == "planning":
+        sites = top_planning_sites(session, council_id, limit=args.limit)
+        table = Table(title=f"{short_name} — Top Planning Sites")
+        table.add_column("Address")
+        table.add_column("Applications", justify="right")
+        for address, n in sites:
+            table.add_row(address, str(n))
+        console.print(table)
+
+    elif q == "councillor":
+        if not args.name:
+            console.print("[red]--name required for 'councillor' query (family name, partial match)[/red]")
+            raise SystemExit(1)
+        match = (
+            session.query(Councillor)
+            .filter(Councillor.family_name.ilike(f"%{args.name}%"))
+            .first()
+        )
+        if not match:
+            console.print(f"[red]No councillor found matching '{args.name}'[/red]")
+            raise SystemExit(1)
+        summary = councillor_vote_summary(session, match.id, council_id)
+        table = Table(
+            title=f"{match.given_name} {match.family_name}".strip(),
+            show_header=False, box=None, pad_edge=False,
+        )
+        table.add_column("", style="dim")
+        table.add_column("", justify="right")
+        table.add_row("Total votes", str(summary["total_votes"]))
+        table.add_row("For", str(summary["for"]))
+        table.add_row("Against", str(summary["against"]))
+        table.add_row("Abstain", str(summary["abstain"]))
+        table.add_row("Declared interests", str(summary["declared_interests"]))
+        table.add_row("Dissent rate", f"{summary['dissent_rate']:.1%}")
+        console.print(table)
+
+    elif q == "motions":
+        if not args.tag:
+            console.print("[red]--tag required for 'motions' query[/red]")
+            raise SystemExit(1)
+        results = motions_by_tag(session, council_id, args.tag)
+        showing = min(len(results), args.limit)
+        table = Table(title=f"{short_name} — Motions tagged '{args.tag}' ({len(results)} total, showing {showing})")
+        table.add_column("Date")
+        table.add_column("Item")
+        table.add_column("Title")
+        table.add_column("Outcome")
+        for m in results[:args.limit]:
+            mtg = session.get(Meeting, m.meeting_id)
+            table.add_row(
+                str(mtg.meeting_date) if mtg else "?",
+                m.item_number or "–",
+                (m.title or "")[:60],
+                m.outcome.value if m.outcome else "–",
+            )
+        console.print(table)
+
+    session.close()
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -629,6 +789,82 @@ def main() -> None:
         help="Filter: all (default), pending (not yet in DB), ingested, no-manifest",
     )
     p_docs.set_defaults(func=cmd_docs)
+
+    # batch
+    p_batch = sub.add_parser("batch", help="Batch extraction with error report (scripts/batch_extract.py)")
+    p_batch.add_argument("council", choices=list(COUNCILS))
+    p_batch.add_argument("--limit", "-n", type=int, default=5, metavar="N",
+                         help="Max pending docs to process (default: 5)")
+    p_batch.add_argument("--model", default="claude-haiku-4-5-20251001",
+                         help="Claude model ID")
+    p_batch.add_argument("--from-year", type=int, metavar="YYYY", dest="from_year")
+    p_batch.add_argument("--to-year", type=int, metavar="YYYY", dest="to_year")
+    p_batch.add_argument("--files", nargs="+", metavar="PDF",
+                         help="Process only these specific PDFs; ignores --limit and date filters")
+    p_batch.add_argument("--force", action="store_true",
+                         help="Re-extract already-extracted PDFs")
+    p_batch.set_defaults(func=cmd_batch)
+
+    # eval
+    p_eval = sub.add_parser("eval", help="Evaluate prompt quality across benchmark PDFs (scripts/eval_prompt.py)")
+    p_eval.add_argument("--quick", action="store_true",
+                        help="One sticky PDF until it scores 95+, then move on")
+    p_eval.add_argument("--compare", action="store_true",
+                        help="Show delta vs previous run")
+    p_eval.add_argument("--show", action="store_true",
+                        help="Print latest saved report without making API calls")
+    p_eval.add_argument("--history", action="store_true",
+                        help="Show score trend across all saved runs")
+    p_eval.add_argument("--no-save", action="store_true", dest="no_save",
+                        help="Don't write report to disk")
+    p_eval.set_defaults(func=cmd_eval)
+
+    # compare
+    p_compare = sub.add_parser("compare", help="Side-by-side model comparison for one PDF (scripts/compare_models.py)")
+    p_compare.add_argument("pdf", metavar="PDF", help="PDF basename (e.g. bde23c99.pdf)")
+    p_compare.add_argument("--council", default="cambridge", choices=list(COUNCILS))
+    p_compare.add_argument("--no-save", action="store_true", dest="no_save",
+                           help="Don't save JSON report to data/model_comparison/")
+    p_compare.set_defaults(func=cmd_compare)
+
+    # costs
+    p_costs = sub.add_parser("costs", help="Estimate extraction API costs for pending PDFs (estimate_costs.py)")
+    p_costs.add_argument("--from-year", type=int, metavar="YYYY", dest="from_year")
+    p_costs.add_argument("--to-year", type=int, metavar="YYYY", dest="to_year")
+    p_costs.add_argument("--max-chars", default="80000", metavar="N|full", dest="max_chars",
+                         help="Truncation limit or 'full' (default: 80000)")
+    p_costs.add_argument("--quiet", "-q", action="store_true",
+                         help="Suppress per-document output lines")
+    p_costs.add_argument("--show", action="store_true",
+                         help="Print latest saved report without regenerating")
+    p_costs.set_defaults(func=cmd_costs)
+
+    # analyse
+    p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")
+    p_analyse.add_argument("council", choices=list(COUNCILS))
+    p_analyse.add_argument(
+        "query",
+        choices=["councillors", "alignment", "contested", "planning", "councillor", "motions"],
+        help=(
+            "councillors: all councillors by vote count  |  "
+            "alignment: pairwise voting agreement  |  "
+            "contested: carried motions with opposition  |  "
+            "planning: top sites by application count  |  "
+            "councillor: one councillor's vote summary (--name)  |  "
+            "motions: motions by tag (--tag)"
+        ),
+    )
+    p_analyse.add_argument("--min-against", type=int, default=2, dest="min_against",
+                           help="Min against votes for 'contested' (default: 2)")
+    p_analyse.add_argument("--min-shared", type=int, default=5, dest="min_shared",
+                           help="Min shared votes for 'alignment' (default: 5)")
+    p_analyse.add_argument("--limit", type=int, default=20,
+                           help="Max rows to display (default: 20)")
+    p_analyse.add_argument("--name", metavar="NAME",
+                           help="Councillor family name for 'councillor' query (partial match)")
+    p_analyse.add_argument("--tag", metavar="TAG",
+                           help="Tag to filter by for 'motions' query")
+    p_analyse.set_defaults(func=cmd_analyse)
 
     args = parser.parse_args()
     if args.verbose:

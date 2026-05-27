@@ -268,29 +268,22 @@ def save_report(
 # Entry point
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Compare extraction output across Opus, Sonnet, and Haiku for one PDF.",
-    )
-    parser.add_argument("pdf", metavar="PDF", help="PDF basename (e.g. bde23c99.pdf)")
-    parser.add_argument("--council", default="cambridge", choices=["cambridge"])
-    parser.add_argument(
-        "--no-save", action="store_true",
-        help="Don't save the JSON report to data/model_comparison/",
-    )
-    args = parser.parse_args()
+_COUNCIL_NAMES = {"cambridge": "City of Cambridge"}
 
+
+def run(args) -> None:
+    """Core logic — callable from the CLI or run standalone via main()."""
     raw_dir = Path("data/raw") / args.council
     pdf_path = raw_dir / Path(args.pdf).name
     if not pdf_path.exists():
         console.print(f"[red]File not found: {pdf_path}[/red]")
-        sys.exit(1)
+        raise SystemExit(1)
 
     manifest_path = raw_dir / "manifest.json"
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     meta = manifest.get(pdf_path.name, {})
     meeting_date_hint = meta.get("meeting_date")
-    council_name = "City of Cambridge"
+    council_name = _COUNCIL_NAMES.get(args.council, "City of Cambridge")
 
     if meeting_date_hint:
         console.print(f"[dim]Manifest date hint: {meeting_date_hint}[/dim]")
@@ -305,6 +298,20 @@ def main() -> None:
         errors = {lbl: "extraction failed" for lbl, res in results.items() if res is None}
         out = save_report(pdf_path.name, results, errors)
         console.print(f"\n[dim]Full JSON saved → {out}[/dim]")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Compare extraction output across Opus, Sonnet, and Haiku for one PDF.",
+    )
+    parser.add_argument("pdf", metavar="PDF", help="PDF basename (e.g. bde23c99.pdf)")
+    parser.add_argument("--council", default="cambridge", choices=["cambridge"])
+    parser.add_argument(
+        "--no-save", action="store_true",
+        help="Don't save the JSON report to data/model_comparison/",
+    )
+    args = parser.parse_args()
+    run(args)
 
 
 if __name__ == "__main__":

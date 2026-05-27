@@ -124,6 +124,12 @@ class ExtractedPlanningApplication(BaseModel):
         return v
 
 
+class ExtractedOtherItem(BaseModel):
+    item_number: Optional[str] = None
+    item_type: str
+    description: str
+
+
 class ExtractedMotion(BaseModel):
     item_number: Optional[str] = None
     title: Optional[str] = None
@@ -219,6 +225,7 @@ class ExtractedMeeting(BaseModel):
     councillors_present: list[ExtractedCouncillor] = Field(default_factory=list)
     councillors_apology: list[ExtractedCouncillor] = Field(default_factory=list)
     motions: list[ExtractedMotion] = Field(default_factory=list)
+    other_items: list[ExtractedOtherItem] = Field(default_factory=list)
 
     @model_validator(mode="before")
     @classmethod
@@ -233,6 +240,7 @@ class ExtractedMeeting(BaseModel):
         _MEETING_FIELDS = frozenset({
             "council_name", "meeting_date", "meeting_type",
             "motions", "councillors_present", "councillors_apology", "location",
+            "other_items",
         })
 
         def _score(d: dict) -> int:

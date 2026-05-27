@@ -161,34 +161,8 @@ def filter_pdfs_by_year(
 # Main
 # ---------------------------------------------------------------------------
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Estimate extraction API costs for pending council PDFs.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--from-year", type=int, metavar="YYYY", dest="from_year",
-        help="Only include meetings from this year onward",
-    )
-    parser.add_argument(
-        "--to-year", type=int, metavar="YYYY", dest="to_year",
-        help="Only include meetings up to and including this year",
-    )
-    parser.add_argument(
-        "--max-chars", default=str(MAX_CHARS), metavar="N|full", dest="max_chars",
-        help=f"Truncation limit in chars, or 'full' for no truncation "
-             f"(default: {MAX_CHARS:,} — matches the extraction pipeline)",
-    )
-    parser.add_argument(
-        "--quiet", "-q", action="store_true",
-        help="Suppress per-document output lines",
-    )
-    parser.add_argument(
-        "--show", action="store_true",
-        help="Print the summary from the saved report without regenerating",
-    )
-    args = parser.parse_args()
-
+def run(args) -> None:
+    """Core logic — callable from the CLI or run standalone via main()."""
     # Resolve truncation limit: None means no cap (full document)
     if args.max_chars.lower() == "full":
         trunc_limit: int | None = None
@@ -396,6 +370,36 @@ def main() -> None:
 
     print(f"\n  Report saved → {report_path}")
     print(f"             → {latest_path} (always latest)\n")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Estimate extraction API costs for pending council PDFs.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--from-year", type=int, metavar="YYYY", dest="from_year",
+        help="Only include meetings from this year onward",
+    )
+    parser.add_argument(
+        "--to-year", type=int, metavar="YYYY", dest="to_year",
+        help="Only include meetings up to and including this year",
+    )
+    parser.add_argument(
+        "--max-chars", default=str(MAX_CHARS), metavar="N|full", dest="max_chars",
+        help=f"Truncation limit in chars, or 'full' for no truncation "
+             f"(default: {MAX_CHARS:,} — matches the extraction pipeline)",
+    )
+    parser.add_argument(
+        "--quiet", "-q", action="store_true",
+        help="Suppress per-document output lines",
+    )
+    parser.add_argument(
+        "--show", action="store_true",
+        help="Print the summary from the saved report without regenerating",
+    )
+    args = parser.parse_args()
+    run(args)
 
 
 if __name__ == "__main__":
