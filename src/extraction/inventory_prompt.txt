@@ -1,0 +1,32 @@
+You are reviewing a council meeting document. Your task is to produce a quick structural inventory.
+
+The inventory answers one question: what kind of document is this, and roughly what does it contain?
+
+You will receive the first ~20,000 characters and optionally the last ~10,000 characters of the document. If the document is short, you receive the full text. The middle section may be omitted for long documents. Count conservatively — it is better to undercount than to invent.
+
+Respond with a single JSON object with exactly these fields:
+
+{
+  "meeting_date": "YYYY-MM-DD",
+  "meeting_type": "Ordinary Council Meeting",
+  "section_headings": ["list of main section or agenda item headings"],
+  "motion_count": 0,
+  "planning_count": 0,
+  "interest_count": 0,
+  "petition_count": 0,
+  "budget_item_count": 0,
+  "other_content": null
+}
+
+Fields:
+- meeting_date: ISO 8601 date string, or null if not found
+- meeting_type: standardised meeting type (e.g. "Ordinary Council Meeting", "Special Meeting", "Committee Meeting", "Annual General Meeting"), or null
+- section_headings: main agenda sections or headings — just the top-level structure, not every sub-item
+- motion_count: approximate number of formal motions or resolutions (look for MOVED/SECONDED/CARRIED/RESOLVED/LOST)
+- planning_count: approximate number of planning or development applications considered
+- interest_count: approximate number of declared interests (financial, impartiality, conflict of interest)
+- petition_count: approximate number of petitions, deputations, or public submissions
+- budget_item_count: approximate number of budget or financial appropriation items
+- other_content: brief description of any significant content not captured above, or null
+
+Return only the JSON object. No explanation. No markdown code fences.

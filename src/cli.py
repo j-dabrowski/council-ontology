@@ -562,6 +562,11 @@ def cmd_census(args) -> None:
     run(args)
 
 
+def cmd_inventory(args) -> None:
+    from scripts.inventory import run
+    run(args)
+
+
 def cmd_analyse(args) -> None:
     from sqlalchemy import func
     from src.analysis.queries import (
@@ -854,6 +859,17 @@ def main() -> None:
     p_census.add_argument("--workers", type=int, default=None, metavar="N",
                           help="Parallel worker processes (default: min(8, cpu_count))")
     p_census.set_defaults(func=cmd_census)
+
+    # inventory
+    p_inventory = sub.add_parser("inventory", help="Level 1: LLM inventory — one cheap Haiku call per document (scripts/inventory.py)")
+    p_inventory.add_argument("council", choices=list(COUNCILS))
+    p_inventory.add_argument("--limit", "-n", type=int, default=None, metavar="N",
+                             help="Process at most N PDFs")
+    p_inventory.add_argument("--force", action="store_true",
+                             help="Re-run even if inventory exists (cached LLM responses still reused)")
+    p_inventory.add_argument("--quiet", "-q", action="store_true",
+                             help="Suppress progress output")
+    p_inventory.set_defaults(func=cmd_inventory)
 
     # analyse
     p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")

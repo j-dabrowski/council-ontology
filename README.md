@@ -132,6 +132,17 @@ council census cambridge --quiet      # suppress per-document output
 
 The census records: character count, size bucket (tiny/small/medium/large), decade, meeting type, keyword counts across 7 groups (motions, votes, planning, interests, community, budget, procedural), section header count, estimated entity counts, and flags for outliers.
 
+#### `council inventory cambridge`
+**Level 1:** One cheap Haiku call per document. Builds a text window from the first 20,000 characters + the last 10,000 characters of each PDF, then asks: what kind of document is this, and roughly what does it contain? LLM responses are cached in `.cache/llm_responses/` by document hash + prompt version, so re-running is free. Cross-references with Level 0 census counts and flags disagreements.
+
+```bash
+council inventory cambridge              # incremental: skips already-inventoried PDFs
+council inventory cambridge --limit 10   # first 10 only
+council inventory cambridge --force      # re-run even if inventory exists
+```
+
+Per-document output in `data/inventories/{stem}.json`; corpus summary in `data/inventories/summary.json`.
+
 #### `council batch cambridge`
 Iterative extraction runner for working through a large backlog. Writes a structured error report to `data/extraction_errors.json` grouping failures by error class.
 
@@ -201,6 +212,7 @@ src/
     extractor.py          — PDF text extraction and Claude API call
     schemas.py            — Pydantic models for structured Claude output
     system_prompt.txt     — extraction prompt (edit this to tune quality)
+    inventory_prompt.txt  — Level 1 inventory-only prompt
   storage/
     database.py           — SQLite init, session factory, schema creation
   analysis/
@@ -208,6 +220,7 @@ src/
 
 scripts/
   census.py               — Level 0: keyword scan and census across all PDFs
+  inventory.py            — Level 1: LLM inventory (one Haiku call per document)
   batch_extract.py        — iterative extraction with error reporting
   eval_prompt.py          — prompt quality evaluation against benchmark
   compare_models.py       — side-by-side model comparison for a single PDF
@@ -220,8 +233,11 @@ data/
   raw/cambridge/          — downloaded PDFs + manifest.json (gitignored except manifest)
   council.db              — SQLite database (gitignored, re-generated from PDFs)
   eval/benchmark.json     — benchmark PDFs and expected extraction criteria
-  inventories/            — Level 1: per-document LLM inventory (pending)
+  inventories/            — Level 1: per-document LLM inventories + summary.json
   validation/             — Level 4: per-document confidence reports (pending)
+
+.cache/
+  llm_responses/          — cached raw LLM responses ({hash}_{prompt-version}.json)
   extraction_errors.json  — latest batch error report
 ```
 
@@ -234,7 +250,7 @@ The project follows a layered approach to avoid blind LLM extraction at scale:
 | Level | What | Cost | Status |
 |-------|------|------|--------|
 | 0 | Census: text extraction + keyword scan across all PDFs | Free | **Done** |
-| 1 | Cheap LLM inventory: one small Haiku call per document | ~$1-2 | Pending |
+| 1 | Cheap LLM inventory: one small Haiku call per document | ~$1-2 | **Done** |
 | 2 | Schema and prompt revision using Level 0/1 data | Free | Pending |
 | 3 | Prompt validation against stratified 15-20 doc sample | ~$1-2 | Pending |
 | 4 | Confidence metrics and per-document validation script | Free | Pending |

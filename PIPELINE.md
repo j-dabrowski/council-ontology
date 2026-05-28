@@ -60,8 +60,11 @@ Run once across ALL documents. Pure text extraction and regex analysis.
 
 Run once across ALL documents. One small Haiku call per document. NOT full extraction. Document inventory only.
 
+**Purpose:** The inventory isn't trying to count every motion in the document. It's trying to answer: what kind of document is this, and roughly what does it contain?
+
 ### Tasks
-- For each document, send the first 20,000 characters to Haiku with a lightweight prompt.
+- For each document, build a text window from the first 20,000 characters + the last 10,000 characters. For documents under 30,000 chars, the full text is used. A separator marks where the middle was omitted: `[... middle section omitted ...]`.
+- Send the text window to Haiku with a lightweight inventory-only prompt (`src/extraction/inventory_prompt.txt`).
 - Prompt asks ONLY for a structural inventory:
   - List of section headings found
   - Count of motions/resolutions identified
@@ -71,7 +74,8 @@ Run once across ALL documents. One small Haiku call per document. NOT full extra
   - Count of budget/financial items
   - Meeting date and type as identified by the model
   - Any content types present that don't fit the above categories (free text field)
-- Store as `data/inventories/{filename}.json`.
+- Cache raw LLM responses in `.cache/llm_responses/` keyed by document hash + prompt version. Re-running the same prompt version costs nothing for already-cached documents.
+- Store per-document output as `data/inventories/{stem}.json`.
 
 ### Output
 - Per-document inventory with expected entity counts from the LLM's perspective.

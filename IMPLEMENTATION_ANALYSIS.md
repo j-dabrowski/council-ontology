@@ -31,23 +31,21 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 
 ---
 
-## Level 1: Cheap LLM Inventory
+## Level 1: Cheap LLM Inventory ✅ COMPLETE (2026-05-28)
 
-**Already exists:**
-- `council batch` and `council extract` both call the LLM, but they run the FULL extraction prompt with 64k max output tokens. No lightweight inventory mode exists.
-- `council compare` runs multiple models on one PDF but again uses the full prompt.
-- The caching infrastructure does NOT exist. Raw LLM responses are not cached to disk.
+**What was built:**
+- `src/extraction/inventory_prompt.txt` — lightweight inventory-only prompt. Asks for meeting_date, meeting_type, section_headings, and approximate counts of motions, planning items, interests, petitions, and budget items. Output is a small JSON object (~1k tokens).
+- `scripts/inventory.py` — per-document inventory script with:
+  - Text window: first 20,000 chars + last 10,000 chars (separator if truncated). Full text for docs ≤30k chars. The 20k+10k window was chosen over 20k-front-only to improve coverage of large documents (319/537 Cambridge docs exceed 200k chars).
+  - LLM response cache in `.cache/llm_responses/` keyed by `sha256(pdf_bytes)[:16]_inventory-v1`. Cache is checked before every API call; re-running with the same prompt version costs nothing for cached docs.
+  - `DocumentInventory` Pydantic schema with lenient int/list coercions.
+  - Census cross-reference: flags `l1_overcounts_motions` (L1 count > 2× L0 estimate) and `l1_mismatch_full_doc` (significant mismatch on non-truncated docs). Undercounting on large docs is expected and not flagged.
+  - ThreadPoolExecutor (max 20 concurrent) for parallel API calls.
+  - Incremental mode: skips docs with existing `status: "ok"` inventory files unless `--force`.
+- `council inventory cambridge [--limit N] [--force] [--quiet]` — CLI entrypoint.
+- Outputs: `data/inventories/{stem}.json` per doc + `data/inventories/summary.json`.
 
-**Can be composed now:**
-- Nothing. There's no way to run a cheap inventory-only prompt through existing CLI commands.
-
-**Needs new work:**
-- A new prompt (small, inventory-only) and a corresponding Pydantic schema for the inventory output.
-- A new script (`scripts/inventory.py`) or CLI command (`council inventory cambridge`) that sends only the first ~20k chars to Haiku with the inventory prompt and stores results per document.
-- LLM response caching. This is needed here and pays off massively in Level 5. Key by document hash + prompt version. Check cache before calling API.
-- Cross-referencing logic: compare Level 0 keyword counts to Level 1 inventory counts, flag disagreements.
-
-**Effort: Medium.** New prompt, new schema, new script, new cache layer. But each piece is small.
+**Purpose:** The inventory isn't trying to count every motion in the document. It's trying to answer: what kind of document is this, and roughly what does it contain?
 
 ---
 
@@ -165,15 +163,14 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 | Priority | Component | Blocked by | Effort | Status |
 |----------|-----------|------------|--------|--------|
 | 1 | Level 0: keyword scanner + census output | Nothing | Small | **Done** |
-| 2 | LLM response caching layer | Nothing | Small | Pending |
-| 3 | Level 1: inventory prompt + script | Level 0 | Medium | Pending |
-| 4 | Level 2: provenance (source quotes in schema, prompt, DB, persistence) | Level 1 | Large | Pending |
-| 5 | `other_items` persistence | Nothing (already flagged) | Small | Pending |
-| 6 | Level 4: validation script | Levels 0, 1, 2 | Medium | Pending |
-| 7 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
-| 8 | Level 6: audit report generator | Level 5 | Small | Pending |
+| 2 | LLM response caching + Level 1 inventory script | Level 0 | Medium | **Done** |
+| 3 | Level 2: provenance (source quotes in schema, prompt, DB, persistence) | Level 1 | Large | Pending |
+| 4 | `other_items` persistence | Nothing (already flagged) | Small | Pending |
+| 5 | Level 4: validation script | Levels 0, 1, 2 | Medium | Pending |
+| 6 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
+| 7 | Level 6: audit report generator | Level 5 | Small | Pending |
 
-**The critical path is Level 2 (provenance).** Everything downstream that involves confidence metrics depends on source quotes existing. Level 1 is next and is now unblocked by the completed Level 0.
+**The critical path is Level 2 (provenance).** Everything downstream that involves confidence metrics depends on source quotes existing. Level 2 is now unblocked.
 
 ---
 
@@ -185,4 +182,3 @@ These can be done independently of the main pipeline sequence:
 - Populate `minutes_pdf_url` from manifest into meetings table (trivial, already flagged)
 - Populate `extracted_at` timestamp on meetings (trivial, already flagged)
 - Store `minutes_text` in meetings table for future provenance lookups (small)
-- LLM response caching layer (small, unblocked, saves money immediately)

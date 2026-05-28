@@ -86,7 +86,41 @@ Commands:
   python scripts/census.py cambridge  # standalone
 
 
-3. EXTRACTOR — src/extraction/
+3. INVENTORY — scripts/inventory.py  [Level 1]
+------------------------------------------
+Runs once across all PDFs. One cheap Haiku call per document.
+
+Purpose: not to extract every detail, but to answer — what kind of document
+is this, and roughly what does it contain?
+
+For each PDF:
+  - Builds a text window: first 20,000 chars + last 10,000 chars. For docs
+    under 30,000 chars, the full text is used. A separator marks omissions.
+  - Sends the window to Haiku with a lightweight inventory-only prompt
+    (src/extraction/inventory_prompt.txt).
+  - Returns: meeting date/type, list of section headings, and approximate
+    counts of motions, planning items, interests, petitions, budget items,
+    and other content.
+  - Caches raw LLM responses in .cache/llm_responses/ by document hash +
+    prompt version. Re-running with the same prompt version is free.
+  - Cross-references with Level 0 census counts and flags disagreements.
+
+Incremental by default (skips docs with existing ok-status inventory files).
+Parallel via ThreadPoolExecutor (up to 20 concurrent API calls).
+
+Output:
+  data/inventories/{stem}.json   — per-document inventory
+  data/inventories/summary.json  — aggregate: meeting type distribution,
+                                   average counts, flagged documents
+
+Commands:
+  council inventory cambridge
+  council inventory cambridge --limit 10
+  council inventory cambridge --force    # re-run even if inventory exists
+  python scripts/inventory.py cambridge  # standalone
+
+
+4. EXTRACTOR — src/extraction/
 --------------------------------
   extractor.py      — sends PDF text to Claude, parses JSON response
   schemas.py        — Pydantic models for extraction output (deliberately lenient)
@@ -112,7 +146,7 @@ Browse what's been extracted:
   cat data/extraction_errors.json
 
 
-4. DATABASE / ONTOLOGY — src/models/ontology.py
+5. DATABASE / ONTOLOGY — src/models/ontology.py
 -------------------------------------------------
 SQLite at data/council.db. Tables:
 
@@ -142,7 +176,7 @@ Useful DB queries:
   sqlite3 data/council.db "SELECT meeting_date, meeting_type, id FROM meetings ORDER BY meeting_date DESC LIMIT 20"
 
 
-5. CLI — src/cli.py
+6. CLI — src/cli.py
 ---------------------
 All commands are invoked as: council <command>  (or: python -m src <command>)
 
@@ -171,6 +205,12 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       Level 0: keyword scan across all PDFs. Outputs data/census.json and
       data/census_summary.txt. Incremental by default; --force rescans everything.
       Uses parallel workers (default: min(8, cpu_count)).
+
+  council inventory cambridge [--limit N] [--force] [--quiet]
+      Level 1: one cheap Haiku call per document. Builds a text window (first 20k
+      chars + last 10k chars) and asks: what kind of document is this, and roughly
+      what does it contain? Caches LLM responses in .cache/llm_responses/. Outputs
+      data/inventories/{stem}.json and data/inventories/summary.json.
 
   council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
                           [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
@@ -209,12 +249,13 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       All runs also write DEBUG logs to council.log.
 
 
-6. SCRIPTS — scripts/ and estimate_costs.py
+7. SCRIPTS — scripts/ and estimate_costs.py
 ---------------------------------------------
-Each script is callable both via the CLI (see section 5) and standalone.
+Each script is callable both via the CLI (see section 6) and standalone.
 Each has a run(args) function that does the work; main() handles argparse.
 
   scripts/census.py         →  council census cambridge ...
+  scripts/inventory.py      →  council inventory cambridge ...
   scripts/batch_extract.py  →  council batch cambridge ...
   scripts/eval_prompt.py    →  council eval ...
   scripts/compare_models.py →  council compare <pdf> ...
@@ -222,6 +263,7 @@ Each has a run(args) function that does the work; main() handles argparse.
 
 Standalone usage (equivalent to CLI):
   python scripts/census.py cambridge [--force] [--quiet] [--workers N]
+  python scripts/inventory.py cambridge [--limit N] [--force] [--quiet]
   python scripts/batch_extract.py [--limit N] [--model MODEL] [--council cambridge]
                                   [--from-year YYYY] [--to-year YYYY]
                                   [--files a.pdf b.pdf ...] [--force] [--verbose]
@@ -241,7 +283,7 @@ Browse eval history:
   council eval --history
 
 
-7. ANALYSIS — src/analysis/queries.py + council analyse
+8. ANALYSIS — src/analysis/queries.py + council analyse
 ---------------------------------------------------------
 Query helpers exposed via `council analyse <council> <query>`.
 
@@ -278,7 +320,8 @@ WHAT IS UNFINISHED
    Most years have only a handful ingested — the bulk of the archive is pending.
    Prompt eval is at 100/100 so quality is good enough to proceed.
    Before bulk extraction, complete the multi-level pipeline (see PIPELINE.md):
-   Level 1 (LLM inventory) and Level 2 (provenance/source quotes) should run first.
+   Level 1 is done. Level 2 (provenance/source quotes) should run next.
+     council inventory cambridge    # run Level 1 first if not done
      council batch cambridge --limit 341
 
 2. DYNAMIC LAYER IS EMPTY
@@ -314,8 +357,7 @@ WHAT IS UNFINISHED
    comment. The full architecture supports multiple councils.
 
 8. MULTI-LEVEL PIPELINE INCOMPLETE
-   Level 0 (census) is done. Still pending:
-   - Level 1: LLM inventory (one cheap Haiku call per doc, data/inventories/)
+   Level 0 (census) and Level 1 (inventory) are done. Still pending:
    - Level 2: Provenance/source quotes in schema, prompt, and DB
    - Level 3: Prompt validation against stratified 15-20 doc sample
    - Level 4: Per-document confidence metrics and validation script
@@ -330,7 +372,8 @@ DATA DIRECTORIES
   data/council.db              — SQLite database
   data/census.json             — Level 0 per-document census (537 records)
   data/census_summary.txt      — Level 0 aggregate stats
-  data/inventories/            — Level 1 per-document LLM inventories (pending)
+  data/inventories/            — Level 1 per-document LLM inventories + summary.json
+  .cache/llm_responses/        — cached raw LLM responses ({hash}_{prompt-version}.json)
   data/validation/             — Level 4 per-document confidence reports (pending)
   data/eval/                   — prompt eval reports (JSON + plain text)
   data/model_comparison/       — per-PDF model comparison reports

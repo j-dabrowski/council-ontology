@@ -29,6 +29,10 @@ data/extraction_errors.json
 data/census.json
 data/census_summary.txt
 
+data/inventories/
+
+.cache/
+
 # Generated outputs
 cost_report.txt
 council.log
