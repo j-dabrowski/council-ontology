@@ -124,6 +124,127 @@ class ExtractedPlanningApplication(BaseModel):
         return v
 
 
+class ExtractedPublicQuestion(BaseModel):
+    questioner_name: Optional[str] = None
+    question_summary: Optional[str] = None
+    response_summary: Optional[str] = None
+
+
+class ExtractedDeputation(BaseModel):
+    presenter_name: Optional[str] = None
+    topic: Optional[str] = None
+    summary: Optional[str] = None
+
+
+class ExtractedPetition(BaseModel):
+    subject: Optional[str] = None
+    presented_by: Optional[str] = None
+    signatory_count: Optional[int] = None
+
+    @field_validator("signatory_count", mode="before")
+    @classmethod
+    def coerce_int(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            try:
+                return int(v.replace(",", "").strip())
+            except ValueError:
+                return None
+        return v
+
+
+class ExtractedAppointment(BaseModel):
+    councillor: Optional[ExtractedCouncillor] = None
+    role: Optional[str] = None
+    body_name: Optional[str] = None
+
+
+class ExtractedCommitteeReport(BaseModel):
+    committee_name: Optional[str] = None
+    item_count: Optional[int] = None
+    summary: Optional[str] = None
+
+
+class ExtractedBudgetItem(BaseModel):
+    item_number: Optional[str] = None
+    description: Optional[str] = None
+    amount: Optional[float] = None
+    is_confidential: bool = False
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def coerce_amount(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            try:
+                return float(v.replace(",", "").replace("$", "").strip())
+            except ValueError:
+                return None
+        return v
+
+
+class ExtractedInterestDeclaration(BaseModel):
+    councillor: Optional[ExtractedCouncillor] = None
+    interest_type: Optional[Literal["financial", "impartiality", "proximity", "other"]] = None
+    description: Optional[str] = None
+    item_reference: Optional[str] = None
+
+    @field_validator("interest_type", mode="before")
+    @classmethod
+    def normalise_lower(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.lower()
+        return v
+
+
+class ExtractedTender(BaseModel):
+    reference_number: Optional[str] = None
+    description: Optional[str] = None
+    awarded_to: Optional[str] = None
+    amount: Optional[float] = None
+    is_confidential: bool = False
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def coerce_amount(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            try:
+                return float(v.replace(",", "").replace("$", "").strip())
+            except ValueError:
+                return None
+        return v
+
+
+class ExtractedDelegatedDecision(BaseModel):
+    item_number: Optional[str] = None
+    description: Optional[str] = None
+    officer_title: Optional[str] = None
+    is_confidential: bool = False
+
+
+class ExtractedBuildingPermit(BaseModel):
+    reference_number: Optional[str] = None
+    site_address: Optional[str] = None
+    description: Optional[str] = None
+    estimated_value: Optional[float] = None
+    status: Optional[Literal["approved", "refused", "deferred"]] = None
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def normalise_status(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            return v.lower()
+        return v
+
+    @field_validator("estimated_value", mode="before")
+    @classmethod
+    def coerce_value(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            try:
+                return float(v.replace(",", "").replace("$", "").strip())
+            except ValueError:
+                return None
+        return v
+
+
 class ExtractedOtherItem(BaseModel):
     item_number: Optional[str] = None
     item_type: str
@@ -227,6 +348,16 @@ class ExtractedMeeting(BaseModel):
     councillors_present: list[ExtractedCouncillor] = Field(default_factory=list)
     councillors_apology: list[ExtractedCouncillor] = Field(default_factory=list)
     motions: list[ExtractedMotion] = Field(default_factory=list)
+    public_questions: list[ExtractedPublicQuestion] = Field(default_factory=list)
+    deputations: list[ExtractedDeputation] = Field(default_factory=list)
+    petitions: list[ExtractedPetition] = Field(default_factory=list)
+    appointments: list[ExtractedAppointment] = Field(default_factory=list)
+    committee_reports: list[ExtractedCommitteeReport] = Field(default_factory=list)
+    budget_items: list[ExtractedBudgetItem] = Field(default_factory=list)
+    interest_declarations: list[ExtractedInterestDeclaration] = Field(default_factory=list)
+    tenders: list[ExtractedTender] = Field(default_factory=list)
+    delegated_decisions: list[ExtractedDelegatedDecision] = Field(default_factory=list)
+    building_permits: list[ExtractedBuildingPermit] = Field(default_factory=list)
     other_items: list[ExtractedOtherItem] = Field(default_factory=list)
 
     @model_validator(mode="before")
@@ -242,6 +373,9 @@ class ExtractedMeeting(BaseModel):
         _MEETING_FIELDS = frozenset({
             "council_name", "meeting_date", "meeting_type", "location",
             "motions", "councillors_present", "councillors_apology", "other_items",
+            "public_questions", "deputations", "petitions", "appointments",
+            "committee_reports", "budget_items", "interest_declarations",
+            "tenders", "delegated_decisions", "building_permits",
         })
 
         def _score(d: dict) -> int:

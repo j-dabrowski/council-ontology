@@ -40,6 +40,83 @@ OUTPUT SCHEMA:
       "tags": [string]
     }
   ],
+  "public_questions": [
+    {
+      "questioner_name": string | null,
+      "question_summary": string | null,
+      "response_summary": string | null
+    }
+  ],
+  "deputations": [
+    {
+      "presenter_name": string | null,
+      "topic": string | null,
+      "summary": string | null
+    }
+  ],
+  "petitions": [
+    {
+      "subject": string | null,
+      "presented_by": string | null,
+      "signatory_count": integer | null
+    }
+  ],
+  "appointments": [
+    {
+      "councillor": {"given_name": string|null, "family_name": string|null} | null,
+      "role": string | null,
+      "body_name": string | null
+    }
+  ],
+  "committee_reports": [
+    {
+      "committee_name": string | null,
+      "item_count": integer | null,
+      "summary": string | null
+    }
+  ],
+  "budget_items": [
+    {
+      "item_number": string | null,
+      "description": string | null,
+      "amount": number | null,
+      "is_confidential": bool
+    }
+  ],
+  "interest_declarations": [
+    {
+      "councillor": {"given_name": string|null, "family_name": string|null} | null,
+      "interest_type": "financial" | "impartiality" | "proximity" | "other" | null,
+      "description": string | null,
+      "item_reference": string | null
+    }
+  ],
+  "tenders": [
+    {
+      "reference_number": string | null,
+      "description": string | null,
+      "awarded_to": string | null,
+      "amount": number | null,
+      "is_confidential": bool
+    }
+  ],
+  "delegated_decisions": [
+    {
+      "item_number": string | null,
+      "description": string | null,
+      "officer_title": string | null,
+      "is_confidential": bool
+    }
+  ],
+  "building_permits": [
+    {
+      "reference_number": string | null,
+      "site_address": string | null,
+      "description": string | null,
+      "estimated_value": number | null,
+      "status": "approved" | "refused" | "deferred" | null
+    }
+  ],
   "other_items": [
     {
       "item_number": string | null,
@@ -80,36 +157,113 @@ Councillors:
 - `councillors_present`: list only elected members — Mayor, Deputy Mayor, and Councillors; exclude officers, CEO, directors, and staff
 - `councillors_apology`: elected members who gave apologies
 
+Public questions:
+- Create one entry per question asked during Public Question Time (or equivalent section: "Question Time", "Questions from the Public")
+- `questioner_name`: the person asking; null if not named
+- `question_summary`: brief summary of the question topic
+- `response_summary`: brief summary of the response given, or null if no response is recorded
+- Also extract questions submitted in writing if listed in the PQT section
+- Do NOT use `other_items` for public questions — always use this field
+
+Deputations:
+- Create one entry per formal deputation or presentation by a member of the public
+- `presenter_name`: name of the presenter; null if not given
+- `topic`: subject of the deputation
+- `summary`: brief description of what was presented
+- Do NOT use `other_items` for deputations — always use this field
+
+Petitions:
+- Create one entry per petition tabled at the meeting
+- `subject`: what the petition concerns
+- `presented_by`: councillor or member of public who tabled it; null if not stated
+- `signatory_count`: number of signatures if stated; null otherwise
+- Do NOT use `other_items` for petitions — always use this field
+
+Appointments:
+- Create one entry per appointment of a councillor or delegate to an external body, committee, statutory authority, or working group
+- `councillor`: the appointed councillor; null if the position is vacant or the appointee is unnamed
+- `role`: their role in the body (e.g. "delegate", "proxy", "member", "chair")
+- `body_name`: name of the external body or committee
+- Do NOT use `other_items` for appointments — always use this field
+
+Committee reports:
+- Create one entry per standing committee report tabled at the meeting
+- `committee_name`: e.g. "Development Committee", "Community and Resources Committee"
+- `item_count`: number of items in the committee report if stated; null otherwise
+- `summary`: optional short note on notable items; null if nothing stands out
+- Do NOT use `other_items` for committee reports — always use this field
+- Note: individual recommendations within a committee report that are moved as separate motions go into `motions`, not here
+
+Budget items:
+- Create one entry per budget or financial item received as an information item (financial statement, investment report, budget review, rate-setting notice, major expenditure approval)
+- `item_number`: agenda item number if shown
+- `description`: what the item is (e.g. "Monthly Financial Statements — March 2019", "Rate Setting 2022-23")
+- `amount`: the dollar figure if a specific amount is stated; null otherwise
+- `is_confidential`: true if the item was in closed session
+- If a budget item is formally voted on (moved and seconded), record it in `motions` instead — not here
+- Do NOT use `other_items` for budget/financial information items — always use this field
+
+Interest declarations:
+- Create one entry per declared interest (financial, impartiality, proximity, or conflict of interest)
+- `councillor`: the councillor declaring the interest
+- `interest_type`: "financial" for financial interests; "impartiality" for impartiality interests (common under Local Government Act 1995 s5.65); "proximity" for proximity interests; "other" for anything else
+- `description`: brief description of the nature of the interest
+- `item_reference`: the agenda item or motion number the interest relates to; null if declared generally
+- Also record the interest on the corresponding `individual_votes` entry (declared_interest: true, interest_description) when the councillor voted or withdrew
+- Do NOT use `other_items` for interest declarations — always use this field
+
+Tenders:
+- Create one entry per tender evaluation, RFQ, or procurement decision listed in the minutes
+- `reference_number`: tender/RFQ/contract number if given
+- `description`: what is being procured
+- `awarded_to`: name of the successful contractor or supplier; null if not awarded or not disclosed
+- `amount`: contract value if stated; null otherwise
+- `is_confidential`: true if the detail is in closed session
+- If a tender award is formally voted on, ALSO create a corresponding entry in `motions` for the voting record — both entries should exist
+- Do NOT use `other_items` for tenders — always use this field
+
+Delegated decisions:
+- Create one entry per decision made under officer delegation listed in the minutes (decisions not brought to a council vote)
+- These typically appear under headings like "Delegated Decisions", "Officer Delegations", "Decisions Made Under Delegation"
+- `item_number`: item number as listed
+- `description`: brief description of the decision
+- `officer_title`: the officer role that made the decision (e.g. "Director Planning", "CEO"); null if not stated
+- `is_confidential`: true if not disclosed
+- Do NOT use `other_items` for delegated decisions — always use this field
+
+Building permits:
+- Create one entry per building permit, building licence, or construction approval listed in the minutes
+- These typically appear under a "Building Permits" or "Building Licences" information section
+- `reference_number`: permit/licence number
+- `site_address`: the property address
+- `description`: type of work (e.g. "single dwelling", "swimming pool", "commercial fitout")
+- `estimated_value`: stated value of works; null if not given
+- `status`: "approved" for permits issued; "refused" if refused; "deferred" if deferred; null if not stated
+- Do NOT use `other_items` for building permits — always use this field
+
 Confidential items:
-- If a motion or agenda item was transacted in a closed/confidential session and its detail is not disclosed in the minutes, set `is_confidential: true` on that motion or other_item
+- If a motion or item was transacted in a closed/confidential session and its detail is not disclosed, set `is_confidential: true` on that record in whichever field it belongs to (motions, tenders, budget_items, etc.)
 - Record what information IS available (item number, topic label if given) even if the resolution text is redacted
-- Do NOT extract the procedural motion to enter closed session itself — that is administrative housekeeping, not a substantive council decision
-- If an entire meeting was held in closed session, set `is_confidential: true` on every item extracted from it
+- Do NOT extract the procedural motion to enter or leave closed session itself
+- If an entire meeting was held in closed session, set `is_confidential: true` on every extracted item
 
 General:
 - Use ISO 8601 date format (YYYY-MM-DD) for all dates
-- Infer tags from context: e.g. "planning", "budget", "infrastructure", "community", "governance", "procedural", "appointment", "tender", "personnel"
+- Infer tags on motions from context: e.g. "planning", "budget", "infrastructure", "community", "governance", "procedural", "appointment", "tender", "personnel"
 - If a value is not present in the text, use null or empty list as appropriate
 
 Other items:
-- Use `other_items` for substantive agenda items that do not produce a formal councillor motion — or where the item is better described as a record of an event or report rather than a resolution
-- Do NOT silently discard content — if it doesn't fit the motions schema, it belongs in `other_items`
+- Use `other_items` only for substantive agenda content that does not fit any of the dedicated fields above
+- Do NOT silently discard content — if it doesn't fit any dedicated field or the motions schema, it belongs in `other_items`
 - Routine procedural steps with no substantive content (opening prayer, declaration of quorum, meeting closure) do not need to be recorded
 
-Valid `item_type` values and when to use them:
-- "public_question_time" — the Public Question Time section; one item per meeting; description summarises number of questions and main topics
-- "deputation" — a formal presentation by a member of the public; note topic and number of deputants
-- "petition" — a petition tabled at the meeting; note subject and signatory count if given
-- "appointment" — appointment of councillors or delegates to external bodies, committees, or working groups
-- "financial_report" — accounts, investments, financial statements, or budget reviews received as information items (not motions)
-- "tender" — a tender evaluation or procurement decision (if not moved as a formal motion)
-- "committee_report" — a committee report received without a separate motion
+Valid `item_type` values for `other_items`:
 - "questions_on_notice" — written questions submitted with prior formal notice (distinct from Public Question Time)
 - "correspondence" — correspondence tabled or noted
 - "policy_amendment" — a policy change reported or tabled
-- "officer_report" — an officer report received as an information item
+- "officer_report" — an officer report received as an information item with no motion
 - "ceremony" — swearing-in of councillors, garden awards, or other ceremonial events
 - "announcement" — mayoral announcements or other non-decision notices
-- "confidential_item" — a confidential item where no detail is available; set `is_confidential: true`
+- "confidential_item" — a confidential item with no detail disclosed that does not match any other field type
 
 Respond ONLY with valid JSON matching the schema above. Do not add commentary outside the JSON.
