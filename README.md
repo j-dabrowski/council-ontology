@@ -15,7 +15,10 @@ council minutes site
    src/scraper/          ← discovers meeting pages, downloads PDFs
         │
         ▼
-   scripts/census.py     ← free pass: text extraction + keyword scan across all PDFs
+   scripts/census.py     ← Level 0: text extraction + keyword scan (free, no LLM)
+        │
+        ▼
+   scripts/inventory.py  ← Level 1: one cheap Haiku call per doc — what is this document?
         │
         ▼
    src/extraction/       ← sends PDF text to Claude, parses structured output
@@ -230,15 +233,15 @@ estimate_costs.py         — API cost estimator for pending documents
 data/
   census.json             — Level 0: per-document metadata and keyword counts
   census_summary.txt      — Level 0: aggregate stats and outlier list
+  inventories/            — Level 1: per-document LLM inventories + summary.json
   raw/cambridge/          — downloaded PDFs + manifest.json (gitignored except manifest)
   council.db              — SQLite database (gitignored, re-generated from PDFs)
   eval/benchmark.json     — benchmark PDFs and expected extraction criteria
-  inventories/            — Level 1: per-document LLM inventories + summary.json
   validation/             — Level 4: per-document confidence reports (pending)
+  extraction_errors.json  — latest batch error report
 
 .cache/
   llm_responses/          — cached raw LLM responses ({hash}_{prompt-version}.json)
-  extraction_errors.json  — latest batch error report
 ```
 
 ---
@@ -250,7 +253,7 @@ The project follows a layered approach to avoid blind LLM extraction at scale:
 | Level | What | Cost | Status |
 |-------|------|------|--------|
 | 0 | Census: text extraction + keyword scan across all PDFs | Free | **Done** |
-| 1 | Cheap LLM inventory: one small Haiku call per document | ~$1-2 | **Done** |
+| 1 | Cheap LLM inventory: one small Haiku call per document | $4.83 actual | **Done** |
 | 2 | Schema and prompt revision using Level 0/1 data | Free | Pending |
 | 3 | Prompt validation against stratified 15-20 doc sample | ~$1-2 | Pending |
 | 4 | Confidence metrics and per-document validation script | Free | Pending |

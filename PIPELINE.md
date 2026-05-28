@@ -13,7 +13,7 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 | Level | Description | Status |
 |-------|-------------|--------|
 | 0 | Census: text extraction + keyword scan | **Done** (2026-05-28) |
-| 1 | Cheap LLM inventory (Haiku, ~$1-2) | Pending |
+| 1 | Cheap LLM inventory (Haiku, $4.83 actual) | **Done** (2026-05-28) |
 | 2 | Schema and prompt revision | Pending |
 | 3 | Prompt validation against sample (~$1-2) | Pending |
 | 4 | Confidence metrics and validation script | Pending |
@@ -56,7 +56,7 @@ Run once across ALL documents. Pure text extraction and regex analysis.
 
 ---
 
-## Level 1: Cheap LLM Inventory (minimal cost, ~$1-2 total)
+## Level 1: Cheap LLM Inventory ($4.83 actual) ✅ COMPLETE
 
 Run once across ALL documents. One small Haiku call per document. NOT full extraction. Document inventory only.
 
@@ -82,6 +82,15 @@ Run once across ALL documents. One small Haiku call per document. NOT full extra
 - Cross-reference with Level 0 keyword counts. Flag documents where Level 0 and Level 1 disagree significantly (e.g. Level 0 found 12 MOVED keywords but Level 1 says 6 motions).
 - A corpus-wide typology: which information types appear in which meeting types, how structure varies across eras.
 - Updated keyword list: if Level 1 identifies content types or patterns Level 0 missed, feed new keywords back into Level 0 and re-run.
+
+### Actual results (Cambridge, 2026-05-28)
+- 537 PDFs inventoried; 536 ok, 1 error (c1cdc1fa.pdf — known empty PDF from Level 0)
+- 375 truncated (69%) — only 30k of text sent; 161 full window (doc fit within 30k)
+- 1 flagged: d2af2d23.pdf (l1_mismatch_full_doc — Special Meeting, L1 counted 5 motions vs L0 estimate of 13)
+- Meeting type distribution: 331 Ordinary / 124 Special / 22 Committee / 18 Special Council / 14 AGM / 13 AGM of Electors / 7 Special Electors / 5 Development Committee / 2 Briefing Forum
+- Average per-doc: 9.6 motions / 9.5 planning / 1.0 interests / 0.6 petitions / 4.3 budget items
+- Cost: $4.83 (537 docs × ~30k chars window, Haiku standard API)
+- Command: `council inventory cambridge` (max 20 concurrent Haiku calls)
 
 ---
 
