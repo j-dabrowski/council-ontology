@@ -13,7 +13,12 @@ Respond with a single JSON object with exactly these fields:
   "motion_count": 0,
   "planning_count": 0,
   "interest_count": 0,
+  "public_question_count": 0,
+  "deputation_count": 0,
   "petition_count": 0,
+  "appointment_count": 0,
+  "tender_count": 0,
+  "confidential_item_count": 0,
   "budget_item_count": 0,
   "other_content": null
 }
@@ -23,10 +28,15 @@ Fields:
 - meeting_type: standardised meeting type (e.g. "Ordinary Council Meeting", "Special Meeting", "Committee Meeting", "Annual General Meeting"), or null
 - section_headings: main agenda sections or headings — just the top-level structure, not every sub-item
 - motion_count: approximate number of formal motions or resolutions (look for MOVED/SECONDED/CARRIED/RESOLVED/LOST)
-- planning_count: approximate number of planning or development applications considered
+- planning_count: approximate number of planning or development applications considered (DV, DA, planning scheme amendments)
 - interest_count: approximate number of declared interests (financial, impartiality, conflict of interest)
-- petition_count: approximate number of petitions, deputations, or public submissions
-- budget_item_count: approximate number of budget or financial appropriation items
-- other_content: brief description of any significant content not captured above, or null
+- public_question_count: total number of questions asked during Public Question Time (written + verbal combined); 0 if no Public Question Time section
+- deputation_count: number of formal deputations or presentations by members of the public to the council
+- petition_count: number of petitions tabled at the meeting
+- appointment_count: number of appointments of councillors or delegates to external bodies, committees, statutory authorities, or working groups
+- tender_count: number of tender evaluations or procurement decisions considered
+- confidential_item_count: number of items discussed in closed or confidential session
+- budget_item_count: approximate number of budget or financial appropriation items (rate-setting, budget adoption, major expenditure approvals)
+- other_content: brief description of any significant content not captured by the fields above, or null if everything is accounted for
 
 Return only the JSON object. No explanation. No markdown code fences.

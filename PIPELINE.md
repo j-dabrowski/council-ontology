@@ -58,9 +58,11 @@ Run once across ALL documents. Pure text extraction and regex analysis.
 
 ## Level 1: Cheap LLM Inventory ($4.83 actual) ✅ COMPLETE
 
-Run once across ALL documents. One small Haiku call per document. NOT full extraction. Document inventory only.
+Run once (then iterate) across ALL documents. One small Haiku call per document. NOT full extraction. Document inventory only.
 
 **Purpose:** The inventory isn't trying to count every motion in the document. It's trying to answer: what kind of document is this, and roughly what does it contain?
+
+**The inventory prompt is iterated to convergence before any Level 2 schema work begins.** The quality signal is `other_content_rate` — the percentage of documents where the free-text `other_content` field is substantive (> 30 chars). This field captures anything the inventory schema didn't have a dedicated slot for. A high rate means the schema has gaps. The goal is ≤ 20%.
 
 ### Tasks
 - For each document, build a text window from the first 20,000 characters + the last 10,000 characters. For documents under 30,000 chars, the full text is used. A separator marks where the middle was omitted: `[... middle section omitted ...]`.
@@ -70,18 +72,28 @@ Run once across ALL documents. One small Haiku call per document. NOT full extra
   - Count of motions/resolutions identified
   - Count of planning applications identified
   - Count of declared interests identified
-  - Count of petitions/deputations/submissions
+  - Count of public questions, deputations, petitions, appointments, tenders, confidential items
   - Count of budget/financial items
   - Meeting date and type as identified by the model
-  - Any content types present that don't fit the above categories (free text field)
-- Cache raw LLM responses in `.cache/llm_responses/` keyed by document hash + prompt version. Re-running the same prompt version costs nothing for already-cached documents.
+  - Any content types present that don't fit the above categories (free text field: `other_content`)
+- Cache raw LLM responses in `.cache/llm_responses/` keyed by document hash + prompt version. Bumping `PROMPT_VERSION` in `scripts/inventory.py` invalidates all cached responses, forcing a fresh call on the next run.
 - Store per-document output as `data/inventories/{stem}.json`.
+
+### Iteration loop (repeat until other_content_rate ≤ 20%)
+1. `council inventory cambridge` — run inventory across all docs (or `--limit N --force` for a sample)
+2. `council typology cambridge` (or `--limit N`) — aggregates inventories, computes `other_content_rate`, writes full report to `data/cambridge_typology_review.txt`, prints prompt box
+3. Paste the prompt into Claude Code — updates `src/extraction/inventory_prompt.txt` and `DocumentInventory` Pydantic model; bumps `PROMPT_VERSION`
+4. `council inventory cambridge --force --limit 20` — re-run on sample with new prompt
+5. `council typology cambridge --limit 20` — did `other_content` shrink?
+6. If still > 20%, repeat from step 3. Once ≤ 20%, do a full re-run, then proceed to Level 2.
+
+Quality scores are saved to `data/inventory_quality/` for trend tracking (`council typology cambridge --history`).
 
 ### Output
 - Per-document inventory with expected entity counts from the LLM's perspective.
 - Cross-reference with Level 0 keyword counts. Flag documents where Level 0 and Level 1 disagree significantly (e.g. Level 0 found 12 MOVED keywords but Level 1 says 6 motions).
 - A corpus-wide typology: which information types appear in which meeting types, how structure varies across eras.
-- Updated keyword list: if Level 1 identifies content types or patterns Level 0 missed, feed new keywords back into Level 0 and re-run.
+- `other_content_rate` quality metric gating progression to Level 2.
 
 ### Actual results (Cambridge, 2026-05-28)
 - 537 PDFs inventoried; 536 ok, 1 error (c1cdc1fa.pdf — known empty PDF from Level 0)
@@ -90,7 +102,8 @@ Run once across ALL documents. One small Haiku call per document. NOT full extra
 - Meeting type distribution: 331 Ordinary / 124 Special / 22 Committee / 18 Special Council / 14 AGM / 13 AGM of Electors / 7 Special Electors / 5 Development Committee / 2 Briefing Forum
 - Average per-doc: 9.6 motions / 9.5 planning / 1.0 interests / 0.6 petitions / 4.3 budget items
 - Cost: $4.83 (537 docs × ~30k chars window, Haiku standard API)
-- Command: `council inventory cambridge` (max 20 concurrent Haiku calls)
+- Current prompt version: `inventory-v2` (added public_question_count, deputation_count, petition_count, appointment_count, tender_count, confidential_item_count)
+- `other_content_rate`: 100% on v1 (iteration in progress)
 
 ---
 
@@ -98,7 +111,9 @@ Run once across ALL documents. One small Haiku call per document. NOT full extra
 
 Use Level 0 and Level 1 outputs to revise the extraction schema and prompt BEFORE running full extraction.
 
-**Before making any schema changes, run `council typology <council>` to review the Level 1 corpus typology report.** This surfaces content types, `other_content` patterns, and section heading frequencies across the full corpus — so schema gaps are identified before committing to a prompt revision.
+**Gated by Level 1 quality.** Do not begin Level 2 until `other_content_rate ≤ 20%` across the full corpus. The extraction schema should reflect what has been validated to exist in the corpus — not what was guessed upfront. Once the inventory prompt converges, `council typology` automatically switches its prompt box from inventory improvement instructions to extraction schema instructions.
+
+**Run `council typology <council>` to get the schema update prompt.** This reads the typology report and generates instructions for updating `schemas.py`, `system_prompt.txt`, and `ontology.py` based on what the inventory has confirmed.
 
 ### Tasks
 - Review Level 1 typology against current Pydantic schema (`src/extraction/schemas.py`). Identify gaps:
@@ -231,12 +246,13 @@ If Haiku extraction quality was insufficient, re-extract on a stronger model.
 ## Key Principles
 
 1. **Every level validates the next.** Level 0 keyword counts validate Level 1 inventories. Level 1 inventories validate Level 2 extractions. Disagreements are flags, not failures.
-2. **Cheap passes cover the full corpus. Expensive passes are informed by cheap ones.** Never do blind extraction.
-3. **Cache everything.** Raw LLM responses, extracted text, inventories, validation results. Prompt changes invalidate LLM cache. Parsing changes don't.
-4. **Provenance is non-negotiable.** Every fact links back to a source quote in the original text. No fact exists without evidence.
-5. **Fix classes, not instances.** When extraction fails, identify the error class and fix the pattern. Don't patch individual documents.
-6. **Human time goes where the system points.** Don't randomly sample for audit. Audit the documents the validation script flagged, plus a random sample for calibration.
-7. **The system gets smarter as it runs.** New keywords, new patterns, and new edge cases discovered during extraction feed back into earlier levels. Re-run cheap passes with updated knowledge.
+2. **Schema reflects what's been validated, not what was guessed.** The extraction schema is not written until the inventory prompt has converged (other_content_rate ≤ 20%). Building the schema from a reliable inventory means it matches what's actually in the corpus.
+3. **Cheap passes cover the full corpus. Expensive passes are informed by cheap ones.** Never do blind extraction.
+4. **Cache everything.** Raw LLM responses, extracted text, inventories, validation results. Prompt changes invalidate LLM cache. Parsing changes don't.
+5. **Provenance is non-negotiable.** Every fact links back to a source quote in the original text. No fact exists without evidence.
+6. **Fix classes, not instances.** When extraction fails, identify the error class and fix the pattern. Don't patch individual documents.
+7. **Human time goes where the system points.** Don't randomly sample for audit. Audit the documents the validation script flagged, plus a random sample for calibration.
+8. **The system gets smarter as it runs.** New keywords, new patterns, and new edge cases discovered during extraction feed back into earlier levels. Re-run cheap passes with updated knowledge.
 
 ---
 
@@ -248,6 +264,9 @@ data/
   census_summary.txt           # Level 0: aggregate stats
   inventories/                 # Level 1: per-document LLM inventory
     {filename}.json
+  inventory_quality/           # Level 1: other_content_rate quality scores over time
+    quality_{council}_{ts}.json
+    latest_{council}.json
   {council}_typology_review.txt  # Level 1→2: typology report (council typology)
   validation/                  # Level 4: per-document confidence reports
     {filename}.json

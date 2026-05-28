@@ -31,6 +31,7 @@ data/census_summary.txt
 data/cambridge_typology_review.txt
 
 data/inventories/
+data/inventory_quality/
 
 .cache/
 

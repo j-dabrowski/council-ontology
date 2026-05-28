@@ -58,7 +58,7 @@ BACK_CHARS = 10_000
 _SEPARATOR = "\n\n[... middle section omitted ...]\n\n"
 
 INVENTORY_MODEL = "claude-haiku-4-5-20251001"
-PROMPT_VERSION = "inventory-v1"
+PROMPT_VERSION = "inventory-v2"
 MAX_CONCURRENT = 20
 
 INVENTORIES_DIR = Path("data/inventories")
@@ -81,12 +81,20 @@ class DocumentInventory(BaseModel):
     motion_count: int = 0
     planning_count: int = 0
     interest_count: int = 0
+    public_question_count: int = 0
+    deputation_count: int = 0
     petition_count: int = 0
+    appointment_count: int = 0
+    tender_count: int = 0
+    confidential_item_count: int = 0
     budget_item_count: int = 0
     other_content: Optional[str] = None
 
     @field_validator(
-        "motion_count", "planning_count", "interest_count", "petition_count", "budget_item_count",
+        "motion_count", "planning_count", "interest_count",
+        "public_question_count", "deputation_count", "petition_count",
+        "appointment_count", "tender_count", "confidential_item_count",
+        "budget_item_count",
         mode="before",
     )
     @classmethod

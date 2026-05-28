@@ -128,6 +128,7 @@ class ExtractedOtherItem(BaseModel):
     item_number: Optional[str] = None
     item_type: str
     description: str
+    is_confidential: bool = False
 
 
 class ExtractedMotion(BaseModel):
@@ -137,6 +138,7 @@ class ExtractedMotion(BaseModel):
     motion_text: Optional[str] = None
     moved_by: Optional[ExtractedCouncillor] = None
     seconded_by: Optional[ExtractedCouncillor] = None
+    is_confidential: bool = False
     outcome: Optional[
         Literal["carried", "lost", "withdrawn", "deferred", "lapsed"]
     ] = None
@@ -238,9 +240,8 @@ class ExtractedMeeting(BaseModel):
         if not isinstance(v, dict):
             return v
         _MEETING_FIELDS = frozenset({
-            "council_name", "meeting_date", "meeting_type",
-            "motions", "councillors_present", "councillors_apology", "location",
-            "other_items",
+            "council_name", "meeting_date", "meeting_type", "location",
+            "motions", "councillors_present", "councillors_apology", "other_items",
         })
 
         def _score(d: dict) -> int:

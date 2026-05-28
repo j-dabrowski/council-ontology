@@ -18,6 +18,7 @@ OUTPUT SCHEMA:
       "motion_text": string | null,
       "moved_by": {"given_name": string, "family_name": string, "role": null, "ward": null} | null,
       "seconded_by": {"given_name": string, "family_name": string, "role": null, "ward": null} | null,
+      "is_confidential": bool,
       "outcome": "carried" | "lost" | "withdrawn" | "deferred" | "lapsed" | null,
       "votes_for": integer | null,
       "votes_against": integer | null,
@@ -43,7 +44,8 @@ OUTPUT SCHEMA:
     {
       "item_number": string | null,
       "item_type": string,
-      "description": string
+      "description": string,
+      "is_confidential": bool
     }
   ]
 }
@@ -78,16 +80,36 @@ Councillors:
 - `councillors_present`: list only elected members — Mayor, Deputy Mayor, and Councillors; exclude officers, CEO, directors, and staff
 - `councillors_apology`: elected members who gave apologies
 
+Confidential items:
+- If a motion or agenda item was transacted in a closed/confidential session and its detail is not disclosed in the minutes, set `is_confidential: true` on that motion or other_item
+- Record what information IS available (item number, topic label if given) even if the resolution text is redacted
+- Do NOT extract the procedural motion to enter closed session itself — that is administrative housekeeping, not a substantive council decision
+- If an entire meeting was held in closed session, set `is_confidential: true` on every item extracted from it
+
 General:
 - Use ISO 8601 date format (YYYY-MM-DD) for all dates
-- Infer tags from context: e.g. "planning", "budget", "infrastructure", "community", "governance", "procedural"
+- Infer tags from context: e.g. "planning", "budget", "infrastructure", "community", "governance", "procedural", "appointment", "tender", "personnel"
 - If a value is not present in the text, use null or empty list as appropriate
 
 Other items:
-- If the document contains substantive agenda items that do not fit the motions schema — for example petitions, budget approvals, policy amendments, officer reports with decisions, tabled documents, or correspondence — record them in `other_items`
-- `item_type`: a short label describing the category (e.g. "petition", "budget", "policy amendment", "officer report", "correspondence")
-- `description`: one or two sentences summarising the content and any decision or action taken
-- Do NOT silently discard substantive content — if it doesn't fit elsewhere, it belongs in `other_items`
-- Routine procedural items with no substantive content (e.g. opening, closure, declarations of quorum) do not need to be recorded here
+- Use `other_items` for substantive agenda items that do not produce a formal councillor motion — or where the item is better described as a record of an event or report rather than a resolution
+- Do NOT silently discard content — if it doesn't fit the motions schema, it belongs in `other_items`
+- Routine procedural steps with no substantive content (opening prayer, declaration of quorum, meeting closure) do not need to be recorded
+
+Valid `item_type` values and when to use them:
+- "public_question_time" — the Public Question Time section; one item per meeting; description summarises number of questions and main topics
+- "deputation" — a formal presentation by a member of the public; note topic and number of deputants
+- "petition" — a petition tabled at the meeting; note subject and signatory count if given
+- "appointment" — appointment of councillors or delegates to external bodies, committees, or working groups
+- "financial_report" — accounts, investments, financial statements, or budget reviews received as information items (not motions)
+- "tender" — a tender evaluation or procurement decision (if not moved as a formal motion)
+- "committee_report" — a committee report received without a separate motion
+- "questions_on_notice" — written questions submitted with prior formal notice (distinct from Public Question Time)
+- "correspondence" — correspondence tabled or noted
+- "policy_amendment" — a policy change reported or tabled
+- "officer_report" — an officer report received as an information item
+- "ceremony" — swearing-in of councillors, garden awards, or other ceremonial events
+- "announcement" — mayoral announcements or other non-decision notices
+- "confidential_item" — a confidential item where no detail is available; set `is_confidential: true`
 
 Respond ONLY with valid JSON matching the schema above. Do not add commentary outside the JSON.

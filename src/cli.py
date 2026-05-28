@@ -881,6 +881,10 @@ def main() -> None:
     p_typology.add_argument("council", choices=list(COUNCILS))
     p_typology.add_argument("--quiet", "-q", action="store_true",
                             help="Write to file only, suppress stdout")
+    p_typology.add_argument("--history", action="store_true",
+                            help="Show inventory quality score history and exit")
+    p_typology.add_argument("--limit", "-n", type=int, default=None, metavar="N",
+                            help="Analyse only the N most-recently-updated inventory files")
     p_typology.set_defaults(func=cmd_typology)
 
     # analyse
