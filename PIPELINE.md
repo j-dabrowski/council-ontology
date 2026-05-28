@@ -98,6 +98,8 @@ Run once across ALL documents. One small Haiku call per document. NOT full extra
 
 Use Level 0 and Level 1 outputs to revise the extraction schema and prompt BEFORE running full extraction.
 
+**Before making any schema changes, run `council typology <council>` to review the Level 1 corpus typology report.** This surfaces content types, `other_content` patterns, and section heading frequencies across the full corpus — so schema gaps are identified before committing to a prompt revision.
+
 ### Tasks
 - Review Level 1 typology against current Pydantic schema (`src/extraction/schemas.py`). Identify gaps:
   - Entity types observed in documents but not in schema
@@ -246,6 +248,7 @@ data/
   census_summary.txt           # Level 0: aggregate stats
   inventories/                 # Level 1: per-document LLM inventory
     {filename}.json
+  {council}_typology_review.txt  # Level 1→2: typology report (council typology)
   validation/                  # Level 4: per-document confidence reports
     {filename}.json
   extraction_errors.json       # Level 5: error log by class
@@ -258,6 +261,7 @@ data/
 scripts/
   census.py                    # Level 0
   inventory.py                 # Level 1
+  inventory_typology.py        # Level 1→2 (council typology)
   validate_extraction.py       # Level 4
   batch_extract.py             # Level 5
 ```

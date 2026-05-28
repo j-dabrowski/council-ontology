@@ -567,6 +567,11 @@ def cmd_inventory(args) -> None:
     run(args)
 
 
+def cmd_typology(args) -> None:
+    from scripts.inventory_typology import run
+    run(args)
+
+
 def cmd_analyse(args) -> None:
     from sqlalchemy import func
     from src.analysis.queries import (
@@ -870,6 +875,13 @@ def main() -> None:
     p_inventory.add_argument("--quiet", "-q", action="store_true",
                              help="Suppress progress output")
     p_inventory.set_defaults(func=cmd_inventory)
+
+    # typology
+    p_typology = sub.add_parser("typology", help="Level 1→2: analyse inventory typology for schema review (scripts/inventory_typology.py)")
+    p_typology.add_argument("council", choices=list(COUNCILS))
+    p_typology.add_argument("--quiet", "-q", action="store_true",
+                            help="Write to file only, suppress stdout")
+    p_typology.set_defaults(func=cmd_typology)
 
     # analyse
     p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")

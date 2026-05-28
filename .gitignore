@@ -28,6 +28,7 @@ data/model_comparison/
 data/extraction_errors.json      
 data/census.json
 data/census_summary.txt
+data/cambridge_typology_review.txt
 
 data/inventories/
 

@@ -44,6 +44,7 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
   - Incremental mode: skips docs with existing `status: "ok"` inventory files unless `--force`.
 - `council inventory cambridge [--limit N] [--force] [--quiet]` — CLI entrypoint.
 - Outputs: `data/inventories/{stem}.json` per doc + `data/inventories/summary.json`.
+- `scripts/inventory_typology.py` — post-inventory typology analysis. Reads all inventory files and produces a corpus typology report covering meeting type distribution, entity averages by decade, `other_content` patterns, section heading frequencies (rare headings = potential schema gaps), and census cross-reference flags. CLI: `council typology cambridge [--quiet]`. Output: `data/{council}_typology_review.txt`. Run this after Level 1 and before making any Level 2 schema decisions.
 
 **Purpose:** The inventory isn't trying to count every motion in the document. It's trying to answer: what kind of document is this, and roughly what does it contain?
 

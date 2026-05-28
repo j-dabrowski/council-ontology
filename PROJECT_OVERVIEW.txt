@@ -212,6 +212,13 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       what does it contain? Caches LLM responses in .cache/llm_responses/. Outputs
       data/inventories/{stem}.json and data/inventories/summary.json.
 
+  council typology cambridge [--quiet]
+      Level 1→2: analyse inventory typology. Reads all data/inventories/*.json and
+      produces data/{council}_typology_review.txt. Run after Level 1 inventory and
+      before making any Level 2 schema decisions. Surfaces meeting type distribution,
+      entity counts by decade, other_content patterns, section heading gaps, and
+      census cross-reference flags.
+
   council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
                           [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
       Batch extraction with structured error report. Preferred over 'extract'
@@ -254,9 +261,10 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
 Each script is callable both via the CLI (see section 6) and standalone.
 Each has a run(args) function that does the work; main() handles argparse.
 
-  scripts/census.py         →  council census cambridge ...
-  scripts/inventory.py      →  council inventory cambridge ...
-  scripts/batch_extract.py  →  council batch cambridge ...
+  scripts/census.py              →  council census cambridge ...
+  scripts/inventory.py           →  council inventory cambridge ...
+  scripts/inventory_typology.py  →  council typology cambridge ...
+  scripts/batch_extract.py       →  council batch cambridge ...
   scripts/eval_prompt.py    →  council eval ...
   scripts/compare_models.py →  council compare <pdf> ...
   estimate_costs.py         →  council costs ...
@@ -264,6 +272,7 @@ Each has a run(args) function that does the work; main() handles argparse.
 Standalone usage (equivalent to CLI):
   python scripts/census.py cambridge [--force] [--quiet] [--workers N]
   python scripts/inventory.py cambridge [--limit N] [--force] [--quiet]
+  python scripts/inventory_typology.py cambridge [--quiet]
   python scripts/batch_extract.py [--limit N] [--model MODEL] [--council cambridge]
                                   [--from-year YYYY] [--to-year YYYY]
                                   [--files a.pdf b.pdf ...] [--force] [--verbose]
@@ -320,8 +329,8 @@ WHAT IS UNFINISHED
    Most years have only a handful ingested — the bulk of the archive is pending.
    Prompt eval is at 100/100 so quality is good enough to proceed.
    Before bulk extraction, complete the multi-level pipeline (see PIPELINE.md):
-   Level 1 is done. Level 2 (provenance/source quotes) should run next.
-     council inventory cambridge    # run Level 1 first if not done
+   Levels 0 and 1 are done. Run typology review, then proceed to Level 2.
+     council typology cambridge     # review corpus before Level 2 schema changes
      council batch cambridge --limit 341
 
 2. DYNAMIC LAYER IS EMPTY
@@ -373,6 +382,7 @@ DATA DIRECTORIES
   data/census.json             — Level 0 per-document census (537 records)
   data/census_summary.txt      — Level 0 aggregate stats
   data/inventories/            — Level 1 per-document LLM inventories + summary.json
+  data/cambridge_typology_review.txt — Level 1→2 corpus typology report (council typology)
   .cache/llm_responses/        — cached raw LLM responses ({hash}_{prompt-version}.json)
   data/validation/             — Level 4 per-document confidence reports (pending)
   data/eval/                   — prompt eval reports (JSON + plain text)
