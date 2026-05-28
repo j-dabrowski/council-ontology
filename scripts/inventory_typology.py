@@ -208,6 +208,68 @@ def _section_other_content(ok: list[dict], brief: bool = False) -> list[str]:
     return lines
 
 
+_COUNT_FIELDS = [
+    "motion_count",
+    "planning_count",
+    "public_question_count",
+    "deputation_count",
+    "confidential_item_count",
+    "committee_report_count",
+    "budget_item_count",
+    "interest_count",
+    "tender_count",
+    "petition_count",
+    "appointment_count",
+    "delegated_decision_count",
+    "building_permit_count",
+]
+
+
+def _section_field_prevalence(ok: list[dict]) -> list[str]:
+    n = len(ok)
+    threshold_high = n // 10   # >10% → must have dedicated field
+    threshold_low  = max(2, n // 50)  # ~2% lower bound
+
+    lines = ["=" * 72, "  INVENTORY FIELD PREVALENCE", "=" * 72, ""]
+    lines.append(f"  Docs with count ≥ 1  (n={n}  |  >10%={threshold_high}+ docs → extraction field)")
+    lines.append("")
+    lines.append(f"  {'Field':<30} {'Docs':>5}  {'%':>5}  {'Avg':>5}  {'Max':>4}  Decision")
+    lines.append(f"  {'-'*30} {'-'*5}  {'-'*5}  {'-'*5}  {'-'*4}  {'-'*20}")
+
+    # Detect all count fields present in the data (union across all records)
+    all_fields: list[str] = []
+    seen: set[str] = set()
+    # Preferred order first, then any extras
+    for f in _COUNT_FIELDS:
+        if f not in seen:
+            all_fields.append(f)
+            seen.add(f)
+    sample = _inv(ok[0]) if ok else {}
+    for f in sample:
+        if f.endswith("_count") and f not in seen:
+            all_fields.append(f)
+            seen.add(f)
+
+    for field in all_fields:
+        vals = [_inv(r).get(field) or 0 for r in ok]
+        nonzero = sum(1 for v in vals if v > 0)
+        pct = nonzero * 100 / n if n else 0
+        avg = sum(vals) / n if n else 0
+        mx = max(vals) if vals else 0
+        if nonzero >= threshold_high:
+            decision = "→ dedicated field"
+        elif nonzero >= threshold_low:
+            decision = "→ consider field"
+        else:
+            decision = "→ other_items / skip"
+        lines.append(
+            f"  {field:<30} {nonzero:>5}  {pct:>4.0f}%  {avg:>5.1f}  {mx:>4}  {decision}"
+        )
+
+    lines.append("")
+    return lines
+
+
 def _section_headings(ok: list[dict]) -> list[str]:
     lines = ["=" * 72, "  SECTION HEADING PATTERNS", "=" * 72, ""]
 
@@ -304,13 +366,13 @@ def _section_era_breakdown(ok: list[dict]) -> list[str]:
 # Schema update prompt generator
 # ---------------------------------------------------------------------------
 
-def _generate_schema_prompt(ok: list[dict], output_path: Path) -> str:
+def _generate_schema_prompt(ok: list[dict], output_path: Path, corpus_size: int | None = None) -> str:
     """Build a directive prompt for Claude Code to act on the typology report."""
 
     # Collect high-level gap signals (counts only — Claude reads the file for detail)
     other_by_type: dict[str, int] = {}
     for r in ok:
-        if _inv(r).get("other_content", "").strip():
+        if (_inv(r).get("other_content") or "").strip():
             mt = _short_type(_meeting_type(r))
             other_by_type[mt] = other_by_type.get(mt, 0) + 1
 
@@ -320,7 +382,8 @@ def _generate_schema_prompt(ok: list[dict], output_path: Path) -> str:
             heading_counts[h.strip()] += 1
     n_rare = sum(1 for c in heading_counts.values() if 2 <= c <= 10)
 
-    n_docs = len(ok)
+    # Always use full corpus size for threshold calculations, not sample size
+    n_docs = corpus_size if corpus_size is not None else len(ok)
 
     out: list[str] = []
     out.append(f"Read {output_path}, then update the inventory prompt so that")
@@ -441,11 +504,12 @@ def _load_quality_history(council_key: str) -> list[dict]:
     if not QUALITY_DIR.exists():
         return []
     records = []
-    for p in sorted(QUALITY_DIR.glob(f"quality_{council_key}_*.json")):
+    for p in QUALITY_DIR.glob(f"quality_{council_key}_*.json"):
         try:
             records.append(json.loads(p.read_text(encoding="utf-8")))
         except Exception:
             pass
+    records.sort(key=lambda r: r.get("timestamp", ""))
     return records
 
 
@@ -525,11 +589,13 @@ def _generate_extraction_prompt(ok: list[dict], quality: dict, output_path: Path
     out.append("  5. Remove promoted types from the other_items item_type list in the prompt.")
     out.append("  6. Only touch ontology.py if a new DB table is genuinely required.")
     out.append("  7. Do not touch extractor.py or database.py.")
-    out.append("  8. Run 'council eval --compare' to verify no regression.")
-    out.append("     Runs against 4 benchmark PDFs only (~2 min, safe to run).")
-    out.append("     Drop of ≤3 points overall is normal variance.")
-    out.append("     Drop of >5 points on any single PDF warrants investigation.")
-    out.append("  9. Notify the user — this is a commit point.")
+    out.append("  8. Notify the user that schema and prompt updates are complete.")
+    out.append("     Tell them the next step is to run:")
+    out.append("       council eval --compare")
+    out.append("     to verify no regression against the 4 benchmark PDFs (~2 min).")
+    out.append("     Normal variance: ≤3 points overall.")
+    out.append("     Warrants investigation: >5 points drop on any single PDF.")
+    out.append("     Do NOT run the eval yourself.")
     return "\n".join(out)
 
 
@@ -547,6 +613,10 @@ def run(args) -> None:
         _print_quality_history(council_key)
         return
 
+    # Count full corpus size before applying limit (for correct threshold calculations)
+    all_paths = [p for p in INVENTORIES_DIR.glob("*.json") if p.name != "summary.json"]
+    full_corpus_size = len(all_paths)
+
     records = load_inventories(limit=limit)
     ok = [r for r in records if r.get("status") == "ok"]
     errors = [r for r in records if r.get("status") != "ok"]
@@ -562,7 +632,7 @@ def run(args) -> None:
 
     needs_improvement = quality["other_content_rate"] > QUALITY_THRESHOLD
     prompt_text = (
-        _generate_schema_prompt(ok, output_path)
+        _generate_schema_prompt(ok, output_path, corpus_size=full_corpus_size)
         if needs_improvement
         else _generate_extraction_prompt(ok, quality, output_path)
     )
@@ -583,6 +653,7 @@ def run(args) -> None:
     common_sections = (
         _section_meeting_types(ok)
         + _section_era_breakdown(ok)
+        + _section_field_prevalence(ok)
         + _section_headings(ok)
         + _section_flags(ok)
     )
@@ -611,11 +682,17 @@ def run(args) -> None:
             print(f"  3. Check the sample:  council typology cambridge --limit {limit or 20}")
             print(f"  4. If looking good, full re-run:  council inventory cambridge --force")
             print(f"  5. Check full corpus: council typology cambridge")
+        elif limit:
+            print("Your next steps:")
+            print(f"  1. Full re-run:        council inventory cambridge --force")
+            print(f"  2. Check full corpus:  council typology cambridge")
+            print(f"     (confirm rate holds across all docs before moving to Level 2)")
         else:
             print("Your next steps:")
-            print("  1. Paste the prompt below into Claude Code — it will update the extraction schema.")
-            print("     You don't need to do anything else until it notifies you.")
-            print("  2. Verify: council eval --compare")
+            print("  1. Paste the prompt below into Claude Code — it will update the extraction schema")
+            print("     and prompt, then notify you when done.")
+            print("  2. Run: council eval --compare")
+            print("     (verifies no regression against 4 benchmark PDFs, ~2 min)")
         print()
 
     _print_prompt_box(prompt_text, header=prompt_header)

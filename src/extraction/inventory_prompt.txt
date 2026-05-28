@@ -20,6 +20,9 @@ Respond with a single JSON object with exactly these fields:
   "tender_count": 0,
   "confidential_item_count": 0,
   "budget_item_count": 0,
+  "committee_report_count": 0,
+  "delegated_decision_count": 0,
+  "building_permit_count": 0,
   "other_content": null
 }
 
@@ -36,7 +39,10 @@ Fields:
 - appointment_count: number of appointments of councillors or delegates to external bodies, committees, statutory authorities, or working groups
 - tender_count: number of tender evaluations or procurement decisions considered
 - confidential_item_count: number of items discussed in closed or confidential session
-- budget_item_count: approximate number of budget or financial appropriation items (rate-setting, budget adoption, major expenditure approvals)
-- other_content: brief description of any significant content not captured by the fields above, or null if everything is accounted for
+- budget_item_count: approximate number of budget or financial appropriation items (rate-setting, budget adoption, major expenditure approvals, financial statements)
+- committee_report_count: number of standing committee reports tabled at the meeting (e.g. Development Committee Report, Community and Resources Committee Report, Infrastructure and Community Committee Report, Governance and Corporate Committee Report, Audit Committee Report); 0 if no committee reports
+- delegated_decision_count: number of items listed as delegated decisions — decisions made under officer delegation, not brought to a council vote; 0 if none listed
+- building_permit_count: number of building permits, building licences, or construction approvals considered; 0 if none
+- other_content: null unless there is a content type with NO corresponding count field in this schema. Do NOT use this field to summarise what was discussed inside committee reports or agenda items — those items are already captured by the count fields above (planning_count, motion_count, tender_count, etc.). Only populate if a genuinely novel category is present that cannot be counted by any field above.
 
 Return only the JSON object. No explanation. No markdown code fences.
