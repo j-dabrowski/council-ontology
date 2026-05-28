@@ -25,8 +25,10 @@ data/eval/latest.txt
 data/eval/quick_state.json
 data/cost_estimates/                                                                      
 data/model_comparison/
-data/extraction_errors.json                                                               
-                  
+data/extraction_errors.json      
+data/census.json
+data/census_summary.txt
+
 # Generated outputs
 cost_report.txt
 council.log

@@ -2,7 +2,7 @@
 
 A research tool for modelling local council politics in Perth, WA. It scrapes public meeting minutes PDFs, uses Claude to extract structured data, and stores the results in a SQLite database for analysis.
 
-**Current target:** City of Cambridge (Town Council), covering meetings from 2020 onwards (~538 PDFs).
+**Current target:** City of Cambridge (Town Council), 537 PDFs covering 1995–2026.
 
 ---
 
@@ -13,6 +13,9 @@ council minutes site
         │
         ▼
    src/scraper/          ← discovers meeting pages, downloads PDFs
+        │
+        ▼
+   scripts/census.py     ← free pass: text extraction + keyword scan across all PDFs
         │
         ▼
    src/extraction/       ← sends PDF text to Claude, parses structured output
@@ -71,8 +74,10 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 All commands accept `-v` / `--verbose` for detailed logging.
 
-### `council run cambridge`
-Full pipeline: scrape the council's minutes page, download PDFs, extract with Claude, save to the database.
+### Pipeline
+
+#### `council run cambridge`
+Full pipeline: scrape, download PDFs, extract with Claude, save to the database.
 
 ```bash
 council run cambridge
@@ -80,7 +85,7 @@ council run cambridge --limit 3        # test with 3 PDFs before burning API cre
 council run cambridge --since-year 2022
 ```
 
-### `council scrape cambridge`
+#### `council scrape cambridge`
 Download PDFs only — no Claude calls. Writes `data/raw/cambridge/manifest.json` with meeting dates and types.
 
 ```bash
@@ -88,7 +93,7 @@ council scrape cambridge
 council scrape cambridge --since-year 2024
 ```
 
-### `council extract cambridge`
+#### `council extract cambridge`
 Process already-downloaded PDFs with Claude (no HTTP requests to the council site).
 
 ```bash
@@ -99,12 +104,10 @@ council extract cambridge --files abc123.pdf def456.pdf   # targeted
 council extract cambridge --files abc123.pdf --force      # re-extract even if already in DB
 ```
 
-`--limit` applies after date filtering: `--limit 5 --from-year 2020` means the first 5 PDFs from 2020+.
-
-### `council status`
+#### `council status`
 Show pipeline and database summary across all councils — downloaded vs ingested counts, year-by-year breakdown, motions, votes, councillors seen.
 
-### `council docs cambridge`
+#### `council docs cambridge`
 Per-document table showing which PDFs are in the manifest and which have been extracted to the database.
 
 ```bash
@@ -115,48 +118,71 @@ council docs cambridge --filter ingested
 
 ---
 
-## Scripts
+### Scripts (via CLI or standalone)
 
-### `scripts/batch_extract.py`
-Iterative extraction runner for working through a large backlog. Writes a structured error report to `data/extraction_errors.json` grouping failures by error class (missing field, JSON parse error, schema mismatch, etc.) to make systematic prompt fixes efficient.
+#### `council census cambridge`
+**Level 0:** Free pass across all PDFs — text extraction, keyword scanning, and per-document metadata. No LLM calls. Outputs `data/census.json` and `data/census_summary.txt`.
 
 ```bash
-python scripts/batch_extract.py --limit 5
-python scripts/batch_extract.py --model claude-sonnet-4-6 --limit 20
-python scripts/batch_extract.py --from-year 2020
-python scripts/batch_extract.py --files abc123.pdf def456.pdf --force
+council census cambridge              # incremental: skips already-scanned PDFs
+council census cambridge --force      # rescan everything
+council census cambridge --workers 8  # parallel workers (default: min(8, cpu_count))
+council census cambridge --quiet      # suppress per-document output
 ```
 
-Already-extracted documents are skipped; the script is safe to re-run at any point.
+The census records: character count, size bucket (tiny/small/medium/large), decade, meeting type, keyword counts across 7 groups (motions, votes, planning, interests, community, budget, procedural), section header count, estimated entity counts, and flags for outliers.
 
-### `scripts/eval_prompt.py`
-Evaluates the extraction prompt against `data/eval/benchmark.json` — a set of PDFs with known expected criteria. Scores across five dimensions: `meta`, `roster`, `motions`, `votes`, `planning`. Saves each run with a SHA so you can track regressions.
+#### `council batch cambridge`
+Iterative extraction runner for working through a large backlog. Writes a structured error report to `data/extraction_errors.json` grouping failures by error class.
 
 ```bash
-python scripts/eval_prompt.py --quick --compare   # fast iteration loop: one PDF, delta vs last run
-python scripts/eval_prompt.py --compare           # full check: all benchmark PDFs × all models
-python scripts/eval_prompt.py --history           # score timeline
-python scripts/eval_prompt.py --show              # print latest results without API calls
+council batch cambridge --limit 5
+council batch cambridge --limit 20 --model claude-sonnet-4-6
+council batch cambridge --from-year 2020
+council batch cambridge --files abc123.pdf def456.pdf --force
 ```
 
-Typical workflow: edit `src/extraction/system_prompt.txt`, then run `--quick --compare` to see the delta.
+Already-extracted documents are skipped; safe to re-run at any point.
 
-### `scripts/compare_models.py`
-Runs a single PDF through all three Claude models in parallel and displays a side-by-side comparison — meeting metadata, motion counts, vote detail, councillor lists — with cells highlighted where models disagree. Saves full structured JSON to `data/model_comparison/` for deeper inspection.
+#### `council eval`
+Evaluates the extraction prompt against benchmark PDFs. Scores across five dimensions: `meta`, `roster`, `motions`, `votes`, `planning`.
 
 ```bash
-python scripts/compare_models.py bde23c99.pdf
-python scripts/compare_models.py bde23c99.pdf --no-save
+council eval --quick --compare    # fast iteration: one PDF, delta vs last run
+council eval --compare            # full check: all benchmark PDFs × all models
+council eval --history            # score timeline
+council eval --show               # print latest results without API calls
 ```
 
-### `estimate_costs.py`
-Estimates API cost for pending documents across models and batch/non-batch modes, based on actual PDF text sizes. Saves timestamped reports to `data/cost_estimates/`.
+#### `council compare <pdf>`
+Runs a single PDF through all three Claude models in parallel and displays a side-by-side comparison. Saves full structured JSON to `data/model_comparison/`.
 
 ```bash
-python estimate_costs.py --from-year 2020
-python estimate_costs.py --from-year 2020 --max-chars full   # no truncation
-python estimate_costs.py --show                               # print last saved estimate
-python estimate_costs.py --quiet                             # summary only, no per-doc lines
+council compare bde23c99.pdf
+council compare bde23c99.pdf --no-save
+```
+
+#### `council costs`
+Estimates API cost for pending documents across models and batch/non-batch modes, based on actual PDF text sizes.
+
+```bash
+council costs
+council costs --from-year 2020
+council costs --max-chars full    # no truncation
+council costs --show              # print last saved estimate
+council costs --quiet             # summary only
+```
+
+#### `council analyse cambridge <query>`
+Run analysis queries against the extracted database.
+
+```bash
+council analyse cambridge councillors                    # all councillors by vote count
+council analyse cambridge alignment --min-shared 10      # pairwise voting agreement matrix
+council analyse cambridge contested --min-against 3      # carried motions with opposition
+council analyse cambridge planning --limit 20            # top sites by application count
+council analyse cambridge councillor --name Bradley      # one councillor's vote summary
+council analyse cambridge motions --tag planning         # motions by tag
 ```
 
 ---
@@ -181,16 +207,41 @@ src/
     queries.py            — reusable query helpers
 
 scripts/
+  census.py               — Level 0: keyword scan and census across all PDFs
   batch_extract.py        — iterative extraction with error reporting
   eval_prompt.py          — prompt quality evaluation against benchmark
   compare_models.py       — side-by-side model comparison for a single PDF
 
 estimate_costs.py         — API cost estimator for pending documents
+
 data/
+  census.json             — Level 0: per-document metadata and keyword counts
+  census_summary.txt      — Level 0: aggregate stats and outlier list
   raw/cambridge/          — downloaded PDFs + manifest.json (gitignored except manifest)
-  eval/benchmark.json     — benchmark PDFs and expected extraction criteria
   council.db              — SQLite database (gitignored, re-generated from PDFs)
+  eval/benchmark.json     — benchmark PDFs and expected extraction criteria
+  inventories/            — Level 1: per-document LLM inventory (pending)
+  validation/             — Level 4: per-document confidence reports (pending)
+  extraction_errors.json  — latest batch error report
 ```
+
+---
+
+## Multi-level extraction pipeline
+
+The project follows a layered approach to avoid blind LLM extraction at scale:
+
+| Level | What | Cost | Status |
+|-------|------|------|--------|
+| 0 | Census: text extraction + keyword scan across all PDFs | Free | **Done** |
+| 1 | Cheap LLM inventory: one small Haiku call per document | ~$1-2 | Pending |
+| 2 | Schema and prompt revision using Level 0/1 data | Free | Pending |
+| 3 | Prompt validation against stratified 15-20 doc sample | ~$1-2 | Pending |
+| 4 | Confidence metrics and per-document validation script | Free | Pending |
+| 5 | Batch extraction with progressive validation | ~$7-20 | Pending |
+| 6 | Human audit on random sample | Free | Pending |
+
+See `PIPELINE.md` for the detailed plan and `IMPLEMENTATION_ANALYSIS.md` for build order and dependencies.
 
 ---
 
@@ -199,23 +250,4 @@ data/
 1. Create `src/scraper/<council>.py` subclassing `BaseScraper`
 2. Add one entry to the `COUNCILS` dict at `src/cli.py:30`
 
-That's it — all CLI commands and scripts work immediately for the new council.
-
----
-
-## Recommended extraction workflow
-
-```
-Phase 1 — Test (cheap)
-  python scripts/batch_extract.py --model claude-haiku-4-5-20251001 --limit 5
-  → review data/extraction_errors.json, fix prompt or schema, repeat
-
-Phase 2 — Pre-production sample
-  python scripts/batch_extract.py --model claude-sonnet-4-6 --limit 20
-
-Phase 3 — Production
-  council extract cambridge   (Sonnet batch for ~$43, or Sonnet+Haiku merge for ~$71)
-
-Phase 4 — Targeted enhancement
-  python scripts/compare_models.py <complex-meeting>.pdf
-```
+All CLI commands and scripts work immediately for the new council.

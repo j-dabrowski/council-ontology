@@ -27,6 +27,14 @@ CURRENT STATE (as of 2026-05-28)
    54 councillors seen
   Prompt eval score: 100/100 (benchmark saturated)
 
+  Level 0 census complete:
+    536 extractable PDFs / 1 empty / 0 errors
+    ~175M total chars across corpus
+    ~29,000 estimated motions
+    ~5,700 estimated planning items
+    ~1,650 estimated interest declarations
+    18 documents with no motion keywords (flagged for Level 1 review)
+
 
 PARTS OF THE PROJECT
 =====================
@@ -51,7 +59,34 @@ Browse what's been downloaded:
   cat data/raw/cambridge/manifest.json | python -m json.tool | head -60
 
 
-2. EXTRACTOR — src/extraction/
+2. CENSUS — scripts/census.py  [Level 0]
+-----------------------------------------
+Runs once across all PDFs. No LLM calls. Pure text extraction and keyword scanning.
+
+For each PDF:
+  - Extracts text via pypdf
+  - Counts keyword hits across 7 groups: motions, votes, planning, interests,
+    community, budget, procedural
+  - Detects section headers (numbered items, uppercase headings)
+  - Estimates entity counts (motions, planning items, interest declarations)
+  - Assigns size bucket (tiny/small/medium/large/failed) and decade
+  - Flags outliers (empty, zero keywords, high DA count, etc.)
+
+Incremental by default (skips already-scanned PDFs). Parallel scanning via
+ProcessPoolExecutor (default 8 workers, ~4 minutes for 537 PDFs).
+
+Output:
+  data/census.json         — per-document metadata, keyword counts, flags
+  data/census_summary.txt  — aggregate stats and outlier list
+
+Commands:
+  council census cambridge
+  council census cambridge --force    # rescan everything
+  council census cambridge --workers 4
+  python scripts/census.py cambridge  # standalone
+
+
+3. EXTRACTOR — src/extraction/
 --------------------------------
   extractor.py      — sends PDF text to Claude, parses JSON response
   schemas.py        — Pydantic models for extraction output (deliberately lenient)
@@ -77,7 +112,7 @@ Browse what's been extracted:
   cat data/extraction_errors.json
 
 
-3. DATABASE / ONTOLOGY — src/models/ontology.py
+4. DATABASE / ONTOLOGY — src/models/ontology.py
 -------------------------------------------------
 SQLite at data/council.db. Tables:
 
@@ -107,7 +142,7 @@ Useful DB queries:
   sqlite3 data/council.db "SELECT meeting_date, meeting_type, id FROM meetings ORDER BY meeting_date DESC LIMIT 20"
 
 
-4. CLI — src/cli.py
+5. CLI — src/cli.py
 ---------------------
 All commands are invoked as: council <command>  (or: python -m src <command>)
 
@@ -131,6 +166,11 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       Per-file table: filename, date, type, manifest ✓/–, DB ✓/pending, meeting ID.
 
   — SCRIPTS —
+
+  council census cambridge [--force] [--quiet] [--workers N]
+      Level 0: keyword scan across all PDFs. Outputs data/census.json and
+      data/census_summary.txt. Incremental by default; --force rescans everything.
+      Uses parallel workers (default: min(8, cpu_count)).
 
   council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
                           [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
@@ -169,23 +209,28 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       All runs also write DEBUG logs to council.log.
 
 
-5. SCRIPTS — scripts/ and estimate_costs.py
+6. SCRIPTS — scripts/ and estimate_costs.py
 ---------------------------------------------
-Each script is callable both via the CLI (see section 4) and standalone.
+Each script is callable both via the CLI (see section 5) and standalone.
 Each has a run(args) function that does the work; main() handles argparse.
 
+  scripts/census.py         →  council census cambridge ...
   scripts/batch_extract.py  →  council batch cambridge ...
   scripts/eval_prompt.py    →  council eval ...
   scripts/compare_models.py →  council compare <pdf> ...
   estimate_costs.py         →  council costs ...
 
 Standalone usage (equivalent to CLI):
+  python scripts/census.py cambridge [--force] [--quiet] [--workers N]
   python scripts/batch_extract.py [--limit N] [--model MODEL] [--council cambridge]
                                   [--from-year YYYY] [--to-year YYYY]
                                   [--files a.pdf b.pdf ...] [--force] [--verbose]
   python scripts/eval_prompt.py [--quick] [--compare] [--show] [--history] [--no-save]
   python scripts/compare_models.py <pdf_basename.pdf> [--council cambridge] [--no-save]
   python estimate_costs.py [--from-year YYYY] [--to-year YYYY] [--max-chars N|full] [--quiet] [--show]
+
+Census output:
+  data/census.json, data/census_summary.txt
 
 Eval reports:    data/eval/eval_YYYYMMDD_HHMMSS.{json,txt} + latest.{json,txt}
 Compare reports: data/model_comparison/<stem>_<timestamp>.json
@@ -196,7 +241,7 @@ Browse eval history:
   council eval --history
 
 
-6. ANALYSIS — src/analysis/queries.py + council analyse
+7. ANALYSIS — src/analysis/queries.py + council analyse
 ---------------------------------------------------------
 Query helpers exposed via `council analyse <council> <query>`.
 
@@ -232,6 +277,8 @@ WHAT IS UNFINISHED
 1. EXTRACTION BACKLOG (341 PDFs)
    Most years have only a handful ingested — the bulk of the archive is pending.
    Prompt eval is at 100/100 so quality is good enough to proceed.
+   Before bulk extraction, complete the multi-level pipeline (see PIPELINE.md):
+   Level 1 (LLM inventory) and Level 2 (provenance/source quotes) should run first.
      council batch cambridge --limit 341
 
 2. DYNAMIC LAYER IS EMPTY
@@ -254,6 +301,7 @@ WHAT IS UNFINISHED
    extractor.py only processes chunks[0] (first 80,000 chars).
    Comment says "future: merge multi-chunk results".
    Some older/longer PDFs may be missing agenda items from the second half.
+   Note: census shows 319/537 documents exceed 200k chars — truncation is significant.
 
 6. OTHER_ITEMS NOT PERSISTED
    The other_items field was added to the schema (2026-05-27) to capture
@@ -265,11 +313,25 @@ WHAT IS UNFINISHED
    The COUNCILS dict in cli.py has a single entry with a "add new councils here"
    comment. The full architecture supports multiple councils.
 
+8. MULTI-LEVEL PIPELINE INCOMPLETE
+   Level 0 (census) is done. Still pending:
+   - Level 1: LLM inventory (one cheap Haiku call per doc, data/inventories/)
+   - Level 2: Provenance/source quotes in schema, prompt, and DB
+   - Level 3: Prompt validation against stratified 15-20 doc sample
+   - Level 4: Per-document confidence metrics and validation script
+   - Level 5: Full batch extraction with validation integration
+   - Level 6: Human audit report
+   See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for detail and build order.
+
 
 DATA DIRECTORIES
 =================
   data/raw/cambridge/          — 537 downloaded PDFs + manifest.json
   data/council.db              — SQLite database
+  data/census.json             — Level 0 per-document census (537 records)
+  data/census_summary.txt      — Level 0 aggregate stats
+  data/inventories/            — Level 1 per-document LLM inventories (pending)
+  data/validation/             — Level 4 per-document confidence reports (pending)
   data/eval/                   — prompt eval reports (JSON + plain text)
   data/model_comparison/       — per-PDF model comparison reports
   data/cost_estimates/         — cost estimation reports

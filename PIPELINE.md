@@ -4,11 +4,25 @@
 
 This document defines the multi-level extraction pipeline for processing council meeting minutes PDFs into structured, auditable data. The core principle is **recursive refinement**: cheap broad passes feed expensive deep passes, and every pass validates the one after it. No blind extraction. By the time a document hits the full LLM call, we already know what it contains, what we expect to get back, and how to verify it.
 
-Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 158 already ingested. ~370 pending.
+Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingested. 341 pending.
 
 ---
 
-## Level 0: Free Pass (no LLM, no cost)
+## Pipeline Status
+
+| Level | Description | Status |
+|-------|-------------|--------|
+| 0 | Census: text extraction + keyword scan | **Done** (2026-05-28) |
+| 1 | Cheap LLM inventory (Haiku, ~$1-2) | Pending |
+| 2 | Schema and prompt revision | Pending |
+| 3 | Prompt validation against sample (~$1-2) | Pending |
+| 4 | Confidence metrics and validation script | Pending |
+| 5 | Batch extraction (~$7-20) | Pending |
+| 6 | Human audit | Pending |
+
+---
+
+## Level 0: Free Pass (no LLM, no cost) ✅ COMPLETE
 
 Run once across ALL documents. Pure text extraction and regex analysis.
 
@@ -31,6 +45,14 @@ Run once across ALL documents. Pure text extraction and regex analysis.
 - `data/census.json`: per-document metadata (filename, char_count, size_bucket, decade, meeting_type, keyword_counts, expected_entity_counts, flags).
 - `data/census_summary.txt`: aggregate stats and outlier list.
 - This data persists and is used by all subsequent levels for validation.
+
+### Actual results (Cambridge, 2026-05-28)
+- 537 PDFs scanned; 536 extractable, 1 empty, 0 errors
+- 175M total chars; avg 327k chars/doc
+- Size distribution: tiny 90 / small 85 / medium 42 / large 319 / failed 1
+- Estimated entity totals: ~29,000 motions, ~5,700 planning items, ~1,650 interest declarations
+- Flagged: 18 docs with no motion keywords, 1 with zero keyword hits, 43 with high DA count (>20)
+- Command: `council census cambridge` (parallel workers, ~4 minutes for 537 PDFs)
 
 ---
 

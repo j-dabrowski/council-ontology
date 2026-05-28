@@ -6,23 +6,28 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 
 ---
 
-## Level 0: Census
+## Level 0: Census ✅ COMPLETE
 
-**Already exists:**
-- `council status` gives per-year breakdown with counts
-- `council docs cambridge --filter pending` lists all pending PDFs with manifest metadata
-- `council costs` already extracts text from every pending PDF and logs char counts
-- Text extraction via pypdf is in `extractor.py`
+**Completed 2026-05-28.** `scripts/census.py` + `council census cambridge`.
 
-**Can be composed now:**
-- A census script that calls `extract_text_from_pdf` on all 537 PDFs and logs filename, char count, and success/failure. This is basically what `estimate_costs.py` already does minus the cost math.
+**What was built:**
+- `scripts/census.py` — parallel pypdf extraction + keyword/regex scan across all PDFs.
+  ProcessPoolExecutor with configurable workers (default: min(8, cpu_count)).
+  Incremental mode (skips already-scanned PDFs unless --force).
+- `council census cambridge [--force] [--quiet] [--workers N]` — CLI entrypoint.
+- Outputs `data/census.json` (537 records) and `data/census_summary.txt`.
 
-**Needs new work:**
-- Keyword detection pass. Nothing in the project currently scans extracted text for MOVED, CARRIED, DA, DECLARATION OF INTEREST, etc. This is the main new component: a regex/keyword scanner that runs over raw text and produces per-document keyword counts and estimated entity counts.
-- Section header detection. Same situation: no existing code identifies structural sections in documents.
-- Output format: `data/census.json` doesn't exist. Needs a new script or an extension of the costs script.
+**Actual results from Cambridge corpus (537 PDFs):**
+- 536 extractable, 1 empty (`c1cdc1fa.pdf`), 0 errors
+- 175M total chars, avg 327k chars/doc
+- Size buckets: tiny 90, small 85, medium 42, large 319, failed 1
+- Estimated motions: ~29,000; planning items: ~5,700; interest declarations: ~1,650
+- Flags: 18 docs with no motion keywords, 1 with zero keyword hits (`46698696.pdf`), 43 with high DA count
 
-**Effort: Small.** The text extraction loop exists. The new work is the keyword scanner and the output format.
+**Still not built (from original Level 0 spec):**
+- `data/census_summary.txt` aggregate stats: done.
+- Keyword detection: done. Section header detection: done.
+- The census does NOT yet detect meeting type from PDF text (uses manifest only).
 
 ---
 
@@ -77,6 +82,7 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 **Can be composed now:**
 - Select 15-20 PDFs manually, run `council extract --files <list>`, then inspect results. This is roughly what eval does already but with a fixed benchmark set.
 - `council compare` on individual sample documents gives multi-model comparison.
+- Level 0 census data now enables stratified sampling: pick by size bucket, decade, meeting type, and flagged outliers.
 
 **Needs new work:**
 - Expanding the eval benchmark from 4 PDFs to a properly stratified 15-20 document sample (selected using Level 0/1 data to cover all size buckets, decades, meeting types).
@@ -156,18 +162,18 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 
 ## Build Order: Dependency Graph
 
-| Priority | Component | Blocked by | Effort |
-|----------|-----------|------------|--------|
-| 1 | Level 0: keyword scanner + census output | Nothing | Small |
-| 2 | LLM response caching layer | Nothing | Small |
-| 3 | Level 1: inventory prompt + script | Level 0 | Medium |
-| 4 | Level 2: provenance (source quotes in schema, prompt, DB, persistence) | Level 1 | Large |
-| 5 | `other_items` persistence | Nothing (already flagged) | Small |
-| 6 | Level 4: validation script | Levels 0, 1, 2 | Medium |
-| 7 | Level 5: validation integration into batch loop | Level 4 | Small |
-| 8 | Level 6: audit report generator | Level 5 | Small |
+| Priority | Component | Blocked by | Effort | Status |
+|----------|-----------|------------|--------|--------|
+| 1 | Level 0: keyword scanner + census output | Nothing | Small | **Done** |
+| 2 | LLM response caching layer | Nothing | Small | Pending |
+| 3 | Level 1: inventory prompt + script | Level 0 | Medium | Pending |
+| 4 | Level 2: provenance (source quotes in schema, prompt, DB, persistence) | Level 1 | Large | Pending |
+| 5 | `other_items` persistence | Nothing (already flagged) | Small | Pending |
+| 6 | Level 4: validation script | Levels 0, 1, 2 | Medium | Pending |
+| 7 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
+| 8 | Level 6: audit report generator | Level 5 | Small | Pending |
 
-**The critical path is Level 2 (provenance).** Everything downstream that involves confidence metrics depends on source quotes existing. Level 0 and Level 1 can run immediately and independently. The cache layer should be built early because it saves money across every subsequent level.
+**The critical path is Level 2 (provenance).** Everything downstream that involves confidence metrics depends on source quotes existing. Level 1 is next and is now unblocked by the completed Level 0.
 
 ---
 

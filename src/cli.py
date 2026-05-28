@@ -557,6 +557,11 @@ def cmd_costs(args) -> None:
     estimate_costs.run(args)
 
 
+def cmd_census(args) -> None:
+    from scripts.census import run
+    run(args)
+
+
 def cmd_analyse(args) -> None:
     from sqlalchemy import func
     from src.analysis.queries import (
@@ -838,6 +843,17 @@ def main() -> None:
     p_costs.add_argument("--show", action="store_true",
                          help="Print latest saved report without regenerating")
     p_costs.set_defaults(func=cmd_costs)
+
+    # census
+    p_census = sub.add_parser("census", help="Level 0: keyword scan and census across all PDFs (scripts/census.py)")
+    p_census.add_argument("council", choices=list(COUNCILS))
+    p_census.add_argument("--force", action="store_true",
+                          help="Rescan all PDFs, ignoring cached results")
+    p_census.add_argument("--quiet", "-q", action="store_true",
+                          help="Suppress per-document output and summary")
+    p_census.add_argument("--workers", type=int, default=None, metavar="N",
+                          help="Parallel worker processes (default: min(8, cpu_count))")
+    p_census.set_defaults(func=cmd_census)
 
     # analyse
     p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")
