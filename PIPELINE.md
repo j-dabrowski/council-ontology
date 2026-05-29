@@ -14,7 +14,7 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 |-------|-------------|--------|
 | 0 | Census: text extraction + keyword scan | **Done** (2026-05-28) |
 | 1 | Cheap LLM inventory (Haiku, $4.83 actual) | **Done** (2026-05-28) |
-| 2 | Schema and prompt revision | **In progress** (schema/prompt done 2026-05-29; provenance pending) |
+| 2 | Schema and prompt revision | **Done** (2026-05-29) |
 | 3 | Prompt validation against sample (~$1-2) | Pending |
 | 4 | Confidence metrics and validation script | Pending |
 | 5 | Batch extraction (~$7-20) | Pending |
@@ -113,7 +113,7 @@ Use Level 0 and Level 1 outputs to revise the extraction schema and prompt BEFOR
 
 **Gated by Level 1 quality.** Do not begin Level 2 until `other_content_rate ≤ 20%` across the full corpus. The extraction schema should reflect what has been validated to exist in the corpus — not what was guessed upfront. Once the inventory prompt converges, `council typology` automatically switches its prompt box from inventory improvement instructions to extraction schema instructions.
 
-**Run `council typology <council>` to get the schema update prompt.** This reads the typology report and generates instructions for updating `schemas.py`, `system_prompt.txt`, and `ontology.py` based on what the inventory has confirmed.
+**Run `council typology <council>` to get the schema update prompt.** This reads the typology report and generates instructions for updating `schemas.py`, `system_prompt.txt`, `ontology.py`, `extractor.py`, and `__init__.py` based on what the inventory has confirmed. The generated prompt explicitly requires: `source_quotes: list[str]` on every new entity model, `source_quotes` in the OUTPUT SCHEMA block of the extraction prompt, a new SQLAlchemy table per entity type, and provenance wiring in `save_extraction()` using the `_ev()` + `session.flush()` pattern. (Updated 2026-05-29 — prior version omitted `extractor.py` and said nothing about provenance.)
 
 ### Tasks
 - Review Level 1 typology against current Pydantic schema (`src/extraction/schemas.py`). Identify gaps:
@@ -131,32 +131,34 @@ Use Level 0 and Level 1 outputs to revise the extraction schema and prompt BEFOR
 - Update database model (`src/models/ontology.py`) to match schema changes.
 - Add `extraction_evidence` table: links extracted entities to source quotes with character offsets.
 
-### Actual results (Cambridge, 2026-05-29) — schema/prompt step DONE
+### Actual results (Cambridge, 2026-05-29) ✅ COMPLETE
 
-Applied the decision rule from the inventory field prevalence table. All 13 inventory fields exceed 10% of corpus (lowest: deputation_count at 25%), so all received dedicated Pydantic models and list fields on `ExtractedMeeting`.
+All 13 inventory fields exceed 10% of corpus (lowest: deputation_count at 25%), so all
+received dedicated Pydantic models.
 
-New models added to `src/extraction/schemas.py`:
+`src/extraction/schemas.py`: 10 new entity models, each with `source_quotes: list[str]`.
   `ExtractedPublicQuestion`, `ExtractedDeputation`, `ExtractedPetition`,
   `ExtractedAppointment`, `ExtractedCommitteeReport`, `ExtractedBudgetItem`,
   `ExtractedInterestDeclaration`, `ExtractedTender`, `ExtractedDelegatedDecision`,
-  `ExtractedBuildingPermit`
+  `ExtractedBuildingPermit`. Also added `source_quotes` to `ExtractedMotion` and
+  `ExtractedPlanningApplication`. Not added to nested sub-models.
 
-`src/extraction/system_prompt.txt` updated with full extraction rules for each new type.
-Seven `other_items` type values removed (now have dedicated fields):
-  public_question_time, deputation, petition, appointment, financial_report, tender,
-  committee_report.
+`src/extraction/system_prompt.txt`: PROVENANCE RULE instruction added; `source_quotes`
+field added to every entity in the OUTPUT SCHEMA block; extraction rules for all new types;
+seven `other_items` type values removed (now have dedicated fields).
 
-`src/models/ontology.py` — no new DB tables yet; new fields captured in extracted JSON only.
+`src/models/ontology.py`: 11 new DB tables (one per entity type including `other_items`),
+2 new enums (`InterestDeclarationType`, `PermitStatus`), `ExtractionEvidence` table.
 
-**Still pending for Level 2:**
-- Provenance layer (source_quotes on every extracted entity)
-- New DB tables for the 10 new field types
-- `save_extraction()` updated to persist the new fields
-- `extraction_evidence` table linking entities to source quotes with char offsets
+`src/extraction/extractor.py`: `_resolve_offset()`, `_ev()` closure in `save_extraction()`,
+`extract_from_pdf()` returns `(ExtractedMeeting, str)`, `save_extraction()` accepts `text=`.
+All entity saves flush before inserting evidence rows. Call sites in `batch_extract.py` and
+`cli.py` updated to pass raw text through.
 
 ### Output
-- Revised `schemas.py` and `system_prompt.txt` (done).
-- Revised `ontology.py`, new `extraction_evidence` table, updated `save_extraction()` (pending).
+- `schemas.py`, `system_prompt.txt`, `ontology.py`, `extractor.py` all updated.
+- `extraction_evidence` table: one row per source quote per entity, with `char_offset`
+  (None = hallucination flag) and `char_length` for coverage ratio computation.
 
 ---
 

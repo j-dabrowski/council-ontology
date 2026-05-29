@@ -50,7 +50,7 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 
 ---
 
-## Level 2: Schema and Prompt Revision — IN PROGRESS
+## Level 2: Schema and Prompt Revision ✅ COMPLETE
 
 **Schema/prompt step: DONE (2026-05-29)**
 
@@ -72,15 +72,39 @@ What was built:
   (removed 7 types now covered by dedicated fields).
 - `src/models/ontology.py` — not changed; new fields are captured in extracted JSON only.
 
-**Still not built (provenance step, pending):**
-- `source_quotes` field on every extracted entity (Pydantic schemas, prompt, DB)
-- New DB tables in `ontology.py` for the 10 new field types (+ existing `other_items`)
-- `save_extraction()` updated to persist the new fields
-- `extraction_evidence` table linking entities to source quotes with char offsets
-- Post-processing to resolve source quotes to character offsets in source text
+**DB tables + persistence (done 2026-05-29):**
+- 11 new SQLAlchemy table classes in `src/models/ontology.py`:
+  `PublicQuestion`, `Deputation`, `Petition`, `Appointment`, `CommitteeReport`,
+  `BudgetItem`, `InterestDeclaration`, `Tender`, `DelegatedDecision`,
+  `BuildingPermit`, `OtherItem`.
+- 2 new enums: `InterestDeclarationType`, `PermitStatus`.
+- `save_extraction()` updated with save loops for all 11 new field types.
+  `Appointment` and `InterestDeclaration` resolve councillors via `_get_or_create_councillor()`.
+- Tables created automatically by `Base.metadata.create_all()` on next `init_db()` call.
 
-**Effort for remaining work: Large.** Provenance touches every layer of the stack:
-schema, prompt, database, persistence, and adds a new post-processing step.
+**Provenance step: DONE (2026-05-29)**
+
+What was built:
+- `source_quotes: list[str]` added to 13 Pydantic models in `schemas.py`:
+  `ExtractedMotion`, `ExtractedPlanningApplication`, `ExtractedPublicQuestion`,
+  `ExtractedDeputation`, `ExtractedPetition`, `ExtractedAppointment`,
+  `ExtractedCommitteeReport`, `ExtractedBudgetItem`, `ExtractedInterestDeclaration`,
+  `ExtractedTender`, `ExtractedDelegatedDecision`, `ExtractedBuildingPermit`,
+  `ExtractedOtherItem`. Not added to nested sub-models (`ExtractedCouncillor`,
+  `ExtractedVote`, `ExtractedCommunitySubmission`) — parent quotes cover these.
+- PROVENANCE RULE instruction added to `system_prompt.txt`; `source_quotes` field
+  added to every entity in the OUTPUT SCHEMA block.
+- `ExtractionEvidence` table added to `ontology.py` and exported from `__init__.py`.
+  `entity_table` + `entity_id` form a logical FK (not enforced) to the entity row.
+  `char_offset=None` flags quotes not found verbatim in source text (hallucination).
+- `_resolve_offset(text, quote)` added to `extractor.py` — finds first verbatim
+  occurrence of quote in text, returns `(offset, length)` or `(None, None)`.
+- `extract_from_pdf()` now returns `(ExtractedMeeting, str)` — the result plus raw text.
+- `save_extraction()` accepts `text: str | None = None`. Defines an `_ev()` closure
+  after the meeting flush that inserts evidence rows. Every entity save now calls
+  `session.flush()` before `_ev()` to ensure the entity ID is available.
+- `scripts/batch_extract.py` and `src/cli.py` (both call sites) updated to unpack
+  `extracted, raw_text = extractor.extract_from_pdf(...)` and pass `text=raw_text`.
 
 ---
 
@@ -97,12 +121,26 @@ schema, prompt, database, persistence, and adds a new post-processing step.
 - Level 0 census data now enables stratified sampling: pick by size bucket, decade, meeting type, and flagged outliers.
 
 **Needs new work:**
-- Expanding the eval benchmark from 4 PDFs to a properly stratified 15-20 document sample (selected using Level 0/1 data to cover all size buckets, decades, meeting types).
-- Validation comparison: automated diff of Level 5 extraction counts against Level 1 inventory counts per document. `eval_prompt.py` scores against a fixed rubric; it doesn't compare against a per-document inventory.
-- Source quote validation: check that every returned source quote actually exists in the source text. New post-processing logic.
-- Coverage ratio computation: chars referenced by quotes / total chars. New metric.
+- Expanding the eval benchmark from 4 PDFs to a properly stratified 15-20 document sample
+  (selected using Level 0/1 data to cover all size buckets, decades, meeting types).
+- Validation comparison: automated diff of extracted entity counts against Level 1 inventory
+  counts per document. `eval_prompt.py` scores against a fixed rubric; it doesn't compare
+  against a per-document inventory.
+- Source quote validation: query `extraction_evidence` for rows where `char_offset IS NULL`
+  — these are quotes the LLM returned that don't appear verbatim in the source text.
+  Report hallucination rate per entity type.
+- Coverage ratio: `SUM(char_length) / total_chars` per document from `extraction_evidence`.
+  Flag documents where coverage < threshold calibrated during this level.
+- `scripts/eval_prompt.py` currently scores against a fixed rubric. Add two new metric
+  columns to its output: `hallucination_rate` (quotes not found / total quotes) and
+  `coverage_ratio` (referenced chars / total chars). Both computed from `extraction_evidence`.
+- The sample selection script (new, ~50 lines) reads `data/census.json` and
+  `data/inventories/summary.json` to select a stratified 15-20 doc sample, then outputs
+  a list of filenames for use with `council extract --files`.
 
-**Effort: Medium.** The eval infrastructure exists but needs extending to use Level 1 inventories as ground truth and to validate provenance.
+**Effort: Medium.** The eval infrastructure exists but needs extending to use Level 1
+inventories as ground truth and to surface provenance metrics. The stratified sampler is
+new but small.
 
 ---
 
@@ -128,7 +166,7 @@ schema, prompt, database, persistence, and adds a new post-processing step.
 - CLI integration: `council validate cambridge` or similar.
 - Output format: `data/validation/{filename}.json`.
 
-**Effort: Medium-Large.** Many individual checks, each simple, but the validation framework itself is new. Partially blocked by Level 2 (provenance needed for coverage ratio and keyword gap).
+**Effort: Medium-Large.** Many individual checks, each simple, but the validation framework itself is new. All Level 2 dependencies (provenance, DB tables) are now in place.
 
 ---
 
@@ -179,14 +217,15 @@ schema, prompt, database, persistence, and adds a new post-processing step.
 | 1 | Level 0: keyword scanner + census output | Nothing | Small | **Done** |
 | 2 | LLM response caching + Level 1 inventory script | Level 0 | Medium | **Done** |
 | 3 | Level 2a: schema/prompt update from inventory typology | Level 1 | Medium | **Done** |
-| 4 | Level 2b: provenance (source_quotes in schema, prompt, DB, persistence) | Level 2a | Large | Pending |
-| 5 | New DB tables + `save_extraction()` for 10 new field types | Level 2a | Medium | Pending |
+| 4 | Level 2b: provenance (source_quotes in schema, prompt, DB, persistence) | Level 2a | Large | **Done** (2026-05-29) |
+| 5 | New DB tables + `save_extraction()` for 10 new field types | Level 2a | Medium | **Done** (2026-05-29) |
 | 6 | Level 4: validation script | Levels 0, 1, 2 | Medium | Pending |
 | 7 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
 | 8 | Level 6: audit report generator | Level 5 | Small | Pending |
 
-**The critical path remains Level 2b (provenance).** Everything downstream that involves
-confidence metrics depends on source quotes existing. Level 2a unblocks Level 2b.
+**Level 2 is fully complete.** The critical path now leads to Level 3 (prompt validation
+against a stratified sample), which unblocks Level 4 (confidence metrics), which unblocks
+Level 5 (full batch extraction).
 
 ---
 
@@ -194,7 +233,6 @@ confidence metrics depends on source quotes existing. Level 2a unblocks Level 2b
 
 These can be done independently of the main pipeline sequence:
 
-- `other_items` persistence (small, unblocked, already flagged in project overview)
-- Populate `minutes_pdf_url` from manifest into meetings table (trivial, already flagged)
-- Populate `extracted_at` timestamp on meetings (trivial, already flagged)
-- Store `minutes_text` in meetings table for future provenance lookups (small)
+- Populate `minutes_pdf_url` from manifest into meetings table (trivial — URL is in manifest.json, never written to DB)
+- Populate `extracted_at` timestamp on meetings (trivial — set datetime.utcnow() in save_extraction)
+- Store `minutes_text` in meetings table (small — raw text is now passed to save_extraction via `text=`; just write it to `meeting.minutes_text`)

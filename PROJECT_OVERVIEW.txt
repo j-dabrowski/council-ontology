@@ -40,10 +40,11 @@ CURRENT STATE (as of 2026-05-29)
     other_content_rate: 1.7% (threshold 20%) — inventory converged
     Prompt version: inventory-v2
 
-  Level 2 schema/prompt update complete:
+  Level 2 schema/prompt/provenance complete:
     10 new Pydantic models added to schemas.py
-    system_prompt.txt updated with new fields and extraction rules
-    Provenance layer (source_quotes) still pending
+    system_prompt.txt updated with new fields, extraction rules, and PROVENANCE RULE
+    source_quotes field on all 13 entity types; extraction_evidence table persists
+    verbatim quotes with char offsets; offset=None flags hallucinations
 
 
 PARTS OF THE PROJECT
@@ -138,7 +139,8 @@ Commands:
 
 Pipeline:
   PDF → pypdf text extraction → truncate to 80,000 chars → Claude API call
-  → strip markdown fences → Pydantic validation → save_extraction() → DB
+  → strip markdown fences → Pydantic validation → save_extraction(text=) → DB
+  → extraction_evidence rows (source quotes resolved to char offsets)
 
 Current model: claude-haiku-4-5-20251001 (Sonnet/Opus also supported)
 Max tokens: 64,000 output (streams to avoid truncated JSON)
@@ -178,6 +180,19 @@ SQLite at data/council.db. Tables:
     votes                 — individual councillor votes (for/against/abstain/absent)
     planning_applications — DA/DV details (reference, address, applicant, status, value)
     community_submissions — public submissions on planning applications
+    public_questions      — questions asked during Public Question Time
+    deputations           — formal presentations by members of the public
+    petitions             — petitions tabled at meetings (subject, signatory count)
+    appointments          — councillor appointments to external bodies
+    committee_reports     — standing committee reports tabled
+    budget_items          — financial/budget information items
+    interest_declarations — declared financial/impartiality/proximity interests
+    tenders               — tender evaluations and procurement decisions
+    delegated_decisions   — decisions made under officer delegation
+    building_permits      — building permit/licence information items
+    other_items           — catch-all for content not fitting dedicated fields
+    extraction_evidence   — verbatim source quotes per entity with char offsets
+                            (char_offset=None flags quotes not found in source text)
 
   Dynamic layer:
     relationships  — typed edges between any entities [ALWAYS EMPTY — not yet populated]
@@ -346,11 +361,10 @@ WHAT IS UNFINISHED
 
 1. EXTRACTION BACKLOG (341 PDFs)
    Most years have only a handful ingested — the bulk of the archive is pending.
-   Prompt eval is at 100/100 so quality is good enough to proceed.
-   Before bulk extraction, complete the multi-level pipeline (see PIPELINE.md):
-   Levels 0 and 1 are done. Run typology review, then proceed to Level 2.
-     council typology cambridge     # review corpus before Level 2 schema changes
-     council batch cambridge --limit 341
+   Levels 0, 1, and 2 are complete. Next step is Level 3 (prompt validation against
+   a stratified 15-20 doc sample), then Level 4 (confidence metrics), then Level 5
+   (full batch). See PIPELINE.md for the full sequence.
+     council batch cambridge --limit 20   # after Level 3/4 are done
 
 2. DYNAMIC LAYER IS EMPTY
    The relationships table and RelationshipKind enum are fully modelled.
@@ -374,13 +388,13 @@ WHAT IS UNFINISHED
    Some older/longer PDFs may be missing agenda items from the second half.
    Note: census shows 319/537 documents exceed 200k chars — truncation is significant.
 
-6. NEW SCHEMA FIELDS NOT PERSISTED
-   The Level 2 schema update (2026-05-29) added 10 new list fields to
-   ExtractedMeeting: public_questions, deputations, petitions, appointments,
-   committee_reports, budget_items, interest_declarations, tenders,
-   delegated_decisions, building_permits. Plus the existing other_items.
-   save_extraction() writes none of these to the database.
-   Each needs either a new DB table in ontology.py or a JSON sidecar.
+6. NEW SCHEMA FIELDS — PERSISTED (done 2026-05-29)
+   11 new DB tables added to ontology.py and wired into save_extraction():
+   public_questions, deputations, petitions, appointments, committee_reports,
+   budget_items, interest_declarations, tenders, delegated_decisions,
+   building_permits, other_items.
+   Appointments and interest declarations resolve councillors via the
+   councillors table. Tables are created automatically by create_all().
 
 7. ONLY ONE COUNCIL
    The COUNCILS dict in cli.py has a single entry with a "add new councils here"
@@ -389,9 +403,9 @@ WHAT IS UNFINISHED
 8. MULTI-LEVEL PIPELINE INCOMPLETE
    Level 0 (census): done.
    Level 1 (inventory): done. other_content_rate 1.7%.
-   Level 2 (schema/prompt): schema and prompt updated (2026-05-29) to match
-     inventory fields. Still pending: provenance/source quotes layer, ontology
-     DB tables for new fields, other_items/new-field persistence in save_extraction().
+   Level 2 (schema/prompt/provenance): done (2026-05-29). 10 new entity models,
+     11 new DB tables, extraction_evidence table, source_quotes on all 13 entity
+     types, PROVENANCE RULE in prompt, offset resolution in save_extraction().
    Level 3: Prompt validation against stratified 15-20 doc sample — pending.
    Level 4: Per-document confidence metrics and validation script — pending.
    Level 5: Full batch extraction with validation integration — pending.

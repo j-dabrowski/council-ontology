@@ -2,6 +2,9 @@ You are an expert analyst extracting structured data from Western Australian loc
 
 Your task is to extract all entities and events from the minutes text into the following JSON schema exactly. Use only the field names defined below — do not invent additional fields outside of the schema.
 
+PROVENANCE RULE:
+Every extracted entity (motion, planning application, public question, deputation, petition, appointment, committee report, budget item, interest declaration, tender, delegated decision, building permit, other item) must include a `source_quotes` list. Each entry must be a verbatim excerpt from the document text, 10–60 words long, that directly supports the values you extracted for that entity. Copy the text exactly as it appears — do not paraphrase or summarise. Include 1–3 quotes per entity; more is not better. If no verbatim supporting text can be found for an entity, do not fabricate a quote — leave `source_quotes` as an empty list. Quotes from the same sentence or clause may overlap across entities.
+
 OUTPUT SCHEMA:
 {
   "council_name": string | null,
@@ -35,44 +38,51 @@ OUTPUT SCHEMA:
         "estimated_value": number | null,
         "community_submissions": [
           {"submitter_name": string|null, "submitter_type": "individual"|"organisation"|"business"|null, "position": "support"|"object"|"neutral"|null, "summary": string|null}
-        ]
+        ],
+        "source_quotes": [string]
       } | null,
-      "tags": [string]
+      "tags": [string],
+      "source_quotes": [string]
     }
   ],
   "public_questions": [
     {
       "questioner_name": string | null,
       "question_summary": string | null,
-      "response_summary": string | null
+      "response_summary": string | null,
+      "source_quotes": [string]
     }
   ],
   "deputations": [
     {
       "presenter_name": string | null,
       "topic": string | null,
-      "summary": string | null
+      "summary": string | null,
+      "source_quotes": [string]
     }
   ],
   "petitions": [
     {
       "subject": string | null,
       "presented_by": string | null,
-      "signatory_count": integer | null
+      "signatory_count": integer | null,
+      "source_quotes": [string]
     }
   ],
   "appointments": [
     {
       "councillor": {"given_name": string|null, "family_name": string|null} | null,
       "role": string | null,
-      "body_name": string | null
+      "body_name": string | null,
+      "source_quotes": [string]
     }
   ],
   "committee_reports": [
     {
       "committee_name": string | null,
       "item_count": integer | null,
-      "summary": string | null
+      "summary": string | null,
+      "source_quotes": [string]
     }
   ],
   "budget_items": [
@@ -80,7 +90,8 @@ OUTPUT SCHEMA:
       "item_number": string | null,
       "description": string | null,
       "amount": number | null,
-      "is_confidential": bool
+      "is_confidential": bool,
+      "source_quotes": [string]
     }
   ],
   "interest_declarations": [
@@ -88,7 +99,8 @@ OUTPUT SCHEMA:
       "councillor": {"given_name": string|null, "family_name": string|null} | null,
       "interest_type": "financial" | "impartiality" | "proximity" | "other" | null,
       "description": string | null,
-      "item_reference": string | null
+      "item_reference": string | null,
+      "source_quotes": [string]
     }
   ],
   "tenders": [
@@ -97,7 +109,8 @@ OUTPUT SCHEMA:
       "description": string | null,
       "awarded_to": string | null,
       "amount": number | null,
-      "is_confidential": bool
+      "is_confidential": bool,
+      "source_quotes": [string]
     }
   ],
   "delegated_decisions": [
@@ -105,7 +118,8 @@ OUTPUT SCHEMA:
       "item_number": string | null,
       "description": string | null,
       "officer_title": string | null,
-      "is_confidential": bool
+      "is_confidential": bool,
+      "source_quotes": [string]
     }
   ],
   "building_permits": [
@@ -114,7 +128,8 @@ OUTPUT SCHEMA:
       "site_address": string | null,
       "description": string | null,
       "estimated_value": number | null,
-      "status": "approved" | "refused" | "deferred" | null
+      "status": "approved" | "refused" | "deferred" | null,
+      "source_quotes": [string]
     }
   ],
   "other_items": [
@@ -122,7 +137,8 @@ OUTPUT SCHEMA:
       "item_number": string | null,
       "item_type": string,
       "description": string,
-      "is_confidential": bool
+      "is_confidential": bool,
+      "source_quotes": [string]
     }
   ]
 }

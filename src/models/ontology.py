@@ -74,6 +74,19 @@ class RelationshipKind(str, enum.Enum):
     SUBJECT_OF = "subject_of"
 
 
+class InterestDeclarationType(str, enum.Enum):
+    FINANCIAL = "financial"
+    IMPARTIALITY = "impartiality"
+    PROXIMITY = "proximity"
+    OTHER = "other"
+
+
+class PermitStatus(str, enum.Enum):
+    APPROVED = "approved"
+    REFUSED = "refused"
+    DEFERRED = "deferred"
+
+
 # ---------------------------------------------------------------------------
 # Semantic layer — core entities
 # ---------------------------------------------------------------------------
@@ -297,6 +310,154 @@ class CommunitySubmission(Base):
 
     def __repr__(self) -> str:
         return f"<CommunitySubmission {self.submitter_name} {self.position}>"
+
+
+# ---------------------------------------------------------------------------
+# Kinetic layer — meeting sub-items (Level 2 schema fields)
+# ---------------------------------------------------------------------------
+
+
+class PublicQuestion(Base):
+    __tablename__ = "public_questions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    questioner_name: Mapped[Optional[str]] = mapped_column(String(300))
+    question_summary: Mapped[Optional[str]] = mapped_column(Text)
+    response_summary: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class Deputation(Base):
+    __tablename__ = "deputations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    presenter_name: Mapped[Optional[str]] = mapped_column(String(300))
+    topic: Mapped[Optional[str]] = mapped_column(String(500))
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class Petition(Base):
+    __tablename__ = "petitions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    subject: Mapped[Optional[str]] = mapped_column(String(500))
+    presented_by: Mapped[Optional[str]] = mapped_column(String(300))
+    signatory_count: Mapped[Optional[int]] = mapped_column(Integer)
+
+
+class Appointment(Base):
+    __tablename__ = "appointments"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    councillor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("councillors.id"))
+    role: Mapped[Optional[str]] = mapped_column(String(300))
+    body_name: Mapped[Optional[str]] = mapped_column(String(300))
+
+
+class CommitteeReport(Base):
+    __tablename__ = "committee_reports"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    committee_name: Mapped[Optional[str]] = mapped_column(String(300))
+    item_count: Mapped[Optional[int]] = mapped_column(Integer)
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+
+
+class BudgetItem(Base):
+    __tablename__ = "budget_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    item_number: Mapped[Optional[str]] = mapped_column(String(50))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    amount: Mapped[Optional[float]] = mapped_column(Float)
+    is_confidential: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class InterestDeclaration(Base):
+    __tablename__ = "interest_declarations"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    councillor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("councillors.id"))
+    interest_type: Mapped[Optional[InterestDeclarationType]] = mapped_column(
+        Enum(InterestDeclarationType)
+    )
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    item_reference: Mapped[Optional[str]] = mapped_column(String(200))
+
+
+class Tender(Base):
+    __tablename__ = "tenders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    reference_number: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    awarded_to: Mapped[Optional[str]] = mapped_column(String(300))
+    amount: Mapped[Optional[float]] = mapped_column(Float)
+    is_confidential: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class DelegatedDecision(Base):
+    __tablename__ = "delegated_decisions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    item_number: Mapped[Optional[str]] = mapped_column(String(50))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    officer_title: Mapped[Optional[str]] = mapped_column(String(200))
+    is_confidential: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class BuildingPermit(Base):
+    __tablename__ = "building_permits"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    reference_number: Mapped[Optional[str]] = mapped_column(String(100), index=True)
+    site_address: Mapped[Optional[str]] = mapped_column(String(500))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    estimated_value: Mapped[Optional[float]] = mapped_column(Float)
+    status: Mapped[Optional[PermitStatus]] = mapped_column(Enum(PermitStatus))
+
+
+class OtherItem(Base):
+    __tablename__ = "other_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    item_number: Mapped[Optional[str]] = mapped_column(String(50))
+    item_type: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    is_confidential: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ExtractionEvidence(Base):
+    """
+    Links an extracted entity to a verbatim quote from the source text.
+
+    entity_table + entity_id form a logical FK to whichever entity table
+    the quote supports (e.g. entity_table="motions", entity_id=42).
+    A physical FK is not used because the target table varies per row.
+
+    char_offset is null when the quote could not be found verbatim in the
+    source text — these rows flag potential hallucinations for Level 3 review.
+    """
+
+    __tablename__ = "extraction_evidence"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"), nullable=False)
+    entity_table: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    quote_text: Mapped[str] = mapped_column(Text, nullable=False)
+    char_offset: Mapped[Optional[int]] = mapped_column(Integer)
+    char_length: Mapped[Optional[int]] = mapped_column(Integer)
 
 
 # ---------------------------------------------------------------------------

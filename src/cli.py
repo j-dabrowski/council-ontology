@@ -213,12 +213,12 @@ def cmd_extract(args) -> None:
             meta = manifest.get(pdf.name, {})
             meeting_date_hint = meta.get("meeting_date")
             try:
-                extracted = extractor.extract_from_pdf(
+                extracted, raw_text = extractor.extract_from_pdf(
                     pdf,
                     council_name=council_full_name,
                     meeting_date_hint=meeting_date_hint,
                 )
-                meeting_id = save_extraction(session, council_id, extracted, pdf)
+                meeting_id = save_extraction(session, council_id, extracted, pdf, text=raw_text)
                 msg = f"{pdf.name} → meeting {meeting_id} ({extracted.meeting_date}, {len(extracted.motions)} motions)"
                 console.print(f"  [green]✓[/green] {msg}")
                 _log.info("OK: %s", msg)
@@ -300,8 +300,8 @@ def cmd_run(args) -> None:
             pdf = doc.local_path
             progress.update(task, description=f"[cyan]{pdf.name}[/cyan]")
             try:
-                extracted = extractor.extract_from_pdf(pdf, council_name=council_full_name)
-                meeting_id = save_extraction(session, council_id, extracted, pdf)
+                extracted, raw_text = extractor.extract_from_pdf(pdf, council_name=council_full_name)
+                meeting_id = save_extraction(session, council_id, extracted, pdf, text=raw_text)
                 msg = f"{pdf.name} → meeting {meeting_id} ({extracted.meeting_date}, {len(extracted.motions)} motions)"
                 console.print(f"  [green]✓[/green] {msg}")
                 _log.info("OK: %s", msg)

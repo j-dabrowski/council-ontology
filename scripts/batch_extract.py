@@ -268,12 +268,12 @@ def run_batch(
             continue
 
         try:
-            extracted = extractor.extract_from_pdf(
+            extracted, raw_text = extractor.extract_from_pdf(
                 pdf,
                 council_name=council.name,
                 meeting_date_hint=meeting_date_hint,
             )
-            meeting_id = save_extraction(session, council.id, extracted, pdf)
+            meeting_id = save_extraction(session, council.id, extracted, pdf, text=raw_text)
             detail = (
                 f"meeting {meeting_id} "
                 f"({extracted.meeting_date}, {len(extracted.motions)} motions)"

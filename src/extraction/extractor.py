@@ -201,18 +201,42 @@ class MinutesExtractor:
         )
         return result
 
-    def extract_from_pdf(self, pdf_path: Path, council_name: str | None = None, meeting_date_hint: str | None = None) -> ExtractedMeeting:
-        """Convenience method: extract text from PDF then run extraction."""
+    def extract_from_pdf(
+        self,
+        pdf_path: Path,
+        council_name: str | None = None,
+        meeting_date_hint: str | None = None,
+    ) -> "tuple[ExtractedMeeting, str]":
+        """Extract text from PDF then run extraction. Returns (result, raw_text)."""
         logger.info("Reading PDF: %s", pdf_path)
         text = extract_text_from_pdf(pdf_path)
         if not text.strip():
             raise ValueError(f"No text extracted from {pdf_path}")
-        return self.extract(text, source_hint=pdf_path.name, council_name=council_name, meeting_date_hint=meeting_date_hint)
+        result = self.extract(
+            text,
+            source_hint=pdf_path.name,
+            council_name=council_name,
+            meeting_date_hint=meeting_date_hint,
+        )
+        return result, text
 
 
 # ---------------------------------------------------------------------------
 # Persistence helpers: write extraction results into the database
 # ---------------------------------------------------------------------------
+
+
+def _resolve_offset(text: str, quote: str) -> "tuple[int, int] | tuple[None, None]":
+    """Return (char_offset, char_length) of the first occurrence of quote in text.
+    Returns (None, None) if text is absent or quote is not found verbatim."""
+    if not text or not quote:
+        return None, None
+    idx = text.find(quote)
+    if idx == -1:
+        return None, None
+    return idx, len(quote)
+
+
 
 
 def _get_or_create_councillor(session, given_name: str, family_name: str):
@@ -228,7 +252,13 @@ def _get_or_create_councillor(session, given_name: str, family_name: str):
     return obj
 
 
-def save_extraction(session, council_id: int, extracted: ExtractedMeeting, pdf_path: Path | None = None) -> int:
+def save_extraction(
+    session,
+    council_id: int,
+    extracted: ExtractedMeeting,
+    pdf_path: Path | None = None,
+    text: str | None = None,
+) -> int:
     """
     Persist an ExtractedMeeting into the database.
 
@@ -238,12 +268,26 @@ def save_extraction(session, council_id: int, extracted: ExtractedMeeting, pdf_p
         raise ValueError("meeting_date is required but could not be determined")
     from src.models import (
         ApplicationStatus,
+        Appointment,
+        BudgetItem,
+        BuildingPermit,
+        CommitteeReport,
         CommunitySubmission,
+        DelegatedDecision,
+        Deputation,
+        ExtractionEvidence,
+        InterestDeclaration,
+        InterestDeclarationType,
         Meeting,
         Motion,
         MotionOutcome,
+        OtherItem,
+        PermitStatus,
+        Petition,
         PlanningApplication,
+        PublicQuestion,
         Site,
+        Tender,
         Vote,
         VoteChoice,
     )
@@ -267,6 +311,20 @@ def save_extraction(session, council_id: int, extracted: ExtractedMeeting, pdf_p
         meeting.minutes_pdf_path = str(pdf_path)
 
     session.flush()
+
+    # Closure: insert ExtractionEvidence rows for an entity's source_quotes.
+    # char_offset=None when the quote cannot be found verbatim (hallucination flag).
+    def _ev(entity_table: str, entity_id: int, source_quotes: list) -> None:
+        for quote in source_quotes:
+            offset, length = _resolve_offset(text or "", quote)
+            session.add(ExtractionEvidence(
+                meeting_id=meeting.id,
+                entity_table=entity_table,
+                entity_id=entity_id,
+                quote_text=quote,
+                char_offset=offset,
+                char_length=length,
+            ))
 
     for em in extracted.motions:
         motion = Motion(
@@ -293,6 +351,7 @@ def save_extraction(session, council_id: int, extracted: ExtractedMeeting, pdf_p
 
         session.add(motion)
         session.flush()
+        _ev("motions", motion.id, em.source_quotes)
 
         # Individual votes
         for ev in em.individual_votes:
@@ -333,6 +392,7 @@ def save_extraction(session, council_id: int, extracted: ExtractedMeeting, pdf_p
             )
             session.add(app)
             session.flush()
+            _ev("planning_applications", app.id, ep.source_quotes)
 
             for es in ep.community_submissions:
                 submission = CommunitySubmission(
@@ -343,6 +403,139 @@ def save_extraction(session, council_id: int, extracted: ExtractedMeeting, pdf_p
                     summary=es.summary,
                 )
                 session.add(submission)
+
+    for eq in extracted.public_questions:
+        pq = PublicQuestion(
+            meeting_id=meeting.id,
+            questioner_name=eq.questioner_name,
+            question_summary=eq.question_summary,
+            response_summary=eq.response_summary,
+        )
+        session.add(pq)
+        session.flush()
+        _ev("public_questions", pq.id, eq.source_quotes)
+
+    for ed in extracted.deputations:
+        dep = Deputation(
+            meeting_id=meeting.id,
+            presenter_name=ed.presenter_name,
+            topic=ed.topic,
+            summary=ed.summary,
+        )
+        session.add(dep)
+        session.flush()
+        _ev("deputations", dep.id, ed.source_quotes)
+
+    for ep in extracted.petitions:
+        pet = Petition(
+            meeting_id=meeting.id,
+            subject=ep.subject,
+            presented_by=ep.presented_by,
+            signatory_count=ep.signatory_count,
+        )
+        session.add(pet)
+        session.flush()
+        _ev("petitions", pet.id, ep.source_quotes)
+
+    for ea in extracted.appointments:
+        apt = Appointment(meeting_id=meeting.id, role=ea.role, body_name=ea.body_name)
+        if ea.councillor:
+            gn = ea.councillor.given_name or ""
+            fn = ea.councillor.family_name or ""
+            if gn or fn:
+                apt.councillor_id = _get_or_create_councillor(session, gn, fn).id
+        session.add(apt)
+        session.flush()
+        _ev("appointments", apt.id, ea.source_quotes)
+
+    for ec in extracted.committee_reports:
+        cr = CommitteeReport(
+            meeting_id=meeting.id,
+            committee_name=ec.committee_name,
+            item_count=ec.item_count,
+            summary=ec.summary,
+        )
+        session.add(cr)
+        session.flush()
+        _ev("committee_reports", cr.id, ec.source_quotes)
+
+    for eb in extracted.budget_items:
+        bi = BudgetItem(
+            meeting_id=meeting.id,
+            item_number=eb.item_number,
+            description=eb.description,
+            amount=eb.amount,
+            is_confidential=eb.is_confidential,
+        )
+        session.add(bi)
+        session.flush()
+        _ev("budget_items", bi.id, eb.source_quotes)
+
+    for ei in extracted.interest_declarations:
+        decl = InterestDeclaration(
+            meeting_id=meeting.id,
+            interest_type=InterestDeclarationType(ei.interest_type) if ei.interest_type else None,
+            description=ei.description,
+            item_reference=ei.item_reference,
+        )
+        if ei.councillor:
+            gn = ei.councillor.given_name or ""
+            fn = ei.councillor.family_name or ""
+            if gn or fn:
+                decl.councillor_id = _get_or_create_councillor(session, gn, fn).id
+        session.add(decl)
+        session.flush()
+        _ev("interest_declarations", decl.id, ei.source_quotes)
+
+    for et in extracted.tenders:
+        tender = Tender(
+            meeting_id=meeting.id,
+            reference_number=et.reference_number,
+            description=et.description,
+            awarded_to=et.awarded_to,
+            amount=et.amount,
+            is_confidential=et.is_confidential,
+        )
+        session.add(tender)
+        session.flush()
+        _ev("tenders", tender.id, et.source_quotes)
+
+    for ed in extracted.delegated_decisions:
+        dd = DelegatedDecision(
+            meeting_id=meeting.id,
+            item_number=ed.item_number,
+            description=ed.description,
+            officer_title=ed.officer_title,
+            is_confidential=ed.is_confidential,
+        )
+        session.add(dd)
+        session.flush()
+        _ev("delegated_decisions", dd.id, ed.source_quotes)
+
+    for ep in extracted.building_permits:
+        bp = BuildingPermit(
+            meeting_id=meeting.id,
+            reference_number=ep.reference_number,
+            site_address=ep.site_address,
+            description=ep.description,
+            estimated_value=ep.estimated_value,
+            status=PermitStatus(ep.status) if ep.status else None,
+        )
+        session.add(bp)
+        session.flush()
+        _ev("building_permits", bp.id, ep.source_quotes)
+
+    for eo in extracted.other_items:
+        oi = OtherItem(
+            meeting_id=meeting.id,
+            item_number=eo.item_number,
+            item_type=eo.item_type,
+            description=eo.description,
+            is_confidential=eo.is_confidential,
+        )
+        session.add(oi)
+        session.flush()
+        _ev("other_items", oi.id, eo.source_quotes)
 
     session.commit()
     logger.info("Saved meeting id=%d with %d motions", meeting.id, len(extracted.motions))

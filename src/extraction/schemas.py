@@ -115,6 +115,7 @@ class ExtractedPlanningApplication(BaseModel):
     ] = None
     estimated_value: Optional[float] = None
     community_submissions: list[ExtractedCommunitySubmission] = Field(default_factory=list)
+    source_quotes: list[str] = Field(default_factory=list)
 
     @field_validator("status", mode="before")
     @classmethod
@@ -128,18 +129,21 @@ class ExtractedPublicQuestion(BaseModel):
     questioner_name: Optional[str] = None
     question_summary: Optional[str] = None
     response_summary: Optional[str] = None
+    source_quotes: list[str] = Field(default_factory=list)
 
 
 class ExtractedDeputation(BaseModel):
     presenter_name: Optional[str] = None
     topic: Optional[str] = None
     summary: Optional[str] = None
+    source_quotes: list[str] = Field(default_factory=list)
 
 
 class ExtractedPetition(BaseModel):
     subject: Optional[str] = None
     presented_by: Optional[str] = None
     signatory_count: Optional[int] = None
+    source_quotes: list[str] = Field(default_factory=list)
 
     @field_validator("signatory_count", mode="before")
     @classmethod
@@ -156,12 +160,14 @@ class ExtractedAppointment(BaseModel):
     councillor: Optional[ExtractedCouncillor] = None
     role: Optional[str] = None
     body_name: Optional[str] = None
+    source_quotes: list[str] = Field(default_factory=list)
 
 
 class ExtractedCommitteeReport(BaseModel):
     committee_name: Optional[str] = None
     item_count: Optional[int] = None
     summary: Optional[str] = None
+    source_quotes: list[str] = Field(default_factory=list)
 
 
 class ExtractedBudgetItem(BaseModel):
@@ -169,6 +175,7 @@ class ExtractedBudgetItem(BaseModel):
     description: Optional[str] = None
     amount: Optional[float] = None
     is_confidential: bool = False
+    source_quotes: list[str] = Field(default_factory=list)
 
     @field_validator("amount", mode="before")
     @classmethod
@@ -186,6 +193,7 @@ class ExtractedInterestDeclaration(BaseModel):
     interest_type: Optional[Literal["financial", "impartiality", "proximity", "other"]] = None
     description: Optional[str] = None
     item_reference: Optional[str] = None
+    source_quotes: list[str] = Field(default_factory=list)
 
     @field_validator("interest_type", mode="before")
     @classmethod
@@ -201,6 +209,7 @@ class ExtractedTender(BaseModel):
     awarded_to: Optional[str] = None
     amount: Optional[float] = None
     is_confidential: bool = False
+    source_quotes: list[str] = Field(default_factory=list)
 
     @field_validator("amount", mode="before")
     @classmethod
@@ -218,6 +227,7 @@ class ExtractedDelegatedDecision(BaseModel):
     description: Optional[str] = None
     officer_title: Optional[str] = None
     is_confidential: bool = False
+    source_quotes: list[str] = Field(default_factory=list)
 
 
 class ExtractedBuildingPermit(BaseModel):
@@ -226,6 +236,7 @@ class ExtractedBuildingPermit(BaseModel):
     description: Optional[str] = None
     estimated_value: Optional[float] = None
     status: Optional[Literal["approved", "refused", "deferred"]] = None
+    source_quotes: list[str] = Field(default_factory=list)
 
     @field_validator("status", mode="before")
     @classmethod
@@ -250,6 +261,7 @@ class ExtractedOtherItem(BaseModel):
     item_type: str
     description: str
     is_confidential: bool = False
+    source_quotes: list[str] = Field(default_factory=list)
 
 
 class ExtractedMotion(BaseModel):
@@ -269,6 +281,7 @@ class ExtractedMotion(BaseModel):
     individual_votes: list[ExtractedVote] = Field(default_factory=list)
     planning_application: Optional[ExtractedPlanningApplication] = None
     tags: list[str] = Field(default_factory=list)
+    source_quotes: list[str] = Field(default_factory=list)
 
     @field_validator("votes_for", "votes_against", "votes_abstain", mode="before")
     @classmethod
