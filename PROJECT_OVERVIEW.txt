@@ -15,7 +15,7 @@ Three-layer ontology:
   Dynamic   — feedback loops and emergent patterns (voting blocs, relationship edges)
 
 
-CURRENT STATE (as of 2026-05-28)
+CURRENT STATE (as of 2026-05-29)
 ----------------------------------
   537 PDFs downloaded (Cambridge, 1995–2026)
   537 in manifest
@@ -34,6 +34,16 @@ CURRENT STATE (as of 2026-05-28)
     ~5,700 estimated planning items
     ~1,650 estimated interest declarations
     18 documents with no motion keywords (flagged for Level 1 review)
+
+  Level 1 inventory complete:
+    535 ok / 1 error (c1cdc1fa.pdf — known empty PDF)
+    other_content_rate: 1.7% (threshold 20%) — inventory converged
+    Prompt version: inventory-v2
+
+  Level 2 schema/prompt update complete:
+    10 new Pydantic models added to schemas.py
+    system_prompt.txt updated with new fields and extraction rules
+    Provenance layer (source_quotes) still pending
 
 
 PARTS OF THE PROJECT
@@ -134,9 +144,15 @@ Current model: claude-haiku-4-5-20251001 (Sonnet/Opus also supported)
 Max tokens: 64,000 output (streams to avoid truncated JSON)
 Retry: 3 attempts with exponential backoff on connection/status errors
 
-Schema extracts: council name, meeting date/type, location, councillors present/apology,
-motions (with motion text, outcome, mover, votes, planning application, community
-submissions, tags), and other_items (catch-all for non-motion content).
+Schema extracts:
+  - council name, meeting date/type, location
+  - councillors present/apology
+  - motions (motion text, outcome, mover, seconder, individual votes, planning
+    application with community submissions, tags)
+  - public_questions, deputations, petitions, appointments
+  - committee_reports, budget_items, interest_declarations, tenders
+  - delegated_decisions, building_permits
+  - other_items (catch-all for genuinely unclassifiable content)
 
 Browse what's been extracted:
   council status
@@ -212,12 +228,15 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       what does it contain? Caches LLM responses in .cache/llm_responses/. Outputs
       data/inventories/{stem}.json and data/inventories/summary.json.
 
-  council typology cambridge [--quiet]
+  council typology cambridge [--quiet] [--limit N] [--history]
       Level 1→2: analyse inventory typology. Reads all data/inventories/*.json and
       produces data/{council}_typology_review.txt. Run after Level 1 inventory and
       before making any Level 2 schema decisions. Surfaces meeting type distribution,
-      entity counts by decade, other_content patterns, section heading gaps, and
-      census cross-reference flags.
+      inventory field prevalence (docs/% for each count field), entity counts by
+      decade, other_content patterns, section heading gaps, and census cross-reference
+      flags. Saves quality score to data/inventory_quality/ on each run.
+      --limit N: analyse only the N most-recently-updated inventory files (for sampling).
+      --history: print quality score trend over time.
 
   council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
                           [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
@@ -355,23 +374,28 @@ WHAT IS UNFINISHED
    Some older/longer PDFs may be missing agenda items from the second half.
    Note: census shows 319/537 documents exceed 200k chars — truncation is significant.
 
-6. OTHER_ITEMS NOT PERSISTED
-   The other_items field was added to the schema (2026-05-27) to capture
-   non-motion content that would otherwise be silently discarded.
-   save_extraction() does not yet write it anywhere.
-   Needs either a new DB table or a log/JSON dump.
+6. NEW SCHEMA FIELDS NOT PERSISTED
+   The Level 2 schema update (2026-05-29) added 10 new list fields to
+   ExtractedMeeting: public_questions, deputations, petitions, appointments,
+   committee_reports, budget_items, interest_declarations, tenders,
+   delegated_decisions, building_permits. Plus the existing other_items.
+   save_extraction() writes none of these to the database.
+   Each needs either a new DB table in ontology.py or a JSON sidecar.
 
 7. ONLY ONE COUNCIL
    The COUNCILS dict in cli.py has a single entry with a "add new councils here"
    comment. The full architecture supports multiple councils.
 
 8. MULTI-LEVEL PIPELINE INCOMPLETE
-   Level 0 (census) and Level 1 (inventory) are done. Still pending:
-   - Level 2: Provenance/source quotes in schema, prompt, and DB
-   - Level 3: Prompt validation against stratified 15-20 doc sample
-   - Level 4: Per-document confidence metrics and validation script
-   - Level 5: Full batch extraction with validation integration
-   - Level 6: Human audit report
+   Level 0 (census): done.
+   Level 1 (inventory): done. other_content_rate 1.7%.
+   Level 2 (schema/prompt): schema and prompt updated (2026-05-29) to match
+     inventory fields. Still pending: provenance/source quotes layer, ontology
+     DB tables for new fields, other_items/new-field persistence in save_extraction().
+   Level 3: Prompt validation against stratified 15-20 doc sample — pending.
+   Level 4: Per-document confidence metrics and validation script — pending.
+   Level 5: Full batch extraction with validation integration — pending.
+   Level 6: Human audit report — pending.
    See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for detail and build order.
 
 

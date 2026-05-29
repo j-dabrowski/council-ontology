@@ -50,24 +50,37 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 
 ---
 
-## Level 2: Schema and Prompt Revision
+## Level 2: Schema and Prompt Revision — IN PROGRESS
 
-**Already exists:**
-- `schemas.py` has lenient validators with coercion for common LLM output variants.
-- `system_prompt.txt` is the extraction prompt (externalised from the code).
-- `other_items` catch-all field was added to the schema on 2026-05-27 but is NOT persisted to the database (`save_extraction()` ignores it).
-- The overview notes the prompt eval score is 100/100 (benchmark saturated).
+**Schema/prompt step: DONE (2026-05-29)**
 
-**Can be composed now:**
-- Schema review can be done manually by comparing Level 0/1 outputs to the current schema. No automation needed.
+Applied the inventory field prevalence table from `council typology cambridge` to identify
+what deserves a dedicated field vs `other_items`. All 13 inventory fields exceed 10% of
+corpus (lowest: deputation_count 25%), so all received dedicated Pydantic models.
 
-**Needs new work:**
-- Provenance layer. This is the biggest schema change. Every extracted entity needs a `source_quotes` field. The Pydantic schemas, the extraction prompt, the database model, and `save_extraction()` all need to be updated.
-- New database table: `extraction_evidence` linking entities to source quotes with character offsets.
-- `other_items` persistence. The overview explicitly flags this as unfinished. Needs either a new DB table or a JSON sidecar.
-- Post-processing step: take source quotes returned by the LLM and resolve them to character offsets in the source text via string matching.
+What was built:
+- 10 new Pydantic sub-models in `src/extraction/schemas.py`:
+  `ExtractedPublicQuestion`, `ExtractedDeputation`, `ExtractedPetition`,
+  `ExtractedAppointment`, `ExtractedCommitteeReport`, `ExtractedBudgetItem`,
+  `ExtractedInterestDeclaration`, `ExtractedTender`, `ExtractedDelegatedDecision`,
+  `ExtractedBuildingPermit`.
+  All have lenient validators (coerce amounts, signatory counts, status strings).
+- 10 new list fields on `ExtractedMeeting` (one per model above).
+- `unwrap_envelope` validator updated to score new field names.
+- `src/extraction/system_prompt.txt` rewritten: new OUTPUT SCHEMA block with all new
+  fields; dedicated extraction rules for each type; `other_items` item_type list pruned
+  (removed 7 types now covered by dedicated fields).
+- `src/models/ontology.py` — not changed; new fields are captured in extracted JSON only.
 
-**Effort: Large.** Provenance touches every layer of the stack: schema, prompt, database, persistence, and adds a new post-processing step. This is the hardest level.
+**Still not built (provenance step, pending):**
+- `source_quotes` field on every extracted entity (Pydantic schemas, prompt, DB)
+- New DB tables in `ontology.py` for the 10 new field types (+ existing `other_items`)
+- `save_extraction()` updated to persist the new fields
+- `extraction_evidence` table linking entities to source quotes with char offsets
+- Post-processing to resolve source quotes to character offsets in source text
+
+**Effort for remaining work: Large.** Provenance touches every layer of the stack:
+schema, prompt, database, persistence, and adds a new post-processing step.
 
 ---
 
@@ -165,13 +178,15 @@ Maps each pipeline level (from PIPELINE.md) against the current project state (f
 |----------|-----------|------------|--------|--------|
 | 1 | Level 0: keyword scanner + census output | Nothing | Small | **Done** |
 | 2 | LLM response caching + Level 1 inventory script | Level 0 | Medium | **Done** |
-| 3 | Level 2: provenance (source quotes in schema, prompt, DB, persistence) | Level 1 | Large | Pending |
-| 4 | `other_items` persistence | Nothing (already flagged) | Small | Pending |
-| 5 | Level 4: validation script | Levels 0, 1, 2 | Medium | Pending |
-| 6 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
-| 7 | Level 6: audit report generator | Level 5 | Small | Pending |
+| 3 | Level 2a: schema/prompt update from inventory typology | Level 1 | Medium | **Done** |
+| 4 | Level 2b: provenance (source_quotes in schema, prompt, DB, persistence) | Level 2a | Large | Pending |
+| 5 | New DB tables + `save_extraction()` for 10 new field types | Level 2a | Medium | Pending |
+| 6 | Level 4: validation script | Levels 0, 1, 2 | Medium | Pending |
+| 7 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
+| 8 | Level 6: audit report generator | Level 5 | Small | Pending |
 
-**The critical path is Level 2 (provenance).** Everything downstream that involves confidence metrics depends on source quotes existing. Level 2 is now unblocked.
+**The critical path remains Level 2b (provenance).** Everything downstream that involves
+confidence metrics depends on source quotes existing. Level 2a unblocks Level 2b.
 
 ---
 

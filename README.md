@@ -284,7 +284,7 @@ The project follows a layered approach to avoid blind LLM extraction at scale.
 |-------|------|------|--------|
 | 0 | Census: text extraction + keyword scan across all PDFs | Free | **Done** |
 | 1 | Cheap LLM inventory: one small Haiku call per document | $4.83 actual | **Done** |
-| 2 | Schema and prompt revision using Level 0/1 data | Free | Pending |
+| 2 | Schema and prompt revision using Level 0/1 data | Free | **In progress** (schema/prompt done; provenance pending) |
 | 3 | Prompt validation against stratified 15-20 doc sample | ~$1-2 | Pending |
 | 4 | Confidence metrics and per-document validation script | Free | Pending |
 | 5 | Batch extraction with progressive validation | ~$7-20 | Pending |

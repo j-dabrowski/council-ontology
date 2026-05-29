@@ -14,7 +14,7 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 |-------|-------------|--------|
 | 0 | Census: text extraction + keyword scan | **Done** (2026-05-28) |
 | 1 | Cheap LLM inventory (Haiku, $4.83 actual) | **Done** (2026-05-28) |
-| 2 | Schema and prompt revision | Pending |
+| 2 | Schema and prompt revision | **In progress** (schema/prompt done 2026-05-29; provenance pending) |
 | 3 | Prompt validation against sample (~$1-2) | Pending |
 | 4 | Confidence metrics and validation script | Pending |
 | 5 | Batch extraction (~$7-20) | Pending |
@@ -131,9 +131,32 @@ Use Level 0 and Level 1 outputs to revise the extraction schema and prompt BEFOR
 - Update database model (`src/models/ontology.py`) to match schema changes.
 - Add `extraction_evidence` table: links extracted entities to source quotes with character offsets.
 
+### Actual results (Cambridge, 2026-05-29) — schema/prompt step DONE
+
+Applied the decision rule from the inventory field prevalence table. All 13 inventory fields exceed 10% of corpus (lowest: deputation_count at 25%), so all received dedicated Pydantic models and list fields on `ExtractedMeeting`.
+
+New models added to `src/extraction/schemas.py`:
+  `ExtractedPublicQuestion`, `ExtractedDeputation`, `ExtractedPetition`,
+  `ExtractedAppointment`, `ExtractedCommitteeReport`, `ExtractedBudgetItem`,
+  `ExtractedInterestDeclaration`, `ExtractedTender`, `ExtractedDelegatedDecision`,
+  `ExtractedBuildingPermit`
+
+`src/extraction/system_prompt.txt` updated with full extraction rules for each new type.
+Seven `other_items` type values removed (now have dedicated fields):
+  public_question_time, deputation, petition, appointment, financial_report, tender,
+  committee_report.
+
+`src/models/ontology.py` — no new DB tables yet; new fields captured in extracted JSON only.
+
+**Still pending for Level 2:**
+- Provenance layer (source_quotes on every extracted entity)
+- New DB tables for the 10 new field types
+- `save_extraction()` updated to persist the new fields
+- `extraction_evidence` table linking entities to source quotes with char offsets
+
 ### Output
-- Revised `schemas.py`, `ontology.py`, extraction prompt.
-- Documented rationale for what was added/changed and why.
+- Revised `schemas.py` and `system_prompt.txt` (done).
+- Revised `ontology.py`, new `extraction_evidence` table, updated `save_extraction()` (pending).
 
 ---
 
