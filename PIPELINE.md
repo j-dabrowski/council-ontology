@@ -234,17 +234,18 @@ Level 3 is split into three substages with dedicated CLI commands.
   convenience stored at save time via verbatim `text.find()`. It is not used here.
   All matching is recomputed from the live PDF text at validation time.
 
-### Actual results (Cambridge, 2026-05-30, 18 docs) — final baselines
-- Paraphrase rate: **5.9%** (target <30%) ✓
-- Coverage ratio:  **20.11%** (target >5%) ✓
+### Actual results (Cambridge, 2026-05-31, 18 docs) — final baselines
+- Quote completeness: **93.6%** (target >80%) ✓
+- Paraphrase rate: **5.2%** (target <30%) ✓
+- Coverage ratio:  **22.24%** (target >5%) ✓
 - Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 16 PASS / 2 REVIEW / 0 FAIL
-- All metrics well within target. Coverage nearly doubled after page header stripping
-  (was 11.68% before — confirms header intrusion was widespread in the corpus).
-  Paraphrase rate halved after PROVENANCE RULE tightening (verbatim OCR artifacts,
-  no internal omissions, full resolution text, 150-word limit).
-  2 remaining REVIEW: both large docs with genuine truncation under-extraction
-  (95% keyword gap); resolve with --max-chars full.
+- Status: 15 PASS / 3 REVIEW / 0 FAIL
+- Quote completeness metric added: catches entities extracted with source_quotes=[]
+  (invisible to paraphrase rate). Motions were the main offender; PROVENANCE RULE
+  narrowed and explicit per-motion rule added.
+  3 remaining REVIEW: 2 large docs with genuine truncation (95-100% keyword gap),
+  resolve with --max-chars full. 1 Public Art Committee edge case (non-standard
+  procedural language, 0% kwgap, not fixable by prompt alone).
 
 ### Output
 - `data/{council}_sample.json` — canonical sample (written by 3a, read by 3b and 3c).

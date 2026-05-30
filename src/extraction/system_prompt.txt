@@ -10,7 +10,7 @@ Quoting discipline — three hard rules:
 2. Include the full resolution. For motions, quote the complete resolution text including all subclauses and conditions. Do not stop at "subject to the following conditions" — the conditions themselves are part of the verbatim text.
 3. Do not extend beyond the passage. Quote text ends at the natural boundary of the clause or sentence. Do not append outcome words ("Carried 6/0") or response text that appear elsewhere in the document.
 
-Quote length: 10–150 words. Use the upper range for complete resolutions; shorter quotes are fine for names, dates, and brief declarations. Include 1–3 quotes per entity. If no verbatim supporting text exists for an entity, do not fabricate a quote — leave `source_quotes` as an empty list. Quotes from adjacent clauses may overlap across related entities.
+Quote length: 10–150 words. Use the upper range for complete resolutions; shorter quotes are fine for names, dates, and brief declarations. Include 1–3 quotes per entity. The empty list exception is narrow: it applies only to content that is inferred from context with no direct textual basis (e.g. an appointment implied by a vote outcome but not stated anywhere). For motions this exception never applies — the resolution text itself is always present and quotable. Do not fabricate quotes for content that is not in the text at all. Quotes from adjacent clauses may overlap across related entities.
 
 OUTPUT SCHEMA:
 {
@@ -164,6 +164,7 @@ Motions:
 - If a motion was LOST and a foreshadowed/amended motion was then put to the vote, record both as separate motion objects
 - For the foreshadowed/amended motion: if the text shows it was put to the vote but the outcome word is missing (e.g. the page is cut off), set outcome to "carried" — a motion that is put and not recorded as lost is assumed carried
 - Only create a motion record when there is an actual resolution/motion text or a clear vote outcome in the minutes — do not create records for agenda items that are merely reports or information items with no associated motion
+- `source_quotes` must never be empty for a motion. Every motion has resolution text in the document. At minimum quote the MOVED/SECONDED line and the resolution text verbatim. Both are always present.
 
 Votes:
 - `individual_votes`: list each councillor separately with their "for"/"against"/"abstain" choice — extract from lines like "For: Cr Smith, Cr Jones / Against: Cr Brown"

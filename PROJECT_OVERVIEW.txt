@@ -440,16 +440,17 @@ WHAT IS UNFINISHED
    Level 3a (sample selection): done (2026-05-30). 18 docs, data/cambridge_sample.json.
    Level 3b (sample extraction): done (2026-05-30). 18/18 extracted, extraction_evidence
      populated for all sample docs.
-   Level 3c (sample validation): done (2026-05-30). scripts/validate_sample.py built.
-     Three-tier quote matching: whitespace normalisation → stripped alphanumeric
-     (recovers pypdf word-split artefacts) → paraphrase. Coverage denominator
-     capped at min(max_chars, total_chars) so large docs aren't penalised for
-     content outside the extraction window. All metrics within target:
-     paraphrase 10.0% (<30%), coverage 11.68% (>5%), keyword gap 10.9% (<25%).
-     Status: 15 PASS / 3 REVIEW / 0 FAIL. Paraphrase report at
-     data/sample_validation/paraphrase_report.txt.
-     3 remaining REVIEW: 2 large docs with genuine truncation (95% keyword gap),
-     1 old 1995 doc with 45% paraphrase rate.
+   Level 3c (sample validation): done (2026-05-31). scripts/validate_sample.py built.
+     Five metrics per doc: quote completeness, paraphrase rate, coverage ratio,
+     inventory agreement, keyword gap rate. Three-tier quote matching: whitespace
+     normalisation → stripped alphanumeric → paraphrase. Quote completeness metric
+     added (2026-05-31): catches entities with source_quotes=[] invisible to para rate.
+     Final baselines after prompt tightening + header stripping:
+     completeness 93.6% (>80%), paraphrase 5.2% (<30%), coverage 22.24% (>5%),
+     keyword gap 10.9% (<25%). Status: 15 PASS / 3 REVIEW / 0 FAIL.
+     3 remaining REVIEW: 2 large docs with genuine truncation (95-100% keyword gap,
+     resolve with --max-chars full), 1 Public Art Committee edge case (non-standard
+     procedural language, not fixable by prompt alone).
    Level 4: Per-document confidence metrics and validation script — pending.
    Level 5: Full batch extraction with validation integration — pending.
    Level 6: Human audit report — pending.

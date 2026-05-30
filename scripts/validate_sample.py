@@ -79,6 +79,24 @@ INVENTORY_FIELDS: list[tuple[str, str, str]] = [
     ("building_permit_count",    "building_permits",     "meeting_id = ?"),
 ]
 
+# (db_table, WHERE clause using ? for meeting_id) — entity types that must have source quotes.
+# Used to compute quote_completeness_rate: fraction of extracted entities that have ≥1 evidence row.
+ENTITY_QUOTE_TABLES: list[tuple[str, str]] = [
+    ("motions",               "meeting_id = ?"),
+    ("planning_applications", "motion_id IN (SELECT id FROM motions WHERE meeting_id = ?)"),
+    ("public_questions",      "meeting_id = ?"),
+    ("deputations",           "meeting_id = ?"),
+    ("petitions",             "meeting_id = ?"),
+    ("appointments",          "meeting_id = ?"),
+    ("committee_reports",     "meeting_id = ?"),
+    ("budget_items",          "meeting_id = ?"),
+    ("interest_declarations", "meeting_id = ?"),
+    ("tenders",               "meeting_id = ?"),
+    ("delegated_decisions",   "meeting_id = ?"),
+    ("building_permits",      "meeting_id = ?"),
+    ("other_items",           "meeting_id = ?"),
+]
+
 
 # ---------------------------------------------------------------------------
 # Data loaders
@@ -370,12 +388,58 @@ def compute_keyword_gaps(classified: list[dict], source_text: str) -> dict:
     }
 
 
-def determine_status(para_rate: float, cov_ratio: float, gap_rate: float, quote_count: int) -> str:
+def compute_quote_completeness(conn: sqlite3.Connection, meeting_id: int) -> dict:
+    """Fraction of extracted entities that have at least one source quote in extraction_evidence.
+
+    Paraphrase rate only measures quality of quotes that were produced — it cannot see
+    entities where source_quotes=[] was returned (zero evidence rows).  This metric
+    directly counts how many extracted entities have any provenance at all.
+
+    Returns total_entities, entities_with_quotes, completeness_rate, missing_by_table.
+    If no entities were extracted the rate is 1.0 (nothing to flag; other metrics catch that).
+    """
+    total_entities = 0
+    entities_with_quotes = 0
+    missing_by_table: dict[str, int] = {}
+
+    for table, where in ENTITY_QUOTE_TABLES:
+        n_total = conn.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE {where}", (meeting_id,)
+        ).fetchone()[0]
+        n_with = conn.execute(
+            "SELECT COUNT(DISTINCT entity_id) FROM extraction_evidence "
+            "WHERE meeting_id = ? AND entity_table = ?",
+            (meeting_id, table),
+        ).fetchone()[0]
+        total_entities += n_total
+        entities_with_quotes += n_with
+        missing = n_total - n_with
+        if missing > 0:
+            missing_by_table[table] = missing
+
+    rate = entities_with_quotes / total_entities if total_entities > 0 else 1.0
+    return {
+        "total_entities": total_entities,
+        "entities_with_quotes": entities_with_quotes,
+        "completeness_rate": round(rate, 4),
+        "missing_by_table": missing_by_table,
+    }
+
+
+def determine_status(
+    para_rate: float,
+    cov_ratio: float,
+    gap_rate: float,
+    quote_count: int,
+    completeness_rate: float = 1.0,
+) -> str:
     if quote_count == 0:
         return "FAIL"
     if para_rate >= 0.80 and cov_ratio < 0.02:
         return "FAIL"
-    if para_rate >= 0.50 or cov_ratio < 0.03 or gap_rate >= 0.40:
+    if completeness_rate < 0.50:
+        return "FAIL"
+    if para_rate >= 0.50 or cov_ratio < 0.03 or gap_rate >= 0.40 or completeness_rate < 0.80:
         return "REVIEW"
     return "PASS"
 
@@ -403,8 +467,12 @@ def validate_doc(conn: sqlite3.Connection, council: str, filename: str, census: 
     cov_ratio = compute_coverage(classified, source_text, max_chars=max_chars)
     inv_agreement = compute_inventory_agreement(l1_inventory, entity_counts) if l1_inventory else None
     kw_gap = compute_keyword_gaps(classified, source_text)
+    completeness = compute_quote_completeness(conn, meeting_id)
 
-    status = determine_status(para_rate, cov_ratio, kw_gap["gap_rate"], para_total)
+    status = determine_status(
+        para_rate, cov_ratio, kw_gap["gap_rate"], para_total,
+        completeness_rate=completeness["completeness_rate"],
+    )
 
     return {
         "filename": filename,
@@ -423,6 +491,7 @@ def validate_doc(conn: sqlite3.Connection, council: str, filename: str, census: 
         "entity_counts": entity_counts,
         "inventory_agreement": inv_agreement,
         "keyword_gap": kw_gap,
+        "quote_completeness": completeness,
         "status": status,
     }
 
@@ -437,6 +506,7 @@ def _print_table(results: list[dict]) -> None:
     table.add_column("Date", width=10)
     table.add_column("Type", width=20)
     table.add_column("Quot", justify="right", width=5)
+    table.add_column("Cmpl%", justify="right", width=6)
     table.add_column("Para%", justify="right", width=6)
     table.add_column("Cov%", justify="right", width=6)
     table.add_column("InvAgr", justify="right", width=7)
@@ -447,13 +517,14 @@ def _print_table(results: list[dict]) -> None:
 
     for r in results:
         if "error" in r:
-            table.add_row(r["filename"][:14], "—", r["error"], "—", "—", "—", "—", "—", "[red]FAIL[/red]")
+            table.add_row(r["filename"][:14], "—", r["error"], "—", "—", "—", "—", "—", "—", "[red]FAIL[/red]")
             continue
 
         q = r["quotes"]
         para_rate = q["paraphrase_rate"]
         cov = r["coverage_ratio"]
         gap_rate = r["keyword_gap"]["gap_rate"]
+        cmpl = r.get("quote_completeness", {}).get("completeness_rate", 1.0)
 
         # Average inventory agreement ratio across fields with non-zero l1 or extracted
         inv = r.get("inventory_agreement") or {}
@@ -467,6 +538,7 @@ def _print_table(results: list[dict]) -> None:
         para_style = "red" if para_rate >= 0.70 else ("yellow" if para_rate >= 0.40 else "green")
         cov_style = "red" if cov < 0.02 else ("yellow" if cov < 0.05 else "green")
         gap_style = "red" if gap_rate >= 0.50 else ("yellow" if gap_rate >= 0.25 else "green")
+        cmpl_style = "red" if cmpl < 0.50 else ("yellow" if cmpl < 0.80 else "green")
 
         mtype = r.get("meeting_type", "")[:20]
         status = r.get("status", "?")
@@ -476,6 +548,7 @@ def _print_table(results: list[dict]) -> None:
             str(r.get("meeting_date", ""))[:10],
             mtype,
             str(q["total"]),
+            f"[{cmpl_style}]{cmpl*100:.0f}%[/{cmpl_style}]",
             f"[{para_style}]{para_rate*100:.0f}%[/{para_style}]",
             f"[{cov_style}]{cov*100:.1f}%[/{cov_style}]",
             f"{avg_inv:.2f}" if avg_inv is not None else "—",
@@ -492,17 +565,20 @@ def _print_table(results: list[dict]) -> None:
     avg_para = sum(r["quotes"]["paraphrase_rate"] for r in valid) / len(valid)
     avg_cov = sum(r["coverage_ratio"] for r in valid) / len(valid)
     avg_gap = sum(r["keyword_gap"]["gap_rate"] for r in valid) / len(valid)
+    avg_cmpl = sum(r.get("quote_completeness", {}).get("completeness_rate", 1.0) for r in valid) / len(valid)
     passes = sum(1 for r in valid if r["status"] == "PASS")
     reviews = sum(1 for r in valid if r["status"] == "REVIEW")
     fails = sum(1 for r in valid if r["status"] == "FAIL")
 
     console.print(f"\n[bold]Aggregate (n={len(valid)}):[/bold]")
+    cmpl_col = "red" if avg_cmpl < 0.50 else ("yellow" if avg_cmpl < 0.80 else "green")
     para_col = "red" if avg_para >= 0.50 else "green"
     cov_col = "red" if avg_cov < 0.03 else "green"
     gap_col = "red" if avg_gap >= 0.40 else "green"
-    console.print(f"  Paraphrase rate:  [{para_col}]{avg_para*100:.1f}%[/{para_col}]  (target <30%)")
-    console.print(f"  Coverage ratio:   [{cov_col}]{avg_cov*100:.2f}%[/{cov_col}]  (target >5%)")
-    console.print(f"  Keyword gap rate: [{gap_col}]{avg_gap*100:.1f}%[/{gap_col}]  (target <25%)")
+    console.print(f"  Quote completeness: [{cmpl_col}]{avg_cmpl*100:.1f}%[/{cmpl_col}]  (target >80%)")
+    console.print(f"  Paraphrase rate:    [{para_col}]{avg_para*100:.1f}%[/{para_col}]  (target <30%)")
+    console.print(f"  Coverage ratio:     [{cov_col}]{avg_cov*100:.2f}%[/{cov_col}]  (target >5%)")
+    console.print(f"  Keyword gap rate:   [{gap_col}]{avg_gap*100:.1f}%[/{gap_col}]  (target <25%)")
     console.print(f"  Status: [green]{passes} PASS[/green]  [yellow]{reviews} REVIEW[/yellow]  [red]{fails} FAIL[/red]")
 
 
@@ -514,6 +590,11 @@ def _write_report(results: list[dict], council: str, sample: dict) -> None:
         "",
         "METRICS",
         "-------",
+        "  Quote completeness  — fraction of extracted entities that have ≥1 source quote in",
+        "                        extraction_evidence. Paraphrase rate only measures quality of",
+        "                        quotes that were produced; this metric catches entities where",
+        "                        source_quotes=[] was returned (no evidence rows at all).",
+        "                        Target: >80%. FAIL if <50%.",
         "  Paraphrase rate     — quotes not found in whitespace-normalised source text.",
         "                        Both PDF text and quote are normalised before matching.",
         "                        Only genuine content differences count. Target: <30%.",
@@ -554,6 +635,7 @@ def _write_report(results: list[dict], council: str, sample: dict) -> None:
         avg_para = sum(r["quotes"]["paraphrase_rate"] for r in valid) / len(valid)
         avg_cov = sum(r["coverage_ratio"] for r in valid) / len(valid)
         avg_gap = sum(r["keyword_gap"]["gap_rate"] for r in valid) / len(valid)
+        avg_cmpl = sum(r.get("quote_completeness", {}).get("completeness_rate", 1.0) for r in valid) / len(valid)
         passes = sum(1 for r in valid if r["status"] == "PASS")
         reviews = sum(1 for r in valid if r["status"] == "REVIEW")
         fails = sum(1 for r in valid if r["status"] == "FAIL")
@@ -561,15 +643,31 @@ def _write_report(results: list[dict], council: str, sample: dict) -> None:
         lines += [
             f"AGGREGATE (n={len(valid)})",
             "---------",
-            f"  Paraphrase rate:  {avg_para*100:.1f}%  (target <30%)",
-            f"  Coverage ratio:   {avg_cov*100:.2f}%  (target >5%)",
-            f"  Keyword gap rate: {avg_gap*100:.1f}%  (target <25%)",
-            f"  Status:           {passes} PASS / {reviews} REVIEW / {fails} FAIL",
+            f"  Quote completeness: {avg_cmpl*100:.1f}%  (target >80%)",
+            f"  Paraphrase rate:    {avg_para*100:.1f}%  (target <30%)",
+            f"  Coverage ratio:     {avg_cov*100:.2f}%  (target >5%)",
+            f"  Keyword gap rate:   {avg_gap*100:.1f}%  (target <25%)",
+            f"  Status:             {passes} PASS / {reviews} REVIEW / {fails} FAIL",
             "",
         ]
 
         # Interpretation
         issues: list[str] = []
+        if avg_cmpl < 0.50:
+            issues.append(
+                f"LOW QUOTE COMPLETENESS ({avg_cmpl*100:.0f}%)\n"
+                "  More than half the extracted entities have no source quote in extraction_evidence.\n"
+                "  This means the model is extracting content but silently dropping the PROVENANCE RULE.\n"
+                "  Check missing_by_table in per-doc JSON to see which entity types are worst.\n"
+                "  Fix: strengthen the PROVENANCE RULE in system_prompt.txt; ensure source_quotes\n"
+                "  appears in the OUTPUT SCHEMA block for every entity type."
+            )
+        elif avg_cmpl < 0.80:
+            issues.append(
+                f"MODERATE QUOTE COMPLETENESS ({avg_cmpl*100:.0f}%)\n"
+                "  Some extracted entities have no source quote. Check missing_by_table in per-doc\n"
+                "  JSON to identify which entity types are missing provenance most often."
+            )
         if avg_para >= 0.50:
             issues.append(
                 f"HIGH PARAPHRASE RATE ({avg_para*100:.0f}%)\n"

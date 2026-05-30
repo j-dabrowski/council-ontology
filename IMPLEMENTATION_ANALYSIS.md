@@ -172,17 +172,19 @@ used here (it is a best-effort UI convenience only, stored by `_resolve_offset()
    paraphrase report.
 
 **Results (Cambridge, 2026-05-30, 18 docs) — final baselines after prompt tightening + header stripping:**
-- Paraphrase rate: **5.9%** (target <30%) ✓
-- Coverage ratio: **20.11%** (target >5%) ✓
+- Quote completeness: **93.6%** (target >80%) ✓
+- Paraphrase rate: **5.2%** (target <30%) ✓
+- Coverage ratio: **22.24%** (target >5%) ✓
 - Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 16 PASS / 2 REVIEW / 0 FAIL
+- Status: 15 PASS / 3 REVIEW / 0 FAIL
 
-Coverage nearly doubled (11.68% → 20.11%) after header stripping — confirms header intrusion
-was widespread across the corpus, not limited to the docs visible in the sample paraphrase report.
-Paraphrase rate halved (10.0% → 5.9%) after tightening the PROVENANCE RULE (verbatim OCR
-artifacts, no internal omissions, full resolution text, no appended outcome words, 150-word limit).
-2 remaining REVIEW: both large docs with genuine truncation under-extraction (95% keyword gap);
-resolve with `--max-chars full`.
+Quote completeness metric added (2026-05-31): fraction of extracted entities with ≥1 evidence row.
+Catches entities extracted with source_quotes=[] — invisible to paraphrase rate. Motions were the
+main offender. PROVENANCE RULE narrowed (empty-list exception no longer applies to motions) and
+explicit per-motion rule added: source_quotes must never be empty for a motion.
+3 remaining REVIEW: 2 large docs with genuine truncation under-extraction (95-100% keyword gap);
+resolve with `--max-chars full`. 1 Public Art Committee doc (67% completeness, 0% kwgap) — uses
+non-standard procedural language (no MOVED/CARRIED), a minority format edge case.
 
 **Next step: proceed to Level 4.**
 
