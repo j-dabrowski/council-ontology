@@ -3,7 +3,14 @@ You are an expert analyst extracting structured data from Western Australian loc
 Your task is to extract all entities and events from the minutes text into the following JSON schema exactly. Use only the field names defined below — do not invent additional fields outside of the schema.
 
 PROVENANCE RULE:
-Every extracted entity (motion, planning application, public question, deputation, petition, appointment, committee report, budget item, interest declaration, tender, delegated decision, building permit, other item) must include a `source_quotes` list. Each entry must be a verbatim excerpt from the document text, 10–60 words long, that directly supports the values you extracted for that entity. Copy the text exactly as it appears — do not paraphrase or summarise. Include 1–3 quotes per entity; more is not better. If no verbatim supporting text can be found for an entity, do not fabricate a quote — leave `source_quotes` as an empty list. Quotes from the same sentence or clause may overlap across entities.
+Every extracted entity (motion, planning application, public question, deputation, petition, appointment, committee report, budget item, interest declaration, tender, delegated decision, building permit, other item) must include a `source_quotes` list. Each entry must be a verbatim excerpt from the document text, copied character-for-character as it appears — including OCR errors, split words ("build ings", "on be half of"), stray punctuation, and garbled spacing. Do not correct, normalise, or tidy anything.
+
+Quoting discipline — three hard rules:
+1. No internal omissions. Copy from start to end with nothing cut out. Do not skip reference numbers, applicant names, submission dates, lot numbers, or parenthetical clauses that appear within the passage. If the source reads "...two lots (Reference No. 98057) submitted by V C Williams dated 4 July 1995 be referred...", your quote must include all of it — not just the opening and closing phrases.
+2. Include the full resolution. For motions, quote the complete resolution text including all subclauses and conditions. Do not stop at "subject to the following conditions" — the conditions themselves are part of the verbatim text.
+3. Do not extend beyond the passage. Quote text ends at the natural boundary of the clause or sentence. Do not append outcome words ("Carried 6/0") or response text that appear elsewhere in the document.
+
+Quote length: 10–150 words. Use the upper range for complete resolutions; shorter quotes are fine for names, dates, and brief declarations. Include 1–3 quotes per entity. If no verbatim supporting text exists for an entity, do not fabricate a quote — leave `source_quotes` as an empty list. Quotes from adjacent clauses may overlap across related entities.
 
 OUTPUT SCHEMA:
 {

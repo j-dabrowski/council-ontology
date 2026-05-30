@@ -162,6 +162,25 @@ def _norm_stripped(s: str) -> str:
     return re.sub(r"[^a-zA-Z0-9]", "", s)
 
 
+def _strip_page_headers(text: str) -> str:
+    """Remove pypdf page header lines that embed Windows file paths.
+
+    Council minutes PDFs (originally Word documents) repeat a header on every
+    page containing the meeting title, date, and a Windows file path such as:
+      COUNCIL 22 SEPTEMBER 2009 H:\\CEO\\GOV\\COUNCIL MINUTES\\...\\B DV.DOC 34
+    pypdf extracts these between page content, so after whitespace normalisation
+    they appear inline and prevent verbatim quote matching.
+
+    The H:\\ anchor is unambiguous — it cannot appear in legitimate meeting text.
+    Stripping whole lines that contain it is safe and sufficient.
+    """
+    cleaned = [
+        line for line in text.split("\n")
+        if "H:\\" not in line and "H:/" not in line
+    ]
+    return "\n".join(cleaned)
+
+
 def _find_partial_match(norm_quote: str, norm_source: str, min_words: int = 4) -> dict | None:
     """Find the longest prefix of norm_quote that appears in norm_source.
 
@@ -377,7 +396,7 @@ def validate_doc(conn: sqlite3.Connection, council: str, filename: str, census: 
     entity_counts = get_entity_counts(conn, meeting_id)
     l1_inventory = load_inventory(stem)
 
-    source_text = extract_pdf_text(council, filename)
+    source_text = _strip_page_headers(extract_pdf_text(council, filename))
     classified = _classify_quotes(quotes, source_text)
 
     para_n, stripped_n, para_total, para_rate, para_examples = compute_paraphrase_rate(classified)
