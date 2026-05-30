@@ -583,6 +583,35 @@ def cmd_sample(args) -> None:
     run(args)
 
 
+def cmd_extract_sample(args) -> None:
+    from scripts.stratified_sample import canonical_sample_path
+    import json as _json
+
+    path = canonical_sample_path(args.council)
+    if not path.exists():
+        console.print(f"[red]No sample file found at {path}. Run 'council sample {args.council}' first.[/red]")
+        sys.exit(1)
+
+    data = _json.loads(path.read_text())
+    files = data["files"]
+    selected_at = data.get("selected_at", "unknown")
+
+    console.print(f"[yellow]Note: extract-sample always re-extracts all docs (--force is implicit).[/yellow]")
+    console.print(f"[dim]Sample: {len(files)} files selected at {selected_at}[/dim]")
+
+    args.files = files
+    args.force = True
+    args.limit = None
+    args.from_year = None
+    args.to_year = None
+    cmd_extract(args)
+
+
+def cmd_validate_sample(args) -> None:
+    from scripts.validate_sample import run
+    run(args)
+
+
 def cmd_analyse(args) -> None:
     from sqlalchemy import func
     from src.analysis.queries import (
@@ -900,13 +929,23 @@ def main() -> None:
     p_typology.set_defaults(func=cmd_typology)
 
     # sample
-    p_sample = sub.add_parser("sample", help="Level 3: select a stratified 15-20 doc sample for prompt validation (scripts/stratified_sample.py)")
+    p_sample = sub.add_parser("sample", help="Level 3a: select a stratified 15-20 doc sample; saves to data/{council}_sample.json (scripts/stratified_sample.py)")
     p_sample.add_argument("council", choices=list(COUNCILS))
     p_sample.add_argument("--count", type=int, default=18, metavar="N",
                           help="Target sample size (default: 18)")
     p_sample.add_argument("--output-file", metavar="PATH",
                           help="Write filenames to file instead of stdout")
     p_sample.set_defaults(func=cmd_sample)
+
+    # extract-sample
+    p_extract_sample = sub.add_parser("extract-sample", help="Level 3b: extract the saved sample (always --force); reads data/{council}_sample.json")
+    p_extract_sample.add_argument("council", choices=list(COUNCILS))
+    p_extract_sample.set_defaults(func=cmd_extract_sample)
+
+    # validate-sample
+    p_validate_sample = sub.add_parser("validate-sample", help="Level 3c: validate sample extractions against evidence table and L1 inventory (scripts/validate_sample.py)")
+    p_validate_sample.add_argument("council", choices=list(COUNCILS))
+    p_validate_sample.set_defaults(func=cmd_validate_sample)
 
     # analyse
     p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")

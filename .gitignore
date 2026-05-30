@@ -29,7 +29,7 @@ data/extraction_errors.json
 data/census.json
 data/census_summary.txt
 data/cambridge_typology_review.txt
-
+data/cambridge_sample.json
 data/inventories/
 data/inventory_quality/
 

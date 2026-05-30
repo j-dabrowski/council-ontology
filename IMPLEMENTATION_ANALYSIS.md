@@ -110,37 +110,56 @@ What was built:
 
 ## Level 3: Prompt Validation Against Sample
 
-**Already exists:**
-- `council eval` runs extraction against benchmark PDFs and scores quality. Currently uses 4 PDFs x 2 models.
-- `council compare <pdf>` runs all three models on one PDF for side-by-side comparison.
-- `council extract --files a.pdf b.pdf` targets specific PDFs.
+Level 3 is split into three substages, each with its own CLI command.
+The canonical sample is persisted to `data/{council}_sample.json` by 3a and read
+by both 3b and 3c, guaranteeing all substages operate on the same document set.
 
-**Can be composed now:**
-- Select 15-20 PDFs manually, run `council extract --files <list>`, then inspect results. This is roughly what eval does already but with a fixed benchmark set.
-- `council compare` on individual sample documents gives multi-model comparison.
-- Level 0 census data now enables stratified sampling: pick by size bucket, decade, meeting type, and flagged outliers.
+### Level 3a: Sample Selection ✅ COMPLETE (2026-05-30)
+
+**What was built:**
+- `scripts/stratified_sample.py` — greedy stratified selection from census + L1 flags.
+  Stratifies by era (decade), size bucket, meeting type, and outliers.
+  Slots: L1-flagged (cap 3) → L0 outliers (cap 3 total) → era×size grid → decade balance
+  (≥2/decade) → minority meeting types → pad to target.
+- Always writes `data/{council}_sample.json`: `{council, selected_at, count, files[]}`.
+  This is the canonical reference for 3b and 3c.
+- Still prints filenames to stdout (usable in subshell).
+- `council sample cambridge [--count N] [--output-file PATH]`
+
+**Results (Cambridge, 2026-05-30):** 18 docs — all 7 meeting types, all 4 decades,
+all 4 size buckets, 3 outliers (1 L1-flagged, 3 L0-flagged).
+
+### Level 3b: Sample Extraction ✅ COMPLETE (2026-05-30)
+
+**What was built:**
+- `council extract-sample cambridge` — dedicated CLI command. Reads
+  `data/{council}_sample.json`, always extracts with `--force` (warns user),
+  delegates to `cmd_extract()`. No extra flags needed.
+- Replaced the manual subshell pattern `council extract cambridge --force --files
+  $(council sample cambridge)`.
+
+**Results:** 18/18 extracted, 0 failed. `extraction_evidence` populated for all docs.
+
+### Level 3c: Sample Validation ⏳ PENDING
 
 **Needs new work:**
-- Expanding the eval benchmark from 4 PDFs to a properly stratified 15-20 document sample
-  (selected using Level 0/1 data to cover all size buckets, decades, meeting types).
-- Validation comparison: automated diff of extracted entity counts against Level 1 inventory
-  counts per document. `eval_prompt.py` scores against a fixed rubric; it doesn't compare
-  against a per-document inventory.
-- Source quote validation: query `extraction_evidence` for rows where `char_offset IS NULL`
-  — these are quotes the LLM returned that don't appear verbatim in the source text.
-  Report hallucination rate per entity type.
-- Coverage ratio: `SUM(char_length) / total_chars` per document from `extraction_evidence`.
-  Flag documents where coverage < threshold calibrated during this level.
-- `scripts/eval_prompt.py` currently scores against a fixed rubric. Add two new metric
-  columns to its output: `hallucination_rate` (quotes not found / total quotes) and
-  `coverage_ratio` (referenced chars / total chars). Both computed from `extraction_evidence`.
-- The sample selection script (new, ~50 lines) reads `data/census.json` and
-  `data/inventories/summary.json` to select a stratified 15-20 doc sample, then outputs
-  a list of filenames for use with `council extract --files`.
+- `scripts/validate_sample.py` + `council validate-sample cambridge`.
+- Reads `data/{council}_sample.json` to identify the document set.
+- Queries `extraction_evidence` for hallucination rate (`char_offset IS NULL` / total)
+  and coverage ratio (`SUM(char_length)` / total doc chars), per doc and aggregate.
+- Loads each doc's L1 inventory (`data/inventories/{stem}.json`) and diffs entity
+  counts against what the extractor returned (inventory agreement).
+- Keyword gap detection: locates MOVED/CARRIED/DA/DECLARATION/etc. occurrences in
+  source text and checks whether each falls within a source quote's char range.
+- Writes `data/sample_validation/{stem}.json` per doc + `data/sample_validation/report.txt`.
+- Prints a summary table to stdout: one row per doc, all four metrics, flagged docs
+  highlighted.
+- This report is the human gate: poor hallucination rate or inventory agreement →
+  iterate the prompt and re-run 3b → 3c. Clean → proceed to Level 4.
+- Aggregate metrics calibrate Level 4 PASS/REVIEW/FAIL thresholds.
 
-**Effort: Medium.** The eval infrastructure exists but needs extending to use Level 1
-inventories as ground truth and to surface provenance metrics. The stratified sampler is
-new but small.
+**Effort: Medium.** DB queries and L1 inventory parsing are straightforward; keyword
+gap detection requires mapping keyword positions against evidence char ranges.
 
 ---
 
@@ -219,13 +238,16 @@ new but small.
 | 3 | Level 2a: schema/prompt update from inventory typology | Level 1 | Medium | **Done** |
 | 4 | Level 2b: provenance (source_quotes in schema, prompt, DB, persistence) | Level 2a | Large | **Done** (2026-05-29) |
 | 5 | New DB tables + `save_extraction()` for 10 new field types | Level 2a | Medium | **Done** (2026-05-29) |
-| 6 | Level 4: validation script | Levels 0, 1, 2 | Medium | Pending |
-| 7 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
-| 8 | Level 6: audit report generator | Level 5 | Small | Pending |
+| 6 | Level 3a: stratified sample selection script | Levels 0, 1 | Small | **Done** (2026-05-30) |
+| 7 | Level 3b: `council extract-sample` CLI command | Level 3a | Small | **Done** (2026-05-30) |
+| 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | Pending |
+| 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | Pending |
+| 10 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
+| 11 | Level 6: audit report generator | Level 5 | Small | Pending |
 
-**Level 2 is fully complete.** The critical path now leads to Level 3 (prompt validation
-against a stratified sample), which unblocks Level 4 (confidence metrics), which unblocks
-Level 5 (full batch extraction).
+**Levels 0–2 and Level 3a/3b are complete.** The critical path now leads to Level 3c
+(`council validate-sample`), which calibrates the thresholds used by Level 4, which
+unblocks Level 5 (full batch extraction).
 
 ---
 

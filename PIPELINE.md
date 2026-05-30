@@ -15,7 +15,9 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 | 0 | Census: text extraction + keyword scan | **Done** (2026-05-28) |
 | 1 | Cheap LLM inventory (Haiku, $4.83 actual) | **Done** (2026-05-28) |
 | 2 | Schema and prompt revision | **Done** (2026-05-29) |
-| 3 | Prompt validation against sample (~$1-2) | Pending |
+| 3a | Sample selection (`council sample`) | **Done** (2026-05-30) |
+| 3b | Sample extraction (`council extract-sample`) | **Done** (2026-05-30) |
+| 3c | Sample validation (`council validate-sample`) | Pending |
 | 4 | Confidence metrics and validation script | Pending |
 | 5 | Batch extraction (~$7-20) | Pending |
 | 6 | Human audit | Pending |
@@ -165,26 +167,55 @@ All entity saves flush before inserting evidence rows. Call sites in `batch_extr
 ## Level 3: Prompt Validation Against Sample (~$1-2)
 
 Test the revised prompt against a stratified sample before running at scale.
+Level 3 is split into three substages with dedicated CLI commands.
 
-### Tasks
-- Select 15-20 documents from the corpus. Stratify by:
+### Level 3a: Sample Selection ✅ COMPLETE (2026-05-30)
+
+`council sample cambridge [--count N]`
+
+- Selects 15-20 documents from the corpus. Stratified by:
   - Era (at least 2 per decade from 1990s-2020s)
   - Size bucket (at least 2 from each: tiny, small, medium, large)
   - Meeting type (Ordinary, Special, AGM, Committee, Electors)
-  - Include at least 3 documents flagged as outliers by Level 0/1
-- Run full Haiku extraction on sample with revised prompt.
-- For each document, validate:
-  - Compare extracted entity counts to Level 1 inventory. Flag significant discrepancies.
-  - Check source quotes: do they exist in the source text? Do they support the extracted values?
-  - Run keyword gap detection: are there MOVED/CARRIED/etc. keywords in spans NOT referenced by any source quote?
-  - Compute coverage ratio: characters referenced by source quotes / total characters.
-- Iterate prompt until sample results meet expectations.
-- Cache ALL raw LLM responses keyed by document hash + prompt version.
+  - At least 3 documents flagged as outliers by Level 0/1
+- Always persists the selection to `data/{council}_sample.json` (canonical file).
+  Both 3b and 3c read from this file — the same document set is guaranteed across
+  all substages.
+- Also prints filenames to stdout (usable in subshell if needed).
+
+### Level 3b: Sample Extraction ✅ COMPLETE (2026-05-30)
+
+`council extract-sample cambridge`
+
+- Reads `data/{council}_sample.json`.
+- Always runs with `--force` (re-extracts regardless of existing DB records) — the
+  point of this stage is to validate the *current* prompt and schema, not to reuse
+  stale extractions. The user is notified at runtime.
+- Populates `extraction_evidence` rows for all sample documents.
+
+### Level 3c: Sample Validation ⏳ PENDING
+
+`council validate-sample cambridge`
+
+- Reads `data/{council}_sample.json` (same document set as 3b).
+- Queries `extraction_evidence` for those meetings:
+  - **Hallucination rate**: quotes where `char_offset IS NULL` / total quotes, per doc and aggregate.
+  - **Coverage ratio**: `SUM(char_length)` / total doc chars, per doc and aggregate.
+- Loads each doc's L1 inventory and compares entity counts to what the extractor
+  returned (**inventory agreement**).
+- **Keyword gap detection**: identifies MOVED/CARRIED/DA/DECLARATION/etc. occurrences
+  in source text that fall in spans not covered by any source quote's char range.
+- Writes per-doc JSON to `data/sample_validation/{stem}.json` + `data/sample_validation/report.txt`.
+- Prints a table: one row per doc, all four metrics, flagged docs highlighted.
+- This report is the human-readable gate: if hallucination rate is high or inventory
+  agreement is poor, iterate the prompt and re-run 3b → 3c. If clean, proceed to Level 4.
+- The aggregate metrics from this report calibrate Level 4 thresholds.
 
 ### Output
-- Validated prompt with documented performance against sample.
-- Calibrated confidence metric thresholds (baseline coverage ratio, entity density, acceptable keyword gap rate).
-- Cached responses for sample documents (re-runnable without cost).
+- `data/{council}_sample.json` — canonical sample (written by 3a, read by 3b and 3c).
+- `data/sample_validation/` — per-doc JSON reports + summary (written by 3c).
+- Calibrated confidence metric thresholds (baseline coverage ratio, entity density,
+  acceptable keyword gap rate) — derived from 3c report, used to configure Level 4.
 
 ---
 

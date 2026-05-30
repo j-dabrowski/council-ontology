@@ -253,6 +253,24 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       --limit N: analyse only the N most-recently-updated inventory files (for sampling).
       --history: print quality score trend over time.
 
+  council sample cambridge [--count N] [--output-file PATH]
+      Level 3a: select a stratified 15-20 doc sample from census + L1 flags.
+      Stratifies by era, size bucket, meeting type, and outliers.
+      Always saves canonical selection to data/{council}_sample.json.
+      Also prints filenames to stdout.
+
+  council extract-sample cambridge
+      Level 3b: extract the saved sample. Reads data/{council}_sample.json.
+      Always runs with --force (re-extracts regardless of DB state); warns user.
+      Run after 'council sample' to populate extraction_evidence for 3c.
+
+  council validate-sample cambridge
+      Level 3c: validate sample extractions. Reads data/{council}_sample.json.
+      Queries extraction_evidence for hallucination rate and coverage ratio.
+      Diffs entity counts against L1 inventory. Detects keyword gaps.
+      Writes data/sample_validation/ report. Gate before Level 4.
+      (scripts/validate_sample.py — PENDING)
+
   council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
                           [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
       Batch extraction with structured error report. Preferred over 'extract'
@@ -298,15 +316,18 @@ Each has a run(args) function that does the work; main() handles argparse.
   scripts/census.py              →  council census cambridge ...
   scripts/inventory.py           →  council inventory cambridge ...
   scripts/inventory_typology.py  →  council typology cambridge ...
+  scripts/stratified_sample.py   →  council sample cambridge ...
+  scripts/validate_sample.py     →  council validate-sample cambridge ...  (PENDING)
   scripts/batch_extract.py       →  council batch cambridge ...
-  scripts/eval_prompt.py    →  council eval ...
-  scripts/compare_models.py →  council compare <pdf> ...
-  estimate_costs.py         →  council costs ...
+  scripts/eval_prompt.py         →  council eval ...
+  scripts/compare_models.py      →  council compare <pdf> ...
+  estimate_costs.py              →  council costs ...
 
 Standalone usage (equivalent to CLI):
   python scripts/census.py cambridge [--force] [--quiet] [--workers N]
   python scripts/inventory.py cambridge [--limit N] [--force] [--quiet]
   python scripts/inventory_typology.py cambridge [--quiet]
+  python scripts/stratified_sample.py cambridge [--count N] [--output-file PATH]
   python scripts/batch_extract.py [--limit N] [--model MODEL] [--council cambridge]
                                   [--from-year YYYY] [--to-year YYYY]
                                   [--files a.pdf b.pdf ...] [--force] [--verbose]
@@ -361,10 +382,11 @@ WHAT IS UNFINISHED
 
 1. EXTRACTION BACKLOG (341 PDFs)
    Most years have only a handful ingested — the bulk of the archive is pending.
-   Levels 0, 1, and 2 are complete. Next step is Level 3 (prompt validation against
-   a stratified 15-20 doc sample), then Level 4 (confidence metrics), then Level 5
-   (full batch). See PIPELINE.md for the full sequence.
-     council batch cambridge --limit 20   # after Level 3/4 are done
+   Levels 0–2 and Level 3a/3b are complete. Next: Level 3c (validate-sample),
+   then Level 4 (confidence metrics), then Level 5 (full batch).
+   See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for the full sequence.
+     council validate-sample cambridge    # Level 3c — next step
+     council batch cambridge --limit 20   # after Level 3c and 4 are done
 
 2. DYNAMIC LAYER IS EMPTY
    The relationships table and RelationshipKind enum are fully modelled.
@@ -403,10 +425,11 @@ WHAT IS UNFINISHED
 8. MULTI-LEVEL PIPELINE INCOMPLETE
    Level 0 (census): done.
    Level 1 (inventory): done. other_content_rate 1.7%.
-   Level 2 (schema/prompt/provenance): done (2026-05-29). 10 new entity models,
-     11 new DB tables, extraction_evidence table, source_quotes on all 13 entity
-     types, PROVENANCE RULE in prompt, offset resolution in save_extraction().
-   Level 3: Prompt validation against stratified 15-20 doc sample — pending.
+   Level 2 (schema/prompt/provenance): done (2026-05-29).
+   Level 3a (sample selection): done (2026-05-30). 18 docs, data/cambridge_sample.json.
+   Level 3b (sample extraction): done (2026-05-30). 18/18 extracted, extraction_evidence
+     populated for all sample docs.
+   Level 3c (sample validation): pending. scripts/validate_sample.py not yet built.
    Level 4: Per-document confidence metrics and validation script — pending.
    Level 5: Full batch extraction with validation integration — pending.
    Level 6: Human audit report — pending.
@@ -421,6 +444,8 @@ DATA DIRECTORIES
   data/census_summary.txt      — Level 0 aggregate stats
   data/inventories/            — Level 1 per-document LLM inventories + summary.json
   data/cambridge_typology_review.txt — Level 1→2 corpus typology report (council typology)
+  data/cambridge_sample.json   — Level 3a canonical sample (written by 'council sample')
+  data/sample_validation/      — Level 3c per-doc validation reports + summary (pending)
   .cache/llm_responses/        — cached raw LLM responses ({hash}_{prompt-version}.json)
   data/validation/             — Level 4 per-document confidence reports (pending)
   data/eval/                   — prompt eval reports (JSON + plain text)

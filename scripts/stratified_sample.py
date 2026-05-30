@@ -174,13 +174,37 @@ def _print_summary(sample: list[str], by_name: dict, l1_flags: dict) -> None:
         print(f"  L0-flagged: {l0_in}", file=sys.stderr)
 
 
+def canonical_sample_path(council: str) -> Path:
+    return _REPO_ROOT / "data" / f"{council}_sample.json"
+
+
 def run(args) -> None:
+    import datetime
+
     docs = load_census()
     l1_flags = load_l1_flags()
     target = getattr(args, "count", 18)
+    council = args.council
 
     sample = select_sample(docs, l1_flags, target=target)
     by_name = {d["filename"]: d for d in docs}
+
+    # Always persist to canonical location so extract-sample and validate-sample
+    # reference exactly the same document set.
+    canonical = canonical_sample_path(council)
+    canonical.parent.mkdir(parents=True, exist_ok=True)
+    canonical.write_text(
+        json.dumps(
+            {
+                "council": council,
+                "selected_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                "count": len(sample),
+                "files": sample,
+            },
+            indent=2,
+        )
+    )
+    print(f"Saved sample to {canonical}", file=sys.stderr)
 
     if getattr(args, "output_file", None):
         Path(args.output_file).write_text("\n".join(sample) + "\n")
