@@ -17,7 +17,7 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 | 2 | Schema and prompt revision | **Done** (2026-05-29) |
 | 3a | Sample selection (`council sample`) | **Done** (2026-05-30) |
 | 3b | Sample extraction (`council extract-sample`) | **Done** (2026-05-30) |
-| 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — iterate provenance |
+| 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — all metrics within target |
 | 4 | Confidence metrics and validation script | Pending |
 | 5 | Batch extraction (~$7-20) | Pending |
 | 6 | Human audit | Pending |
