@@ -218,7 +218,10 @@ def cmd_extract(args) -> None:
                     council_name=council_full_name,
                     meeting_date_hint=meeting_date_hint,
                 )
-                meeting_id = save_extraction(session, council_id, extracted, pdf, text=raw_text)
+                meeting_id = save_extraction(
+                    session, council_id, extracted, pdf,
+                    text=raw_text, pdf_url=meta.get("source_url"),
+                )
                 msg = f"{pdf.name} → meeting {meeting_id} ({extracted.meeting_date}, {len(extracted.motions)} motions)"
                 console.print(f"  [green]✓[/green] {msg}")
                 _log.info("OK: %s", msg)
@@ -301,7 +304,10 @@ def cmd_run(args) -> None:
             progress.update(task, description=f"[cyan]{pdf.name}[/cyan]")
             try:
                 extracted, raw_text = extractor.extract_from_pdf(pdf, council_name=council_full_name)
-                meeting_id = save_extraction(session, council_id, extracted, pdf, text=raw_text)
+                meeting_id = save_extraction(
+                    session, council_id, extracted, pdf,
+                    text=raw_text, pdf_url=doc.source_url,
+                )
                 msg = f"{pdf.name} → meeting {meeting_id} ({extracted.meeting_date}, {len(extracted.motions)} motions)"
                 console.print(f"  [green]✓[/green] {msg}")
                 _log.info("OK: %s", msg)
@@ -569,6 +575,11 @@ def cmd_inventory(args) -> None:
 
 def cmd_typology(args) -> None:
     from scripts.inventory_typology import run
+    run(args)
+
+
+def cmd_sample(args) -> None:
+    from scripts.stratified_sample import run
     run(args)
 
 
@@ -886,6 +897,15 @@ def main() -> None:
     p_typology.add_argument("--limit", "-n", type=int, default=None, metavar="N",
                             help="Analyse only the N most-recently-updated inventory files")
     p_typology.set_defaults(func=cmd_typology)
+
+    # sample
+    p_sample = sub.add_parser("sample", help="Level 3: select a stratified 15-20 doc sample for prompt validation (scripts/stratified_sample.py)")
+    p_sample.add_argument("council", choices=list(COUNCILS))
+    p_sample.add_argument("--count", type=int, default=18, metavar="N",
+                          help="Target sample size (default: 18)")
+    p_sample.add_argument("--output-file", metavar="PATH",
+                          help="Write filenames to file instead of stdout")
+    p_sample.set_defaults(func=cmd_sample)
 
     # analyse
     p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")

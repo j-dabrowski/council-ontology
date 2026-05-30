@@ -273,7 +273,10 @@ def run_batch(
                 council_name=council.name,
                 meeting_date_hint=meeting_date_hint,
             )
-            meeting_id = save_extraction(session, council.id, extracted, pdf, text=raw_text)
+            meeting_id = save_extraction(
+                session, council.id, extracted, pdf,
+                text=raw_text, pdf_url=meta.get("source_url"),
+            )
             detail = (
                 f"meeting {meeting_id} "
                 f"({extracted.meeting_date}, {len(extracted.motions)} motions)"

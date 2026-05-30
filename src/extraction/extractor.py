@@ -7,7 +7,7 @@ entities from council meeting minutes text.
 
 import logging
 import re
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import anthropic
@@ -258,6 +258,7 @@ def save_extraction(
     extracted: ExtractedMeeting,
     pdf_path: Path | None = None,
     text: str | None = None,
+    pdf_url: str | None = None,
 ) -> int:
     """
     Persist an ExtractedMeeting into the database.
@@ -309,6 +310,11 @@ def save_extraction(
 
     if pdf_path and not meeting.minutes_pdf_path:
         meeting.minutes_pdf_path = str(pdf_path)
+    if pdf_url:
+        meeting.minutes_pdf_url = pdf_url
+    if text:
+        meeting.minutes_text = text
+    meeting.extracted_at = datetime.utcnow()
 
     session.flush()
 
