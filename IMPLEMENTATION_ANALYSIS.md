@@ -151,10 +151,15 @@ all 4 size buckets, 3 outliers (1 L1-flagged, 3 L0-flagged).
   + `data/sample_validation/paraphrase_report.txt` (per-quote detail for human/AI inspection).
 - Prints rich table to stdout with colour-coded metrics.
 
-**Quote matching — three tiers applied in order:**
+**Quote matching — pre-processing + three tiers applied in order:**
 All matching is done at validation time against the live PDF text; `char_offset` in the DB is not
 used here (it is a best-effort UI convenience only, stored by `_resolve_offset()` via verbatim
 `text.find()` at save time).
+0. **Page header stripping** — `_strip_page_headers()` removes lines containing Windows file
+   paths (`H:\...`) from raw pypdf text before any matching. Council minute PDFs (originally
+   Word documents) embed a repeated header on every page (meeting title, date, file path) which
+   pypdf extracts inline between page content. Stripping these lines allows quotes that span page
+   breaks to match correctly and contributes their full span to coverage.
 1. **Whitespace normalisation** — collapse all whitespace runs to a single space in both source
    and quote before comparing. Handles pypdf line-break newlines.
 2. **Stripped matching** — remove all non-alphanumeric characters from both sides. Handles
@@ -166,16 +171,18 @@ used here (it is a best-effort UI convenience only, stored by `_resolve_offset()
    (longest prefix of quote found in source + source text at that position) for the
    paraphrase report.
 
-**Results (Cambridge, 2026-05-30, 18 docs) — after all normalisation tiers:**
-- Paraphrase rate: **10.0%** (target <30%) ✓
-- Coverage ratio: **11.68%** (target >5%) ✓
+**Results (Cambridge, 2026-05-30, 18 docs) — final baselines after prompt tightening + header stripping:**
+- Paraphrase rate: **5.9%** (target <30%) ✓
+- Coverage ratio: **20.11%** (target >5%) ✓
 - Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 15 PASS / 3 REVIEW / 0 FAIL
+- Status: 16 PASS / 2 REVIEW / 0 FAIL
 
-All three aggregate metrics are within target. Coverage denominator is now capped at
-`min(max_chars, total_chars)` so large documents are measured against the extraction window,
-not the full document. 3 remaining REVIEW: 2 with genuine truncation under-extraction
-(resolve with `--max-chars full`), 1 with 45% paraphrase on a 1995 OCR document.
+Coverage nearly doubled (11.68% → 20.11%) after header stripping — confirms header intrusion
+was widespread across the corpus, not limited to the docs visible in the sample paraphrase report.
+Paraphrase rate halved (10.0% → 5.9%) after tightening the PROVENANCE RULE (verbatim OCR
+artifacts, no internal omissions, full resolution text, no appended outcome words, 150-word limit).
+2 remaining REVIEW: both large docs with genuine truncation under-extraction (95% keyword gap);
+resolve with `--max-chars full`.
 
 **Next step: proceed to Level 4.**
 

@@ -201,8 +201,13 @@ Level 3 is split into three substages with dedicated CLI commands.
 `council validate-sample cambridge`
 
 - Reads `data/{council}_sample.json` (same document set as 3b).
-- Re-extracts PDF source text at query time and applies three-tier normalised matching
-  to determine whether each model quote can be located in the source:
+- Re-extracts PDF source text at query time, strips page headers, then applies
+  three-tier normalised matching to determine whether each model quote can be located
+  in the source:
+  0. **Page header stripping** — removes lines containing `H:\` Windows file paths from
+     raw pypdf text before any matching. Council minute PDFs embed a page header (meeting
+     title, date, file path) on every page; pypdf extracts these inline between content.
+     Stripping them allows quotes spanning page breaks to match and contribute to coverage.
   1. **Whitespace normalisation** — collapse all whitespace runs to a single space.
      Handles pypdf line-break newlines inserted at every PDF line boundary.
   2. **Stripped matching** — remove all non-alphanumeric characters from both sides.
@@ -229,15 +234,17 @@ Level 3 is split into three substages with dedicated CLI commands.
   convenience stored at save time via verbatim `text.find()`. It is not used here.
   All matching is recomputed from the live PDF text at validation time.
 
-### Actual results (Cambridge, 2026-05-30, 18 docs)
-- Paraphrase rate: **10.0%** (target <30%) ✓
-- Coverage ratio:  **11.68%** (target >5%) ✓
+### Actual results (Cambridge, 2026-05-30, 18 docs) — final baselines
+- Paraphrase rate: **5.9%** (target <30%) ✓
+- Coverage ratio:  **20.11%** (target >5%) ✓
 - Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 15 PASS / 3 REVIEW / 0 FAIL
-- All metrics within target. 3 remaining REVIEW: 2 large docs with genuine
-  truncation under-extraction (95% keyword gap rate, planning items missing),
-  1 old 1995 doc with 45% paraphrase rate. These resolve with --max-chars full
-  (truncation) and prompt improvement (old-doc paraphrasing).
+- Status: 16 PASS / 2 REVIEW / 0 FAIL
+- All metrics well within target. Coverage nearly doubled after page header stripping
+  (was 11.68% before — confirms header intrusion was widespread in the corpus).
+  Paraphrase rate halved after PROVENANCE RULE tightening (verbatim OCR artifacts,
+  no internal omissions, full resolution text, 150-word limit).
+  2 remaining REVIEW: both large docs with genuine truncation under-extraction
+  (95% keyword gap); resolve with --max-chars full.
 
 ### Output
 - `data/{council}_sample.json` — canonical sample (written by 3a, read by 3b and 3c).
