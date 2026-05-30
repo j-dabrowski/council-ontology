@@ -138,6 +138,25 @@ def cmd_scrape(args) -> None:
     _print_docs_table(result.documents)
 
 
+def _classify_error(exc: Exception) -> str:
+    """Return a short groupable key for an extraction error (mirrors batch_extract.py)."""
+    import json as _json
+    import pydantic
+    if isinstance(exc, pydantic.ValidationError):
+        errs = exc.errors(include_url=False)
+        if errs:
+            e = errs[0]
+            loc = ".".join(
+                "[]" if isinstance(part, int) else str(part)
+                for part in e["loc"]
+            ) if e["loc"] else "(root)"
+            return f"ValidationError:{e['type']}@{loc}"
+        return "ValidationError:unknown"
+    if isinstance(exc, (ValueError, _json.JSONDecodeError)) and "JSON" in str(exc):
+        return "JSONDecodeError"
+    return type(exc).__name__
+
+
 def cmd_extract(args) -> None:
     key = args.council
     if key not in COUNCILS:
@@ -200,6 +219,7 @@ def cmd_extract(args) -> None:
 
     succeeded = 0
     failed = 0
+    failures: list[dict] = []
 
     with Progress(
         SpinnerColumn(),
@@ -241,9 +261,17 @@ def cmd_extract(args) -> None:
                 _log.info("OK: %s", msg)
                 succeeded += 1
             except Exception as exc:  # noqa: BLE001
+                session.rollback()
                 console.print(f"  [red]✗[/red] {pdf.name}: {exc}")
                 _log.error("FAIL: %s: %s", pdf.name, exc)
                 failed += 1
+                failures.append({
+                    "filename": pdf.name,
+                    "error_class": _classify_error(exc),
+                    "error_type": type(exc).__qualname__,
+                    "error_message": str(exc),
+                    "raw_llm_response": getattr(exc, "raw_llm_response", None),
+                })
             finally:
                 progress.advance(task)
 
@@ -252,6 +280,21 @@ def cmd_extract(args) -> None:
         f"\n[bold]Done:[/bold] {succeeded} extracted, {failed} failed, {skipped} skipped"
     )
     _log.info("Done: %d extracted, %d failed, %d skipped", succeeded, failed, skipped)
+
+    if failures:
+        import json as _json
+        from datetime import datetime, timezone
+        error_path = Path("data/extraction_errors.json")
+        report = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "council": key,
+            "attempted": succeeded + failed,
+            "succeeded": succeeded,
+            "failed": failed,
+            "failures": failures,
+        }
+        error_path.write_text(_json.dumps(report, indent=2))
+        console.print(f"[dim]Errors written to {error_path}[/dim]")
 
 
 def cmd_run(args) -> None:

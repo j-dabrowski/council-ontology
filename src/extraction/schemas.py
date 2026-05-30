@@ -352,8 +352,8 @@ class ExtractedMeeting(BaseModel):
         default=None,
         description="Full official name of the council, e.g. 'City of Cambridge'"
     )
-    meeting_type: str = Field(
-        default="Council Meeting",
+    meeting_type: Optional[str] = Field(
+        default=None,
         description="e.g. 'Ordinary Council Meeting', 'Special Meeting', 'Committee Meeting'",
     )
     meeting_date: Optional[date] = Field(default=None, description="Date of the meeting (YYYY-MM-DD)")

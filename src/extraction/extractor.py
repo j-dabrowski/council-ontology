@@ -358,6 +358,8 @@ def _resolve_offset(text: str, quote: str) -> "tuple[int, int] | tuple[None, Non
 def _get_or_create_councillor(session, given_name: str, family_name: str):
     from src.models import Councillor
 
+    given_name = given_name or ""
+    family_name = family_name or ""
     slug = re.sub(r"[^a-z0-9]+", "-", f"{given_name}-{family_name}".lower()).strip("-")
     obj = session.query(Councillor).filter_by(slug=slug).first()
     if obj:
