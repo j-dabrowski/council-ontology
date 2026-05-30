@@ -168,14 +168,14 @@ used here (it is a best-effort UI convenience only, stored by `_resolve_offset()
 
 **Results (Cambridge, 2026-05-30, 18 docs) — after all normalisation tiers:**
 - Paraphrase rate: **10.0%** (target <30%) ✓
-- Coverage ratio: **9.87%** (target >5%) ✓
+- Coverage ratio: **11.68%** (target >5%) ✓
 - Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 11 PASS / 7 REVIEW / 0 FAIL
+- Status: 15 PASS / 3 REVIEW / 0 FAIL
 
-All three aggregate metrics are within target. The 7 REVIEW docs are flagged by per-doc
-coverage below 3% — expected for large documents given the 80k character extraction window.
-The remaining 10% paraphrase rate represents genuine model paraphrasing; at this level it
-does not block progression to Level 4.
+All three aggregate metrics are within target. Coverage denominator is now capped at
+`min(max_chars, total_chars)` so large documents are measured against the extraction window,
+not the full document. 3 remaining REVIEW: 2 with genuine truncation under-extraction
+(resolve with `--max-chars full`), 1 with 45% paraphrase on a 1995 OCR document.
 
 **Next step: proceed to Level 4.**
 

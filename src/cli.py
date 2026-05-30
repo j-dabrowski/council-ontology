@@ -23,6 +23,16 @@ from rich.table import Table
 console = Console()
 _log = logging.getLogger(__name__)
 
+
+def _parse_max_chars(value: str) -> "int | None":
+    """Argparse type for --max-chars: accepts an integer or 'full'/'none'/'unlimited'."""
+    if value.lower() in ("full", "none", "unlimited"):
+        return None
+    try:
+        return int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"--max-chars must be an integer or 'full', got: {value!r}")
+
 # ---------------------------------------------------------------------------
 # Registry: add new councils here
 # ---------------------------------------------------------------------------
@@ -178,6 +188,9 @@ def cmd_extract(args) -> None:
 
     console.print(Panel(f"Extracting [bold]{len(pdfs)}[/bold] PDFs for [bold]{key}[/bold]", style="blue"))
 
+    from src.extraction.extractor import DEFAULT_MAX_CHARS
+    max_chars = getattr(args, "max_chars", DEFAULT_MAX_CHARS)
+
     engine = init_db()
     session = make_session_factory(engine)()
     council = _get_council(session, short_name)
@@ -217,6 +230,7 @@ def cmd_extract(args) -> None:
                     pdf,
                     council_name=council_full_name,
                     meeting_date_hint=meeting_date_hint,
+                    max_chars=max_chars,
                 )
                 meeting_id = save_extraction(
                     session, council_id, extracted, pdf,
@@ -829,6 +843,10 @@ def main() -> None:
     p_extract.add_argument("--files", nargs="+", metavar="PDF",
                            help="Process only these specific PDFs (basenames); ignores --limit and date filters")
     p_extract.add_argument("--force", action="store_true", help="Re-extract already-extracted PDFs")
+    from src.extraction.extractor import DEFAULT_MAX_CHARS as _DMC
+    p_extract.add_argument("--max-chars", type=_parse_max_chars, default=_DMC, metavar="N|full",
+                           dest="max_chars",
+                           help=f"Extraction limit per document (default: {_DMC}). Use 'full' for multi-chunk extraction of the entire document.")
     p_extract.set_defaults(func=cmd_extract)
 
     # status
@@ -938,17 +956,21 @@ def main() -> None:
     p_sample.set_defaults(func=cmd_sample)
 
     # extract-sample
+    from src.extraction.extractor import DEFAULT_MAX_CHARS as _DMC2
     p_extract_sample = sub.add_parser("extract-sample", help="Level 3b: extract the saved sample (always --force); reads data/{council}_sample.json")
     p_extract_sample.add_argument("council", choices=list(COUNCILS))
+    p_extract_sample.add_argument("--max-chars", type=_parse_max_chars, default=_DMC2, metavar="N|full",
+                                  dest="max_chars",
+                                  help=f"Extraction limit per document (default: {_DMC2}). Use 'full' for multi-chunk extraction of the entire document.")
     p_extract_sample.set_defaults(func=cmd_extract_sample)
 
     # validate-sample
-    from src.extraction.extractor import DEFAULT_MAX_CHARS
+    from src.extraction.extractor import DEFAULT_MAX_CHARS as _DMC3
     p_validate_sample = sub.add_parser("validate-sample", help="Level 3c: validate sample extractions against evidence table and L1 inventory (scripts/validate_sample.py)")
     p_validate_sample.add_argument("council", choices=list(COUNCILS))
-    p_validate_sample.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS, metavar="N",
+    p_validate_sample.add_argument("--max-chars", type=_parse_max_chars, default=_DMC3, metavar="N|full",
                                    dest="max_chars",
-                                   help=f"Extraction window used as coverage denominator (default: {DEFAULT_MAX_CHARS})")
+                                   help=f"Coverage denominator cap (default: {_DMC3}). Use 'full' when extraction was run with --max-chars full.")
     p_validate_sample.set_defaults(func=cmd_validate_sample)
 
     # analyse

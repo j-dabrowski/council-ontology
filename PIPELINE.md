@@ -156,6 +156,9 @@ seven `other_items` type values removed (now have dedicated fields).
 `extract_from_pdf()` returns `(ExtractedMeeting, str)`, `save_extraction()` accepts `text=`.
 All entity saves flush before inserting evidence rows. Call sites in `batch_extract.py` and
 `cli.py` updated to pass raw text through.
+`DEFAULT_MAX_CHARS = 80_000` added as single source of truth for the extraction window.
+`extract()` / `extract_from_pdf()` accept `max_chars`: default 80k (single-chunk); `None`
+enables multi-chunk full-document extraction with result merging.
 
 ### Output
 - `schemas.py`, `system_prompt.txt`, `ontology.py`, `extractor.py` all updated.
@@ -209,8 +212,11 @@ Level 3 is split into three substages with dedicated CLI commands.
   3. **Paraphrase** — content genuinely differs; collected for the paraphrase report.
 - Four metrics per document:
   - **Paraphrase rate**: quotes unmatched after all three tiers / total quotes.
-  - **Coverage ratio**: fraction of normalised source chars spanned by matched quotes
-    (full + stripped). Unique char positions counted; overlapping quotes not double-counted.
+  - **Coverage ratio**: fraction of the extraction window covered by matched quotes.
+    Denominator is `min(max_chars, total_chars)` so large documents are not penalised
+    for content outside the extraction window. Pass `--max-chars full` to both
+    `extract-sample` and `validate-sample` for full-document measurement.
+    Unique char positions counted; overlapping quotes not double-counted.
   - **Inventory agreement**: extracted entity counts vs L1 inventory counts per field.
     Flagged if ratio <0.4 or >2.5.
   - **Keyword gap rate**: MOVED/CARRIED/DA/DECLARATION OF INTEREST/DEPUTATION/PETITION
@@ -225,11 +231,13 @@ Level 3 is split into three substages with dedicated CLI commands.
 
 ### Actual results (Cambridge, 2026-05-30, 18 docs)
 - Paraphrase rate: **10.0%** (target <30%) ✓
-- Coverage ratio:  **9.87%** (target >5%) ✓
+- Coverage ratio:  **11.68%** (target >5%) ✓
 - Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 11 PASS / 7 REVIEW / 0 FAIL
-- All metrics within target. 7 REVIEW docs flagged by per-doc coverage <3%,
-  expected for large documents given the 80k character extraction window.
+- Status: 15 PASS / 3 REVIEW / 0 FAIL
+- All metrics within target. 3 remaining REVIEW: 2 large docs with genuine
+  truncation under-extraction (95% keyword gap rate, planning items missing),
+  1 old 1995 doc with 45% paraphrase rate. These resolve with --max-chars full
+  (truncation) and prompt improvement (old-doc paraphrasing).
 
 ### Output
 - `data/{council}_sample.json` — canonical sample (written by 3a, read by 3b and 3c).

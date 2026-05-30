@@ -88,6 +88,25 @@ def _chunk_text(text: str, max_chars: int = DEFAULT_MAX_CHARS) -> list[str]:
     return chunks
 
 
+# Entity list fields on ExtractedMeeting that are concatenated across chunks.
+# Scalar fields (council_name, meeting_date, meeting_type, location, councillors_*)
+# are taken from chunk 0 only.
+_ENTITY_LISTS = [
+    "motions", "public_questions", "deputations", "petitions", "appointments",
+    "committee_reports", "budget_items", "interest_declarations", "tenders",
+    "delegated_decisions", "building_permits", "other_items",
+]
+
+
+def _merge_chunk_results(results: list[ExtractedMeeting]) -> ExtractedMeeting:
+    """Merge per-chunk extractions: metadata from chunk 0, entity lists concatenated."""
+    base = results[0]
+    for subsequent in results[1:]:
+        update = {f: getattr(base, f) + getattr(subsequent, f) for f in _ENTITY_LISTS}
+        base = base.model_copy(update=update)
+    return base
+
+
 class MinutesExtractor:
     """
     Extracts structured entities from council minutes text using Claude.
@@ -103,39 +122,123 @@ class MinutesExtractor:
         self._client = anthropic.Anthropic(api_key=api_key)
         self._model = model
 
-    def extract(self, text: str, source_hint: str = "", council_name: str | None = None, meeting_date_hint: str | None = None) -> ExtractedMeeting:
+    def extract(
+        self,
+        text: str,
+        source_hint: str = "",
+        council_name: str | None = None,
+        meeting_date_hint: str | None = None,
+        max_chars: "int | None" = DEFAULT_MAX_CHARS,
+    ) -> ExtractedMeeting:
         """
         Extract structured data from minutes text.
 
-        For very long documents the text is chunked and the first chunk is used
-        (future: merge multi-chunk results).
+        max_chars controls how much of the document is extracted:
+          - int (default DEFAULT_MAX_CHARS): truncate to the first max_chars chars
+            (single API call, existing behaviour).
+          - None: extract the full document in chunks of DEFAULT_MAX_CHARS each,
+            merging results (multi-chunk mode, more expensive).
 
         Args:
             text: Full text of the meeting minutes.
             source_hint: Optional label for logging (e.g. filename).
             council_name: Known council name to include as a hint for the model.
+            meeting_date_hint: ISO date string passed as a hint for chunk 0.
+            max_chars: Extraction limit. None means full document (multi-chunk).
 
         Returns:
             ExtractedMeeting Pydantic model.
         """
-        chunks = _chunk_text(text)
-        if len(chunks) > 1:
-            logger.warning(
-                "%s: text truncated to first chunk (%d/%d chars)",
-                source_hint or "document",
-                len(chunks[0]),
-                len(text),
+        if max_chars is not None:
+            # Truncated single-chunk mode
+            chunk = _chunk_text(text, max_chars)[0]
+            if len(text) > len(chunk):
+                logger.warning(
+                    "%s: truncated to first chunk (%d/%d chars)",
+                    source_hint or "document",
+                    len(chunk),
+                    len(text),
+                )
+            return self._extract_chunk(
+                chunk,
+                source_hint=source_hint,
+                council_name=council_name,
+                meeting_date_hint=meeting_date_hint,
             )
 
+        # Unlimited multi-chunk mode
+        chunks = _chunk_text(text, DEFAULT_MAX_CHARS)
+
+        if len(chunks) == 1:
+            return self._extract_chunk(
+                chunks[0],
+                source_hint=source_hint,
+                council_name=council_name,
+                meeting_date_hint=meeting_date_hint,
+            )
+
+        logger.info(
+            "%s: %d chunks (%d total chars) — running multi-chunk extraction",
+            source_hint or "document",
+            len(chunks),
+            len(text),
+        )
+        results: list[ExtractedMeeting] = []
+        for i, chunk in enumerate(chunks):
+            chunk_hint = f"{source_hint} [{i + 1}/{len(chunks)}]" if source_hint else f"chunk {i + 1}/{len(chunks)}"
+            result = self._extract_chunk(
+                chunk,
+                source_hint=chunk_hint,
+                council_name=council_name,
+                meeting_date_hint=meeting_date_hint if i == 0 else None,
+                chunk_index=i,
+                total_chunks=len(chunks),
+            )
+            results.append(result)
+
+        merged = _merge_chunk_results(results)
+        logger.info(
+            "%s: merged %d chunks → %d motions, %d councillors present",
+            source_hint or "document",
+            len(chunks),
+            len(merged.motions),
+            len(merged.councillors_present),
+        )
+        return merged
+
+    def _extract_chunk(
+        self,
+        chunk_text: str,
+        source_hint: str = "",
+        council_name: str | None = None,
+        meeting_date_hint: str | None = None,
+        chunk_index: int = 0,
+        total_chunks: int = 1,
+    ) -> ExtractedMeeting:
+        """Extract from a single chunk of text and return an ExtractedMeeting."""
         hints = []
         if council_name:
             hints.append(f"Council: {council_name}")
         if meeting_date_hint:
             hints.append(f"Meeting date: {meeting_date_hint}")
         hint = ("\n".join(hints) + "\n\n") if hints else ""
+
+        if chunk_index > 0:
+            continuation = (
+                f"NOTE: This is part {chunk_index + 1} of {total_chunks} of a long meeting "
+                f"minutes document. Meeting metadata (council name, date, type, location, "
+                f"councillors present/apology) was already extracted from part 1. "
+                f"For this part: set council_name, meeting_date, meeting_type, location, "
+                f"councillors_present, and councillors_apology to null/empty — "
+                f"extract only the agenda items and entities in this section.\n\n"
+            )
+        else:
+            continuation = ""
+
         user_content = (
-            f"{hint}Extract all entities from the following council meeting minutes:\n\n"
-            f"---\n{chunks[0]}\n---"
+            f"{hint}{continuation}"
+            f"Extract all entities from the following council meeting minutes:\n\n"
+            f"---\n{chunk_text}\n---"
         )
 
         logger.info(
@@ -183,21 +286,26 @@ class MinutesExtractor:
             )
             exc.raw_llm_response = raw  # type: ignore[attr-defined]
             raise
-        # Override with known context if Claude omitted these fields
-        overrides: dict = {}
-        if council_name and not result.council_name:
-            overrides["council_name"] = council_name
-        if not result.meeting_date:
-            if meeting_date_hint:
-                overrides["meeting_date"] = date.fromisoformat(meeting_date_hint)
-            else:
-                parsed = _parse_date_from_text(chunks[0])
-                if parsed:
-                    overrides["meeting_date"] = parsed
-        if overrides:
-            result = result.model_copy(update=overrides)
+
+        # Override with known context if Claude omitted these fields (chunk 0 only)
+        if chunk_index == 0:
+            overrides: dict = {}
+            if council_name and not result.council_name:
+                overrides["council_name"] = council_name
+            if not result.meeting_date:
+                if meeting_date_hint:
+                    overrides["meeting_date"] = date.fromisoformat(meeting_date_hint)
+                else:
+                    parsed = _parse_date_from_text(chunk_text)
+                    if parsed:
+                        overrides["meeting_date"] = parsed
+            if overrides:
+                result = result.model_copy(update=overrides)
+
         logger.info(
-            "Extracted: %d motions, %d councillors present",
+            "Extracted chunk %d/%d: %d motions, %d councillors present",
+            chunk_index + 1,
+            total_chunks,
             len(result.motions),
             len(result.councillors_present),
         )
@@ -208,6 +316,7 @@ class MinutesExtractor:
         pdf_path: Path,
         council_name: str | None = None,
         meeting_date_hint: str | None = None,
+        max_chars: "int | None" = DEFAULT_MAX_CHARS,
     ) -> "tuple[ExtractedMeeting, str]":
         """Extract text from PDF then run extraction. Returns (result, raw_text)."""
         logger.info("Reading PDF: %s", pdf_path)
@@ -219,6 +328,7 @@ class MinutesExtractor:
             source_hint=pdf_path.name,
             council_name=council_name,
             meeting_date_hint=meeting_date_hint,
+            max_chars=max_chars,
         )
         return result, text
 

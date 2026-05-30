@@ -105,6 +105,7 @@ council extract cambridge --limit 5
 council extract cambridge --from-year 2020 --to-year 2022
 council extract cambridge --files abc123.pdf def456.pdf   # targeted
 council extract cambridge --files abc123.pdf --force      # re-extract even if already in DB
+council extract cambridge --max-chars full                # multi-chunk: extract entire document
 ```
 
 #### `council status`
@@ -185,13 +186,17 @@ council sample cambridge --count 20
 
 ```bash
 council extract-sample cambridge
+council extract-sample cambridge --max-chars full   # extract entire document (multi-chunk)
 ```
 
 #### `council validate-sample cambridge`
 **Level 3c:** Validates sample extractions against the source PDFs. Applies three-tier normalised quote matching (whitespace normalisation → stripped alphanumeric → paraphrase) to compute paraphrase rate, coverage ratio, inventory agreement, and keyword gap rate. Writes `data/sample_validation/report.txt` and `paraphrase_report.txt`. Gate before Level 4.
 
+The `--max-chars` value controls the coverage denominator — it should match whatever was used for `extract-sample`. Default is 80k (single-chunk mode). Pass `full` when extraction was run with `--max-chars full`.
+
 ```bash
 council validate-sample cambridge
+council validate-sample cambridge --max-chars full
 ```
 
 #### `council batch cambridge`

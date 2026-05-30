@@ -145,6 +145,10 @@ Pipeline:
 Current model: claude-haiku-4-5-20251001 (Sonnet/Opus also supported)
 Max tokens: 64,000 output (streams to avoid truncated JSON)
 Retry: 3 attempts with exponential backoff on connection/status errors
+Extraction window: DEFAULT_MAX_CHARS = 80,000 chars (single-chunk, default).
+  Pass max_chars=None to extract() / --max-chars full at CLI for multi-chunk
+  extraction of the full document. Chunks are merged: metadata from chunk 0,
+  entity lists concatenated across all chunks.
 
 Schema extracts:
   - council name, meeting date/type, location
@@ -221,8 +225,11 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
 
   council extract cambridge [--limit N] [--from-year YYYY] [--to-year YYYY]
                             [--files a.pdf b.pdf ...] [--force]
+                            [--max-chars N|full]
       Process already-downloaded PDFs. --files targets specific PDFs.
       --force re-extracts PDFs already in the DB.
+      --max-chars controls extraction window: default 80k (single chunk);
+      'full' enables multi-chunk extraction of the entire document.
 
   council status
       Pipeline summary and per-year breakdown for all councils.
@@ -259,17 +266,20 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       Always saves canonical selection to data/{council}_sample.json.
       Also prints filenames to stdout.
 
-  council extract-sample cambridge
+  council extract-sample cambridge [--max-chars N|full]
       Level 3b: extract the saved sample. Reads data/{council}_sample.json.
       Always runs with --force (re-extracts regardless of DB state); warns user.
       Run after 'council sample' to populate extraction_evidence for 3c.
+      --max-chars full uses multi-chunk extraction (full document, no 80k cap).
 
-  council validate-sample cambridge
+  council validate-sample cambridge [--max-chars N|full]
       Level 3c: validate sample extractions. Reads data/{council}_sample.json.
       Re-extracts PDF text and applies three-tier normalised matching (whitespace →
       stripped alphanumeric → paraphrase) to compute paraphrase rate, coverage ratio,
       inventory agreement, and keyword gap rate. Writes data/sample_validation/
       report.txt and paraphrase_report.txt. Gate before Level 4.
+      --max-chars sets the coverage denominator cap; should match the value used
+      for extract-sample. Default 80k. Pass 'full' when extraction was unlimited.
 
   council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
                           [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
@@ -403,11 +413,13 @@ WHAT IS UNFINISHED
    minutes_text     — raw extracted text is discarded after extraction
    extracted_at     — timestamp is never set
 
-5. LONG DOCUMENTS SILENTLY TRUNCATED
-   extractor.py only processes chunks[0] (first 80,000 chars).
-   Comment says "future: merge multi-chunk results".
-   Some older/longer PDFs may be missing agenda items from the second half.
-   Note: census shows 319/537 documents exceed 200k chars — truncation is significant.
+5. LONG DOCUMENTS — NOW CONTROLLABLE VIA --max-chars
+   Default extraction is still 80k single-chunk (fast, cheap).
+   Multi-chunk full-document extraction is now implemented: pass --max-chars full
+   to extract/extract-sample. Chunks are merged (metadata from chunk 0, entity
+   lists concatenated). 319/537 Cambridge docs exceed 200k chars.
+   Use --max-chars full when running extract-sample/validate-sample together
+   to get full-document coverage metrics.
 
 6. NEW SCHEMA FIELDS — PERSISTED (done 2026-05-29)
    11 new DB tables added to ontology.py and wired into save_extraction():
@@ -430,10 +442,14 @@ WHAT IS UNFINISHED
      populated for all sample docs.
    Level 3c (sample validation): done (2026-05-30). scripts/validate_sample.py built.
      Three-tier quote matching: whitespace normalisation → stripped alphanumeric
-     (recovers pypdf word-split artefacts) → paraphrase. All metrics within target:
-     paraphrase 10.0% (<30%), coverage 9.87% (>5%), keyword gap 10.9% (<25%).
-     Status: 11 PASS / 7 REVIEW / 0 FAIL. Paraphrase report at
+     (recovers pypdf word-split artefacts) → paraphrase. Coverage denominator
+     capped at min(max_chars, total_chars) so large docs aren't penalised for
+     content outside the extraction window. All metrics within target:
+     paraphrase 10.0% (<30%), coverage 11.68% (>5%), keyword gap 10.9% (<25%).
+     Status: 15 PASS / 3 REVIEW / 0 FAIL. Paraphrase report at
      data/sample_validation/paraphrase_report.txt.
+     3 remaining REVIEW: 2 large docs with genuine truncation (95% keyword gap),
+     1 old 1995 doc with 45% paraphrase rate.
    Level 4: Per-document confidence metrics and validation script — pending.
    Level 5: Full batch extraction with validation integration — pending.
    Level 6: Human audit report — pending.
