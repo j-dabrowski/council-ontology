@@ -32,6 +32,7 @@ data/cambridge_typology_review.txt
 data/cambridge_sample.json
 data/inventories/
 data/inventory_quality/
+data/sample_validation/
 
 .cache/
 

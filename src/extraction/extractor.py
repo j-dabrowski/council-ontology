@@ -227,8 +227,12 @@ class MinutesExtractor:
 
 
 def _resolve_offset(text: str, quote: str) -> "tuple[int, int] | tuple[None, None]":
-    """Return (char_offset, char_length) of the first occurrence of quote in text.
-    Returns (None, None) if text is absent or quote is not found verbatim."""
+    """Return (char_offset, char_length) of the first verbatim occurrence of quote in text.
+
+    Stored as a best-effort convenience for UI/lookup (e.g. highlighting a span).
+    Do NOT use char_offset IS NULL as a hallucination signal — validation code
+    should normalise both source text and quote at query time before matching.
+    """
     if not text or not quote:
         return None, None
     idx = text.find(quote)

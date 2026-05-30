@@ -140,26 +140,34 @@ all 4 size buckets, 3 outliers (1 L1-flagged, 3 L0-flagged).
 
 **Results:** 18/18 extracted, 0 failed. `extraction_evidence` populated for all docs.
 
-### Level 3c: Sample Validation ⏳ PENDING
+### Level 3c: Sample Validation ✅ COMPLETE (2026-05-30) — prompt iteration needed
 
-**Needs new work:**
+**What was built:**
 - `scripts/validate_sample.py` + `council validate-sample cambridge`.
-- Reads `data/{council}_sample.json` to identify the document set.
-- Queries `extraction_evidence` for hallucination rate (`char_offset IS NULL` / total)
-  and coverage ratio (`SUM(char_length)` / total doc chars), per doc and aggregate.
-- Loads each doc's L1 inventory (`data/inventories/{stem}.json`) and diffs entity
-  counts against what the extractor returned (inventory agreement).
-- Keyword gap detection: locates MOVED/CARRIED/DA/DECLARATION/etc. occurrences in
-  source text and checks whether each falls within a source quote's char range.
-- Writes `data/sample_validation/{stem}.json` per doc + `data/sample_validation/report.txt`.
-- Prints a summary table to stdout: one row per doc, all four metrics, flagged docs
-  highlighted.
-- This report is the human gate: poor hallucination rate or inventory agreement →
-  iterate the prompt and re-run 3b → 3c. Clean → proceed to Level 4.
-- Aggregate metrics calibrate Level 4 PASS/REVIEW/FAIL thresholds.
+- Reads `data/{council}_sample.json`, queries `extraction_evidence`, re-extracts PDF
+  text for keyword gap detection, loads L1 inventories for agreement comparison.
+- Four metrics per doc: hallucination rate, coverage ratio, inventory agreement, keyword gap rate.
+- Determines PASS/REVIEW/FAIL per doc; writes per-doc JSON + `data/sample_validation/report.txt`.
+- Prints rich table to stdout with colour-coded metrics; report.txt includes interpretation
+  and next-step instructions.
 
-**Effort: Medium.** DB queries and L1 inventory parsing are straightforward; keyword
-gap detection requires mapping keyword positions against evidence char ranges.
+**Results (Cambridge, 2026-05-30, 18 docs):**
+- Hallucination rate: **78.3%** (target <30%) — model is paraphrasing, not quoting verbatim
+- Coverage ratio: **0.82%** (target >5%) — consequence of hallucination (paraphrases → NULL offsets)
+- Keyword gap rate: **22.1%** (target <25%) ✓ — entities ARE being found, just without verbatim quotes
+- Status: 1 PASS / 9 REVIEW / 8 FAIL
+
+**Key insight:** Keyword gap rate is within target, meaning the extractor is locating
+entities correctly. The problem is provenance only: the model writes paraphrased
+`source_quotes` instead of verbatim extracts. The PROVENANCE RULE in `system_prompt.txt`
+needs strengthening before proceeding to Level 4.
+
+**Next step (still in Level 3 iteration loop):**
+1. Strengthen PROVENANCE RULE in `src/extraction/system_prompt.txt`.
+2. `council extract-sample cambridge` (re-run 3b with force).
+3. `council validate-sample cambridge` (re-run 3c).
+4. Repeat until hallucination <30%, coverage >5%.
+5. Then proceed to Level 4.
 
 ---
 
@@ -240,14 +248,15 @@ gap detection requires mapping keyword positions against evidence char ranges.
 | 5 | New DB tables + `save_extraction()` for 10 new field types | Level 2a | Medium | **Done** (2026-05-29) |
 | 6 | Level 3a: stratified sample selection script | Levels 0, 1 | Small | **Done** (2026-05-30) |
 | 7 | Level 3b: `council extract-sample` CLI command | Level 3a | Small | **Done** (2026-05-30) |
-| 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | Pending |
+| 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | **Done** (2026-05-30) |
 | 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | Pending |
 | 10 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
 | 11 | Level 6: audit report generator | Level 5 | Small | Pending |
 
-**Levels 0–2 and Level 3a/3b are complete.** The critical path now leads to Level 3c
-(`council validate-sample`), which calibrates the thresholds used by Level 4, which
-unblocks Level 5 (full batch extraction).
+**Levels 0–2 and Level 3a/3b/3c are complete.** The critical path now requires a
+provenance prompt iteration (3b→3c loop) before Level 4. Hallucination rate 78% is
+the blocker; keyword gap rate 22% is within target. Once hallucination <30%, proceed
+to Level 4 (`scripts/validate_extraction.py`), which unblocks Level 5 (full batch).
 
 ---
 

@@ -385,8 +385,11 @@ WHAT IS UNFINISHED
    Levels 0–2 and Level 3a/3b are complete. Next: Level 3c (validate-sample),
    then Level 4 (confidence metrics), then Level 5 (full batch).
    See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for the full sequence.
-     council validate-sample cambridge    # Level 3c — next step
-     council batch cambridge --limit 20   # after Level 3c and 4 are done
+     # Level 3c done — iterate provenance prompt then proceed to Level 4
+     # Fix PROVENANCE RULE in src/extraction/system_prompt.txt, then:
+     council extract-sample cambridge     # re-run 3b
+     council validate-sample cambridge    # re-run 3c — iterate until hallucination <30%
+     council batch cambridge --limit 20   # after Level 3c passes and Level 4 is done
 
 2. DYNAMIC LAYER IS EMPTY
    The relationships table and RelationshipKind enum are fully modelled.
@@ -429,7 +432,10 @@ WHAT IS UNFINISHED
    Level 3a (sample selection): done (2026-05-30). 18 docs, data/cambridge_sample.json.
    Level 3b (sample extraction): done (2026-05-30). 18/18 extracted, extraction_evidence
      populated for all sample docs.
-   Level 3c (sample validation): pending. scripts/validate_sample.py not yet built.
+   Level 3c (sample validation): done (2026-05-30). scripts/validate_sample.py built.
+     Results: hallucination 78.3% (target <30%), coverage 0.82% (target >5%),
+     keyword gap 22.1% (target <25%). Model paraphrases quotes instead of quoting
+     verbatim. Strengthen PROVENANCE RULE in system_prompt.txt, then iterate 3b→3c.
    Level 4: Per-document confidence metrics and validation script — pending.
    Level 5: Full batch extraction with validation integration — pending.
    Level 6: Human audit report — pending.
