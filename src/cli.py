@@ -943,8 +943,12 @@ def main() -> None:
     p_extract_sample.set_defaults(func=cmd_extract_sample)
 
     # validate-sample
+    from src.extraction.extractor import DEFAULT_MAX_CHARS
     p_validate_sample = sub.add_parser("validate-sample", help="Level 3c: validate sample extractions against evidence table and L1 inventory (scripts/validate_sample.py)")
     p_validate_sample.add_argument("council", choices=list(COUNCILS))
+    p_validate_sample.add_argument("--max-chars", type=int, default=DEFAULT_MAX_CHARS, metavar="N",
+                                   dest="max_chars",
+                                   help=f"Extraction window used as coverage denominator (default: {DEFAULT_MAX_CHARS})")
     p_validate_sample.set_defaults(func=cmd_validate_sample)
 
     # analyse

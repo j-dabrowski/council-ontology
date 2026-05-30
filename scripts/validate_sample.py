@@ -279,17 +279,23 @@ def compute_paraphrase_rate(
     return paraphrased, stripped_matched, total, rate, examples
 
 
-def compute_coverage(classified: list[dict], source_text: str) -> float:
-    """Fraction of normalised source chars covered by matched quotes (full + stripped)."""
-    norm_source = _norm(source_text)
-    total = len(norm_source)
-    if total == 0:
+def compute_coverage(classified: list[dict], source_text: str, max_chars: int | None = None) -> float:
+    """Fraction of the extraction window covered by matched quotes (full + stripped).
+
+    max_chars: when given, the denominator is the normalised length of source_text[:max_chars]
+               rather than the full document, matching the extractor's truncation window.
+    """
+    if max_chars is not None and max_chars < len(source_text):
+        window = len(_norm(source_text[:max_chars]))
+    else:
+        window = len(_norm(source_text))
+    if window == 0:
         return 0.0
     covered: set[int] = set()
     for c in classified:
         if c["norm_start"] is not None and c["norm_end"] is not None:
             covered.update(range(c["norm_start"], c["norm_end"]))
-    return len(covered) / total
+    return len(covered) / window
 
 
 def compute_inventory_agreement(l1_inventory: dict, extracted_counts: dict) -> dict[str, dict]:
@@ -359,7 +365,7 @@ def determine_status(para_rate: float, cov_ratio: float, gap_rate: float, quote_
 # Per-document validation
 # ---------------------------------------------------------------------------
 
-def validate_doc(conn: sqlite3.Connection, council: str, filename: str, census: dict) -> dict:
+def validate_doc(conn: sqlite3.Connection, council: str, filename: str, census: dict, max_chars: int | None = None) -> dict:
     stem = Path(filename).stem
 
     meeting = find_meeting(conn, filename)
@@ -375,7 +381,7 @@ def validate_doc(conn: sqlite3.Connection, council: str, filename: str, census: 
     classified = _classify_quotes(quotes, source_text)
 
     para_n, stripped_n, para_total, para_rate, para_examples = compute_paraphrase_rate(classified)
-    cov_ratio = compute_coverage(classified, source_text)
+    cov_ratio = compute_coverage(classified, source_text, max_chars=max_chars)
     inv_agreement = compute_inventory_agreement(l1_inventory, entity_counts) if l1_inventory else None
     kw_gap = compute_keyword_gaps(classified, source_text)
 
@@ -492,7 +498,9 @@ def _write_report(results: list[dict], council: str, sample: dict) -> None:
         "  Paraphrase rate     — quotes not found in whitespace-normalised source text.",
         "                        Both PDF text and quote are normalised before matching.",
         "                        Only genuine content differences count. Target: <30%.",
-        "  Coverage ratio      — fraction of normalised source chars covered by matched quotes.",
+        "  Coverage ratio      — fraction of the extraction window (first max_chars chars) covered",
+        "                        by matched quotes. Denominator is capped at the extraction window",
+        "                        so large documents are not penalised for truncated content.",
         "                        Target: >5%.",
         "  Inventory agreement — average of (extracted count / L1 count) across entity types.",
         "                        Values near 1.0 = good. Flagged if <0.4 or >2.5.",
@@ -711,7 +719,9 @@ def _wrap(text: str, width: int) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def run(args) -> None:
+    from src.extraction.extractor import DEFAULT_MAX_CHARS
     council = args.council
+    max_chars: int | None = getattr(args, "max_chars", DEFAULT_MAX_CHARS)
 
     sample_path = DATA_DIR / f"{council}_sample.json"
     if not sample_path.exists():
@@ -730,7 +740,7 @@ def run(args) -> None:
     results: list[dict] = []
     for filename in files:
         console.print(f"  {filename} ...", end="", highlight=False)
-        result = validate_doc(conn, council, filename, census)
+        result = validate_doc(conn, council, filename, census, max_chars=max_chars)
         results.append(result)
         stem = Path(filename).stem
         (VALIDATION_DIR / f"{stem}.json").write_text(json.dumps(result, indent=2))

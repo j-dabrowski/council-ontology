@@ -21,6 +21,8 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_MAX_CHARS = 80_000
+
 #_MODEL = "claude-opus-4-6"
 #_MODEL = "claude-sonnet-4-6"
 _MODEL = "claude-haiku-4-5-20251001"
@@ -64,7 +66,7 @@ def extract_text_from_pdf(pdf_path: Path) -> str:
     return "\n\n".join(parts)
 
 
-def _chunk_text(text: str, max_chars: int = 80_000) -> list[str]:
+def _chunk_text(text: str, max_chars: int = DEFAULT_MAX_CHARS) -> list[str]:
     """
     Split text into chunks small enough for a single API call.
     Tries to break at paragraph boundaries.
