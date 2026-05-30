@@ -44,7 +44,7 @@ CURRENT STATE (as of 2026-05-29)
     10 new Pydantic models added to schemas.py
     system_prompt.txt updated with new fields, extraction rules, and PROVENANCE RULE
     source_quotes field on all 13 entity types; extraction_evidence table persists
-    verbatim quotes with char offsets; offset=None flags hallucinations
+    verbatim quotes with char offsets (best-effort UI convenience; not used for validation)
 
 
 PARTS OF THE PROJECT
@@ -192,7 +192,7 @@ SQLite at data/council.db. Tables:
     building_permits      — building permit/licence information items
     other_items           — catch-all for content not fitting dedicated fields
     extraction_evidence   — verbatim source quotes per entity with char offsets
-                            (char_offset=None flags quotes not found in source text)
+                            (char_offset=None when verbatim text.find() fails — best-effort only)
 
   Dynamic layer:
     relationships  — typed edges between any entities [ALWAYS EMPTY — not yet populated]
@@ -266,10 +266,10 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
 
   council validate-sample cambridge
       Level 3c: validate sample extractions. Reads data/{council}_sample.json.
-      Queries extraction_evidence for hallucination rate and coverage ratio.
-      Diffs entity counts against L1 inventory. Detects keyword gaps.
-      Writes data/sample_validation/ report. Gate before Level 4.
-      (scripts/validate_sample.py — PENDING)
+      Re-extracts PDF text and applies three-tier normalised matching (whitespace →
+      stripped alphanumeric → paraphrase) to compute paraphrase rate, coverage ratio,
+      inventory agreement, and keyword gap rate. Writes data/sample_validation/
+      report.txt and paraphrase_report.txt. Gate before Level 4.
 
   council batch cambridge [--limit N] [--model MODEL] [--from-year YYYY]
                           [--to-year YYYY] [--files a.pdf b.pdf ...] [--force]
@@ -317,7 +317,7 @@ Each has a run(args) function that does the work; main() handles argparse.
   scripts/inventory.py           →  council inventory cambridge ...
   scripts/inventory_typology.py  →  council typology cambridge ...
   scripts/stratified_sample.py   →  council sample cambridge ...
-  scripts/validate_sample.py     →  council validate-sample cambridge ...  (PENDING)
+  scripts/validate_sample.py     →  council validate-sample cambridge ...
   scripts/batch_extract.py       →  council batch cambridge ...
   scripts/eval_prompt.py         →  council eval ...
   scripts/compare_models.py      →  council compare <pdf> ...
@@ -382,8 +382,7 @@ WHAT IS UNFINISHED
 
 1. EXTRACTION BACKLOG (341 PDFs)
    Most years have only a handful ingested — the bulk of the archive is pending.
-   Levels 0–2 and Level 3a/3b are complete. Next: Level 3c (validate-sample),
-   then Level 4 (confidence metrics), then Level 5 (full batch).
+   Levels 0–3 are complete. Next: Level 4 (confidence metrics), then Level 5 (full batch).
    See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for the full sequence.
      # Level 3c complete — all metrics within target. Next: Level 4, then batch.
      council batch cambridge --limit 20   # after Level 4 is done
@@ -450,7 +449,7 @@ DATA DIRECTORIES
   data/inventories/            — Level 1 per-document LLM inventories + summary.json
   data/cambridge_typology_review.txt — Level 1→2 corpus typology report (council typology)
   data/cambridge_sample.json   — Level 3a canonical sample (written by 'council sample')
-  data/sample_validation/      — Level 3c per-doc validation reports + summary (pending)
+  data/sample_validation/      — Level 3c per-doc JSON + report.txt + paraphrase_report.txt
   .cache/llm_responses/        — cached raw LLM responses ({hash}_{prompt-version}.json)
   data/validation/             — Level 4 per-document confidence reports (pending)
   data/eval/                   — prompt eval reports (JSON + plain text)

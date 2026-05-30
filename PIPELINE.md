@@ -160,7 +160,7 @@ All entity saves flush before inserting evidence rows. Call sites in `batch_extr
 ### Output
 - `schemas.py`, `system_prompt.txt`, `ontology.py`, `extractor.py` all updated.
 - `extraction_evidence` table: one row per source quote per entity, with `char_offset`
-  (None = hallucination flag) and `char_length` for coverage ratio computation.
+  (best-effort verbatim position, stored as a UI convenience — not used for validation).
 
 ---
 
@@ -193,29 +193,48 @@ Level 3 is split into three substages with dedicated CLI commands.
   stale extractions. The user is notified at runtime.
 - Populates `extraction_evidence` rows for all sample documents.
 
-### Level 3c: Sample Validation ⏳ PENDING
+### Level 3c: Sample Validation ✅ COMPLETE (2026-05-30)
 
 `council validate-sample cambridge`
 
 - Reads `data/{council}_sample.json` (same document set as 3b).
-- Queries `extraction_evidence` for those meetings:
-  - **Hallucination rate**: quotes where `char_offset IS NULL` / total quotes, per doc and aggregate.
-  - **Coverage ratio**: `SUM(char_length)` / total doc chars, per doc and aggregate.
-- Loads each doc's L1 inventory and compares entity counts to what the extractor
-  returned (**inventory agreement**).
-- **Keyword gap detection**: identifies MOVED/CARRIED/DA/DECLARATION/etc. occurrences
-  in source text that fall in spans not covered by any source quote's char range.
-- Writes per-doc JSON to `data/sample_validation/{stem}.json` + `data/sample_validation/report.txt`.
-- Prints a table: one row per doc, all four metrics, flagged docs highlighted.
-- This report is the human-readable gate: if hallucination rate is high or inventory
-  agreement is poor, iterate the prompt and re-run 3b → 3c. If clean, proceed to Level 4.
-- The aggregate metrics from this report calibrate Level 4 thresholds.
+- Re-extracts PDF source text at query time and applies three-tier normalised matching
+  to determine whether each model quote can be located in the source:
+  1. **Whitespace normalisation** — collapse all whitespace runs to a single space.
+     Handles pypdf line-break newlines inserted at every PDF line boundary.
+  2. **Stripped matching** — remove all non-alphanumeric characters from both sides.
+     Handles pypdf word-split artefacts in older PDFs (`"no ise"` → `"noise"`).
+     Character span is recovered via a position-mapping array so these quotes
+     contribute correctly to coverage. Only attempted for quotes ≥15 stripped chars.
+  3. **Paraphrase** — content genuinely differs; collected for the paraphrase report.
+- Four metrics per document:
+  - **Paraphrase rate**: quotes unmatched after all three tiers / total quotes.
+  - **Coverage ratio**: fraction of normalised source chars spanned by matched quotes
+    (full + stripped). Unique char positions counted; overlapping quotes not double-counted.
+  - **Inventory agreement**: extracted entity counts vs L1 inventory counts per field.
+    Flagged if ratio <0.4 or >2.5.
+  - **Keyword gap rate**: MOVED/CARRIED/DA/DECLARATION OF INTEREST/DEPUTATION/PETITION
+    occurrences in normalised source text not spanned by any matched quote.
+- Determines PASS/REVIEW/FAIL per doc; prints rich table to stdout.
+- Writes `data/sample_validation/{stem}.json` per doc, `data/sample_validation/report.txt`
+  (aggregate summary + interpretation), and `data/sample_validation/paraphrase_report.txt`
+  (per-quote paraphrase detail with partial-match context for human or AI inspection).
+- **Note on `char_offset` in DB**: `extraction_evidence.char_offset` is a best-effort
+  convenience stored at save time via verbatim `text.find()`. It is not used here.
+  All matching is recomputed from the live PDF text at validation time.
+
+### Actual results (Cambridge, 2026-05-30, 18 docs)
+- Paraphrase rate: **10.0%** (target <30%) ✓
+- Coverage ratio:  **9.87%** (target >5%) ✓
+- Keyword gap rate: **10.9%** (target <25%) ✓
+- Status: 11 PASS / 7 REVIEW / 0 FAIL
+- All metrics within target. 7 REVIEW docs flagged by per-doc coverage <3%,
+  expected for large documents given the 80k character extraction window.
 
 ### Output
 - `data/{council}_sample.json` — canonical sample (written by 3a, read by 3b and 3c).
-- `data/sample_validation/` — per-doc JSON reports + summary (written by 3c).
-- Calibrated confidence metric thresholds (baseline coverage ratio, entity density,
-  acceptable keyword gap rate) — derived from 3c report, used to configure Level 4.
+- `data/sample_validation/` — per-doc JSON + `report.txt` + `paraphrase_report.txt`.
+- Calibrated baseline metrics for Level 4 threshold configuration.
 
 ---
 
