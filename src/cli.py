@@ -789,7 +789,8 @@ def main() -> None:
     p_scrape.set_defaults(func=cmd_scrape)
 
     # extract
-    p_extract = sub.add_parser("extract", help="Extract already-downloaded PDFs")
+    p_extract = sub.add_parser("extract", help="Extract already-downloaded PDFs",
+                              usage="council extract {cambridge} [--limit N] [--from-year YYYY] [--to-year YYYY] [--files PDF [PDF ...]] [--force]")
     p_extract.add_argument("council", choices=list(COUNCILS))
     p_extract.add_argument("--limit", type=int, metavar="N", help="Process at most N PDFs")
     p_extract.add_argument("--from-year", type=int, metavar="YYYY", dest="from_year",
