@@ -1204,7 +1204,10 @@ def main() -> None:
                                   help=f"Extraction limit per document (default: {_DMC2}). Use 'full' for multi-chunk extraction of the entire document.")
     p_extract_sample.add_argument("--dry-run", action="store_true", dest="dry_run",
                                   help="Show cost estimate only; make no API calls")
-    p_extract_sample.set_defaults(func=cmd_extract_sample)
+    p_extract_sample.add_argument("--batch", action="store_true",
+                                  help="Submit as an async batch job (50%% off, up to 24 h). "
+                                       "Use 'council batch-collect' to retrieve results.")
+    p_extract_sample.set_defaults(func=cmd_extract_sample, batch=False)
 
     # validate-sample
     from src.extraction.extractor import DEFAULT_MAX_CHARS as _DMC3
