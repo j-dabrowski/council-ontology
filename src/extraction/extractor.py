@@ -11,7 +11,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 import anthropic
-from pypdf import PdfReader
+import fitz  # pymupdf
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from .schemas import ExtractedMeeting
@@ -56,13 +56,14 @@ _SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text(encodin
 
 
 def extract_text_from_pdf(pdf_path: Path) -> str:
-    """Extract plain text from a PDF file using pypdf."""
-    reader = PdfReader(str(pdf_path))
+    """Extract plain text from a PDF file using PyMuPDF."""
+    doc = fitz.open(str(pdf_path))
     parts: list[str] = []
-    for page in reader.pages:
-        text = page.extract_text()
+    for page in doc:
+        text = page.get_text()
         if text:
             parts.append(text)
+    doc.close()
     return "\n\n".join(parts)
 
 

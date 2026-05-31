@@ -18,7 +18,7 @@ import re
 import sqlite3
 from pathlib import Path
 
-from pypdf import PdfReader
+import fitz  # pymupdf
 
 _REPO_ROOT = Path(__file__).parent.parent.parent
 DATA_DIR = _REPO_ROOT / "data"
@@ -96,8 +96,10 @@ def extract_pdf_text(council: str, filename: str) -> str:
     if not path.exists():
         return ""
     try:
-        reader = PdfReader(str(path))
-        return "\n".join(page.extract_text() or "" for page in reader.pages)
+        doc = fitz.open(str(path))
+        text = "\n".join(page.get_text() or "" for page in doc)
+        doc.close()
+        return text
     except Exception:
         return ""
 
