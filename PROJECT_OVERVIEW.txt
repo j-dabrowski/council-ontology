@@ -445,12 +445,13 @@ WHAT IS UNFINISHED
      inventory agreement, keyword gap rate. Three-tier quote matching: whitespace
      normalisation → stripped alphanumeric → paraphrase. Quote completeness metric
      added (2026-05-31): catches entities with source_quotes=[] invisible to para rate.
-     Final baselines after prompt tightening + header stripping:
-     completeness 93.6% (>80%), paraphrase 5.2% (<30%), coverage 22.24% (>5%),
-     keyword gap 10.9% (<25%). Status: 15 PASS / 3 REVIEW / 0 FAIL.
-     3 remaining REVIEW: 2 large docs with genuine truncation (95-100% keyword gap,
-     resolve with --max-chars full), 1 Public Art Committee edge case (non-standard
-     procedural language, not fixable by prompt alone).
+     Final baselines after --max-chars full re-extraction of all REVIEW docs:
+     completeness 95.0% (>80%), paraphrase 4.3% (<30%), coverage 22.89% (>5%),
+     keyword gap 9.3% (<25%). Status: 14 PASS / 4 REVIEW / 0 FAIL.
+     4 remaining REVIEW: 008af827 (Public Art Committee, 74% completeness, non-standard
+     language), 060c4c87 (1995 doc, 79.9% completeness, borderline), 0064743e (90%
+     completeness, 1 kwgap hit), 0a12261e (97.8% completeness, 68% kwgap across 6
+     chunks). All aggregate metrics within target — acceptable to proceed.
    Level 4: Per-document confidence metrics and validation script — pending.
    Level 5: Full batch extraction with validation integration — pending.
    Level 6: Human audit report — pending.

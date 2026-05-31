@@ -171,20 +171,27 @@ used here (it is a best-effort UI convenience only, stored by `_resolve_offset()
    (longest prefix of quote found in source + source text at that position) for the
    paraphrase report.
 
-**Results (Cambridge, 2026-05-30, 18 docs) — final baselines after prompt tightening + header stripping:**
-- Quote completeness: **93.6%** (target >80%) ✓
-- Paraphrase rate: **5.2%** (target <30%) ✓
-- Coverage ratio: **22.24%** (target >5%) ✓
-- Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 15 PASS / 3 REVIEW / 0 FAIL
+**Results (Cambridge, 2026-05-31, 18 docs) — final baselines after --max-chars full re-extraction:**
+- Quote completeness: **95.0%** (target >80%) ✓
+- Paraphrase rate: **4.3%** (target <30%) ✓
+- Coverage ratio: **22.89%** (target >5%) ✓
+- Keyword gap rate: **9.3%** (target <25%) ✓
+- Status: 14 PASS / 4 REVIEW / 0 FAIL
 
 Quote completeness metric added (2026-05-31): fraction of extracted entities with ≥1 evidence row.
 Catches entities extracted with source_quotes=[] — invisible to paraphrase rate. Motions were the
 main offender. PROVENANCE RULE narrowed (empty-list exception no longer applies to motions) and
 explicit per-motion rule added: source_quotes must never be empty for a motion.
-3 remaining REVIEW: 2 large docs with genuine truncation under-extraction (95-100% keyword gap);
-resolve with `--max-chars full`. 1 Public Art Committee doc (67% completeness, 0% kwgap) — uses
-non-standard procedural language (no MOVED/CARRIED), a minority format edge case.
+All 4 REVIEW docs re-extracted with `--max-chars full`; 4 remain REVIEW:
+- `008af827.pdf` (2025-05-01, Public Art Committee): 74% completeness — non-standard procedural
+  language (no MOVED/CARRIED), known edge case, not fixable by prompt alone.
+- `060c4c87.pdf` (1995-07-25, Council Meeting): 79.9% completeness — borderline; oldest era,
+  37 entities missing quotes (motions + budget_items + other_items).
+- `0064743e.pdf` (2012-04-24, Council Meeting): 90% completeness, 100% kwgap (1 uncovered hit)
+  — 5 chunks, 34 motions without quotes; structurally acceptable.
+- `0a12261e.pdf` (2020-12-15, Ordinary Meeting): 97.8% completeness, 68% kwgap (45/66 hits
+  uncovered) — 6 chunks, kwgap persists even with full extraction; likely a large doc with
+  agenda items in uncovered regions between chunks.
 
 **Next step: proceed to Level 4.**
 

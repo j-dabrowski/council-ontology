@@ -234,18 +234,19 @@ Level 3 is split into three substages with dedicated CLI commands.
   convenience stored at save time via verbatim `text.find()`. It is not used here.
   All matching is recomputed from the live PDF text at validation time.
 
-### Actual results (Cambridge, 2026-05-31, 18 docs) — final baselines
-- Quote completeness: **93.6%** (target >80%) ✓
-- Paraphrase rate: **5.2%** (target <30%) ✓
-- Coverage ratio:  **22.24%** (target >5%) ✓
-- Keyword gap rate: **10.9%** (target <25%) ✓
-- Status: 15 PASS / 3 REVIEW / 0 FAIL
+### Actual results (Cambridge, 2026-05-31, 18 docs) — final baselines after --max-chars full
+- Quote completeness: **95.0%** (target >80%) ✓
+- Paraphrase rate: **4.3%** (target <30%) ✓
+- Coverage ratio:  **22.89%** (target >5%) ✓
+- Keyword gap rate: **9.3%** (target <25%) ✓
+- Status: 14 PASS / 4 REVIEW / 0 FAIL
 - Quote completeness metric added: catches entities extracted with source_quotes=[]
   (invisible to paraphrase rate). Motions were the main offender; PROVENANCE RULE
   narrowed and explicit per-motion rule added.
-  3 remaining REVIEW: 2 large docs with genuine truncation (95-100% keyword gap),
-  resolve with --max-chars full. 1 Public Art Committee edge case (non-standard
-  procedural language, 0% kwgap, not fixable by prompt alone).
+  All 4 REVIEW docs re-extracted with --max-chars full. 4 remain REVIEW:
+  008af827 (Public Art Committee, 74% completeness — non-standard language, known edge
+  case), 060c4c87 (1995, 79.9% completeness — borderline), 0064743e (90% completeness,
+  1 kwgap hit), 0a12261e (97.8% completeness, 68% kwgap persists across 6 chunks).
 
 ### Output
 - `data/{council}_sample.json` — canonical sample (written by 3a, read by 3b and 3c).
