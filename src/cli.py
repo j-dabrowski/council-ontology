@@ -378,16 +378,56 @@ def _cmd_batch_submit(args, key: str, pdfs: list, max_chars: "int | None", manif
 
     extractor = MinutesExtractor()
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-        transient=True,
-    ) as progress:
-        progress.add_task(f"Reading {len(pdfs)} PDFs and building requests...", total=None)
-        all_requests, id_map = extractor.build_batch_requests(
-            pdfs, max_chars, council_full_name, manifest
-        )
+    all_requests: list[dict] = []
+    id_map: dict[str, dict] = {}
+    build_errors: list[str] = []
+
+    # pypdf can infinite-loop on malformed content streams; run each PDF in a
+    # thread so we can detect a hang and skip rather than blocking forever.
+    _PDF_BUILD_TIMEOUT = 30  # seconds per PDF
+
+    import concurrent.futures as _cf
+    with _cf.ThreadPoolExecutor(max_workers=1) as _pool:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TaskProgressColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Reading PDFs...", total=len(pdfs))
+            for pdf in pdfs:
+                progress.update(task, description=f"[cyan]{pdf.name}[/cyan]")
+                future = _pool.submit(
+                    extractor.build_batch_requests,
+                    [pdf], max_chars, council_full_name, manifest,
+                )
+                try:
+                    reqs, mapping = future.result(timeout=_PDF_BUILD_TIMEOUT)
+                except _cf.TimeoutError:
+                    build_errors.append(pdf.name)
+                    _log.warning(
+                        "SKIP %s: PDF text extraction timed out after %ds "
+                        "(pypdf infinite loop on malformed content stream)",
+                        pdf.name, _PDF_BUILD_TIMEOUT,
+                    )
+                    console.print(
+                        f"  [red]✗[/red] {pdf.name}: skipped — pypdf timed out after "
+                        f"{_PDF_BUILD_TIMEOUT}s (malformed content stream)"
+                    )
+                    progress.advance(task)
+                    continue
+                if reqs:
+                    all_requests.extend(reqs)
+                    id_map.update(mapping)
+                else:
+                    build_errors.append(pdf.name)
+                    _log.warning("SKIP %s: no text extracted from PDF", pdf.name)
+                    console.print(f"  [yellow]⚠[/yellow] {pdf.name}: no text extracted, skipping")
+                progress.advance(task)
+
+    if build_errors:
+        console.print(f"[yellow]Skipped {len(build_errors)} PDFs (no text / read error)[/yellow]")
 
     if not all_requests:
         console.print("[red]No requests built — all PDFs failed to read.[/red]")
