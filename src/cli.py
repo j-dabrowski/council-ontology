@@ -1,11 +1,23 @@
 """
 council-ontology CLI
 
-Commands:
-  run <council>      Full pipeline: scrape → extract → save to DB
-  scrape <council>   Discover and download PDFs only
-  extract <council>  Process already-downloaded PDFs (no HTTP)
-  status             Show DB summary across all councils
+Pipeline commands:
+  scrape <council>          Discover and download PDFs only
+  census <council>          Level 0: keyword scan across all PDFs
+  inventory <council>       Level 1: cheap LLM inventory (Haiku)
+  typology <council>        Level 1→2: corpus typology report
+  sample <council>          Level 3a: stratified sample selection
+  extract-sample <council>  Level 3b: extract the saved sample
+  validate-sample <council> Level 3c: validate sample extractions
+  extract <council>         Level 5: extract all/pending PDFs
+  validate <council>        Level 4: per-doc confidence scoring
+
+Other commands:
+  status    DB summary across all councils
+  docs      Per-document download/extraction status
+  compare   Side-by-side model comparison for one PDF (dev tool)
+  costs     Estimate extraction API costs
+  analyse   Analysis queries against the DB
 """
 
 import argparse
@@ -283,102 +295,28 @@ def cmd_extract(args) -> None:
 
     if failures:
         import json as _json
+        from collections import defaultdict
         from datetime import datetime, timezone
         error_path = Path("data/extraction_errors.json")
+        errors_by_class: dict = defaultdict(list)
+        for entry in failures:
+            errors_by_class[entry["error_class"]].append(entry)
+        errors_by_class = dict(sorted(errors_by_class.items(), key=lambda kv: -len(kv[1])))
         report = {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "council": key,
             "attempted": succeeded + failed,
             "succeeded": succeeded,
             "failed": failed,
-            "failures": failures,
+            "errors_by_class": errors_by_class,
         }
         error_path.write_text(_json.dumps(report, indent=2))
-        console.print(f"[dim]Errors written to {error_path}[/dim]")
+        console.print("\n[bold]Error breakdown:[/bold]")
+        for cls, entries in errors_by_class.items():
+            console.print(f"  {len(entries):3d}×  {cls}")
+        console.print(f"[dim]Full report → {error_path}[/dim]")
 
 
-def cmd_run(args) -> None:
-    """Full pipeline: scrape then extract."""
-    key = args.council
-    if key not in COUNCILS:
-        console.print(f"[red]Unknown council: {key}[/red]")
-        sys.exit(1)
-
-    short_name = COUNCILS[key]["short_name"]
-    console.print(Panel(f"Full pipeline for [bold]{short_name}[/bold] (since {args.since_year})", style="bold blue"))
-
-    # --- Scrape ---
-    console.rule("[blue]Step 1 / 2 — Scrape[/blue]")
-    scraper = _get_scraper(key, since_year=args.since_year)
-
-    with Progress(SpinnerColumn(), TextColumn("{task.description}"), console=console, transient=True) as p:
-        t = p.add_task("Discovering and downloading minutes PDFs...")
-        result = scraper.run(download_pdfs=True)
-        p.update(t, completed=True)
-
-    pdfs_downloaded = [d for d in result.documents if d.local_path]
-    console.print(f"[green]Downloaded {len(pdfs_downloaded)} PDFs[/green]")
-    if result.errors:
-        for err in result.errors:
-            console.print(f"  [yellow]Warning:[/yellow] {err}")
-
-    # Limit if requested
-    if args.limit:
-        pdfs_downloaded = pdfs_downloaded[: args.limit]
-        console.print(f"[dim]Limiting to {args.limit} PDFs[/dim]")
-
-    if not pdfs_downloaded:
-        console.print("[yellow]No PDFs to extract. Exiting.[/yellow]")
-        return
-
-    # --- Extract ---
-    console.rule("[blue]Step 2 / 2 — Extract & Save[/blue]")
-
-    from src.extraction.extractor import MinutesExtractor, save_extraction
-    from src.storage.database import init_db, make_session_factory
-
-    engine = init_db()
-    session = make_session_factory(engine)()
-    council = _get_council(session, short_name)
-    council_id = council.id
-    council_full_name = council.name
-    extractor = MinutesExtractor()
-
-    succeeded = 0
-    failed = 0
-
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Extracting...", total=len(pdfs_downloaded))
-
-        for doc in pdfs_downloaded:
-            pdf = doc.local_path
-            progress.update(task, description=f"[cyan]{pdf.name}[/cyan]")
-            try:
-                extracted, raw_text = extractor.extract_from_pdf(pdf, council_name=council_full_name)
-                meeting_id = save_extraction(
-                    session, council_id, extracted, pdf,
-                    text=raw_text, pdf_url=doc.source_url,
-                )
-                msg = f"{pdf.name} → meeting {meeting_id} ({extracted.meeting_date}, {len(extracted.motions)} motions)"
-                console.print(f"  [green]✓[/green] {msg}")
-                _log.info("OK: %s", msg)
-                succeeded += 1
-            except Exception as exc:  # noqa: BLE001
-                console.print(f"  [red]✗[/red] {pdf.name}: {exc}")
-                _log.error("FAIL: %s: %s", pdf.name, exc)
-                failed += 1
-            finally:
-                progress.advance(task)
-
-    session.close()
-    console.print(f"\n[bold green]Pipeline complete:[/bold green] {succeeded} meetings saved, {failed} failed")
-    _log.info("Done: %d extracted, %d failed", succeeded, failed)
 
 
 def cmd_status(args) -> None:  # noqa: ARG001
@@ -600,16 +538,6 @@ def cmd_docs(args) -> None:
 # ---------------------------------------------------------------------------
 
 
-def cmd_batch(args) -> None:
-    from scripts.batch_extract import run
-    run(args)
-
-
-def cmd_eval(args) -> None:
-    from scripts.eval_prompt import run
-    run(args)
-
-
 def cmd_compare(args) -> None:
     from scripts.compare_models import run
     run(args)
@@ -666,6 +594,11 @@ def cmd_extract_sample(args) -> None:
 
 def cmd_validate_sample(args) -> None:
     from scripts.validate_sample import run
+    run(args)
+
+
+def cmd_validate(args) -> None:
+    from scripts.validate_extraction import run
     run(args)
 
 
@@ -859,14 +792,6 @@ def main() -> None:
     parser.add_argument("-v", "--verbose", action="store_true", help="Show debug logging")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    # run
-    p_run = sub.add_parser("run", help="Full pipeline: scrape → extract → save")
-    p_run.add_argument("council", choices=list(COUNCILS), help="Council to process")
-    p_run.add_argument("--limit", type=int, metavar="N", help="Process at most N PDFs")
-    p_run.add_argument("--since-year", type=int, metavar="YYYY", default=2020,
-                       dest="since_year", help="Only include meetings from this year (default: 2020)")
-    p_run.set_defaults(func=cmd_run)
-
     # scrape
     p_scrape = sub.add_parser("scrape", help="Discover and download PDFs only")
     p_scrape.add_argument("council", choices=list(COUNCILS))
@@ -906,35 +831,6 @@ def main() -> None:
         help="Filter: all (default), pending (not yet in DB), ingested, no-manifest",
     )
     p_docs.set_defaults(func=cmd_docs)
-
-    # batch
-    p_batch = sub.add_parser("batch", help="Batch extraction with error report (scripts/batch_extract.py)")
-    p_batch.add_argument("council", choices=list(COUNCILS))
-    p_batch.add_argument("--limit", "-n", type=int, default=5, metavar="N",
-                         help="Max pending docs to process (default: 5)")
-    p_batch.add_argument("--model", default="claude-haiku-4-5-20251001",
-                         help="Claude model ID")
-    p_batch.add_argument("--from-year", type=int, metavar="YYYY", dest="from_year")
-    p_batch.add_argument("--to-year", type=int, metavar="YYYY", dest="to_year")
-    p_batch.add_argument("--files", nargs="+", metavar="PDF",
-                         help="Process only these specific PDFs; ignores --limit and date filters")
-    p_batch.add_argument("--force", action="store_true",
-                         help="Re-extract already-extracted PDFs")
-    p_batch.set_defaults(func=cmd_batch)
-
-    # eval
-    p_eval = sub.add_parser("eval", help="Evaluate prompt quality across benchmark PDFs (scripts/eval_prompt.py)")
-    p_eval.add_argument("--quick", action="store_true",
-                        help="One sticky PDF until it scores 95+, then move on")
-    p_eval.add_argument("--compare", action="store_true",
-                        help="Show delta vs previous run")
-    p_eval.add_argument("--show", action="store_true",
-                        help="Print latest saved report without making API calls")
-    p_eval.add_argument("--history", action="store_true",
-                        help="Show score trend across all saved runs")
-    p_eval.add_argument("--no-save", action="store_true", dest="no_save",
-                        help="Don't write report to disk")
-    p_eval.set_defaults(func=cmd_eval)
 
     # compare
     p_compare = sub.add_parser("compare", help="Side-by-side model comparison for one PDF (scripts/compare_models.py)")
@@ -1015,6 +911,25 @@ def main() -> None:
                                    dest="max_chars",
                                    help=f"Coverage denominator cap (default: {_DMC3}). Use 'full' when extraction was run with --max-chars full.")
     p_validate_sample.set_defaults(func=cmd_validate_sample)
+
+    # validate
+    from src.extraction.extractor import DEFAULT_MAX_CHARS as _DMC4
+    p_validate = sub.add_parser("validate", help="Level 4: per-doc confidence scoring for all extracted meetings (scripts/validate_extraction.py)")
+    p_validate.add_argument("council", choices=list(COUNCILS))
+    p_validate.add_argument("--limit", "-n", type=int, metavar="N",
+                            help="Validate only the first N extracted docs")
+    p_validate.add_argument("--files", nargs="+", metavar="PDF",
+                            help="Validate only these specific PDFs (basenames)")
+    p_validate.add_argument("--from-year", type=int, metavar="YYYY", dest="from_year",
+                            help="Only validate meetings from this year onward")
+    p_validate.add_argument("--to-year", type=int, metavar="YYYY", dest="to_year",
+                            help="Only validate meetings up to and including this year")
+    p_validate.add_argument("--max-chars", type=_parse_max_chars, default=_DMC4, metavar="N|full",
+                            dest="max_chars",
+                            help=f"Coverage denominator cap (default: {_DMC4}). Use 'full' when extraction was run with --max-chars full.")
+    p_validate.add_argument("--force", action="store_true",
+                            help="Re-validate even if data/validation/{stem}.json already exists")
+    p_validate.set_defaults(func=cmd_validate)
 
     # analyse
     p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")

@@ -197,51 +197,67 @@ All 4 REVIEW docs re-extracted with `--max-chars full`; 4 remain REVIEW:
 
 ---
 
-## Level 4: Confidence Metrics and Validation Script
+## Level 4: Confidence Metrics and Validation Script ✅ COMPLETE (2026-05-31)
 
-**Already exists:**
-- `data/extraction_errors.json` captures errors from batch runs, grouped by class.
-- The batch script already triages into success/failure.
-- `council analyse` queries can surface some anomalies (e.g. councillors with zero votes, motions with no outcome).
+**What was built:**
+- `src/validation/core.py` — shared validation library extracted from `validate_sample.py`.
+  Contains all five Level 3c metric functions (quote completeness, paraphrase rate, coverage ratio,
+  inventory agreement, keyword gap rate), the three-tier quote matching pipeline, DB helpers,
+  data loaders, and `validate_doc()`. Imported by both `validate_sample.py` and
+  `validate_extraction.py` — no code duplication.
+- `src/validation/__init__.py` — package marker.
+- `scripts/validate_extraction.py` — Level 4 per-doc confidence scorer. Extends Level 3c with:
+  - **Entity density**: motions per 10k source chars. Flags Ordinary meetings with large docs
+    (>50k chars) and density < 0.3 as REVIEW — likely an extraction gap.
+  - **Schema completeness**: Ordinary meetings must have ≥1 motion; all motions must have
+    a non-null outcome. Flags as REVIEW when violated.
+  - `determine_status_l4()` combines base Level 3c status with the two new checks.
+  - `validate_files(council, filenames)` — clean API used by `run()`. Returns (results, counts).
+  - `get_extracted_filenames()` — queries DB for all extracted meetings for a council;
+    supports `from_year`/`to_year` filtering via manifest.
+  - Per-doc JSON to `data/validation/{stem}.json`. Summary to `data/validation/summary.json`.
+- `council validate cambridge [--limit N] [--files ...] [--from-year YYYY] [--to-year YYYY]
+  [--max-chars N|full] [--force]` — CLI entrypoint.
 
-**Can be composed now:**
-- Basic anomaly detection using existing analysis queries. But this is manual, not automated per-document validation.
+**Cross-document consistency** deferred — requires parsing minute confirmation text from
+motion text and is disproportionate effort before batch extraction has run.
 
-**Needs new work:**
-- `scripts/validate_extraction.py` as a new script. Nothing like this exists. Needs to compute:
-  - Coverage ratio (requires provenance from Level 2)
-  - Entity density (motions per 10k chars, computable from existing data + Level 0 char counts)
-  - Keyword gap score (requires Level 0 keyword positions + Level 2 source quote positions)
-  - Inventory agreement (requires Level 1 inventories)
-  - Schema completeness checks (queryable from existing DB but not automated)
-  - Cross-document consistency (new logic)
-  - Composite confidence score per document
-- CLI integration: `council validate cambridge` or similar.
-- Output format: `data/validation/{filename}.json`.
+**validate_sample.py refactored** to import shared logic from `src/validation/core.py`.
+Behaviour unchanged; all Level 3c output identical to pre-refactor.
 
-**Effort: Medium-Large.** Many individual checks, each simple, but the validation framework itself is new. All Level 2 dependencies (provenance, DB tables) are now in place.
+**First run result (Cambridge, first 10 of 196 extracted docs):**
+- 1 PASS / 3 REVIEW / 6 FAIL
+- FAILs are expected: docs extracted before provenance was wired (Level 2b, 2026-05-29)
+  have 0 extraction_evidence rows → completeness_rate = 0.0 → FAIL. These need re-extraction.
+- Schema flags on 6 docs: 5× `_motions_null_outcome`, 1× `ordinary_meeting_no_motions`.
+
+**Next step:** `council extract cambridge --limit 20` then `council validate cambridge` (Level 5).
 
 ---
 
 ## Level 5: Batch Extraction
 
-**Already exists:**
-- `council batch cambridge --limit N` does exactly this. Processes N pending PDFs, writes errors to `data/extraction_errors.json`, prints success/failure summary with error class breakdown.
-- Resume logic works: already-extracted documents are skipped.
-- `--from-year` / `--to-year` / `--files` flags allow targeting specific subsets.
-- `--model` flag allows switching between Haiku/Sonnet/Opus.
-- `--force` allows re-extraction of already-ingested documents.
+**What exists:**
+- `council extract cambridge --limit N` — processes N pending PDFs, writes grouped error report to `data/extraction_errors.json`, skips already-extracted docs. Supports `--from-year`, `--to-year`, `--files`, `--force`, `--max-chars`.
+- `council validate cambridge` — separate step run after each extract batch. Scores all newly extracted docs and writes `data/validation/summary.json`.
 
-**Can be composed now:**
-- `council batch cambridge --limit 20` repeated in a loop IS the progressive batch extraction workflow. It already skips completed docs and reports errors.
+**Workflow:**
+```
+council extract cambridge --limit 20
+council validate cambridge
+# triage REVIEW/FAIL from data/validation/summary.json and extraction_errors.json
+# fix errors, then scale up
+council extract cambridge --limit 50
+council validate cambridge
+```
+
+**Note:** 196 docs already in DB were extracted before Level 2b (provenance). They will fail Level 4 validation (completeness_rate = 0, no extraction_evidence rows). Use `council extract cambridge --force` to re-extract them with the current prompt and wiring.
 
 **Needs new work:**
-- Auto-run validation script after each batch (integrate Level 4 into the batch loop).
-- Triage output: currently errors are just logged. Needs PASS/REVIEW/FAIL categorisation per document based on confidence scores.
 - Feedback loop: after every ~100 documents, re-run Level 0 keyword scan with updated keyword list. Not automated.
-- LLM response caching (same as Level 1; needed to avoid re-paying for failed parsing).
+- LLM response caching for the extraction path (Level 1 caches inventory calls; extraction calls are not cached).
 
-**Effort: Small-Medium.** The core loop exists. The additions are validation integration and caching.
+**Effort: Small.** The core loop and validation exist. The main task is running through the backlog and triaging FAIL docs.
 
 ---
 
@@ -249,13 +265,13 @@ All 4 REVIEW docs re-extracted with `--max-chars full`; 4 remain REVIEW:
 
 **Already exists:**
 - `council compare <pdf>` gives multi-model comparison for individual PDFs.
-- `council eval --show` displays the latest evaluation.
 
 **Can be composed now:**
 - Manual audit using `council extract --files <list>` on a random sample, then hand-comparing PDFs to DB records.
+- `council validate cambridge --files <list>` to score the audited subset.
 
 **Needs new work:**
-- Audit report generator: select N random documents from the extracted set (excluding eval benchmarks), pull their extractions, format for human review.
+- Audit report generator: select N random documents from the extracted set, pull their extractions, format for human review.
 - Precision/recall computation framework (semi-automated: human marks correct/incorrect/missing, script computes stats).
 - Output: `data/audit_report.md`.
 
@@ -275,13 +291,13 @@ All 4 REVIEW docs re-extracted with `--max-chars full`; 4 remain REVIEW:
 | 6 | Level 3a: stratified sample selection script | Levels 0, 1 | Small | **Done** (2026-05-30) |
 | 7 | Level 3b: `council extract-sample` CLI command | Level 3a | Small | **Done** (2026-05-30) |
 | 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | **Done** (2026-05-30) |
-| 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | Pending |
-| 10 | Level 5: validation integration into batch loop | Level 4 | Small | Pending |
+| 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | **Done** (2026-05-31) |
+| 10 | Level 5: full batch extraction + validate after each batch | Level 4 | Small | Pending |
 | 11 | Level 6: audit report generator | Level 5 | Small | Pending |
 
-**Levels 0–3 are complete.** All Level 3c metrics are within target (paraphrase 10%,
-coverage 9.87%, keyword gap 10.9%). The critical path leads to Level 4
-(`scripts/validate_extraction.py`), which unblocks Level 5 (full batch extraction).
+**Levels 0–4 are complete.** Level 3c baselines: completeness 95.0%, paraphrase 4.3%,
+coverage 22.89%, keyword gap 9.3% — all within target. Level 4 (`council validate`)
+is built and working. The critical path now leads to Level 5 (full batch extraction).
 
 ---
 

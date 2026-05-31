@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 """
-Compare extraction output across Opus 4.6, Sonnet 4.6, and Haiku 4.5 for a single PDF.
+Compare extraction output across Opus 4.8, Sonnet 4.6, and Haiku 4.5 for a single PDF.
 
-Runs all three models in parallel. Does NOT write to the database.
-Results are printed as a side-by-side comparison and saved to
-data/model_comparison/<pdf_stem>_<timestamp>.json for further inspection.
+Dev tool for evaluating new Claude model releases. Runs all three models in parallel.
+Does NOT write to the database. Results are printed as a side-by-side comparison and
+saved to data/model_comparison/<pdf_stem>_<timestamp>.json for further inspection.
+
+Update MODELS below when new Claude model versions are released.
 
 Usage:
     python scripts/compare_models.py <pdf_basename>
     python scripts/compare_models.py bde23c99.pdf
     python scripts/compare_models.py bde23c99.pdf --council cambridge
+    council compare bde23c99.pdf
 """
 
 import argparse
@@ -36,7 +39,7 @@ console = Console()
 MODELS = [
     ("Haiku 4.5",  "claude-haiku-4-5-20251001"),
     ("Sonnet 4.6", "claude-sonnet-4-6"),
-    ("Opus 4.6",   "claude-opus-4-6"),
+    ("Opus 4.8",   "claude-opus-4-8"),
 ]
 
 OUTPUT_DIR = Path("data/model_comparison")

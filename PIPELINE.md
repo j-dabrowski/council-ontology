@@ -18,7 +18,7 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 | 3a | Sample selection (`council sample`) | **Done** (2026-05-30) |
 | 3b | Sample extraction (`council extract-sample`) | **Done** (2026-05-30) |
 | 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — all metrics within target |
-| 4 | Confidence metrics and validation script | Pending |
+| 4 | Confidence metrics and validation script | **Done** (2026-05-31) |
 | 5 | Batch extraction (~$7-20) | Pending |
 | 6 | Human audit | Pending |
 
@@ -255,25 +255,29 @@ Level 3 is split into three substages with dedicated CLI commands.
 
 ---
 
-## Level 4: Confidence Metrics and Validation Script (no cost)
+## Level 4: Confidence Metrics and Validation Script ✅ COMPLETE (2026-05-31)
 
-Build automated validation before running at scale.
+`council validate cambridge [--limit N] [--files ...] [--from-year YYYY] [--force]`
 
-### Tasks
-- Implement validation script (`scripts/validate_extraction.py`) that takes a document and its extraction and returns:
-  - **Coverage ratio**: chars referenced by source quotes / total document chars. Threshold from Level 3 calibration.
-  - **Entity density**: motions per 10k chars. Flag documents significantly below baseline.
-  - **Keyword gap score**: count of extraction-relevant keywords (MOVED, CARRIED, DA, DECLARATION, etc.) in spans NOT covered by any source quote. Zero is ideal; flag above threshold.
-  - **Inventory agreement**: compare Level 2 extracted counts to Level 1 inventory counts per document. Flag significant disagreement.
-  - **Schema completeness**: does every Ordinary Council Meeting have at least one motion? Does every motion with an outcome have a valid enum value? Flag structural anomalies.
-  - **Cross-document consistency**: if meeting N references minutes of meeting N-1, does N-1 exist? Do councillors appear consistently across adjacent meetings in the same term?
-  - **Overall confidence score**: composite of above metrics. Categorise as PASS / REVIEW / FAIL.
-- The script runs automatically after each extraction batch.
+Seven metrics per document — five inherited from Level 3c, two new:
+- **Quote completeness** — fraction of entities with ≥1 source quote
+- **Paraphrase rate** — quotes not matchable in normalised source text
+- **Coverage ratio** — fraction of extraction window covered by matched quotes
+- **Inventory agreement** — extracted counts vs Level 1 inventory counts
+- **Keyword gap rate** — MOVED/CARRIED/DA etc. not covered by any quote span
+- **Entity density** *(new)* — motions per 10k chars; flags large Ordinary meetings with suspiciously few motions
+- **Schema completeness** *(new)* — Ordinary meetings must have ≥1 motion; all motions must have a non-null outcome
+
+Composite status: PASS / REVIEW / FAIL per document.
+
+Shared validation logic lives in `src/validation/core.py` — imported by both
+`validate_sample.py` (Level 3c) and `validate_extraction.py` (Level 4).
+
+`council validate` is a **separate step** from `council extract`, run explicitly after each batch.
 
 ### Output
-- `scripts/validate_extraction.py` producing per-document confidence reports.
-- `data/validation/` directory with per-document JSON reports.
-- Summary output after each batch: X passed, Y review, Z failed, with error class breakdown.
+- `data/validation/{stem}.json` per doc
+- `data/validation/summary.json` aggregate (pass/review/fail counts, average metrics)
 
 ---
 
@@ -281,16 +285,26 @@ Build automated validation before running at scale.
 
 Full extraction across entire corpus in progressive batches.
 
+### Workflow
+```bash
+council extract cambridge --limit 20   # extract a batch
+council validate cambridge             # score the newly extracted docs
+# triage REVIEW/FAIL results, fix errors, repeat
+council extract cambridge --limit 50
+council validate cambridge
+# ...scale up to full corpus
+```
+
 ### Tasks
 - Run in batches of 20 documents on Haiku (standard API, not batch, for fast iteration).
-- After each batch:
-  - Run validation script on all newly extracted documents.
-  - Triage results: PASS (continue), REVIEW (spot-check a sample), FAIL (diagnose and fix).
-  - For FAIL documents: identify error class, fix prompt/schema/parsing, re-run failed batch.
-  - For REVIEW documents: manually inspect 2-3 per batch. Adjust thresholds if flags are false positives. Fix extraction if flags are real.
+- After each batch run `council validate cambridge` and triage:
+  - PASS → continue
+  - REVIEW → spot-check 2-3 per batch; adjust thresholds if false positives
+  - FAIL → identify error class in `data/extraction_errors.json`, fix prompt/schema/parsing, re-extract
 - Progressive scaling: 20, 50, 100, full remaining corpus.
-- After every 100 documents: re-run Level 0 keyword detection with any new keywords discovered during extraction. Check for new flags on already-processed documents.
+- After every 100 documents: re-run Level 0 keyword detection with any new keywords discovered. Check for new flags on already-processed documents.
 - Cache ALL raw LLM responses.
+- Note: pre-Level-2b extractions already in DB (196 docs) will fail Level 4 (no extraction_evidence). Re-extract with `--force` to populate provenance.
 
 ### Output
 - All documents extracted with per-document confidence scores.
@@ -373,8 +387,12 @@ scripts/
   census.py                    # Level 0
   inventory.py                 # Level 1
   inventory_typology.py        # Level 1→2 (council typology)
+  stratified_sample.py         # Level 3a
+  validate_sample.py           # Level 3c
   validate_extraction.py       # Level 4
-  batch_extract.py             # Level 5
+
+src/validation/
+  core.py                      # Shared validation logic (Levels 3c and 4)
 ```
 
 ---

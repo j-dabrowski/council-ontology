@@ -33,6 +33,7 @@ data/cambridge_sample.json
 data/inventories/
 data/inventory_quality/
 data/sample_validation/
+data/validation/
 
 .cache/
 
