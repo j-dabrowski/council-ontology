@@ -408,6 +408,19 @@ def run(args) -> None:
         _write_summary()
         return
 
+    # ── Pre-flight cost estimate ───────────────────────────────────────────
+    try:
+        from src.cost_estimator import estimate_inventory, format_preflight
+        _est = estimate_inventory(to_process, census_by_filename)
+        console.print(format_preflight(_est))
+        console.print()
+    except Exception:
+        pass  # never block the pipeline on a cost estimation error
+
+    if getattr(args, "dry_run", False):
+        console.print("[dim]--dry-run: no API calls made[/dim]")
+        return
+
     console.print(
         f"[dim]Model: {INVENTORY_MODEL}  |  Prompt: {PROMPT_VERSION}  |  "
         f"Max concurrent: {MAX_CONCURRENT}[/dim]"

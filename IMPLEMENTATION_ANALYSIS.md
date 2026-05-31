@@ -301,6 +301,28 @@ is built and working. The critical path now leads to Level 5 (full batch extract
 
 ---
 
+## Cost Estimation Tooling ✅ COMPLETE (2026-05-31)
+
+**What was built:**
+- `src/cost_estimator.py` — shared estimation module used by all three command paths.
+  - `estimate_extraction(pdfs, max_chars, model_key, census)` and `estimate_inventory(pdfs, census)` return a `CostEstimate` dataclass.
+  - Uses `census.json` char counts — no PDF re-reads. Runtime ~1 second vs ~4 minutes previously.
+  - Output tokens estimated by census size bucket (`tiny→2.5k`, `small→6k`, `medium→12k`, `large→18k` tokens) rather than a flat 64k worst-case. The 64k assumption was a **4.9× overestimate** on the Cambridge pending corpus.
+  - Multi-chunk full-document extraction (`--max-chars full`) correctly estimates n_chunks via ceiling division and scales both input overhead and output tokens per chunk.
+  - `format_preflight(estimate)` returns a compact Rich-formatted string for inline display.
+
+- **Pre-flight banners** added to `cmd_extract` (in `cli.py`) and `inventory.run()` (in `scripts/inventory.py`). Shown automatically before any API call; non-blocking. Respects all filters (`--limit`, `--files`, `--from-year`) so the estimate always matches exactly what's about to run.
+
+- **`--dry-run` flag** added to `council extract`, `council extract-sample`, and `council inventory`. Shows the cost estimate and exits without making any API calls — replaces needing to manually cross-reference `council costs` before a run.
+
+- **`estimate_costs.py` rewritten** to use `src.cost_estimator`:
+  - Now covers both inventory and extraction stages in a single run.
+  - Highlights the currently-configured model with `*` in the model table.
+  - `--force` flag shows cost for the full corpus (all docs), as if running with `--force` — useful for planning a from-scratch re-extraction.
+  - Batch pricing annotation: `(50% off, up to 24h)`.
+
+---
+
 ## Parallelisable Work
 
 These can be done independently of the main pipeline sequence:

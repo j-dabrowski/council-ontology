@@ -227,11 +227,12 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       data/census_summary.txt. Incremental by default; --force rescans everything.
       Uses parallel workers (default: min(8, cpu_count)).
 
-  council inventory cambridge [--limit N] [--force] [--quiet]
+  council inventory cambridge [--limit N] [--force] [--quiet] [--dry-run]
       Level 1: one cheap Haiku call per document. Builds a text window (first 20k
       chars + last 10k chars) and asks: what kind of document is this, and roughly
       what does it contain? Caches LLM responses in .cache/llm_responses/. Outputs
       data/inventories/{stem}.json and data/inventories/summary.json.
+      --dry-run: print cost estimate only, make no API calls.
 
   council typology cambridge [--quiet] [--limit N] [--history]
       Level 1→2: analyse inventory typology. Reads all data/inventories/*.json and
@@ -245,10 +246,11 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       Level 3a: select a stratified 15-20 doc sample from census + L1 flags.
       Saves canonical selection to data/{council}_sample.json.
 
-  council extract-sample cambridge [--max-chars N|full]
+  council extract-sample cambridge [--max-chars N|full] [--dry-run]
       Level 3b: extract the saved sample. Reads data/{council}_sample.json.
       Always runs with --force. Populates extraction_evidence for Level 3c.
       --max-chars full uses multi-chunk extraction (full document, no 80k cap).
+      --dry-run: print cost estimate only, make no API calls.
 
   council validate-sample cambridge [--max-chars N|full]
       Level 3c: validate sample extractions. Re-extracts PDF text and applies
@@ -260,10 +262,12 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
 
   council extract cambridge [--limit N] [--from-year YYYY] [--to-year YYYY]
                             [--files a.pdf b.pdf ...] [--force]
-                            [--max-chars N|full]
+                            [--max-chars N|full] [--dry-run]
       Level 5: extract all pending PDFs with Claude. Skips already-extracted
       docs by default. --force re-extracts PDFs already in the DB.
       Writes grouped error report to data/extraction_errors.json.
+      --dry-run: print cost estimate only, make no API calls.
+      A cost estimate is always shown before extraction begins (even without --dry-run).
 
   council validate cambridge [--limit N] [--from-year YYYY] [--to-year YYYY]
                              [--files a.pdf b.pdf ...] [--force]
@@ -288,9 +292,13 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
       and print a side-by-side comparison. Does not write to the DB.
       Update MODELS in scripts/compare_models.py when new Claude versions release.
 
-  council costs [--from-year YYYY] [--to-year YYYY] [--max-chars N|full] [--quiet] [--show]
-      Estimate Anthropic API cost for pending PDFs without making any API calls.
-      --show: print the last saved estimate.
+  council costs [--from-year YYYY] [--to-year YYYY] [--max-chars N|full]
+               [--force] [--show]
+      Estimate API cost for all pending pipeline stages (inventory + extraction).
+      Uses census.json char counts — runs in ~1 second, no PDF re-reads.
+      Highlights the currently-configured model with * in the pricing table.
+      --force: show cost as if running --force (all docs, not just pending).
+      --show: reprint the last saved report without regenerating.
 
   — ANALYSIS —
 
@@ -324,18 +332,23 @@ Each has a run(args) function that does the work; main() handles argparse.
   scripts/compare_models.py       →  council compare <pdf> ...
   estimate_costs.py               →  council costs ...
 
-Shared validation library (not a standalone script):
-  src/validation/core.py  — five metrics, three-tier quote matching, validate_doc().
-                             Imported by validate_sample.py and validate_extraction.py.
+Shared libraries (not standalone scripts):
+  src/validation/core.py    — five metrics, three-tier quote matching, validate_doc().
+                               Imported by validate_sample.py and validate_extraction.py.
+  src/cost_estimator.py     — cost estimation for all LLM stages. Uses census.json
+                               char counts (no PDF reads). Imported by cli.py,
+                               scripts/inventory.py, and estimate_costs.py.
+                               Exports: estimate_extraction(), estimate_inventory(),
+                               format_preflight(), load_census(), model_key_from_string().
 
 Standalone usage (equivalent to CLI):
   python scripts/census.py cambridge [--force] [--quiet] [--workers N]
-  python scripts/inventory.py cambridge [--limit N] [--force] [--quiet]
+  python scripts/inventory.py cambridge [--limit N] [--force] [--quiet] [--dry-run]
   python scripts/inventory_typology.py cambridge [--quiet]
   python scripts/stratified_sample.py cambridge [--count N] [--output-file PATH]
   python scripts/validate_extraction.py cambridge [--limit N] [--force]
   python scripts/compare_models.py <pdf_basename.pdf> [--council cambridge] [--no-save]
-  python estimate_costs.py [--from-year YYYY] [--to-year YYYY] [--max-chars N|full] [--quiet] [--show]
+  python estimate_costs.py [--from-year YYYY] [--to-year YYYY] [--max-chars N|full] [--force] [--show]
 
 Output locations:
   data/census.json, data/census_summary.txt     (census)

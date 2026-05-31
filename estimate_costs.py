@@ -1,20 +1,17 @@
 #!/usr/bin/env python3
 """
-Estimate Anthropic API cost for extracting pending council meeting documents.
+Estimate Anthropic API cost for all LLM stages of the pipeline.
 
-Mirrors the logic in src/extraction/extractor.py exactly:
-  - text extracted via pypdf (same as extract_text_from_pdf)
-  - truncated to first 80,000 chars (same as _chunk_text)
-  - prompt overhead matches the actual user/system prompts
-  - max_tokens=64,000 used for output token estimate
+Stages covered:
+  inventory   Level 1: one Haiku call per document (30k char window)
+  extract     Level 5 (and 3b): one call per document (default 80k chars)
 
-Saves a JSON report to data/cost_estimates/ for later reference.
+Uses census.json char counts — no PDF re-reads needed (~1s vs ~4 min).
 
 Usage:
-    python estimate_costs.py
-    python estimate_costs.py --from-year 2020
-    python estimate_costs.py --from-year 2020 --to-year 2023
-    python estimate_costs.py --quiet           # suppress per-doc lines
+    council costs [--from-year YYYY] [--to-year YYYY] [--max-chars N|full]
+    council costs --show          # reprint last saved report
+    python estimate_costs.py      # standalone
 """
 
 import argparse
@@ -23,96 +20,50 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Resolve imports from project root
 sys.path.insert(0, str(Path(__file__).parent))
 
 from dotenv import load_dotenv
 load_dotenv()
 
-from pypdf import PdfReader
-
 from src.models import Council, Meeting
 from src.storage.database import init_db, make_session_factory
-from src.extraction.extractor import _SYSTEM_PROMPT
-
-# ---------------------------------------------------------------------------
-# Pipeline constants — keep in sync with src/extraction/extractor.py
-# ---------------------------------------------------------------------------
-
-MAX_CHARS = 80_000          # _chunk_text default; only first chunk is used
-MAX_OUTPUT_TOKENS = 64_000  # max_tokens passed to the API
-CHARS_PER_TOKEN = 4
-
-# User-prompt overhead (everything except the document text itself)
-_USER_PROMPT_TEMPLATE_OVERHEAD = (
-    "Council: City of Cambridge\n\n"
-    "Extract all entities from the following council meeting minutes:\n\n"
-    "---\n\n---"
+from src.cost_estimator import (
+    MODELS,
+    CostEstimate,
+    estimate_extraction,
+    estimate_inventory,
+    load_census,
+    model_key_from_string,
 )
-
-PROMPT_OVERHEAD_TOKENS = (
-    len(_SYSTEM_PROMPT) + len(_USER_PROMPT_TEMPLATE_OVERHEAD)
-) // CHARS_PER_TOKEN
-
-# ---------------------------------------------------------------------------
-# Model pricing: (label, input $/MTok, output $/MTok)
-# ---------------------------------------------------------------------------
-
-MODELS = [
-    ("Opus 4.6",          5.00, 25.00),
-    ("Opus 4.6 batch",    2.50, 12.50),
-    ("Sonnet 4.6",        3.00, 15.00),
-    ("Sonnet 4.6 batch",  1.50,  7.50),
-    ("Haiku 4.5",         1.00,  5.00),
-    ("Haiku 4.5 batch",   0.50,  2.50),
-]
+from src.extraction.extractor import DEFAULT_MAX_CHARS, _MODEL as _EXTRACT_MODEL
+from scripts.inventory import INVENTORY_MODEL
 
 REPORT_DIR = Path("data/cost_estimates")
-COL_W = 22
+COL_W = 24
+
+_ACTIVE_EXTRACT_KEY = model_key_from_string(_EXTRACT_MODEL)
+_ACTIVE_INVENTORY_KEY = model_key_from_string(INVENTORY_MODEL)
 
 
 # ---------------------------------------------------------------------------
-# Helpers
+# Pending-doc helpers (unchanged logic, no PDF reads)
 # ---------------------------------------------------------------------------
-
-def extract_text_from_pdf(pdf_path: Path) -> str:
-    """Extract plain text from a PDF — identical to extractor.py."""
-    reader = PdfReader(str(pdf_path))
-    parts: list[str] = []
-    for page in reader.pages:
-        text = page.extract_text()
-        if text:
-            parts.append(text)
-    return "\n\n".join(parts)
 
 
 def get_pending_pdfs(session, council: Council, raw_dir: Path, manifest: dict) -> list[Path]:
-    """
-    Return PDFs that have not yet been processed.
-
-    A PDF is considered done if either:
-    - its basename is the canonical minutes_pdf_path of a meeting, OR
-    - its manifest date already has a meeting row in the DB (sibling PDF for
-      the same date was already extracted).
-    """
+    """Return PDFs not yet extracted (not in meetings table)."""
     if not raw_dir.exists():
         return []
     all_pdfs = sorted(raw_dir.glob("*.pdf"))
     if not all_pdfs:
         return []
-
-    rows = (
-        session.query(Meeting)
-        .filter(Meeting.council_id == council.id)
-        .all()
-    )
+    rows = session.query(Meeting).filter(Meeting.council_id == council.id).all()
     ingested_names: set[str] = {
         Path(row.minutes_pdf_path).name
         for row in rows
         if row.minutes_pdf_path
     }
     ingested_dates: set[str] = {str(row.meeting_date) for row in rows}
-
     result = []
     for p in all_pdfs:
         if p.name in ingested_names:
@@ -124,21 +75,31 @@ def get_pending_pdfs(session, council: Council, raw_dir: Path, manifest: dict) -
     return result
 
 
+def get_uninventoried_pdfs(raw_dir: Path, force: bool = False) -> list[Path]:
+    """Return PDFs without an existing ok-status inventory file."""
+    inv_dir = Path("data/inventories")
+    result = []
+    for p in sorted(raw_dir.glob("*.pdf")):
+        inv_path = inv_dir / f"{p.stem}.json"
+        if not force and inv_path.exists():
+            try:
+                if json.loads(inv_path.read_text(encoding="utf-8")).get("status") == "ok":
+                    continue
+            except Exception:
+                pass
+        result.append(p)
+    return result
+
+
 def filter_pdfs_by_year(
     pdfs: list[Path],
     manifest: dict,
     from_year: int | None,
     to_year: int | None,
 ) -> tuple[list[Path], int]:
-    """
-    Filter PDFs to those whose manifest date falls within [from_year, to_year].
-    PDFs with no manifest date are excluded when any filter is active.
-    Returns (filtered_list, n_excluded_no_date).
-    """
     if not from_year and not to_year:
         return pdfs, 0
-    filtered = []
-    n_no_date = 0
+    filtered, n_no_date = [], 0
     for pdf in pdfs:
         date_str = manifest.get(pdf.name, {}).get("meeting_date", "")
         if not date_str:
@@ -158,12 +119,55 @@ def filter_pdfs_by_year(
 
 
 # ---------------------------------------------------------------------------
+# Summary table builder
+# ---------------------------------------------------------------------------
+
+
+def _build_cost_table(
+    label: str,
+    estimate: CostEstimate,
+    active_key: str,
+    lines: list[str],
+) -> None:
+    hr = "-" * 68
+    lines.append(f"\n  {label}")
+    lines.append(f"  {hr}")
+    lines.append(
+        f"  {'Documents':<32} {estimate.n_docs:>10,}"
+    )
+    lines.append(
+        f"  {'Input tokens (est.)':<32} {estimate.input_tokens:>10,}"
+    )
+    lines.append(
+        f"  {'Output tokens (est.)':<32} {estimate.output_tokens:>10,}"
+    )
+    lines.append("")
+    lines.append(
+        f"  {'Model':<{COL_W}} {'In $/MTok':>10} {'Out $/MTok':>11} {'Est. Cost':>12}"
+    )
+    lines.append(f"  {'-'*COL_W} {'-'*10} {'-'*11} {'-'*12}")
+    for key, pricing in MODELS.items():
+        cost = (
+            estimate.input_tokens  / 1_000_000 * pricing.input_per_mtok
+            + estimate.output_tokens / 1_000_000 * pricing.output_per_mtok
+        )
+        active_marker = " *" if key == active_key else "  "
+        lines.append(
+            f"  {pricing.label:<{COL_W}}"
+            f" ${pricing.input_per_mtok:>8.2f}"
+            f"   ${pricing.output_per_mtok:>9.2f}"
+            f"   ${cost:>10.2f}{active_marker}"
+        )
+    lines.append(f"  {'-'*COL_W} {'-'*10} {'-'*11} {'-'*12}")
+    lines.append(f"  * = currently configured model")
+
+
+# ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 
+
 def run(args) -> None:
-    """Core logic — callable from the CLI or run standalone via main()."""
-    # Resolve truncation limit: None means no cap (full document)
     if args.max_chars.lower() == "full":
         trunc_limit: int | None = None
         trunc_label = "full (no truncation)"
@@ -173,7 +177,10 @@ def run(args) -> None:
         except ValueError:
             print(f"--max-chars must be an integer or 'full', got: {args.max_chars!r}")
             raise SystemExit(1)
-        trunc_label = f"{trunc_limit:,} chars" + (" (pipeline default)" if trunc_limit == MAX_CHARS else "")
+        trunc_label = (
+            f"{trunc_limit:,} chars"
+            + (" (pipeline default)" if trunc_limit == DEFAULT_MAX_CHARS else "")
+        )
 
     if args.show:
         if not (REPORT_DIR / "latest.json").exists():
@@ -186,154 +193,108 @@ def run(args) -> None:
 
     engine = init_db()
     session = make_session_factory(engine)()
-
     councils = session.query(Council).all()
     if not councils:
         print("No councils in database.")
         return
 
-    # Track across all councils for the report
-    all_doc_records: list[dict] = []
-    grand_total_docs = 0
-    grand_total_input_tokens = 0
     run_ts = datetime.now(timezone.utc)
+    all_lines: list[str] = []
+    report_data: dict = {
+        "generated_at": run_ts.isoformat(),
+        "from_year": args.from_year,
+        "to_year": args.to_year,
+        "truncation_chars": trunc_limit,
+        "stages": {},
+    }
 
     for council in councils:
         key = council.short_name.lower()
         raw_dir = Path("data/raw") / key
-
         manifest_path = raw_dir / "manifest.json"
         manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 
-        pending = get_pending_pdfs(session, council, raw_dir, manifest)
+        census = load_census()
 
-        pending, n_no_date = filter_pdfs_by_year(
-            pending, manifest, args.from_year, args.to_year
-        )
+        force: bool = getattr(args, "force", False)
+        inv_all = sorted(raw_dir.glob("*.pdf")) if raw_dir.exists() else []
+
+        # ── Inventory stage ────────────────────────────────────────────────
+        if force:
+            inv_docs = inv_all
+        else:
+            inv_docs = get_uninventoried_pdfs(raw_dir)
+        inv_docs, _ = filter_pdfs_by_year(inv_docs, manifest, args.from_year, args.to_year)
+        inv_estimate = estimate_inventory(inv_docs, census)
+
+        # ── Extraction stage ───────────────────────────────────────────────
+        if force:
+            ext_docs = inv_all
+        else:
+            ext_docs = get_pending_pdfs(session, council, raw_dir, manifest)
+        ext_docs, n_no_date = filter_pdfs_by_year(ext_docs, manifest, args.from_year, args.to_year)
+        ext_estimate = estimate_extraction(ext_docs, trunc_limit, _ACTIVE_EXTRACT_KEY, census)
 
         yr_range = ""
         if args.from_year or args.to_year:
             yr_range = f" [{args.from_year or '∞'}–{args.to_year or '∞'}]"
+        force_note = "  [--force: all docs]" if force else ""
 
-        print(f"\n{'─'*60}")
-        print(f"  {council.name}  —  {len(pending)} pending PDFs{yr_range}")
-        if n_no_date:
-            print(f"  ({n_no_date} excluded — no manifest date)")
-        print(f"{'─'*60}")
+        hr = "=" * 68
+        all_lines.append(f"\n{hr}")
+        all_lines.append(f"  {council.name}{yr_range}{force_note}")
+        all_lines.append(f"  Extraction window: {trunc_label}")
+        all_lines.append(hr)
 
-        if not pending:
-            print("  (nothing to estimate)")
-            continue
+        if inv_docs:
+            inv_label = (
+                f"INVENTORY  ({len(inv_docs)} of {len(inv_all)} docs — full re-run)"
+                if force else
+                f"INVENTORY  ({len(inv_docs)} without inventory / {len(inv_all)} total)"
+            )
+            _build_cost_table(inv_label, inv_estimate, _ACTIVE_INVENTORY_KEY, all_lines)
+        else:
+            all_lines.append("\n  INVENTORY  all docs already inventoried")
 
-        doc_input_tokens: list[int] = []
-        n_missing = 0
-        n_errors = 0
+        if ext_docs:
+            ext_label = (
+                f"EXTRACTION  ({len(ext_docs)} docs — full re-run"
+                + (f", {n_no_date} skipped — no date" if n_no_date else "")
+                + ")"
+                if force else
+                f"EXTRACTION  ({len(ext_docs)} pending"
+                + (f", {n_no_date} skipped — no date" if n_no_date else "")
+                + ")"
+            )
+            _build_cost_table(ext_label, ext_estimate, _ACTIVE_EXTRACT_KEY, all_lines)
+        else:
+            all_lines.append("\n  EXTRACTION  no pending documents")
 
-        for i, pdf_path in enumerate(pending, 1):
-            label = f"[{i:3d}/{len(pending)}] {pdf_path.name}"
-            meta = manifest.get(pdf_path.name, {})
-            meeting_date = meta.get("meeting_date", "")
-            try:
-                text = extract_text_from_pdf(pdf_path)
-                if not text.strip():
-                    if not args.quiet:
-                        print(f"  {label}  →  (no extractable text, skipped)")
-                    n_missing += 1
-                    continue
-                raw_chars = len(text)
-                effective_chars = raw_chars if trunc_limit is None else min(raw_chars, trunc_limit)
-                text_tokens = effective_chars // CHARS_PER_TOKEN
-                total_input = text_tokens + PROMPT_OVERHEAD_TOKENS
-                doc_input_tokens.append(total_input)
-                is_truncated = trunc_limit is not None and raw_chars > trunc_limit
-                all_doc_records.append({
-                    "council": key,
-                    "filename": pdf_path.name,
-                    "meeting_date": meeting_date,
-                    "raw_chars": raw_chars,
-                    "effective_chars": effective_chars,
-                    "truncated": is_truncated,
-                    "input_tokens": total_input,
-                    "output_tokens": MAX_OUTPUT_TOKENS,
-                })
-                if not args.quiet:
-                    truncated = " [truncated]" if is_truncated else ""
-                    print(
-                        f"  {label}  →  {raw_chars:>7,} chars"
-                        f"{truncated}  ≈ {total_input:>6,} input tokens"
-                    )
-            except Exception as exc:
-                if not args.quiet:
-                    print(f"  {label}  →  ERROR: {exc}")
-                n_errors += 1
+        all_lines.append(f"\n  NOTE: output tokens are estimates (size-bucket heuristic).")
+        all_lines.append("  Adaptive thinking tokens not included — Sonnet/Opus actual costs")
+        all_lines.append("  may be higher.")
+        all_lines.append(hr)
 
-        if n_missing:
-            print(f"\n  Skipped {n_missing} PDF(s) with no extractable text.")
-        if n_errors:
-            print(f"  Skipped {n_errors} PDF(s) due to read errors.")
+        report_data["stages"][key] = {
+            "inventory": {
+                "n_docs": inv_estimate.n_docs,
+                "input_tokens": inv_estimate.input_tokens,
+                "output_tokens": inv_estimate.output_tokens,
+            },
+            "extraction": {
+                "n_docs": ext_estimate.n_docs,
+                "input_tokens": ext_estimate.input_tokens,
+                "output_tokens": ext_estimate.output_tokens,
+            },
+        }
 
-        council_docs = len(doc_input_tokens)
-        council_input_tokens = sum(doc_input_tokens)
-        grand_total_docs += council_docs
-        grand_total_input_tokens += council_input_tokens
+    session.close()
 
-    # -------------------------------------------------------------------------
-    # Summary table
-    # -------------------------------------------------------------------------
-    if grand_total_docs == 0:
-        print("\nNo pending documents with extractable text — nothing to estimate.")
-        return
+    summary_text = "\n".join(all_lines)
+    print(summary_text)
 
-    grand_total_output_tokens = grand_total_docs * MAX_OUTPUT_TOKENS
-
-    # Build summary text so it can be both printed and stored in the report
-    hr = "=" * 68
-    lines = []
-    lines.append(hr)
-    lines.append("  COST ESTIMATE SUMMARY")
-    if args.from_year or args.to_year:
-        lines.append(f"  Date range: {args.from_year or '∞'} – {args.to_year or '∞'}")
-    lines.append(f"  Truncation: {trunc_label}")
-    lines.append(hr)
-    lines.append(f"  {'Total pending documents':<30} {grand_total_docs:>10,}")
-    lines.append(f"  {'Total input tokens':<30} {grand_total_input_tokens:>10,}")
-    lines.append(f"  {'Output tokens per doc (max)':<30} {MAX_OUTPUT_TOKENS:>10,}")
-    lines.append(f"  {'Total output tokens':<30} {grand_total_output_tokens:>10,}")
-    lines.append("")
-    lines.append("  NOTE: adaptive thinking tokens not included — actual costs may be")
-    lines.append("  significantly higher, especially with Opus.")
-    lines.append("")
-    lines.append(hr)
-    lines.append(
-        f"  {'Model':<{COL_W}} {'In $/MTok':>10} {'Out $/MTok':>11} {'Est. Cost':>12}"
-    )
-    lines.append(f"  {'-'*COL_W} {'-'*10} {'-'*11} {'-'*12}")
-
-    cost_rows = []
-    for label, in_rate, out_rate in MODELS:
-        cost = (
-            grand_total_input_tokens / 1_000_000 * in_rate
-            + grand_total_output_tokens / 1_000_000 * out_rate
-        )
-        cost_rows.append({
-            "model": label,
-            "input_per_mtok": in_rate,
-            "output_per_mtok": out_rate,
-            "estimated_cost_usd": round(cost, 2),
-        })
-        lines.append(
-            f"  {label:<{COL_W}} ${in_rate:>8.2f}   ${out_rate:>9.2f}   ${cost:>10.2f}"
-        )
-
-    lines.append(hr)
-    summary_text = "\n".join(lines)
-    print(f"\n{summary_text}")
-
-    # -------------------------------------------------------------------------
-    # Save report
-    # -------------------------------------------------------------------------
+    # ── Save report ────────────────────────────────────────────────────────
     REPORT_DIR.mkdir(parents=True, exist_ok=True)
-
     ts_str = run_ts.strftime("%Y%m%d_%H%M%S")
     range_tag = ""
     if args.from_year:
@@ -342,39 +303,21 @@ def run(args) -> None:
         range_tag += f"_to{args.to_year}"
     if trunc_limit is None:
         range_tag += "_full"
-    elif trunc_limit != MAX_CHARS:
+    elif trunc_limit != DEFAULT_MAX_CHARS:
         range_tag += f"_cap{trunc_limit}"
-    report_filename = f"estimate_{ts_str}{range_tag}.json"
-    report_path = REPORT_DIR / report_filename
+    report_path = REPORT_DIR / f"estimate_{ts_str}{range_tag}.json"
     latest_path = REPORT_DIR / "latest.json"
-
-    report = {
-        "generated_at": run_ts.isoformat(),
-        "from_year": args.from_year,
-        "to_year": args.to_year,
-        "truncation_chars": trunc_limit,
-        "summary_text": summary_text,
-        "totals": {
-            "documents": grand_total_docs,
-            "input_tokens": grand_total_input_tokens,
-            "output_tokens_per_doc": MAX_OUTPUT_TOKENS,
-            "total_output_tokens": grand_total_output_tokens,
-        },
-        "cost_estimates": cost_rows,
-        "documents": all_doc_records,
-    }
-
-    report_json = json.dumps(report, indent=2)
+    report_data["summary_text"] = summary_text
+    report_json = json.dumps(report_data, indent=2)
     report_path.write_text(report_json, encoding="utf-8")
     latest_path.write_text(report_json, encoding="utf-8")
-
     print(f"\n  Report saved → {report_path}")
     print(f"             → {latest_path} (always latest)\n")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Estimate extraction API costs for pending council PDFs.",
+        description="Estimate API costs for pending council pipeline stages.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
@@ -386,17 +329,16 @@ def main() -> None:
         help="Only include meetings up to and including this year",
     )
     parser.add_argument(
-        "--max-chars", default=str(MAX_CHARS), metavar="N|full", dest="max_chars",
-        help=f"Truncation limit in chars, or 'full' for no truncation "
-             f"(default: {MAX_CHARS:,} — matches the extraction pipeline)",
+        "--max-chars", default=str(DEFAULT_MAX_CHARS), metavar="N|full", dest="max_chars",
+        help=f"Extraction truncation limit or 'full' (default: {DEFAULT_MAX_CHARS:,})",
     )
     parser.add_argument(
         "--quiet", "-q", action="store_true",
-        help="Suppress per-document output lines",
+        help="(no-op; kept for CLI compatibility)",
     )
     parser.add_argument(
         "--show", action="store_true",
-        help="Print the summary from the saved report without regenerating",
+        help="Print the summary from the last saved report without regenerating",
     )
     args = parser.parse_args()
     run(args)

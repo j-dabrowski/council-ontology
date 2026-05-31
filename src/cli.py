@@ -179,7 +179,7 @@ def cmd_extract(args) -> None:
     raw_dir = Path("data/raw") / key
 
     import json as _json
-    from src.extraction.extractor import MinutesExtractor, save_extraction
+    from src.extraction.extractor import MinutesExtractor, save_extraction, _MODEL as _EXTRACT_MODEL
     from src.storage.database import init_db, make_session_factory
 
     # Load scraper manifest for meeting dates (written during scrape/run)
@@ -217,10 +217,24 @@ def cmd_extract(args) -> None:
         if args.limit:
             pdfs = pdfs[: args.limit]
 
-    console.print(Panel(f"Extracting [bold]{len(pdfs)}[/bold] PDFs for [bold]{key}[/bold]", style="blue"))
-
     from src.extraction.extractor import DEFAULT_MAX_CHARS
     max_chars = getattr(args, "max_chars", DEFAULT_MAX_CHARS)
+
+    # ── Pre-flight cost estimate ───────────────────────────────────────────
+    if pdfs:
+        from src.cost_estimator import (
+            estimate_extraction, format_preflight, load_census, model_key_from_string,
+        )
+        _census = load_census()
+        _est = estimate_extraction(pdfs, max_chars, model_key_from_string(_EXTRACT_MODEL), _census)
+        console.print(format_preflight(_est))
+        console.print()
+
+    if getattr(args, "dry_run", False):
+        console.print("[dim]--dry-run: no API calls made[/dim]")
+        return
+
+    console.print(Panel(f"Extracting [bold]{len(pdfs)}[/bold] PDFs for [bold]{key}[/bold]", style="blue"))
 
     engine = init_db()
     session = make_session_factory(engine)()
@@ -815,6 +829,8 @@ def main() -> None:
     p_extract.add_argument("--max-chars", type=_parse_max_chars, default=_DMC, metavar="N|full",
                            dest="max_chars",
                            help=f"Extraction limit per document (default: {_DMC}). Use 'full' for multi-chunk extraction of the entire document.")
+    p_extract.add_argument("--dry-run", action="store_true", dest="dry_run",
+                           help="Show cost estimate only; make no API calls")
     p_extract.set_defaults(func=cmd_extract)
 
     # status
@@ -847,7 +863,9 @@ def main() -> None:
     p_costs.add_argument("--max-chars", default="80000", metavar="N|full", dest="max_chars",
                          help="Truncation limit or 'full' (default: 80000)")
     p_costs.add_argument("--quiet", "-q", action="store_true",
-                         help="Suppress per-document output lines")
+                         help="(no-op; kept for compatibility)")
+    p_costs.add_argument("--force", action="store_true",
+                         help="Estimate cost for all docs, not just pending/uninventoried (as if running --force)")
     p_costs.add_argument("--show", action="store_true",
                          help="Print latest saved report without regenerating")
     p_costs.set_defaults(func=cmd_costs)
@@ -872,6 +890,8 @@ def main() -> None:
                              help="Re-run even if inventory exists (cached LLM responses still reused)")
     p_inventory.add_argument("--quiet", "-q", action="store_true",
                              help="Suppress progress output")
+    p_inventory.add_argument("--dry-run", action="store_true", dest="dry_run",
+                             help="Show cost estimate only; make no API calls")
     p_inventory.set_defaults(func=cmd_inventory)
 
     # typology
@@ -901,6 +921,8 @@ def main() -> None:
     p_extract_sample.add_argument("--max-chars", type=_parse_max_chars, default=_DMC2, metavar="N|full",
                                   dest="max_chars",
                                   help=f"Extraction limit per document (default: {_DMC2}). Use 'full' for multi-chunk extraction of the entire document.")
+    p_extract_sample.add_argument("--dry-run", action="store_true", dest="dry_run",
+                                  help="Show cost estimate only; make no API calls")
     p_extract_sample.set_defaults(func=cmd_extract_sample)
 
     # validate-sample

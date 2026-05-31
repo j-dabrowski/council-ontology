@@ -287,6 +287,7 @@ Full extraction across entire corpus in progressive batches.
 
 ### Workflow
 ```bash
+council extract cambridge --limit 20 --dry-run  # preview cost before committing
 council extract cambridge --limit 20   # extract a batch
 council validate cambridge             # score the newly extracted docs
 # triage REVIEW/FAIL results, fix errors, repeat
@@ -297,6 +298,7 @@ council validate cambridge
 
 ### Tasks
 - Run in batches of 20 documents on Haiku (standard API, not batch, for fast iteration).
+- Use `--dry-run` to preview cost before each batch; use `council costs` for a full corpus breakdown.
 - After each batch run `council validate cambridge` and triage:
   - PASS → continue
   - REVIEW → spot-check 2-3 per batch; adjust thresholds if false positives
