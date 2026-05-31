@@ -561,6 +561,34 @@ def save_extraction(
             location=extracted.location,
         )
         session.add(meeting)
+    else:
+        # Clear all existing entities so re-extraction doesn't duplicate rows.
+        # Must delete in dependency order (children before parents).
+        mid = meeting.id
+        motion_ids = [r[0] for r in session.query(Motion.id).filter_by(meeting_id=mid)]
+        if motion_ids:
+            app_ids = [r[0] for r in session.query(PlanningApplication.id).filter(
+                PlanningApplication.motion_id.in_(motion_ids)
+            )]
+            if app_ids:
+                session.query(CommunitySubmission).filter(
+                    CommunitySubmission.application_id.in_(app_ids)
+                ).delete(synchronize_session=False)
+            session.query(PlanningApplication).filter(
+                PlanningApplication.motion_id.in_(motion_ids)
+            ).delete(synchronize_session=False)
+            session.query(Vote).filter(
+                Vote.motion_id.in_(motion_ids)
+            ).delete(synchronize_session=False)
+        session.query(Motion).filter_by(meeting_id=mid).delete(synchronize_session=False)
+        for _Model in (
+            PublicQuestion, Deputation, Petition, Appointment, CommitteeReport,
+            BudgetItem, InterestDeclaration, Tender, DelegatedDecision,
+            BuildingPermit, OtherItem, ExtractionEvidence,
+        ):
+            session.query(_Model).filter_by(meeting_id=mid).delete(synchronize_session=False)
+        session.flush()
+        logger.info("Cleared existing entities for meeting id=%d (re-extraction)", mid)
 
     if pdf_path and not meeting.minutes_pdf_path:
         meeting.minutes_pdf_path = str(pdf_path)
@@ -613,8 +641,18 @@ def save_extraction(
         session.flush()
         _ev("motions", motion.id, em.source_quotes)
 
-        # Individual votes
+        # Individual votes — deduplicate by councillor (LLM occasionally lists same
+        # councillor twice in one motion, violating the UNIQUE(motion_id, councillor_id) constraint)
+        seen_councillor_keys: set[str] = set()
         for ev in em.individual_votes:
+            key = f"{ev.councillor_given_name or ''}|{ev.councillor_family_name or ''}".lower()
+            if key in seen_councillor_keys:
+                logger.warning(
+                    "Duplicate vote for councillor '%s %s' in motion %s — skipping",
+                    ev.councillor_given_name, ev.councillor_family_name, em.item_number,
+                )
+                continue
+            seen_councillor_keys.add(key)
             councillor = _get_or_create_councillor(
                 session, ev.councillor_given_name, ev.councillor_family_name
             )
