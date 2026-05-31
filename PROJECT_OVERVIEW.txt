@@ -133,14 +133,19 @@ Commands:
 
 4. EXTRACTOR — src/extraction/
 --------------------------------
-  extractor.py      — sends PDF text to Claude, parses JSON response
+  extractor.py      — sends PDF text to Claude, parses JSON response; sync and batch modes
   schemas.py        — Pydantic models for extraction output (deliberately lenient)
   system_prompt.txt — full extraction instructions and output schema
 
-Pipeline:
+Sync pipeline:
   PDF → pypdf text extraction → truncate to 80,000 chars → Claude API call
   → strip markdown fences → Pydantic validation → save_extraction(text=) → DB
   → extraction_evidence rows (source quotes resolved to char offsets)
+
+Batch pipeline:
+  council extract --batch → build_batch_requests() → submit_batch() → batch_id
+  data/batch_jobs/{batch_id}.json (custom_id → PDF chunk mapping)
+  council batch-collect → retrieve_batch_results() → merge chunks → save_extraction() → DB
 
 Current model: claude-haiku-4-5-20251001 (Sonnet/Opus also supported)
 Max tokens: 64,000 output (streams to avoid truncated JSON)
@@ -262,12 +267,22 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
 
   council extract cambridge [--limit N] [--from-year YYYY] [--to-year YYYY]
                             [--files a.pdf b.pdf ...] [--force]
-                            [--max-chars N|full] [--dry-run]
+                            [--max-chars N|full] [--dry-run] [--batch]
       Level 5: extract all pending PDFs with Claude. Skips already-extracted
       docs by default. --force re-extracts PDFs already in the DB.
       Writes grouped error report to data/extraction_errors.json.
       --dry-run: print cost estimate only, make no API calls.
-      A cost estimate is always shown before extraction begins (even without --dry-run).
+      --batch: submit to Anthropic Message Batches API (50% off, up to 24h).
+        Saves job metadata to data/batch_jobs/{batch_id}.json and exits.
+        Retrieve results with: council batch-collect cambridge <batch_id>
+      A cost estimate (standard + batch pricing) is always shown before extraction.
+
+  council batch-collect cambridge <batch_id>
+      Collect results from a previously submitted batch job.
+      Checks batch status; if ended, parses responses, merges multi-chunk
+      documents, and saves to DB via save_extraction() with full provenance.
+      If not yet complete, prints status and exits (re-run later).
+      Job metadata is read from data/batch_jobs/{batch_id}.json.
 
   council validate cambridge [--limit N] [--from-year YYYY] [--to-year YYYY]
                              [--files a.pdf b.pdf ...] [--force]
@@ -391,9 +406,14 @@ WHAT IS UNFINISHED
 ===================
 
 1. EXTRACTION BACKLOG (341 PDFs)
-   Levels 0–4 are complete. Next: Level 5 (full extraction), then Level 6 (human audit).
-     council extract cambridge --limit 20   # start batch extraction
-     council validate cambridge             # run after each batch
+   Levels 0–4 are complete. Batch API tooling is done. Next: run Level 5, then Level 6.
+   Standard (fast iteration):
+     council extract cambridge --limit 20   # extract batch
+     council validate cambridge             # score after each batch
+   Batch mode (50% off, production):
+     council extract cambridge --max-chars full --batch   # submit; prints batch_id
+     council batch-collect cambridge msgbatch_xxx         # save to DB when done
+     council validate cambridge                           # score results
    Many pre-Level-2b extractions (196 already in DB) have no extraction_evidence rows —
    they were extracted before the provenance system was built. These will fail Level 4
    validation (completeness_rate = 0) and should be re-extracted with --force.

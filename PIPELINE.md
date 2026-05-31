@@ -281,37 +281,50 @@ Shared validation logic lives in `src/validation/core.py` — imported by both
 
 ---
 
-## Level 5: Batch Extraction (main cost, ~$7-20 on Haiku)
+## Level 5: Batch Extraction (main cost, ~$7–20 standard / ~$3–10 batch)
 
-Full extraction across entire corpus in progressive batches.
+Full extraction across entire corpus. Two modes:
 
-### Workflow
+**Sync mode** — fast iteration in batches of 20:
 ```bash
-council extract cambridge --limit 20 --dry-run  # preview cost before committing
-council extract cambridge --limit 20   # extract a batch
-council validate cambridge             # score the newly extracted docs
-# triage REVIEW/FAIL results, fix errors, repeat
+council extract cambridge --limit 20 --dry-run   # preview cost
+council extract cambridge --limit 20             # extract
+council validate cambridge                       # score
+# triage REVIEW/FAIL, fix errors, scale up
 council extract cambridge --limit 50
 council validate cambridge
-# ...scale up to full corpus
 ```
 
+**Batch mode** — 50% off, async (up to 24h), good for the full corpus:
+```bash
+council extract cambridge --max-chars full --batch --dry-run   # preview: ~$133 vs ~$267
+council extract cambridge --max-chars full --batch             # submit; prints batch_id
+# ... wait up to 24h ...
+council batch-collect cambridge msgbatch_abc123                # parse + save to DB
+council validate cambridge                                     # score all results
+```
+
+### Batch implementation (done 2026-05-31)
+- `council extract --batch` submits all pending PDFs to the Anthropic Message Batches API.
+  Multi-chunk documents (`--max-chars full`) produce one request per chunk with `custom_id = "{stem}__c{i}of{n}"`.
+  Job metadata (including the custom_id → PDF mapping) persisted to `data/batch_jobs/{batch_id}.json`.
+- `council batch-collect <council> <batch_id>` polls status, retrieves results, merges chunks, and
+  calls `save_extraction()` with full provenance (re-reads PDF text for char-offset resolution).
+- `MinutesExtractor` new methods: `build_batch_requests()`, `submit_batch()`, `retrieve_batch_results()`.
+  `_make_user_content()` extracted as shared helper for both sync and batch paths.
+
 ### Tasks
-- Run in batches of 20 documents on Haiku (standard API, not batch, for fast iteration).
-- Use `--dry-run` to preview cost before each batch; use `council costs` for a full corpus breakdown.
-- After each batch run `council validate cambridge` and triage:
+- After each sync batch or after `batch-collect`, run `council validate cambridge` and triage:
   - PASS → continue
   - REVIEW → spot-check 2-3 per batch; adjust thresholds if false positives
   - FAIL → identify error class in `data/extraction_errors.json`, fix prompt/schema/parsing, re-extract
-- Progressive scaling: 20, 50, 100, full remaining corpus.
-- After every 100 documents: re-run Level 0 keyword detection with any new keywords discovered. Check for new flags on already-processed documents.
-- Cache ALL raw LLM responses.
+- After every 100 documents: re-run Level 0 keyword detection with any new keywords discovered.
 - Note: pre-Level-2b extractions already in DB (196 docs) will fail Level 4 (no extraction_evidence). Re-extract with `--force` to populate provenance.
 
 ### Output
 - All documents extracted with per-document confidence scores.
 - `data/extraction_errors.json`: structured error log grouped by error class.
-- Full cache of raw LLM responses in `.cache/llm_responses/`.
+- `data/batch_jobs/{batch_id}.json`: batch job metadata and chunk mapping.
 
 ---
 
@@ -335,14 +348,16 @@ Final human verification on a random sample from the fully extracted corpus.
 
 ---
 
-## Level 7: Production Run (optional, ~$10-40 on Sonnet batch)
+## Level 7: Production Run (optional, ~$10–40 on Sonnet batch)
 
 If Haiku extraction quality was insufficient, re-extract on a stronger model.
 
 ### Tasks
 - Run 10 documents on Sonnet (standard API) to check for new edge cases from richer output.
-- If clean, submit full corpus to Sonnet via batch API (50% cost reduction, up to 24h latency).
-- Re-run validation script on all results.
+  Change `_MODEL` in `src/extraction/extractor.py` to `claude-sonnet-4-6`.
+- If clean, submit full corpus via batch: `council extract cambridge --max-chars full --force --batch`.
+  Note: batch mode disables adaptive thinking (requires streaming); Sonnet batch uses no thinking parameter.
+- Re-run `council validate cambridge --force` on all results.
 - Re-run audit on a fresh random sample.
 
 ### Output

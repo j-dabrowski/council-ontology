@@ -234,6 +234,10 @@ def cmd_extract(args) -> None:
         console.print("[dim]--dry-run: no API calls made[/dim]")
         return
 
+    if getattr(args, "batch", False):
+        _cmd_batch_submit(args, key, pdfs, max_chars, manifest)
+        return
+
     console.print(Panel(f"Extracting [bold]{len(pdfs)}[/bold] PDFs for [bold]{key}[/bold]", style="blue"))
 
     engine = init_db()
@@ -331,6 +335,280 @@ def cmd_extract(args) -> None:
         console.print(f"[dim]Full report → {error_path}[/dim]")
 
 
+
+
+def _cmd_batch_submit(args, key: str, pdfs: list, max_chars: "int | None", manifest: dict) -> None:
+    """Submit pdfs as an Anthropic batch job and save a job file for later collection."""
+    import json as _json
+    from datetime import datetime, timezone
+
+    from src.extraction.extractor import MinutesExtractor, _MODEL as _EXTRACT_MODEL
+    from src.models import Meeting as _Meeting
+    from src.storage.database import init_db, make_session_factory
+
+    short_name = COUNCILS[key]["short_name"]
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council = _get_council(session, short_name)
+    council_full_name = council.name
+
+    # Filter out already-extracted PDFs unless --force
+    if not args.force:
+        pending: list = []
+        skipped = 0
+        for pdf in pdfs:
+            if session.query(_Meeting).filter_by(minutes_pdf_path=str(pdf)).first():
+                skipped += 1
+            else:
+                pending.append(pdf)
+        if skipped:
+            console.print(f"[dim]Skipped {skipped} already-extracted PDFs (use --force to re-submit).[/dim]")
+        pdfs = pending
+
+    session.close()
+
+    if not pdfs:
+        console.print("[yellow]No pending PDFs to submit.[/yellow]")
+        return
+
+    console.print(Panel(
+        f"Building batch for [bold]{len(pdfs)}[/bold] PDFs · [bold]{key}[/bold]",
+        style="blue",
+    ))
+
+    extractor = MinutesExtractor()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+        transient=True,
+    ) as progress:
+        progress.add_task(f"Reading {len(pdfs)} PDFs and building requests...", total=None)
+        all_requests, id_map = extractor.build_batch_requests(
+            pdfs, max_chars, council_full_name, manifest
+        )
+
+    if not all_requests:
+        console.print("[red]No requests built — all PDFs failed to read.[/red]")
+        return
+
+    n_docs = len({v["pdf_path"] for v in id_map.values()})
+    console.print(f"[dim]Built {len(all_requests)} requests for {n_docs} PDFs[/dim]")
+    console.print("[dim]Submitting to Anthropic batch API...[/dim]")
+
+    batch_id = extractor.submit_batch(all_requests)
+
+    job_dir = Path("data/batch_jobs")
+    job_dir.mkdir(parents=True, exist_ok=True)
+    job_file = job_dir / f"{batch_id}.json"
+    job_file.write_text(_json.dumps({
+        "batch_id": batch_id,
+        "council": key,
+        "council_name": council_full_name,
+        "submitted_at": datetime.now(timezone.utc).isoformat(),
+        "model": extractor._model,
+        "max_chars": max_chars,
+        "n_docs": n_docs,
+        "request_count": len(all_requests),
+        "id_map": id_map,
+    }, indent=2))
+
+    console.print(f"\n[bold green]Batch submitted![/bold green]")
+    console.print(f"  Batch ID:   [bold]{batch_id}[/bold]")
+    console.print(f"  Requests:   {len(all_requests)} ({n_docs} documents)")
+    console.print(f"  Job file:   {job_file}")
+    console.print(f"\nRun when ready (up to 24 h):")
+    console.print(f"  [bold]council batch-collect {key} {batch_id}[/bold]")
+
+
+def cmd_batch_collect(args) -> None:
+    import json as _json
+    from collections import defaultdict
+    from datetime import date, datetime, timezone
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+
+    batch_id = args.batch_id
+    job_file = Path("data/batch_jobs") / f"{batch_id}.json"
+    if not job_file.exists():
+        console.print(f"[red]Job file not found: {job_file}[/red]")
+        console.print("[dim]Submit a batch first: council extract <council> --batch[/dim]")
+        sys.exit(1)
+
+    job = _json.loads(job_file.read_text())
+    id_map: dict = job["id_map"]
+    council_full_name: str = job.get("council_name", COUNCILS[key]["short_name"])
+
+    from src.extraction.extractor import (
+        MinutesExtractor, save_extraction, _merge_chunk_results,
+        extract_text_from_pdf, _parse_date_from_text,
+    )
+    from src.storage.database import init_db, make_session_factory
+
+    extractor = MinutesExtractor()
+
+    console.print(f"[dim]Checking batch {batch_id}...[/dim]")
+    status, chunk_results = extractor.retrieve_batch_results(batch_id)
+
+    if status != "ended":
+        console.print(f"[yellow]Batch status: {status}[/yellow]")
+        console.print(
+            f"  Submitted:  {job.get('submitted_at', '?')}\n"
+            f"  Requests:   {job['request_count']}  ·  {job['n_docs']} documents"
+        )
+        console.print("\n[dim]Run again when processing is complete (up to 24 h).[/dim]")
+        return
+
+    # Group chunk results by stem
+    by_stem: dict[str, list] = defaultdict(list)
+    for cid, result_or_exc in chunk_results.items():
+        info = id_map.get(cid)
+        if info is None:
+            console.print(f"[yellow]Warning: unknown custom_id {cid} — not in job file, skipping[/yellow]")
+            continue
+        stem = Path(info["pdf_path"]).stem
+        by_stem[stem].append((
+            info["chunk_idx"],
+            info["n_chunks"],
+            Path(info["pdf_path"]),
+            info.get("meeting_date_hint"),
+            cid,
+            result_or_exc,
+        ))
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council = _get_council(session, COUNCILS[key]["short_name"])
+    council_id = council.id
+
+    manifest_path = Path("data/raw") / key / "manifest.json"
+    manifest = _json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
+
+    succeeded = 0
+    failed = 0
+    failures: list[dict] = []
+
+    console.print(Panel(
+        f"Saving [bold]{len(by_stem)}[/bold] extracted documents · [bold]{key}[/bold]",
+        style="blue",
+    ))
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Saving...", total=len(by_stem))
+
+        for stem, chunk_list in sorted(by_stem.items()):
+            chunk_list.sort(key=lambda x: x[0])  # sort by chunk_idx
+            pdf_path: Path = chunk_list[0][2]
+            date_hint: "str | None" = chunk_list[0][3]
+
+            progress.update(task, description=f"[cyan]{pdf_path.name}[/cyan]")
+
+            # Any failed chunks abort the whole document
+            chunk_errors = [
+                (cid, exc) for _, _, _, _, cid, exc in chunk_list if isinstance(exc, Exception)
+            ]
+            if chunk_errors:
+                for cid, exc in chunk_errors:
+                    console.print(f"  [red]✗[/red] {pdf_path.name} [{cid}]: {exc}")
+                    failures.append({
+                        "filename": pdf_path.name,
+                        "error_class": _classify_error(exc),
+                        "error_type": type(exc).__qualname__,
+                        "error_message": str(exc),
+                        "raw_llm_response": getattr(exc, "raw_llm_response", None),
+                    })
+                failed += 1
+                progress.advance(task)
+                continue
+
+            extracted_chunks = [r for _, _, _, _, _, r in chunk_list]
+
+            # Apply chunk-0 metadata overrides (mirrors MinutesExtractor._extract_chunk)
+            base = extracted_chunks[0]
+            overrides: dict = {}
+            if council_full_name and not base.council_name:
+                overrides["council_name"] = council_full_name
+            if not base.meeting_date and date_hint:
+                try:
+                    overrides["meeting_date"] = date.fromisoformat(date_hint)
+                except ValueError:
+                    pass
+            if overrides:
+                extracted_chunks[0] = base.model_copy(update=overrides)
+
+            extracted = _merge_chunk_results(extracted_chunks) if len(extracted_chunks) > 1 else extracted_chunks[0]
+
+            # Re-read PDF text for provenance; also supplies date fallback
+            try:
+                raw_text: "str | None" = extract_text_from_pdf(pdf_path)
+            except Exception as exc:
+                raw_text = None
+                console.print(f"  [yellow]⚠[/yellow] {pdf_path.name}: could not re-read PDF ({exc}); provenance incomplete")
+
+            if not extracted.meeting_date and not date_hint and raw_text:
+                parsed_date = _parse_date_from_text(raw_text)
+                if parsed_date:
+                    extracted = extracted.model_copy(update={"meeting_date": parsed_date})
+
+            meta = manifest.get(pdf_path.name, {})
+            try:
+                meeting_id = save_extraction(
+                    session, council_id, extracted, pdf_path,
+                    text=raw_text, pdf_url=meta.get("source_url"),
+                )
+                console.print(
+                    f"  [green]✓[/green] {pdf_path.name} → meeting {meeting_id} "
+                    f"({extracted.meeting_date}, {len(extracted.motions)} motions)"
+                )
+                succeeded += 1
+            except Exception as exc:
+                session.rollback()
+                console.print(f"  [red]✗[/red] {pdf_path.name}: {exc}")
+                failures.append({
+                    "filename": pdf_path.name,
+                    "error_class": _classify_error(exc),
+                    "error_type": type(exc).__qualname__,
+                    "error_message": str(exc),
+                    "raw_llm_response": None,
+                })
+                failed += 1
+            finally:
+                progress.advance(task)
+
+    session.close()
+    console.print(f"\n[bold]Done:[/bold] {succeeded} saved, {failed} failed")
+    _log.info("batch-collect done: %d saved, %d failed", succeeded, failed)
+
+    if failures:
+        error_path = Path("data/extraction_errors.json")
+        errors_by_class: dict = defaultdict(list)
+        for entry in failures:
+            errors_by_class[entry["error_class"]].append(entry)
+        errors_by_class = dict(sorted(errors_by_class.items(), key=lambda kv: -len(kv[1])))
+        report = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "council": key,
+            "batch_id": batch_id,
+            "attempted": succeeded + failed,
+            "succeeded": succeeded,
+            "failed": failed,
+            "errors_by_class": errors_by_class,
+        }
+        error_path.write_text(_json.dumps(report, indent=2))
+        console.print("\n[bold]Error breakdown:[/bold]")
+        for cls, entries in errors_by_class.items():
+            console.print(f"  {len(entries):3d}×  {cls}")
+        console.print(f"[dim]Full report → {error_path}[/dim]")
 
 
 def cmd_status(args) -> None:  # noqa: ARG001
@@ -831,7 +1109,10 @@ def main() -> None:
                            help=f"Extraction limit per document (default: {_DMC}). Use 'full' for multi-chunk extraction of the entire document.")
     p_extract.add_argument("--dry-run", action="store_true", dest="dry_run",
                            help="Show cost estimate only; make no API calls")
-    p_extract.set_defaults(func=cmd_extract)
+    p_extract.add_argument("--batch", action="store_true",
+                           help="Submit as an async batch job (50%% off, up to 24 h). "
+                                "Saves a job file; use 'council batch-collect' to retrieve results.")
+    p_extract.set_defaults(func=cmd_extract, batch=False)
 
     # status
     p_status = sub.add_parser("status", help="Show pipeline and DB summary")
@@ -952,6 +1233,18 @@ def main() -> None:
     p_validate.add_argument("--force", action="store_true",
                             help="Re-validate even if data/validation/{stem}.json already exists")
     p_validate.set_defaults(func=cmd_validate)
+
+    # batch-collect
+    p_batch_collect = sub.add_parser(
+        "batch-collect",
+        help="Collect results from a previously submitted batch job (council extract --batch)",
+    )
+    p_batch_collect.add_argument("council", choices=list(COUNCILS))
+    p_batch_collect.add_argument(
+        "batch_id", metavar="BATCH_ID",
+        help="Batch ID returned when submitting (e.g. msgbatch_abc123)",
+    )
+    p_batch_collect.set_defaults(func=cmd_batch_collect)
 
     # analyse
     p_analyse = sub.add_parser("analyse", help="Run analysis queries against the DB")

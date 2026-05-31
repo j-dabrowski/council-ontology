@@ -206,16 +206,15 @@ class MinutesExtractor:
         )
         return merged
 
-    def _extract_chunk(
+    def _make_user_content(
         self,
         chunk_text: str,
-        source_hint: str = "",
         council_name: str | None = None,
         meeting_date_hint: str | None = None,
         chunk_index: int = 0,
         total_chunks: int = 1,
-    ) -> ExtractedMeeting:
-        """Extract from a single chunk of text and return an ExtractedMeeting."""
+    ) -> str:
+        """Build the user message content for a single chunk."""
         hints = []
         if council_name:
             hints.append(f"Council: {council_name}")
@@ -235,10 +234,24 @@ class MinutesExtractor:
         else:
             continuation = ""
 
-        user_content = (
+        return (
             f"{hint}{continuation}"
             f"Extract all entities from the following council meeting minutes:\n\n"
             f"---\n{chunk_text}\n---"
+        )
+
+    def _extract_chunk(
+        self,
+        chunk_text: str,
+        source_hint: str = "",
+        council_name: str | None = None,
+        meeting_date_hint: str | None = None,
+        chunk_index: int = 0,
+        total_chunks: int = 1,
+    ) -> ExtractedMeeting:
+        """Extract from a single chunk of text and return an ExtractedMeeting."""
+        user_content = self._make_user_content(
+            chunk_text, council_name, meeting_date_hint, chunk_index, total_chunks
         )
 
         logger.info(
@@ -331,6 +344,129 @@ class MinutesExtractor:
             max_chars=max_chars,
         )
         return result, text
+
+
+# ---------------------------------------------------------------------------
+# Batch API helpers
+# ---------------------------------------------------------------------------
+
+    def build_batch_requests(
+        self,
+        pdfs: "list[Path]",
+        max_chars: "int | None",
+        council_name: str | None = None,
+        manifest: "dict | None" = None,
+    ) -> "tuple[list[dict], dict[str, dict]]":
+        """
+        Build Anthropic batch API request dicts for a list of PDFs.
+
+        Reads each PDF, splits into chunks, and produces one request per chunk.
+        Skips PDFs that cannot be read or contain no text.
+
+        Returns:
+            requests: list of {"custom_id": str, "params": dict}
+            id_map:   {custom_id: {pdf_path, chunk_idx, n_chunks, meeting_date_hint}}
+        """
+        if manifest is None:
+            manifest = {}
+
+        requests: list[dict] = []
+        id_map: dict[str, dict] = {}
+
+        for pdf in pdfs:
+            meta = manifest.get(pdf.name, {})
+            date_hint: "str | None" = meta.get("meeting_date")
+
+            try:
+                text = extract_text_from_pdf(pdf)
+            except Exception as exc:
+                logger.error("Batch build: failed to read %s: %s", pdf.name, exc)
+                continue
+            if not text.strip():
+                logger.warning("Batch build: no text from %s, skipping", pdf.name)
+                continue
+
+            if max_chars is not None:
+                chunks = [_chunk_text(text, max_chars)[0]]
+            else:
+                chunks = _chunk_text(text, DEFAULT_MAX_CHARS)
+
+            n = len(chunks)
+            for i, chunk in enumerate(chunks):
+                cid = f"{pdf.stem}__c{i}of{n}"
+                params: dict = dict(
+                    model=self._model,
+                    max_tokens=64_000,
+                    system=_SYSTEM_PROMPT,
+                    messages=[{
+                        "role": "user",
+                        "content": self._make_user_content(
+                            chunk,
+                            council_name=council_name,
+                            meeting_date_hint=date_hint if i == 0 else None,
+                            chunk_index=i,
+                            total_chunks=n,
+                        ),
+                    }],
+                )
+                requests.append({"custom_id": cid, "params": params})
+                id_map[cid] = {
+                    "pdf_path": str(pdf),
+                    "chunk_idx": i,
+                    "n_chunks": n,
+                    "meeting_date_hint": date_hint if i == 0 else None,
+                }
+
+        return requests, id_map
+
+    def submit_batch(self, requests: "list[dict]") -> str:
+        """Submit requests to the Anthropic batch API. Returns the batch_id."""
+        batch = self._client.messages.batches.create(requests=requests)
+        logger.info("Submitted batch %s (%d requests)", batch.id, len(requests))
+        return batch.id
+
+    def retrieve_batch_results(
+        self,
+        batch_id: str,
+    ) -> "tuple[str, dict[str, ExtractedMeeting | Exception]]":
+        """
+        Check batch status and retrieve parsed results if finished.
+
+        Returns (processing_status, {custom_id: ExtractedMeeting | Exception}).
+        If processing_status != 'ended', the results dict is empty.
+        """
+        batch = self._client.messages.batches.retrieve(batch_id)
+        if batch.processing_status != "ended":
+            return batch.processing_status, {}
+
+        results: "dict[str, ExtractedMeeting | Exception]" = {}
+        for item in self._client.messages.batches.results(batch_id):
+            cid = item.custom_id
+            if item.result.type == "succeeded":
+                raw = next(
+                    (b.text for b in item.result.message.content if b.type == "text"),
+                    None,
+                )
+                if raw is None:
+                    results[cid] = ValueError("No text block in batch response")
+                    continue
+                raw = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.MULTILINE)
+                raw = re.sub(r"\s*```$", "", raw.strip(), flags=re.MULTILINE)
+                try:
+                    parsed = ExtractedMeeting.model_validate_json(raw)
+                    results[cid] = parsed
+                except Exception as exc:
+                    exc.raw_llm_response = raw  # type: ignore[attr-defined]
+                    results[cid] = exc
+            else:
+                detail = ""
+                try:
+                    detail = f": {item.result.error.error.message}"
+                except AttributeError:
+                    pass
+                results[cid] = RuntimeError(f"Batch request {item.result.type}{detail}")
+
+        return "ended", results
 
 
 # ---------------------------------------------------------------------------

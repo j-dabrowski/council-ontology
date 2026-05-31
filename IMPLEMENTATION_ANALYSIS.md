@@ -238,22 +238,40 @@ Behaviour unchanged; all Level 3c output identical to pre-refactor.
 ## Level 5: Batch Extraction
 
 **What exists:**
-- `council extract cambridge --limit N` — processes N pending PDFs, writes grouped error report to `data/extraction_errors.json`, skips already-extracted docs. Supports `--from-year`, `--to-year`, `--files`, `--force`, `--max-chars`.
+- `council extract cambridge --limit N` — synchronous extraction: processes N pending PDFs, writes grouped error report to `data/extraction_errors.json`, skips already-extracted docs. Supports `--from-year`, `--to-year`, `--files`, `--force`, `--max-chars`, `--dry-run`.
+- `council extract cambridge --batch` — async batch mode: submits all pending PDFs to the Anthropic Message Batches API (50% off, up to 24h latency). Saves a job file to `data/batch_jobs/{batch_id}.json` and exits. Use `council batch-collect cambridge <batch_id>` to retrieve results when done.
+- `council batch-collect cambridge <batch_id>` — retrieves results from a submitted batch. Groups chunk results by document, merges multi-chunk extractions, applies metadata overrides, re-reads PDFs for provenance, saves via `save_extraction()`. Writes grouped error report to `data/extraction_errors.json`.
 - `council validate cambridge` — separate step run after each extract batch. Scores all newly extracted docs and writes `data/validation/summary.json`.
 
-**Workflow:**
-```
+**Sync workflow (fast iteration):**
+```bash
+council extract cambridge --limit 20 --dry-run  # preview cost
 council extract cambridge --limit 20
 council validate cambridge
-# triage REVIEW/FAIL from data/validation/summary.json and extraction_errors.json
-# fix errors, then scale up
+# triage REVIEW/FAIL, fix errors, scale up
 council extract cambridge --limit 50
 council validate cambridge
 ```
 
-**Note:** 196 docs already in DB were extracted before Level 2b (provenance). They will fail Level 4 validation (completeness_rate = 0, no extraction_evidence rows). Use `council extract cambridge --force` to re-extract them with the current prompt and wiring.
+**Batch workflow (production, 50% off):**
+```bash
+council extract cambridge --max-chars full --batch --dry-run   # preview cost
+council extract cambridge --max-chars full --batch             # submit; prints batch_id
+# ... up to 24h later ...
+council batch-collect cambridge msgbatch_abc123                # save to DB
+council validate cambridge                                     # score results
+```
 
-**Needs new work:**
+**Note:** 196 docs already in DB were extracted before Level 2b (provenance). They will fail Level 4 validation (completeness_rate = 0, no extraction_evidence rows). Use `council extract cambridge --force` (sync) or `council extract cambridge --max-chars full --force --batch` to re-extract with the current prompt and wiring.
+
+**What the batch implementation added (2026-05-31):**
+- `MinutesExtractor.build_batch_requests(pdfs, max_chars, council_name, manifest)` — reads all PDFs, splits into chunks, builds request dicts with `custom_id = "{stem}__c{i}of{n}"`.
+- `MinutesExtractor.submit_batch(requests)` → `batch_id`.
+- `MinutesExtractor.retrieve_batch_results(batch_id)` → `(status, {custom_id: ExtractedMeeting | Exception})`. Handles the full parsing pipeline (markdown stripping, Pydantic validation, error capture).
+- `_make_user_content()` extracted as a shared helper used by both sync and batch paths.
+- Job metadata persisted at `data/batch_jobs/{batch_id}.json`: includes the full `custom_id → {pdf_path, chunk_idx, n_chunks, meeting_date_hint}` mapping needed by the collect phase.
+
+**Still not built:**
 - Feedback loop: after every ~100 documents, re-run Level 0 keyword scan with updated keyword list. Not automated.
 - LLM response caching for the extraction path (Level 1 caches inventory calls; extraction calls are not cached).
 
@@ -292,7 +310,7 @@ council validate cambridge
 | 7 | Level 3b: `council extract-sample` CLI command | Level 3a | Small | **Done** (2026-05-30) |
 | 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | **Done** (2026-05-30) |
 | 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | **Done** (2026-05-31) |
-| 10 | Level 5: full batch extraction + validate after each batch | Level 4 | Small | Pending |
+| 10 | Level 5: full batch extraction + validate after each batch | Level 4 | Small | Tooling done (2026-05-31); extraction backlog pending |
 | 11 | Level 6: audit report generator | Level 5 | Small | Pending |
 
 **Levels 0–4 are complete.** Level 3c baselines: completeness 95.0%, paraphrase 4.3%,

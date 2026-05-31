@@ -189,6 +189,24 @@ council extract cambridge --from-year 2020 --to-year 2022
 council extract cambridge --files abc123.pdf def456.pdf
 council extract cambridge --files abc123.pdf --force        # re-extract even if in DB
 council extract cambridge --max-chars full                  # multi-chunk: entire document
+council extract cambridge --dry-run                         # cost estimate only, no API calls
+```
+
+**Batch mode (50% off, async):** Add `--batch` to submit the whole job to the Anthropic Message Batches API instead of running synchronously. Results are available within 24 h and collected with `batch-collect`.
+
+```bash
+council extract cambridge --max-chars full --batch --dry-run   # cost preview
+council extract cambridge --max-chars full --batch             # submit; prints batch_id
+council batch-collect cambridge msgbatch_abc123                # save results to DB
+```
+
+#### `council batch-collect cambridge <batch_id>`
+Retrieves results from a previously submitted batch job. Checks whether the batch has finished, then parses every response, merges multi-chunk documents, and saves to the database via the standard `save_extraction()` path (provenance fully populated). If the batch is still in progress, prints the status and exits — run again later.
+
+Job metadata (including the `custom_id → PDF mapping`) is persisted at `data/batch_jobs/{batch_id}.json` at submit time.
+
+```bash
+council batch-collect cambridge msgbatch_abc123
 ```
 
 #### `council validate cambridge`
@@ -270,7 +288,7 @@ src/
     base.py               — shared scraper interface and MinutesDocument type
     cambridge.py          — City of Cambridge scraper (sitemap + Playwright + Wayback fallback)
   extraction/
-    extractor.py          — PDF text extraction and Claude API call
+    extractor.py          — PDF text → Claude API; sync and batch modes
     schemas.py            — Pydantic models for structured Claude output (13 entity types)
     system_prompt.txt     — extraction prompt (edit this to tune quality)
     inventory_prompt.txt  — Level 1 inventory-only prompt
@@ -301,6 +319,7 @@ data/
   {council}_sample.json   — Level 3a: canonical stratified sample (18 docs)
   sample_validation/      — Level 3c: per-doc JSON + report.txt + paraphrase_report.txt
   validation/             — Level 4: per-doc confidence reports + summary.json
+  batch_jobs/             — batch job metadata ({batch_id}.json, custom_id → PDF mapping)
   extraction_errors.json  — latest extraction error report (grouped by error class)
   raw/cambridge/          — downloaded PDFs + manifest.json (gitignored except manifest)
   council.db              — SQLite database (gitignored, re-generated from PDFs)
@@ -322,7 +341,7 @@ data/
 | 3b | Sample extraction | ~$0.50 | **Done** |
 | 3c | Sample validation — all metrics within target | Free | **Done** |
 | 4 | Per-document confidence scoring (`council validate`) | Free | **Done** |
-| 5 | Full batch extraction | ~$7–20 | Pending |
+| 5 | Full extraction (`council extract`) | ~$7–20 standard / ~$3–10 batch | Pending |
 | 6 | Human audit on random sample | Free | Pending |
 
 See `PIPELINE.md` for the detailed plan and `IMPLEMENTATION_ANALYSIS.md` for build order and dependencies.
