@@ -12,6 +12,7 @@ from pathlib import Path
 
 import anthropic
 import fitz  # pymupdf
+import json_repair
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from .schemas import ExtractedMeeting
@@ -456,9 +457,15 @@ class MinutesExtractor:
                 try:
                     parsed = ExtractedMeeting.model_validate_json(raw)
                     results[cid] = parsed
-                except Exception as exc:
-                    exc.raw_llm_response = raw  # type: ignore[attr-defined]
-                    results[cid] = exc
+                except Exception:
+                    repaired = json_repair.repair_json(raw)
+                    try:
+                        parsed = ExtractedMeeting.model_validate_json(repaired)
+                        logger.warning("JSON repaired for %s", cid)
+                        results[cid] = parsed
+                    except Exception as exc:
+                        exc.raw_llm_response = raw  # type: ignore[attr-defined]
+                        results[cid] = exc
             else:
                 detail = ""
                 try:

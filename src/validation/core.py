@@ -110,7 +110,8 @@ def extract_pdf_text(council: str, filename: str) -> str:
 
 def find_meeting(conn: sqlite3.Connection, filename: str) -> dict | None:
     rows = conn.execute(
-        "SELECT id, meeting_date, meeting_type FROM meetings WHERE minutes_pdf_path LIKE ?",
+        "SELECT id, meeting_date, meeting_type FROM meetings WHERE minutes_pdf_path LIKE ?"
+        " ORDER BY COALESCE(extracted_at, '1970-01-01') DESC",
         (f"%{filename}",),
     ).fetchall()
     if not rows:
