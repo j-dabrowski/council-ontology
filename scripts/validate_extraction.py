@@ -111,7 +111,7 @@ def determine_status_l4(
     if base_status == "FAIL":
         return "FAIL"
     mtype_lower = (meeting_type or "").lower()
-    is_ordinary = any(t in mtype_lower for t in ZERO_DENSITY_TYPES)
+    is_ordinary = mtype_lower in ZERO_DENSITY_TYPES
     if schema_completeness["flags"] or (
         is_ordinary
         and entity_density["char_count"] > 50_000
