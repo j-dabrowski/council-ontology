@@ -29,15 +29,29 @@ RAW_DIR = DATA_DIR / "raw"
 # ---------------------------------------------------------------------------
 
 # High-signal keywords: uncovered occurrences suggest a missed entity.
+#
+# CARRIED and LOST are intentionally excluded. They mark motion outcomes, which
+# are captured as structured fields (motions.outcome, votes_for/against) rather
+# than source quotes. MOVED is sufficient to detect truly missed motions, and
+# the 2_motions_null_outcome schema flag covers missing outcome values.
+# Including CARRIED/LOST here produced near-universal false positives because
+# the outcome line is never inside a quoted span.
+#
+# DEVELOPMENT APPLICATION is subject to a position cap in compute_keyword_gaps
+# (see _DA_KEYWORD_POSITION_SLACK) to suppress hits from plan-drawing appendices
+# that embed the phrase as a watermark on every page, far beyond the meeting
+# minutes content.
 GAP_KEYWORDS: dict[str, str] = {
     "MOVED":                   r"\bMOVED\b",
-    "CARRIED":                 r"\bCARRIED\b",
-    "LOST":                    r"\bLOST\b",
     "DEVELOPMENT APPLICATION": r"DEVELOPMENT APPLICATION",
     "DECLARATION OF INTEREST": r"DECLARATION OF INTEREST",
     "DEPUTATION":              r"\bDEPUTATION\b",
     "PETITION":                r"\bPETITION\b",
 }
+
+# DEVELOPMENT APPLICATION hits beyond this many normalised chars past the last
+# matched quote span are treated as appendix content and excluded from the gap.
+_DA_KEYWORD_POSITION_SLACK = 50_000
 
 # (inventory_field, db_table, WHERE clause using ? for meeting_id)
 INVENTORY_FIELDS: list[tuple[str, str, str]] = [
@@ -286,13 +300,22 @@ def compute_inventory_agreement(l1_inventory: dict, extracted_counts: dict) -> d
 
 
 def compute_keyword_gaps(classified: list[dict], source_text: str) -> dict:
-    """Keyword hits in normalised source text not covered by any matched quote span."""
+    """Keyword hits in normalised source text not covered by any matched quote span.
+
+    For DEVELOPMENT APPLICATION specifically, hits beyond the last matched quote
+    span plus _DA_KEYWORD_POSITION_SLACK are skipped. This prevents plan-drawing
+    appendices (which repeat the phrase as a watermark on every page) from
+    inflating the gap rate when the meeting minutes content ends much earlier.
+    """
     norm_source = _norm(source_text)
     spans: list[tuple[int, int]] = [
         (c["norm_start"], c["norm_end"])
         for c in classified
         if c["norm_start"] is not None and c["norm_end"] is not None
     ]
+
+    max_span_end = max((e for _, e in spans), default=0)
+    da_position_cap = max_span_end + _DA_KEYWORD_POSITION_SLACK
 
     total_hits = 0
     uncovered_hits = 0
@@ -301,6 +324,8 @@ def compute_keyword_gaps(classified: list[dict], source_text: str) -> dict:
     for kw, pattern in GAP_KEYWORDS.items():
         for m in re.finditer(pattern, norm_source):
             pos = m.start()
+            if kw == "DEVELOPMENT APPLICATION" and pos > da_position_cap:
+                continue
             total_hits += 1
             if not any(s <= pos < e for s, e in spans):
                 uncovered_hits += 1
