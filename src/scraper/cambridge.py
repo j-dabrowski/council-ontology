@@ -313,49 +313,46 @@ def _collect_from_playwright(
 
                         ajax_soup = BeautifulSoup(inner_html, "html.parser")
 
-                        # Prefer the minutes PDF (path contains "minutes"
-                        # or filename ends in 'm.pdf' / 'minutes.pdf')
-                        for link in ajax_soup.find_all("a", href=True):
-                            href: str = link["href"]
-                            if href.lower().endswith(".pdf") and "minutes" in href.lower():
-                                pdf_href = href
-                                break
-                        # Fall back to any PDF link in the response
-                        if pdf_href is None:
-                            lnk = ajax_soup.find(
-                                "a", href=re.compile(r"\.pdf$", re.IGNORECASE)
-                            )
-                            if lnk:
-                                pdf_href = lnk["href"]
+                        # Collect ALL PDF links from the accordion response.
+                        # Emitting each PDF separately ensures minutes are
+                        # never missed when both agenda and minutes are listed.
+                        pdf_hrefs: list[str] = [
+                            link["href"]
+                            for link in ajax_soup.find_all("a", href=True)
+                            if link["href"].lower().endswith(".pdf")
+                        ]
 
                     except PWTimeout:
                         logger.debug("Playwright: AJAX timeout cvid=%s", cvid)
+                        pdf_hrefs = []
                     except Exception as exc:  # noqa: BLE001
                         logger.debug("Playwright: error on cvid=%s: %s", cvid, exc)
+                        pdf_hrefs = []
 
-                    if not pdf_href:
+                    if not pdf_hrefs:
                         logger.debug("No PDF in AJAX response cvid=%s", cvid)
                         continue
 
                     if request_delay:
                         time.sleep(request_delay)
 
-                    pdf_url = (
-                        pdf_href if pdf_href.startswith("http") else BASE_URL + pdf_href
-                    )
-                    if pdf_url in seen:
-                        continue
-                    seen.add(pdf_url)
-
-                    docs.append(
-                        MinutesDocument(
-                            council_short_name="cambridge",
-                            meeting_date=meeting_date,
-                            meeting_type=meeting_type,
-                            source_url=pdf_url,
+                    for pdf_href in pdf_hrefs:
+                        pdf_url = (
+                            pdf_href if pdf_href.startswith("http") else BASE_URL + pdf_href
                         )
-                    )
-                    year_docs += 1
+                        if pdf_url in seen:
+                            continue
+                        seen.add(pdf_url)
+
+                        docs.append(
+                            MinutesDocument(
+                                council_short_name="cambridge",
+                                meeting_date=meeting_date,
+                                meeting_type=meeting_type,
+                                source_url=pdf_url,
+                            )
+                        )
+                        year_docs += 1
 
                 # Advance to next page if the Next button is enabled
                 try:
