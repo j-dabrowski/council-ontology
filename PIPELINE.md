@@ -10,6 +10,8 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 
 ## Pipeline Status
 
+### Phase 1 — Minutes-only extraction (original)
+
 | Level | Description | Status |
 |-------|-------------|--------|
 | 0 | Census: text extraction + keyword scan | **Done** (2026-05-28) |
@@ -19,8 +21,222 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 | 3b | Sample extraction (`council extract-sample`) | **Done** (2026-05-30) |
 | 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — all metrics within target |
 | 4 | Confidence metrics and validation script | **Done** (2026-05-31) |
-| 5 | Batch extraction (~$7-20) | Pending |
+| 5 | Batch extraction (~$7-20) | **Done** (2026-06-09) — 86 docs, $19.58 batch |
 | 6 | Human audit | Pending |
+
+### Phase 2 — Document-type-aware pipeline upgrade
+
+The scraper now downloads **both** agendas and minutes per meeting (as of 2026-06-09). Phase 1
+validation applied minutes-only metrics to all documents, producing misleading FAILs and REVIEWs
+on agendas, which structurally cannot have vote outcomes. Phase 2 makes every pipeline stage
+aware of document type so agendas are extracted and validated correctly in their own right.
+
+| Step | Description | Status |
+|------|-------------|--------|
+| P2-0 | `classify_document_type()` — backfill manifest + census | **Pending** |
+| P2-1 | Census updates — agenda keyword group, type-aware flags | **Pending** |
+| P2-2a | DB migration — `meetings.document_type`, `motions.officer_recommendation` | **Pending** |
+| P2-2b | Pydantic schema — `document_type` on `ExtractedMeeting`, `officer_recommendation` on `ExtractedMotion` | **Pending** |
+| P2-2c | Agenda extraction prompt — `agenda_system_prompt.txt` | **Pending** |
+| P2-2d | Extractor — prompt selection by type; write `document_type` to DB | **Pending** |
+| P2-3 | Validation — branch `determine_status`, `GAP_KEYWORDS`, schema completeness by type | **Pending** |
+| P2-4 | Re-extract agendas with agenda prompt; re-validate full 2024+ corpus | **Pending** |
+| P2-5 | Inventory prompt variant for agendas (Level 1) | **Pending** |
+| P2-6 | Sample selection stratified by document type (Level 3a) | **Pending** |
+
+Steps P2-0 through P2-4 are interdependent and should land together.
+P2-5 and P2-6 are independent improvements that can follow.
+
+---
+
+## Phase 2 Detail: Document-Type-Aware Pipeline Upgrade
+
+### Background and motivation
+
+The Cambridge website accordion returns both an agenda PDF and a minutes PDF per meeting.
+The scraper fix (2026-06-09) now collects all PDFs. This means the DB contains:
+- **Minutes** — voted outcomes, MOVED/CARRIED language, complete political record
+- **Agendas** — officer recommendations, proposed resolutions, planning assessments, budget detail (no vote outcomes — the meeting hasn't happened yet from the agenda's perspective)
+- **Briefing forum notes** — discussion summaries, no formal motions
+- **Addenda** — late-added agenda items, same structure as agendas
+
+Agendas are valuable: they let you compare what officers *recommended* vs what councillors *decided*, and carry richer planning and budget context than the brief minute entries.
+
+Validation results as of 2026-06-09 (n=54, 2024+):
+- 14 PASS / 31 REVIEW / 9 FAIL — degraded from pre-scrape-fix 7 PASS / 35 REVIEW / 1 FAIL
+- 5 of the 9 FAILs are agenda PDFs being judged by minutes metrics
+- Most REVIEWs are also agendas or committee docs with non-standard language
+
+### P2-0: Document type classification
+
+**Files:** `src/scraper/base.py` (download), `scripts/census.py`, manifest entries
+
+Classification rule (apply in order, case-insensitive, against the PDF filename only — not the full URL path):
+
+| Filename contains | `document_type` |
+|---|---|
+| `minutes` | `minutes` |
+| `agenda` | `agenda` |
+| `addendum` | `addendum` |
+| `briefing-forum`, `briefing-notes`, `briefing_forum`, `briefing_notes` | `briefing_notes` |
+| anything else | `unknown` |
+
+**Backfill:** One-off script to classify all existing manifest entries and rewrite `census.json`.
+**Going forward:** `BaseCouncilScraper.download()` infers and writes `document_type` into the manifest entry at download time.
+
+### P2-1: Census updates
+
+**File:** `scripts/census.py`
+
+- Read `document_type` from manifest; include it in each census record.
+- Add agenda-specific keyword group:
+  ```python
+  "agenda": {
+      "OFFICER RECOMMENDATION": r"OFFICER RECOMMENDATION",
+      "RECOMMENDED THAT":       r"RECOMMENDED THAT",
+      "PROPOSED RESOLUTION":    r"PROPOSED RESOLUTION",
+  }
+  ```
+- Suppress `no_motion_keywords` flag when `document_type in ('agenda', 'briefing_notes', 'addendum', 'unknown')`.
+- Add `estimated_officer_recommendations` derived count (from `OFFICER RECOMMENDATION` + `RECOMMENDED THAT` hits) alongside `estimated_motions`.
+
+### P2-2a: DB migration
+
+**File:** `src/models/ontology.py`
+
+Add to `Meeting`:
+```python
+document_type: Mapped[Optional[str]] = mapped_column(String(20))
+# values: 'minutes', 'agenda', 'briefing_notes', 'addendum', 'unknown', None (legacy)
+```
+
+Add to `Motion`:
+```python
+officer_recommendation: Mapped[Optional[str]] = mapped_column(Text)
+# Populated for agenda extractions: what the officer recommended before the vote.
+# Null for minutes (outcome is the authoritative field instead).
+```
+
+Run migration with `ALTER TABLE` on `council.db` directly (SQLite; no Alembic in this project).
+
+### P2-2b: Pydantic schema updates
+
+**File:** `src/extraction/schemas.py`
+
+Add to `ExtractedMeeting`:
+```python
+document_type: Optional[Literal["minutes", "agenda", "briefing_notes", "addendum", "unknown"]] = None
+```
+
+Add to `ExtractedMotion`:
+```python
+officer_recommendation: Optional[str] = None
+# For agenda extractions: the officer's recommended resolution text.
+```
+
+### P2-2c: Agenda extraction prompt
+
+**New file:** `src/extraction/agenda_system_prompt.txt`
+
+Same overall structure as `system_prompt.txt` with these differences:
+- Opening: "You are extracting from a **council meeting agenda** (not minutes). The meeting has not yet taken place. Extract what officers *propose*, not what councillors *decided*."
+- `document_type`: always output `"agenda"` (or `"addendum"` if the document is an addendum).
+- Motions: populate `officer_recommendation` (the recommended resolution text) instead of `outcome`. Leave `outcome`, `moved_by`, `seconded_by`, `individual_votes` null/empty.
+- All other entity types (planning applications, public questions, deputations, petitions, budget items, interest declarations, tenders, delegated decisions, building permits) extracted identically.
+- PROVENANCE RULE applies unchanged.
+
+A separate `briefing_notes_system_prompt.txt` is optional — the agenda prompt works for briefing forums too since both lack vote outcomes. Add only if quality testing shows a gap.
+
+### P2-2d: Extractor updates
+
+**File:** `src/extraction/extractor.py`
+
+- Load `agenda_system_prompt.txt` alongside `system_prompt.txt` at module level.
+- `MinutesExtractor.extract()`, `extract_from_pdf()`, and `build_batch_requests()` accept `document_type: str | None = None`.
+- Select system prompt: `agenda/addendum/briefing_notes → agenda_system_prompt.txt`, everything else → `system_prompt.txt`.
+- `save_extraction()`: write `document_type` to `Meeting.document_type`; write `officer_recommendation` to `Motion.officer_recommendation`.
+
+**File:** `src/cli.py` (and `scripts/batch_extract.py` if separate)
+- When building the extraction job list, read `document_type` from manifest and pass it to the extractor.
+
+### P2-3: Validation updates
+
+**File:** `src/validation/core.py`
+
+`GAP_KEYWORDS` — split into per-type sets:
+```python
+GAP_KEYWORDS_MINUTES = {
+    "MOVED": r"\bMOVED\b",
+    "DEVELOPMENT APPLICATION": r"DEVELOPMENT APPLICATION",
+    "DECLARATION OF INTEREST": r"DECLARATION OF INTEREST",
+    "DEPUTATION": r"\bDEPUTATION\b",
+    "PETITION": r"\bPETITION\b",
+}
+GAP_KEYWORDS_AGENDA = {
+    "OFFICER RECOMMENDATION": r"OFFICER RECOMMENDATION",
+    "RECOMMENDED THAT": r"RECOMMENDED THAT",
+    "DEVELOPMENT APPLICATION": r"DEVELOPMENT APPLICATION",
+    "DEPUTATION": r"\bDEPUTATION\b",
+    "PETITION": r"\bPETITION\b",
+}
+GAP_KEYWORDS_BRIEFING = {
+    "DEVELOPMENT APPLICATION": r"DEVELOPMENT APPLICATION",
+}
+```
+
+`determine_status()` — accept `document_type` and branch:
+- **minutes / unknown**: existing rules unchanged.
+- **agenda / addendum**: remove `quote_count == 0 → FAIL` (empty agenda items are possible); remove `completeness_rate < 0.50 → FAIL` (outcomes are structurally absent, completeness denominator is misleading); keep paraphrase rate and coverage checks.
+- **briefing_notes**: only flag FAIL on paraphrase rate ≥ 0.80 and coverage < 0.01 (very light — these are discussion docs).
+
+`validate_doc()` — read `document_type` from the DB meeting record; pass it through to `determine_status()` and `compute_keyword_gaps()`.
+
+**File:** `scripts/validate_extraction.py`
+
+`compute_schema_completeness()`:
+- For `document_type in ('agenda', 'addendum', 'briefing_notes')`: skip `ordinary_meeting_no_motions` and `motions_null_outcome` flags entirely.
+- For agendas: optionally add a light check — if the meeting has > 5 agenda items but all have `officer_recommendation IS NULL`, flag `agenda_missing_recommendations`.
+
+`determine_status_l4()`:
+- Pass `document_type` through; skip the entity-density check for agendas (density is meaningless without formal motions).
+
+### P2-4: Re-extract and re-validate
+
+After P2-0 through P2-3 are implemented:
+
+1. Re-extract all 2024+ **agenda** documents with the new prompt:
+   ```
+   council extract cambridge --from-year 2024 --max-chars full --force --batch
+   ```
+   (Only agenda PDFs will use the new prompt; minutes re-extraction is optional unless `--force` is passed.)
+
+2. Re-validate:
+   ```
+   council validate cambridge --from-year 2024 --max-chars full --force
+   ```
+
+3. Target outcomes:
+   - Minutes: > 20 PASS, < 10 REVIEW (most legitimate REVIEWs are committee meetings with non-standard language)
+   - Agendas: > 80% PASS (they are structurally simpler — officer recommendations are consistent)
+   - Overall FAILs: < 5 (extraction or PDF errors only)
+
+### P2-5: Inventory prompt variant (Level 1)
+
+**File:** `src/extraction/inventory_prompt.txt` (or a new `agenda_inventory_prompt.txt`)
+
+For agendas, the inventory should ask for `officer_recommendation_count` instead of `motion_count`. This matters for new councils where the inventory convergence loop (other_content_rate ≤ 20%) runs before extraction. Low priority for Cambridge where Level 1 is already complete.
+
+### P2-6: Sample selection by document type (Level 3a)
+
+**File:** `scripts/stratified_sample.py`
+
+Add `document_type` as a stratification axis. Guarantee the sample contains at least:
+- 3 minutes (Ordinary Council Meeting)
+- 2 agendas (Ordinary Council Meeting)
+- 1 briefing forum notes
+- 1 special meeting (minutes or agenda)
+
+Or maintain separate sample files: `data/cambridge_minutes_sample.json` and `data/cambridge_agenda_sample.json`.
 
 ---
 

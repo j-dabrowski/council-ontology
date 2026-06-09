@@ -14,6 +14,28 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
+def classify_document_type(url: str) -> str:
+    """
+    Infer document type from the PDF filename portion of a URL.
+
+    Checks only the filename (last path segment), not the directory path,
+    to avoid false matches from folder names like 'aaa-agenda-and-minutes'.
+
+    Returns one of: 'minutes', 'agenda', 'addendum', 'briefing_notes', 'unknown'.
+    """
+    fname = url.rstrip("/").rsplit("/", 1)[-1].lower()
+    if "minutes" in fname:
+        return "minutes"
+    if "agenda" in fname:
+        return "agenda"
+    if "addendum" in fname:
+        return "addendum"
+    if "briefing-forum" in fname or "briefing-notes" in fname or \
+       "briefing_forum" in fname or "briefing_notes" in fname:
+        return "briefing_notes"
+    return "unknown"
+
 RAW_DIR = Path(__file__).parent.parent.parent / "data" / "raw"
 
 
