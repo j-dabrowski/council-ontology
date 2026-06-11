@@ -75,9 +75,16 @@ def compute_entity_density(motion_count: int, char_count: int) -> dict:
 
 
 def compute_schema_completeness(
-    conn: sqlite3.Connection, meeting_id: int, meeting_type: str
+    conn: sqlite3.Connection,
+    meeting_id: int,
+    meeting_type: str,
+    document_type: str | None = None,
 ) -> dict:
-    """Structural checks: Ordinary meetings need ≥1 motion; all motions need outcomes."""
+    """Structural checks: Ordinary meetings need ≥1 motion; all motions need outcomes.
+
+    For agenda documents the outcome check is skipped (outcomes are null by design).
+    """
+    is_agenda = document_type == "agenda"
     motion_count = conn.execute(
         "SELECT COUNT(*) FROM motions WHERE meeting_id = ?", (meeting_id,)
     ).fetchone()[0]
@@ -89,10 +96,12 @@ def compute_schema_completeness(
 
     flags: list[str] = []
     mtype_lower = (meeting_type or "").lower()
-    if any(t in mtype_lower for t in ZERO_DENSITY_TYPES) and motion_count == 0:
-        flags.append("ordinary_meeting_no_motions")
-    if null_outcome_count > 0:
-        flags.append(f"{null_outcome_count}_motions_null_outcome")
+    # Agendas don't have voted outcomes — skip both vote-related flags.
+    if not is_agenda:
+        if any(t in mtype_lower for t in ZERO_DENSITY_TYPES) and motion_count == 0:
+            flags.append("ordinary_meeting_no_motions")
+        if null_outcome_count > 0:
+            flags.append(f"{null_outcome_count}_motions_null_outcome")
 
     return {
         "flags": flags,
@@ -106,17 +115,23 @@ def determine_status_l4(
     entity_density: dict,
     schema_completeness: dict,
     meeting_type: str,
+    document_type: str | None = None,
 ) -> str:
     """Extend Level 3c status with entity density and schema completeness checks."""
     if base_status == "FAIL":
         return "FAIL"
+    is_agenda = document_type == "agenda"
     mtype_lower = (meeting_type or "").lower()
     is_ordinary = mtype_lower in ZERO_DENSITY_TYPES
-    if schema_completeness["flags"] or (
-        is_ordinary
+    # Agendas don't have votes so density check (motions = proposed resolutions) is
+    # still meaningful, but the threshold calibrated for minutes doesn't apply.
+    density_flag = (
+        not is_agenda
+        and is_ordinary
         and entity_density["char_count"] > 50_000
         and entity_density["motions_per_10k"] < LOW_DENSITY_THRESHOLD
-    ):
+    )
+    if schema_completeness["flags"] or density_flag:
         return "REVIEW" if base_status == "PASS" else base_status
     return base_status
 
@@ -130,13 +145,17 @@ def _add_l4_metrics(
 ) -> dict:
     meeting_id = result["meeting_id"]
     meeting_type = result.get("meeting_type", "")
+    document_type = result.get("document_type")
     char_count = census.get(filename, {}).get("char_count", 0)
     motion_count = result["entity_counts"].get("motion_count", 0)
 
     result["entity_density"] = compute_entity_density(motion_count, char_count)
-    result["schema_completeness"] = compute_schema_completeness(conn, meeting_id, meeting_type)
+    result["schema_completeness"] = compute_schema_completeness(
+        conn, meeting_id, meeting_type, document_type=document_type
+    )
     result["status"] = determine_status_l4(
-        result["status"], result["entity_density"], result["schema_completeness"], meeting_type
+        result["status"], result["entity_density"], result["schema_completeness"],
+        meeting_type, document_type=document_type,
     )
     return result
 

@@ -50,6 +50,11 @@ SUMMARY_PATH = CENSUS_DIR / "census_summary.txt"
 # ---------------------------------------------------------------------------
 
 KEYWORD_GROUPS: dict[str, dict[str, str]] = {
+    "agenda": {
+        "OFFICER RECOMMENDATION": r"OFFICER RECOMMENDATION",
+        "RECOMMENDED THAT":       r"RECOMMENDED THAT",
+        "PROPOSED RESOLUTION":    r"PROPOSED RESOLUTION",
+    },
     "motions": {
         "MOVED":      r"\bMOVED\b",
         "SECONDED":   r"\bSECONDED\b",
@@ -171,6 +176,7 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
     meta = manifest.get(pdf_path.name, {})
     meeting_date: str | None = meta.get("meeting_date") or None
     meeting_type: str | None = meta.get("meeting_type") or None
+    document_type: str = meta.get("document_type") or "unknown"
 
     text, error_msg = _extract_text(pdf_path)
 
@@ -179,6 +185,7 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
             "filename": pdf_path.name,
             "meeting_date": meeting_date,
             "meeting_type": meeting_type,
+            "document_type": document_type,
             "char_count": None,
             "size_bucket": "failed",
             "decade": _decade(meeting_date),
@@ -189,6 +196,7 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
             "estimated_motions": 0,
             "estimated_planning_items": 0,
             "estimated_interest_declarations": 0,
+            "estimated_officer_recommendations": 0,
             "flags": ["extraction_error"],
         }
 
@@ -199,6 +207,7 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
             "filename": pdf_path.name,
             "meeting_date": meeting_date,
             "meeting_type": meeting_type,
+            "document_type": document_type,
             "char_count": char_count,
             "size_bucket": "failed",
             "decade": _decade(meeting_date),
@@ -209,6 +218,7 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
             "estimated_motions": 0,
             "estimated_planning_items": 0,
             "estimated_interest_declarations": 0,
+            "estimated_officer_recommendations": 0,
             "flags": ["extraction_empty"],
         }
 
@@ -241,12 +251,20 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
     imp = kc["interests"].get("IMPARTIALITY INTEREST", 0)
     estimated_interest_declarations = max(decl, fin + imp)
 
+    # Officer recommendation estimate (agendas)
+    rec_hits = keyword_counts.get("agenda", {})
+    estimated_officer_recommendations = max(
+        rec_hits.get("OFFICER RECOMMENDATION", 0),
+        rec_hits.get("RECOMMENDED THAT", 0),
+    )
+
     # Flags
     flags: list[str] = []
     total_keyword_hits = sum(n for g in keyword_counts.values() for n in g.values())
     if total_keyword_hits == 0:
         flags.append("zero_keyword_hits")
-    if moved == 0 and outcome_sum == 0:
+    # no_motion_keywords is only meaningful for documents expected to have votes
+    if moved == 0 and outcome_sum == 0 and document_type not in ("agenda", "addendum", "briefing_notes", "unknown"):
         flags.append("no_motion_keywords")
     bucket = _size_bucket(char_count)
     if bucket == "tiny":
@@ -260,6 +278,7 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
         "filename": pdf_path.name,
         "meeting_date": meeting_date,
         "meeting_type": meeting_type,
+        "document_type": document_type,
         "char_count": char_count,
         "size_bucket": bucket,
         "decade": _decade(meeting_date),
@@ -270,6 +289,7 @@ def scan_document(pdf_path: Path, manifest: dict) -> dict:
         "estimated_motions": estimated_motions,
         "estimated_planning_items": estimated_planning_items,
         "estimated_interest_declarations": estimated_interest_declarations,
+        "estimated_officer_recommendations": estimated_officer_recommendations,
         "flags": flags,
     }
 

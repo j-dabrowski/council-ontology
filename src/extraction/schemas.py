@@ -269,6 +269,7 @@ class ExtractedMotion(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     motion_text: Optional[str] = None
+    officer_recommendation: Optional[str] = None
     moved_by: Optional[ExtractedCouncillor] = None
     seconded_by: Optional[ExtractedCouncillor] = None
     is_confidential: bool = False
@@ -348,6 +349,10 @@ class ExtractedMeeting(BaseModel):
     This is the schema Claude must return as JSON.
     """
 
+    document_type: Optional[str] = Field(
+        default=None,
+        description="Document type: 'minutes', 'agenda', 'addendum', 'briefing_notes', 'unknown'"
+    )
     council_name: Optional[str] = Field(
         default=None,
         description="Full official name of the council, e.g. 'City of Cambridge'"

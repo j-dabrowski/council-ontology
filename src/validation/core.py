@@ -49,6 +49,16 @@ GAP_KEYWORDS: dict[str, str] = {
     "PETITION":                r"\bPETITION\b",
 }
 
+# Agenda-appropriate gap keywords: officer recommendations replace MOVED/vote keywords.
+# MOVED is absent from agendas (no votes have occurred); DECLARATION OF INTEREST is too.
+GAP_KEYWORDS_AGENDA: dict[str, str] = {
+    "OFFICER RECOMMENDATION":  r"OFFICER RECOMMENDATION",
+    "RECOMMENDED THAT":        r"RECOMMENDED THAT",
+    "DEVELOPMENT APPLICATION": r"DEVELOPMENT APPLICATION",
+    "DEPUTATION":              r"\bDEPUTATION\b",
+    "PETITION":                r"\bPETITION\b",
+}
+
 # DEVELOPMENT APPLICATION hits beyond this many normalised chars past the last
 # matched quote span are treated as appendix content and excluded from the gap.
 _DA_KEYWORD_POSITION_SLACK = 50_000
@@ -124,14 +134,15 @@ def extract_pdf_text(council: str, filename: str) -> str:
 
 def find_meeting(conn: sqlite3.Connection, filename: str) -> dict | None:
     rows = conn.execute(
-        "SELECT id, meeting_date, meeting_type FROM meetings WHERE minutes_pdf_path LIKE ?"
+        "SELECT id, meeting_date, meeting_type, document_type FROM meetings "
+        "WHERE minutes_pdf_path LIKE ?"
         " ORDER BY COALESCE(extracted_at, '1970-01-01') DESC",
         (f"%{filename}",),
     ).fetchall()
     if not rows:
         return None
     r = rows[0]
-    return {"id": r[0], "meeting_date": r[1], "meeting_type": r[2]}
+    return {"id": r[0], "meeting_date": r[1], "meeting_type": r[2], "document_type": r[3]}
 
 
 def get_quotes(conn: sqlite3.Connection, meeting_id: int) -> list[dict]:
@@ -299,14 +310,22 @@ def compute_inventory_agreement(l1_inventory: dict, extracted_counts: dict) -> d
     return result
 
 
-def compute_keyword_gaps(classified: list[dict], source_text: str) -> dict:
+def compute_keyword_gaps(
+    classified: list[dict],
+    source_text: str,
+    gap_keywords: "dict[str, str] | None" = None,
+) -> dict:
     """Keyword hits in normalised source text not covered by any matched quote span.
 
     For DEVELOPMENT APPLICATION specifically, hits beyond the last matched quote
     span plus _DA_KEYWORD_POSITION_SLACK are skipped. This prevents plan-drawing
     appendices (which repeat the phrase as a watermark on every page) from
     inflating the gap rate when the meeting minutes content ends much earlier.
+
+    Pass gap_keywords=GAP_KEYWORDS_AGENDA for agenda documents.
     """
+    if gap_keywords is None:
+        gap_keywords = GAP_KEYWORDS
     norm_source = _norm(source_text)
     spans: list[tuple[int, int]] = [
         (c["norm_start"], c["norm_end"])
@@ -321,7 +340,7 @@ def compute_keyword_gaps(classified: list[dict], source_text: str) -> dict:
     uncovered_hits = 0
     gap_examples: list[dict] = []
 
-    for kw, pattern in GAP_KEYWORDS.items():
+    for kw, pattern in gap_keywords.items():
         for m in re.finditer(pattern, norm_source):
             pos = m.start()
             if kw == "DEVELOPMENT APPLICATION" and pos > da_position_cap:
@@ -382,14 +401,21 @@ def determine_status(
     gap_rate: float,
     quote_count: int,
     completeness_rate: float = 1.0,
+    document_type: str | None = None,
 ) -> str:
+    is_agenda = document_type == "agenda"
     if quote_count == 0:
-        return "FAIL"
-    if para_rate >= 0.80 and cov_ratio < 0.02:
         return "FAIL"
     if completeness_rate < 0.50:
         return "FAIL"
-    if para_rate >= 0.50 or cov_ratio < 0.03 or gap_rate >= 0.40 or completeness_rate < 0.80:
+    # Agendas naturally have low coverage ratio (recommendation text vs full agenda).
+    # Skip the coverage-based FAIL and the coverage REVIEW trigger for agendas.
+    if not is_agenda:
+        if para_rate >= 0.80 and cov_ratio < 0.02:
+            return "FAIL"
+        if cov_ratio < 0.03:
+            return "REVIEW"
+    if para_rate >= 0.50 or gap_rate >= 0.40 or completeness_rate < 0.80:
         return "REVIEW"
     return "PASS"
 
@@ -426,13 +452,16 @@ def validate_doc(
 
     para_n, stripped_n, para_total, para_rate, para_examples = compute_paraphrase_rate(classified)
     cov_ratio = compute_coverage(classified, source_text, max_chars=max_chars)
+    doc_type = meeting.get("document_type")
+    gap_keywords = GAP_KEYWORDS_AGENDA if doc_type == "agenda" else None
     inv_agreement = compute_inventory_agreement(l1_inventory, entity_counts) if l1_inventory else None
-    kw_gap = compute_keyword_gaps(classified, source_text)
+    kw_gap = compute_keyword_gaps(classified, source_text, gap_keywords=gap_keywords)
     completeness = compute_quote_completeness(conn, meeting_id)
 
     status = determine_status(
         para_rate, cov_ratio, kw_gap["gap_rate"], para_total,
         completeness_rate=completeness["completeness_rate"],
+        document_type=doc_type,
     )
 
     return {
@@ -440,6 +469,7 @@ def validate_doc(
         "meeting_id": meeting_id,
         "meeting_date": meeting["meeting_date"],
         "meeting_type": meeting["meeting_type"],
+        "document_type": doc_type,
         "total_chars": census.get(filename, {}).get("char_count", 0),
         "quotes": {
             "total": para_total,

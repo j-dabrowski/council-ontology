@@ -54,6 +54,7 @@ def _parse_date_from_text(text: str) -> "date | None":
         return None
 
 _SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text(encoding="utf-8").strip()
+_AGENDA_SYSTEM_PROMPT = (Path(__file__).parent / "agenda_system_prompt.txt").read_text(encoding="utf-8").strip()
 
 
 def extract_text_from_pdf(pdf_path: Path) -> str:
@@ -131,6 +132,7 @@ class MinutesExtractor:
         council_name: str | None = None,
         meeting_date_hint: str | None = None,
         max_chars: "int | None" = DEFAULT_MAX_CHARS,
+        document_type: str | None = None,
     ) -> ExtractedMeeting:
         """
         Extract structured data from minutes text.
@@ -147,6 +149,7 @@ class MinutesExtractor:
             council_name: Known council name to include as a hint for the model.
             meeting_date_hint: ISO date string passed as a hint for chunk 0.
             max_chars: Extraction limit. None means full document (multi-chunk).
+            document_type: 'minutes', 'agenda', etc. Selects system prompt.
 
         Returns:
             ExtractedMeeting Pydantic model.
@@ -166,6 +169,7 @@ class MinutesExtractor:
                 source_hint=source_hint,
                 council_name=council_name,
                 meeting_date_hint=meeting_date_hint,
+                document_type=document_type,
             )
 
         # Unlimited multi-chunk mode
@@ -177,6 +181,7 @@ class MinutesExtractor:
                 source_hint=source_hint,
                 council_name=council_name,
                 meeting_date_hint=meeting_date_hint,
+                document_type=document_type,
             )
 
         logger.info(
@@ -195,6 +200,7 @@ class MinutesExtractor:
                 meeting_date_hint=meeting_date_hint if i == 0 else None,
                 chunk_index=i,
                 total_chunks=len(chunks),
+                document_type=document_type,
             )
             results.append(result)
 
@@ -215,6 +221,7 @@ class MinutesExtractor:
         meeting_date_hint: str | None = None,
         chunk_index: int = 0,
         total_chunks: int = 1,
+        document_type: str | None = None,
     ) -> str:
         """Build the user message content for a single chunk."""
         hints = []
@@ -224,10 +231,12 @@ class MinutesExtractor:
             hints.append(f"Meeting date: {meeting_date_hint}")
         hint = ("\n".join(hints) + "\n\n") if hints else ""
 
+        doc_label = "agenda" if document_type == "agenda" else "minutes"
+
         if chunk_index > 0:
             continuation = (
                 f"NOTE: This is part {chunk_index + 1} of {total_chunks} of a long meeting "
-                f"minutes document. Meeting metadata (council name, date, type, location, "
+                f"{doc_label} document. Meeting metadata (council name, date, type, location, "
                 f"councillors present/apology) was already extracted from part 1. "
                 f"For this part: set council_name, meeting_date, meeting_type, location, "
                 f"councillors_present, and councillors_apology to null/empty — "
@@ -238,7 +247,7 @@ class MinutesExtractor:
 
         return (
             f"{hint}{continuation}"
-            f"Extract all entities from the following council meeting minutes:\n\n"
+            f"Extract all entities from the following council meeting {doc_label}:\n\n"
             f"---\n{chunk_text}\n---"
         )
 
@@ -250,10 +259,13 @@ class MinutesExtractor:
         meeting_date_hint: str | None = None,
         chunk_index: int = 0,
         total_chunks: int = 1,
+        document_type: str | None = None,
     ) -> ExtractedMeeting:
         """Extract from a single chunk of text and return an ExtractedMeeting."""
+        system_prompt = _AGENDA_SYSTEM_PROMPT if document_type == "agenda" else _SYSTEM_PROMPT
         user_content = self._make_user_content(
-            chunk_text, council_name, meeting_date_hint, chunk_index, total_chunks
+            chunk_text, council_name, meeting_date_hint, chunk_index, total_chunks,
+            document_type=document_type,
         )
 
         logger.info(
@@ -278,7 +290,7 @@ class MinutesExtractor:
             kwargs: dict = dict(
                 model=self._model,
                 max_tokens=64_000,
-                system=_SYSTEM_PROMPT,
+                system=system_prompt,
                 messages=[{"role": "user", "content": user_content}],
             )
             if _supports_thinking:
@@ -332,6 +344,7 @@ class MinutesExtractor:
         council_name: str | None = None,
         meeting_date_hint: str | None = None,
         max_chars: "int | None" = DEFAULT_MAX_CHARS,
+        document_type: str | None = None,
     ) -> "tuple[ExtractedMeeting, str]":
         """Extract text from PDF then run extraction. Returns (result, raw_text)."""
         logger.info("Reading PDF: %s", pdf_path)
@@ -344,6 +357,7 @@ class MinutesExtractor:
             council_name=council_name,
             meeting_date_hint=meeting_date_hint,
             max_chars=max_chars,
+            document_type=document_type,
         )
         return result, text
 
@@ -378,6 +392,8 @@ class MinutesExtractor:
         for pdf in pdfs:
             meta = manifest.get(pdf.name, {})
             date_hint: "str | None" = meta.get("meeting_date")
+            doc_type: "str | None" = meta.get("document_type")
+            system_prompt = _AGENDA_SYSTEM_PROMPT if doc_type == "agenda" else _SYSTEM_PROMPT
 
             try:
                 text = extract_text_from_pdf(pdf)
@@ -399,7 +415,7 @@ class MinutesExtractor:
                 params: dict = dict(
                     model=self._model,
                     max_tokens=64_000,
-                    system=_SYSTEM_PROMPT,
+                    system=system_prompt,
                     messages=[{
                         "role": "user",
                         "content": self._make_user_content(
@@ -408,6 +424,7 @@ class MinutesExtractor:
                             meeting_date_hint=date_hint if i == 0 else None,
                             chunk_index=i,
                             total_chunks=n,
+                            document_type=doc_type,
                         ),
                     }],
                 )
@@ -417,6 +434,7 @@ class MinutesExtractor:
                     "chunk_idx": i,
                     "n_chunks": n,
                     "meeting_date_hint": date_hint if i == 0 else None,
+                    "document_type": doc_type,
                 }
 
         return requests, id_map
@@ -521,6 +539,7 @@ def save_extraction(
     pdf_path: Path | None = None,
     text: str | None = None,
     pdf_url: str | None = None,
+    document_type: str | None = None,
 ) -> int:
     """
     Persist an ExtractedMeeting into the database.
@@ -555,12 +574,29 @@ def save_extraction(
         VoteChoice,
     )
 
-    # Upsert meeting
-    meeting = (
-        session.query(Meeting)
-        .filter_by(council_id=council_id, meeting_date=extracted.meeting_date)
-        .first()
-    )
+    # Resolve effective document_type: caller-supplied takes precedence over LLM field.
+    effective_doc_type = document_type or extracted.document_type
+
+    # Upsert meeting.
+    # When pdf_path is provided we look up by path first so that agendas and
+    # minutes for the same date resolve to separate records.
+    meeting = None
+    if pdf_path:
+        meeting = (
+            session.query(Meeting)
+            .filter_by(council_id=council_id, minutes_pdf_path=str(pdf_path))
+            .first()
+        )
+    if meeting is None:
+        # Fall back to (council_id, meeting_date, document_type) so minutes and
+        # agendas for the same date don't overwrite each other.
+        q = session.query(Meeting).filter_by(
+            council_id=council_id, meeting_date=extracted.meeting_date
+        )
+        if effective_doc_type:
+            q = q.filter_by(document_type=effective_doc_type)
+        meeting = q.first()
+
     if not meeting:
         meeting = Meeting(
             council_id=council_id,
@@ -604,6 +640,8 @@ def save_extraction(
         meeting.minutes_pdf_url = pdf_url
     if text:
         meeting.minutes_text = text
+    if effective_doc_type:
+        meeting.document_type = effective_doc_type
     meeting.extracted_at = datetime.utcnow()
 
     session.flush()
@@ -629,6 +667,7 @@ def save_extraction(
             title=em.title or em.item_number or "",
             description=em.description,
             motion_text=em.motion_text,
+            officer_recommendation=em.officer_recommendation,
             outcome=MotionOutcome(em.outcome) if em.outcome else None,
             votes_for=em.votes_for,
             votes_against=em.votes_against,

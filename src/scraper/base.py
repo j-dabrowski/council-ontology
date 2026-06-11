@@ -161,6 +161,7 @@ class BaseCouncilScraper(ABC):
                 "meeting_date": doc.meeting_date.isoformat(),
                 "meeting_type": doc.meeting_type,
                 "source_url": doc.source_url,
+                "document_type": classify_document_type(doc.source_url),
             }
             if manifest is not None:
                 manifest[dest.name] = entry

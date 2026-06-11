@@ -275,16 +275,19 @@ def cmd_extract(args) -> None:
                     continue
             meta = manifest.get(pdf.name, {})
             meeting_date_hint = meta.get("meeting_date")
+            doc_type = meta.get("document_type")
             try:
                 extracted, raw_text = extractor.extract_from_pdf(
                     pdf,
                     council_name=council_full_name,
                     meeting_date_hint=meeting_date_hint,
                     max_chars=max_chars,
+                    document_type=doc_type,
                 )
                 meeting_id = save_extraction(
                     session, council_id, extracted, pdf,
                     text=raw_text, pdf_url=meta.get("source_url"),
+                    document_type=doc_type,
                 )
                 msg = f"{pdf.name} → meeting {meeting_id} ({extracted.meeting_date}, {len(extracted.motions)} motions)"
                 console.print(f"  [green]✓[/green] {msg}")
@@ -605,6 +608,7 @@ def cmd_batch_collect(args) -> None:
                 meeting_id = save_extraction(
                     session, council_id, extracted, pdf_path,
                     text=raw_text, pdf_url=meta.get("source_url"),
+                    document_type=meta.get("document_type"),
                 )
                 console.print(
                     f"  [green]✓[/green] {pdf_path.name} → meeting {meeting_id} "

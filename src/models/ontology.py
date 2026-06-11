@@ -195,6 +195,7 @@ class Meeting(Base):
     minutes_pdf_url: Mapped[Optional[str]] = mapped_column(String(500))
     minutes_pdf_path: Mapped[Optional[str]] = mapped_column(String(500))
     minutes_text: Mapped[Optional[str]] = mapped_column(Text)
+    document_type: Mapped[Optional[str]] = mapped_column(String(20))
     extracted_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -223,6 +224,7 @@ class Motion(Base):
     votes_abstain: Mapped[Optional[int]] = mapped_column(Integer)
     # Raw text of the motion as extracted
     motion_text: Mapped[Optional[str]] = mapped_column(Text)
+    officer_recommendation: Mapped[Optional[str]] = mapped_column(Text)
     # LLM-assigned topic tags (comma-separated for simplicity)
     tags: Mapped[Optional[str]] = mapped_column(String(500))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
