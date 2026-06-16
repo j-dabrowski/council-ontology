@@ -63,10 +63,17 @@ CURRENT STATE (as of 2026-06-17)
       completeness 98.7% / paraphrase 16.4% / coverage 10.39% / kwgap 12.9%
       All aggregate metrics within target.
 
-  Known blockers:
+  Current strategy:
+    Iterating on prompts, schema, and system quality using 2024+ corpus only.
+    Pre-2024 docs (329 minutes) will be (re-)extracted as a fresh batch once the
+    pipeline has stabilised — using the then-current prompt regardless of any prior
+    partial extractions, since earlier runs predate provenance and schema improvements.
+    Do not run bulk pre-2024 extraction until this iteration phase is complete.
+
+  Known issues:
     1. 7 large agenda docs show 100% paraphrase (ToC-hallucination in multi-chunk
-       extraction) — prompt or merge-logic fix needed (or accept REVIEW)
-    2. 347 docs still pending extraction
+       extraction) — prompt fix queued; re-extraction deferred
+    2. 347 docs pending (329 pre-2024 minutes + 18 2024+ agendas)
 
 
 PARTS OF THE PROJECT
@@ -464,10 +471,12 @@ WHAT IS UNFINISHED
    The model has ward/role/term dates per councillor per council.
    Councillors are created from vote records only — no ward, no role, no dates.
 
-6. THREE MEETING FIELDS ALWAYS NULL
-   minutes_pdf_url  — source URL is in the manifest but never written to DB
-   minutes_text     — raw extracted text is discarded after extraction
-   extracted_at     — timestamp is never set
+6. TWO MEETING FIELDS NULL FOR PRE-PHASE-2 EXTRACTIONS
+   minutes_pdf_url  — populated for all 243 meetings (backfilled from manifest 2026-06-17)
+   minutes_text     — populated for 99 recent extractions; null for 144 older ones
+                      (will be populated on re-extraction)
+   extracted_at     — populated for 99 recent extractions; null for 144 older ones
+                      (will be populated on re-extraction)
 
 7. LONG DOCUMENTS — CONTROLLABLE VIA --max-chars
    Default extraction is 80k single-chunk (fast, cheap).

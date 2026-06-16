@@ -1320,6 +1320,34 @@ def main() -> None:
                            help="Tag to filter by for 'motions' query")
     p_analyse.set_defaults(func=cmd_analyse)
 
+    # build-relationships
+    p_rel = sub.add_parser(
+        "build-relationships",
+        help="Dynamic layer: compute ALLY/OPPONENT edges from voting alignment and persist to DB (scripts/build_relationships.py)",
+    )
+    p_rel.add_argument("council", choices=list(COUNCILS))
+    p_rel.add_argument("--min-shared", type=int, default=10, dest="min_shared",
+                       help="Minimum shared votes to qualify a pair (default: 10)")
+    p_rel.add_argument("--ally", type=float, default=0.85,
+                       help="Agreement rate threshold for ALLY (default: 0.85)")
+    p_rel.add_argument("--opponent", type=float, default=0.40,
+                       help="Agreement rate threshold for OPPONENT (default: 0.40)")
+    p_rel.add_argument("--from-year", type=int, default=2024, dest="from_year",
+                       help="Only include votes from this year onwards (default: 2024)")
+    p_rel.add_argument("--to-year", type=int, default=None, dest="to_year",
+                       help="Only include votes up to this year (default: no limit)")
+    p_rel.add_argument("--all-years", action="store_true", dest="all_years",
+                       help="Include all years (overrides --from-year)")
+    p_rel.add_argument("--dry-run", action="store_true", dest="dry_run",
+                       help="Preview edges without writing to DB")
+    def _cmd_build_relationships(a):
+        from scripts.build_relationships import run as _run
+        from_year = None if a.all_years else a.from_year
+        _run(a.council, min_shared=a.min_shared, ally_threshold=a.ally,
+             opponent_threshold=a.opponent, from_year=from_year, to_year=a.to_year,
+             dry_run=a.dry_run)
+    p_rel.set_defaults(func=_cmd_build_relationships)
+
     args = parser.parse_args()
     if args.verbose:
         logger.setLevel(logging.DEBUG)

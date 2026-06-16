@@ -4,7 +4,13 @@
 
 This document defines the multi-level extraction pipeline for processing council meeting minutes PDFs into structured, auditable data. The core principle is **recursive refinement**: cheap broad passes feed expensive deep passes, and every pass validates the one after it. No blind extraction. By the time a document hits the full LLM call, we already know what it contains, what we expect to get back, and how to verify it.
 
-Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingested. 341 pending.
+Current state: 590 PDFs in manifest (Cambridge, 1995–2026). 243 extracted. 347 pending.
+
+**Current strategy (as of 2026-06-17):** Iterating on prompts, schema, and system quality using
+the 2024+ corpus only. Pre-2024 documents will be extracted once the pipeline has stabilised and
+all known issues are resolved. When pre-2024 extraction runs, it will be treated as a fresh batch
+— all pre-2024 docs should be (re-)extracted with the then-current prompt, not incrementally
+patched, since earlier partial extractions predate provenance and schema improvements.
 
 ---
 

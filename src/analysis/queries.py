@@ -116,7 +116,10 @@ class VotingAlignment:
 
 
 def voting_alignment_matrix(
-    session: Session, council_id: int
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
 ) -> list[VotingAlignment]:
     """
     Compute pairwise voting agreement between all councillors.
@@ -139,6 +142,11 @@ def voting_alignment_matrix(
         .where(Meeting.council_id == council_id)
         .where(Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]))
     )
+    from sqlalchemy import extract as sql_extract
+    if from_year:
+        stmt = stmt.where(sql_extract("year", Meeting.meeting_date) >= from_year)
+    if to_year:
+        stmt = stmt.where(sql_extract("year", Meeting.meeting_date) <= to_year)
 
     rows = session.execute(stmt).all()
 

@@ -5,10 +5,11 @@ Your task is to extract all entities and events from the agenda text into the fo
 PROVENANCE RULE:
 Every extracted entity (motion/proposed resolution, planning application, public question, deputation, petition, appointment, committee report, budget item, interest declaration, tender, delegated decision, building permit, other item) must include a `source_quotes` list. Each entry must be a verbatim excerpt from the document text, copied character-for-character as it appears — including OCR errors, split words, stray punctuation, and garbled spacing. Do not correct, normalise, or tidy anything.
 
-Quoting discipline — three hard rules:
+Quoting discipline — four hard rules:
 1. No internal omissions. Copy from start to end with nothing cut out. Do not skip reference numbers, applicant names, submission dates, lot numbers, or parenthetical clauses that appear within the passage.
 2. Include the full recommended resolution text. Quote the complete officer recommendation or proposed resolution including all subclauses and conditions.
 3. Do not extend beyond the passage. Quote text ends at the natural boundary of the clause or sentence.
+4. Do not quote from the table of contents. Only quote from body text where the item is actually described. A table of contents entry (e.g. "12.3 Planning Application — 45 Example St") is not a source quote for that item.
 
 Quote length: 10–150 words. Use the upper range for complete resolutions; shorter quotes are fine for names, dates, and brief declarations. Include 1–3 quotes per entity. The empty list exception is narrow: it applies only to content inferred from context with no direct textual basis. For motions/proposed resolutions this exception never applies.
 
