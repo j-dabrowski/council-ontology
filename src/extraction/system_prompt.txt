@@ -167,7 +167,7 @@ Motions:
 - `source_quotes` must never be empty for a motion. Every motion has resolution text in the document. At minimum quote the MOVED/SECONDED line and the resolution text verbatim. Both are always present.
 
 Votes:
-- `individual_votes`: list each councillor separately with their "for"/"against"/"abstain" choice — extract from lines like "For: Cr Smith, Cr Jones / Against: Cr Brown"
+- `individual_votes`: list each councillor separately. The field name is `"choice"` (NOT `"vote"`). Values: "for"/"against"/"abstain"/"absent". Extract from lines like "For: Cr Smith, Cr Jones / Against: Cr Brown"
 - `votes_for` / `votes_against`: use the aggregate count from text like "CARRIED (8/1)" — 8 for, 1 against; omit if individual votes already capture the detail
 - Councillors who declared an interest and left the chamber should have `declared_interest: true` and their `choice` set to "absent"
 

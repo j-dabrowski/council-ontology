@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import re
 from datetime import date
-from typing import Any, Literal, Optional
+from typing import Any, ClassVar, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -38,6 +38,24 @@ def _parse_name_string(name: str) -> tuple[str, str]:
     if len(parts) >= 2:
         return " ".join(parts[:-1]), parts[-1]
     return "", parts[0] if parts else name
+
+
+_VOTE_CHOICES = {"for", "against", "abstain", "absent"}
+
+
+def _parse_vote_string(s: str) -> Optional[dict]:
+    """
+    Parse 'Cr Smith - For' or 'Motion 1 - Cr Smith - Against' into a vote dict.
+    Returns None if the string doesn't match the expected pattern.
+    """
+    parts = [p.strip() for p in s.split(" - ")]
+    if len(parts) < 2:
+        return None
+    choice = parts[-1].lower()
+    if choice not in _VOTE_CHOICES:
+        return None
+    given, family = _parse_name_string(parts[-2])
+    return {"councillor_given_name": given or None, "councillor_family_name": family or None, "choice": choice}
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +90,24 @@ class ExtractedCouncillor(BaseModel):
 class ExtractedVote(BaseModel):
     councillor_given_name: Optional[str] = None
     councillor_family_name: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def remap_vote_key(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        # "vote" or "position" used instead of the specified field name "choice"
+        for alt in ("vote", "position"):
+            if alt in data and "choice" not in data:
+                data["choice"] = data.pop(alt)
+                break
+        # "councillor" as a single name string instead of split given/family fields
+        if "councillor" in data and isinstance(data["councillor"], str):
+            given, family = _parse_name_string(data.pop("councillor"))
+            data.setdefault("councillor_given_name", given or None)
+            data.setdefault("councillor_family_name", family or None)
+        return data
 
     @model_validator(mode="after")
     def normalise_names(self) -> "ExtractedVote":
@@ -199,7 +235,9 @@ class ExtractedInterestDeclaration(BaseModel):
     @classmethod
     def normalise_lower(cls, v: Any) -> Any:
         if isinstance(v, str):
-            return v.lower()
+            v = v.lower().strip()
+            # Model sometimes outputs "financial interest", "impartiality interest", etc.
+            v = v.removesuffix(" interest")
         return v
 
 
@@ -238,11 +276,23 @@ class ExtractedBuildingPermit(BaseModel):
     status: Optional[Literal["approved", "refused", "deferred"]] = None
     source_quotes: list[str] = Field(default_factory=list)
 
+    _STATUS_MAP: ClassVar[dict] = {
+        "granted": "approved",
+        "issued": "approved",
+        "accepted": "approved",
+        "pending": None,
+        "in progress": None,
+        "under review": None,
+    }
+    _VALID_STATUSES: ClassVar[frozenset] = frozenset({"approved", "refused", "deferred"})
+
     @field_validator("status", mode="before")
     @classmethod
     def normalise_status(cls, v: Any) -> Any:
         if isinstance(v, str):
-            return v.lower()
+            v = v.lower().strip()
+            mapped = cls._STATUS_MAP.get(v, v)
+            return mapped if mapped in cls._VALID_STATUSES else None
         return v
 
     @field_validator("estimated_value", mode="before")
@@ -287,9 +337,14 @@ class ExtractedMotion(BaseModel):
     @field_validator("votes_for", "votes_against", "votes_abstain", mode="before")
     @classmethod
     def coerce_vote_count(cls, v: Any) -> Any:
-        """If Claude returns a list of individual votes instead of a count, use the length."""
+        """Coerce vote counts: list → length; unparseable string → None."""
         if isinstance(v, list):
             return len(v) or None
+        if isinstance(v, str):
+            try:
+                return int(v.strip())
+            except ValueError:
+                return None
         return v
 
     @field_validator("outcome", mode="before")
@@ -314,28 +369,38 @@ class ExtractedMotion(BaseModel):
     @classmethod
     def coerce_votes_dict(cls, v: Any) -> Any:
         """
-        Accept Claude's common dict format:
-          {"for": ["Cr Smith", ...], "against": [...], "abstain": [...]}
-        and expand it to a list of ExtractedVote-compatible dicts.
-        Anything that is not a list or dict is silently dropped.
+        Normalise the three formats Claude uses for individual_votes:
+          1. List of dicts  — [{"councillor_given_name": ..., "choice": ...}, ...]  (ideal)
+          2. Dict format    — {"for": ["Cr Smith", ...], "against": [...]}
+          3. List of strings — ["Cr Smith - For", "Motion 1 - Cr Jones - Against"]
+        Anything else is dropped.
         """
         if not isinstance(v, (dict, list)):
             return []
-        if not isinstance(v, dict):
-            return v
-        votes = []
-        for choice, names in v.items():
-            if not isinstance(names, list):
-                continue
-            choice_norm = choice.lower()
-            for name in names:
-                given, family = _parse_name_string(str(name))
-                votes.append({
-                    "councillor_given_name": given,
-                    "councillor_family_name": family,
-                    "choice": choice_norm,
-                })
-        return votes
+        if isinstance(v, dict):
+            votes = []
+            for choice, names in v.items():
+                if not isinstance(names, list):
+                    continue
+                choice_norm = choice.lower()
+                for name in names:
+                    given, family = _parse_name_string(str(name))
+                    votes.append({
+                        "councillor_given_name": given,
+                        "councillor_family_name": family,
+                        "choice": choice_norm,
+                    })
+            return votes
+        # list: coerce any string items; pass dict items through for ExtractedVote to handle
+        result = []
+        for item in v:
+            if isinstance(item, str):
+                parsed = _parse_vote_string(item)
+                if parsed:
+                    result.append(parsed)
+            else:
+                result.append(item)
+        return result
 
 
 # ---------------------------------------------------------------------------
