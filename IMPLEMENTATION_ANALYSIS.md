@@ -283,15 +283,15 @@ council validate cambridge                                     # score results
 - Keyword gap rate: 12.9% ✓ (target <25%)
 - Status: 48 PASS / 37 REVIEW / 0 FAIL
 
-**Known issues blocking full Level 5 completion:**
+**Known issues (updated 2026-06-17):**
 
-1. **ValidationError: `individual_votes.[].choice` missing** — 6 docs failed batch collection.
-   The model outputs `"vote": "for"` instead of `"choice": "for"` in individual vote objects.
-   Failed docs: `0cb7f9ed.pdf`, `18327cf3.pdf`, `2955c03b.pdf`, `5afc9908.pdf`, `67b12d29.pdf`,
-   `67426dda.pdf`. Secondary errors on two docs: `building_permits.status` literal and
-   `interest_declarations.interest_type` literal.
-   Fix: explicitly name `choice` in the `individual_votes` block of both system prompts.
-   Then re-extract with `--force --files <6 docs>`.
+1. **✅ RESOLVED — ValidationError on individual vote objects (6 docs)** — `schemas.py` hardened
+   with coercions for all observed model output variations: `"vote"`/`"position"` → `"choice"`;
+   `"councillor"` string → split name fields; list-of-strings format (`"Cr Smith - For"`);
+   `building_permits.status` synonyms (`"pending"/"granted"` → null/`"approved"`); unparseable
+   `votes_for` strings (`"3/0 and 4/0"`) → null. `system_prompt.txt` clarified `"choice"` field.
+   All 6 docs collected via `msgbatch_018i8noAF3cf2Q3CSmSYKBVj`: 3 PASS / 3 REVIEW / 0 FAIL.
+   REVIEWs are structural artifacts (large-doc L1 mismatch, sparse keyword hits) — not quality issues.
 
 2. **Large agenda ToC-hallucination (100% paraphrase rate)** — 7 large agenda PDFs (11–20
    chunks) were saved successfully but produce 100% paraphrase on validation. Chunk 0 of these
@@ -398,14 +398,13 @@ All code changes landed in commit `5fa9d5c`. Re-extraction partially done (see L
 | 7 | Level 3b: `council extract-sample` CLI command | Level 3a | Small | **Done** (2026-05-30) |
 | 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | **Done** (2026-05-30) |
 | 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | **Done** (2026-05-31) |
-| 10 | Phase 2: document-type-aware extraction + validation | Level 4 | Medium | **Done** (2026-06-11) — code; re-extraction partial |
-| 11 | Fix `individual_votes.choice` schema error (6 docs) | Phase 2 | Small | **Pending** — prompt fix + re-extract |
+| 10 | Phase 2: document-type-aware extraction + validation | Level 4 | Medium | **Done** (2026-06-11) — code; re-extraction complete (2026-06-17) |
+| 11 | Fix `individual_votes.choice` schema error (6 docs) | Phase 2 | Small | **Done** (2026-06-17) — schema hardened; all 6 collected and validated |
 | 12 | Fix large-agenda ToC-hallucination (7 docs) | Phase 2 | Medium | **Pending** — prompt or merge fix |
-| 13 | Level 5: extract remaining 348 docs (329 minutes + 19 agendas) | Phase 2 | Small | **Pending** |
+| 13 | Level 5: extract remaining 347 docs (329 minutes + 18 agendas) | Phase 2 | Small | **Pending** |
 | 14 | Level 6: audit report generator | Level 5 | Small | **Pending** |
 
-**Current critical path:** fix the `individual_votes.choice` schema error (1 line in each system prompt),
-re-extract the 6 failed docs, then run Level 5 to extract the remaining 348 pending documents.
+**Current critical path:** Level 5 batch extraction of remaining 347 pending documents.
 
 ---
 

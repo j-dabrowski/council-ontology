@@ -1,6 +1,6 @@
 COUNCIL ONTOLOGY — PROJECT OVERVIEW
 =====================================
-Generated: 2026-06-11
+Generated: 2026-06-17
 
 
 PURPOSE
@@ -15,18 +15,18 @@ Three-layer ontology:
   Dynamic   — feedback loops and emergent patterns (voting blocs, relationship edges)
 
 
-CURRENT STATE (as of 2026-06-11)
+CURRENT STATE (as of 2026-06-17)
 ----------------------------------
   590 PDFs in manifest (Cambridge, 1995–2026):
     507 minutes / 79 agendas / 4 addenda
-  242 extracted into DB:
-    178 minutes / 60 agendas / 4 addenda
-  348 pending extraction:
-    329 minutes / 19 agendas
+  243 extracted into DB:
+    178 minutes / 61 agendas / 4 addenda
+  347 pending extraction:
+    329 minutes / 18 agendas
 
-  1,896 motions extracted
-  4,667 votes recorded
-    189 councillors seen
+  1,931 motions extracted
+  4,327 votes recorded
+    191 councillors seen
 
   Level 0 census complete:
     536 extractable PDFs / 1 empty / 0 errors (original 537-PDF corpus)
@@ -56,17 +56,17 @@ CURRENT STATE (as of 2026-06-11)
 
   Level 5 partial extraction complete:
     June 9 batch: 86 docs extracted (full-document, all chunks)
-    June 11 batch: 89/95 docs re-extracted with Phase 2 agenda prompt; 6 failed
+    June 11 batch: 89/95 docs re-extracted with Phase 2 agenda prompt; 6 initially failed
+    June 17: 6 failed docs resolved — schemas.py hardened for vote field variations;
+      all 6 collected and validated (3 PASS / 3 REVIEW / 0 FAIL)
     Validation of 2024+ corpus (n=85): 48 PASS / 37 REVIEW / 0 FAIL
       completeness 98.7% / paraphrase 16.4% / coverage 10.39% / kwgap 12.9%
       All aggregate metrics within target.
 
   Known blockers:
-    1. 6 docs failed with ValidationError (individual_votes.choice field name) —
-       prompt fix needed before re-extraction
-    2. 7 large agenda docs show 100% paraphrase (ToC-hallucination in multi-chunk
-       extraction) — prompt or merge-logic fix needed
-    3. 348 docs still pending extraction
+    1. 7 large agenda docs show 100% paraphrase (ToC-hallucination in multi-chunk
+       extraction) — prompt or merge-logic fix needed (or accept REVIEW)
+    2. 347 docs still pending extraction
 
 
 PARTS OF THE PROJECT

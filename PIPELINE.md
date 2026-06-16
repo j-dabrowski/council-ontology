@@ -40,24 +40,22 @@ aware of document type so agendas are extracted and validated correctly in their
 | P2-2c | Agenda extraction prompt — `agenda_system_prompt.txt` | **Done** (2026-06-11) |
 | P2-2d | Extractor — prompt selection by type; write `document_type` to DB | **Done** (2026-06-11) |
 | P2-3 | Validation — branch `determine_status`, `GAP_KEYWORDS`, schema completeness by type | **Done** (2026-06-11) |
-| P2-4 | Re-extract agendas with agenda prompt; re-validate 2024+ corpus | **Partial** — 89/95 succeeded; 6 failed (see Known Issues) |
+| P2-4 | Re-extract agendas with agenda prompt; re-validate 2024+ corpus | **Done** (2026-06-17) — all 6 failures resolved via schema hardening |
 | P2-5 | Inventory prompt variant for agendas (Level 1) | **Pending** (low priority) |
 | P2-6 | Sample selection stratified by document type (Level 3a) | **Pending** (low priority) |
 
 P2-5 and P2-6 are independent improvements that can follow the main pipeline.
 
-### Known Issues / Blockers (as of 2026-06-11)
+### Known Issues / Blockers (as of 2026-06-17)
 
-**Issue 1 — ValidationError: `individual_votes.[].choice` missing (6 docs, blocks P2-4 completion)**
+**Issue 1 — ✅ RESOLVED (2026-06-17): ValidationError on individual vote objects (6 docs)**
 
-The model returns `"vote": "for"` in individual vote objects but the schema expects `"choice": "for"`.
-Affected docs: `0cb7f9ed.pdf`, `18327cf3.pdf`, `2955c03b.pdf`, `5afc9908.pdf`, `67b12d29.pdf`,
-`67426dda.pdf` (last two also have secondary errors on `building_permits.status` and
-`interest_declarations.interest_type` literal values).
-
-Fix: Update the `individual_votes` output schema in both `system_prompt.txt` and
-`agenda_system_prompt.txt` to explicitly show `"choice"` as the field name (not `"vote"`).
-Then re-extract the 6 failed docs with `--force`.
+`schemas.py` hardened with multiple coercions: `"vote"`/`"position"` → `"choice"` field remapping;
+`"councillor"` single string → split name fields; list-of-strings vote format (`"Cr Smith - For"`);
+`building_permits.status` synonym map (`"pending"/"granted"` → null/`"approved"`); unparseable
+`votes_for` strings (`"3/0 and 4/0"`) → null. `system_prompt.txt` clarified `"choice"` field name.
+All 6 docs collected and validated: 3 PASS / 3 REVIEW / 0 FAIL. REVIEWs are structural artifacts
+(large-doc L1 inventory mismatch, sparse keyword hits) — not extraction quality problems.
 
 **Issue 2 — Large agenda ToC-hallucination (7 docs, produces 100% paraphrase rate)**
 
