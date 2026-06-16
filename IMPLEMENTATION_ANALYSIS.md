@@ -262,8 +262,6 @@ council batch-collect cambridge msgbatch_abc123                # save to DB
 council validate cambridge                                     # score results
 ```
 
-**Note:** 196 docs already in DB were extracted before Level 2b (provenance). They will fail Level 4 validation (completeness_rate = 0, no extraction_evidence rows). Use `council extract cambridge --force` (sync) or `council extract cambridge --max-chars full --force --batch` to re-extract with the current prompt and wiring.
-
 **What the batch implementation added (2026-05-31):**
 - `MinutesExtractor.build_batch_requests(pdfs, max_chars, council_name, manifest)` — reads all PDFs, splits into chunks, builds request dicts with `custom_id = "{stem}__c{i}of{n}"`.
 - `MinutesExtractor.submit_batch(requests)` → `batch_id`.
@@ -271,11 +269,101 @@ council validate cambridge                                     # score results
 - `_make_user_content()` extracted as a shared helper used by both sync and batch paths.
 - Job metadata persisted at `data/batch_jobs/{batch_id}.json`: includes the full `custom_id → {pdf_path, chunk_idx, n_chunks, meeting_date_hint}` mapping needed by the collect phase.
 
+**Actual results (Cambridge, as of 2026-06-11):**
+- **242 docs extracted** total: 178 minutes, 60 agendas, 4 addenda.
+- **348 docs pending**: 329 minutes, 19 agendas.
+- June 9 batch (`msgbatch_013dcu8czK79suJXKYvTmW9S`): 86 docs, 585 requests (full-doc, all chunks), $19.58.
+- June 11 batch (`msgbatch_01TSrRKeTuz74GvByzFdzFA1`): 95 docs re-extracted with Phase 2 agenda prompt; 89 succeeded, 6 failed (see Known Issues below).
+- DB totals: 1,896 motions, 4,667 votes, 189 councillors.
+
+**Validation results (2024+ corpus, n=85, 2026-06-11 --max-chars full --force):**
+- Quote completeness: 98.7% ✓ (target >80%)
+- Paraphrase rate: 16.4% ✓ (target <30%)
+- Coverage ratio: 10.39% ✓ (target >5%)
+- Keyword gap rate: 12.9% ✓ (target <25%)
+- Status: 48 PASS / 37 REVIEW / 0 FAIL
+
+**Known issues blocking full Level 5 completion:**
+
+1. **ValidationError: `individual_votes.[].choice` missing** — 6 docs failed batch collection.
+   The model outputs `"vote": "for"` instead of `"choice": "for"` in individual vote objects.
+   Failed docs: `0cb7f9ed.pdf`, `18327cf3.pdf`, `2955c03b.pdf`, `5afc9908.pdf`, `67b12d29.pdf`,
+   `67426dda.pdf`. Secondary errors on two docs: `building_permits.status` literal and
+   `interest_declarations.interest_type` literal.
+   Fix: explicitly name `choice` in the `individual_votes` block of both system prompts.
+   Then re-extract with `--force --files <6 docs>`.
+
+2. **Large agenda ToC-hallucination (100% paraphrase rate)** — 7 large agenda PDFs (11–20
+   chunks) were saved successfully but produce 100% paraphrase on validation. Chunk 0 of these
+   documents is a table of contents; the model generates plausible-sounding source quotes for
+   agenda items visible only in the ToC. Those quotes don't appear verbatim in the source text.
+   Affected: `202496e2`, `2420cee0`, `34449c77`, `4e282dd3`, `68da87da`, `7242bbb8`, `936cc360`.
+   Fix options: prompt instruction to not quote from ToC; ToC-chunk detection during merge;
+   or accept REVIEW as a structural limitation.
+
 **Still not built:**
 - Feedback loop: after every ~100 documents, re-run Level 0 keyword scan with updated keyword list. Not automated.
 - LLM response caching for the extraction path (Level 1 caches inventory calls; extraction calls are not cached).
 
-**Effort: Small.** The core loop and validation exist. The main task is running through the backlog and triaging FAIL docs.
+---
+
+## Phase 2: Document-Type-Aware Pipeline ✅ CODE COMPLETE (2026-06-11)
+
+All code changes landed in commit `5fa9d5c`. Re-extraction partially done (see Level 5 Known Issues).
+
+**What was built:**
+
+- **P2-0 — Manifest backfill**: `classify_document_type()` rule (filename-based, order-sensitive)
+  applied to all 590 manifest entries. Result: 507 minutes / 79 agendas / 4 addenda.
+  `BaseCouncilScraper.download()` now writes `document_type` at download time going forward.
+
+- **P2-1 — Census updates** (`scripts/census.py`): reads `document_type` from manifest; adds
+  agenda keyword group (`OFFICER RECOMMENDATION`, `RECOMMENDED THAT`, `PROPOSED RESOLUTION`);
+  adds `estimated_officer_recommendations` count; suppresses `no_motion_keywords` flag for
+  non-minutes documents.
+
+- **P2-2a — DB migration** (`src/models/ontology.py`):
+  - `Meeting.document_type: Mapped[Optional[str]]` — values: `minutes`, `agenda`,
+    `briefing_notes`, `addendum`, `unknown`, `None` (legacy).
+  - `Motion.officer_recommendation: Mapped[Optional[str]]` — populated for agenda extractions.
+  - Columns added via `ALTER TABLE` on `council.db` directly (no Alembic).
+
+- **P2-2b — Pydantic schema** (`src/extraction/schemas.py`):
+  - `ExtractedMeeting.document_type: Optional[Literal["minutes","agenda","briefing_notes","addendum","unknown"]]`
+  - `ExtractedMotion.officer_recommendation: Optional[str]`
+
+- **P2-2c — Agenda system prompt** (`src/extraction/agenda_system_prompt.txt`):
+  Same structure as `system_prompt.txt`. Key differences: opening frames extraction as
+  "from a council meeting agenda — the meeting has not yet taken place"; populates
+  `officer_recommendation` instead of `outcome`; leaves `outcome`, `moved_by`,
+  `seconded_by`, `individual_votes` null. PROVENANCE RULE unchanged. All other
+  entity types extracted identically.
+
+- **P2-2d — Extractor** (`src/extraction/extractor.py`):
+  `agenda_system_prompt.txt` loaded at module level. `extract()`, `extract_from_pdf()`,
+  and `build_batch_requests()` accept `document_type: str | None`. Prompt selection:
+  `agenda/addendum/briefing_notes → agenda_system_prompt.txt`, else `system_prompt.txt`.
+  `save_extraction()` writes `document_type` to `Meeting.document_type` and
+  `officer_recommendation` to `Motion.officer_recommendation`.
+  `src/cli.py`: `cmd_extract` and `cmd_batch_collect` read `document_type` from manifest
+  and pass it through to extractor and `save_extraction()`.
+
+- **P2-3 — Validation** (`src/validation/core.py`):
+  `GAP_KEYWORDS_AGENDA` dict added (replaces `MOVED`/`DECLARATION OF INTEREST` with
+  `OFFICER RECOMMENDATION`/`RECOMMENDED THAT`). `determine_status()` accepts
+  `document_type`; for agendas: skips coverage-based FAIL and coverage REVIEW trigger,
+  skips `quote_count == 0 → FAIL` check. `compute_keyword_gaps()` accepts
+  `gap_keywords` parameter; `validate_doc()` passes `GAP_KEYWORDS_AGENDA` for agenda docs.
+  `scripts/validate_extraction.py`: `compute_schema_completeness()` skips
+  `motions_null_outcome` and `ordinary_meeting_no_motions` flags for agendas.
+  `determine_status_l4()` skips entity-density check for agendas.
+
+**P2-4 — Re-extraction results** (2026-06-11):
+- Batch `msgbatch_01TSrRKeTuz74GvByzFdzFA1`: 95 docs, 89 succeeded, 6 failed.
+- Validation of 2024+ corpus (n=85): 48 PASS / 37 REVIEW / 0 FAIL. All 4 aggregate metrics
+  within target. REVIEWs decompose into: 7 large agendas with ToC-hallucination (structural
+  limitation), 6 failed docs needing re-extraction after schema fix, remainder are minutes with
+  `motions_null_outcome` or keyword gap flags.
 
 ---
 
@@ -310,12 +398,14 @@ council validate cambridge                                     # score results
 | 7 | Level 3b: `council extract-sample` CLI command | Level 3a | Small | **Done** (2026-05-30) |
 | 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | **Done** (2026-05-30) |
 | 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | **Done** (2026-05-31) |
-| 10 | Level 5: full batch extraction + validate after each batch | Level 4 | Small | Tooling done (2026-05-31); extraction backlog pending |
-| 11 | Level 6: audit report generator | Level 5 | Small | Pending |
+| 10 | Phase 2: document-type-aware extraction + validation | Level 4 | Medium | **Done** (2026-06-11) — code; re-extraction partial |
+| 11 | Fix `individual_votes.choice` schema error (6 docs) | Phase 2 | Small | **Pending** — prompt fix + re-extract |
+| 12 | Fix large-agenda ToC-hallucination (7 docs) | Phase 2 | Medium | **Pending** — prompt or merge fix |
+| 13 | Level 5: extract remaining 348 docs (329 minutes + 19 agendas) | Phase 2 | Small | **Pending** |
+| 14 | Level 6: audit report generator | Level 5 | Small | **Pending** |
 
-**Levels 0–4 are complete.** Level 3c baselines: completeness 95.0%, paraphrase 4.3%,
-coverage 22.89%, keyword gap 9.3% — all within target. Level 4 (`council validate`)
-is built and working. The critical path now leads to Level 5 (full batch extraction).
+**Current critical path:** fix the `individual_votes.choice` schema error (1 line in each system prompt),
+re-extract the 6 failed docs, then run Level 5 to extract the remaining 348 pending documents.
 
 ---
 

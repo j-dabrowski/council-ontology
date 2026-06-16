@@ -21,7 +21,7 @@ Current state: 537 downloaded PDFs for Town of Cambridge (1995-2026). 196 ingest
 | 3b | Sample extraction (`council extract-sample`) | **Done** (2026-05-30) |
 | 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — all metrics within target |
 | 4 | Confidence metrics and validation script | **Done** (2026-05-31) |
-| 5 | Batch extraction (~$7-20) | **Done** (2026-06-09) — 86 docs, $19.58 batch |
+| 5 | Batch extraction (~$7-20) | **Done** (2026-06-09) — 86 docs, $19.58 batch; Phase 2 re-extraction 2026-06-11 (89/95 docs, 6 failed — see Known Issues) |
 | 6 | Human audit | Pending |
 
 ### Phase 2 — Document-type-aware pipeline upgrade
@@ -33,19 +33,45 @@ aware of document type so agendas are extracted and validated correctly in their
 
 | Step | Description | Status |
 |------|-------------|--------|
-| P2-0 | `classify_document_type()` — backfill manifest + census | **Pending** |
-| P2-1 | Census updates — agenda keyword group, type-aware flags | **Pending** |
-| P2-2a | DB migration — `meetings.document_type`, `motions.officer_recommendation` | **Pending** |
-| P2-2b | Pydantic schema — `document_type` on `ExtractedMeeting`, `officer_recommendation` on `ExtractedMotion` | **Pending** |
-| P2-2c | Agenda extraction prompt — `agenda_system_prompt.txt` | **Pending** |
-| P2-2d | Extractor — prompt selection by type; write `document_type` to DB | **Pending** |
-| P2-3 | Validation — branch `determine_status`, `GAP_KEYWORDS`, schema completeness by type | **Pending** |
-| P2-4 | Re-extract agendas with agenda prompt; re-validate full 2024+ corpus | **Pending** |
-| P2-5 | Inventory prompt variant for agendas (Level 1) | **Pending** |
-| P2-6 | Sample selection stratified by document type (Level 3a) | **Pending** |
+| P2-0 | `classify_document_type()` — backfill manifest + census | **Done** (2026-06-11) |
+| P2-1 | Census updates — agenda keyword group, type-aware flags | **Done** (2026-06-11) |
+| P2-2a | DB migration — `meetings.document_type`, `motions.officer_recommendation` | **Done** (2026-06-11) |
+| P2-2b | Pydantic schema — `document_type` on `ExtractedMeeting`, `officer_recommendation` on `ExtractedMotion` | **Done** (2026-06-11) |
+| P2-2c | Agenda extraction prompt — `agenda_system_prompt.txt` | **Done** (2026-06-11) |
+| P2-2d | Extractor — prompt selection by type; write `document_type` to DB | **Done** (2026-06-11) |
+| P2-3 | Validation — branch `determine_status`, `GAP_KEYWORDS`, schema completeness by type | **Done** (2026-06-11) |
+| P2-4 | Re-extract agendas with agenda prompt; re-validate 2024+ corpus | **Partial** — 89/95 succeeded; 6 failed (see Known Issues) |
+| P2-5 | Inventory prompt variant for agendas (Level 1) | **Pending** (low priority) |
+| P2-6 | Sample selection stratified by document type (Level 3a) | **Pending** (low priority) |
 
-Steps P2-0 through P2-4 are interdependent and should land together.
-P2-5 and P2-6 are independent improvements that can follow.
+P2-5 and P2-6 are independent improvements that can follow the main pipeline.
+
+### Known Issues / Blockers (as of 2026-06-11)
+
+**Issue 1 — ValidationError: `individual_votes.[].choice` missing (6 docs, blocks P2-4 completion)**
+
+The model returns `"vote": "for"` in individual vote objects but the schema expects `"choice": "for"`.
+Affected docs: `0cb7f9ed.pdf`, `18327cf3.pdf`, `2955c03b.pdf`, `5afc9908.pdf`, `67b12d29.pdf`,
+`67426dda.pdf` (last two also have secondary errors on `building_permits.status` and
+`interest_declarations.interest_type` literal values).
+
+Fix: Update the `individual_votes` output schema in both `system_prompt.txt` and
+`agenda_system_prompt.txt` to explicitly show `"choice"` as the field name (not `"vote"`).
+Then re-extract the 6 failed docs with `--force`.
+
+**Issue 2 — Large agenda ToC-hallucination (7 docs, produces 100% paraphrase rate)**
+
+Large agenda PDFs (800k–1.5M chars, 11–20 extraction chunks) show 100% paraphrase on validation.
+Root cause: chunk 0 of these documents is a table of contents. The model infers agenda items from
+the ToC and generates plausible-sounding source quotes for items it hasn't actually seen the body
+text of. Those quotes fail verbatim matching.
+
+Affected docs: `202496e2`, `2420cee0`, `34449c77`, `4e282dd3`, `68da87da`, `7242bbb8`,
+`936cc360` (all 2024–2026 agendas, all "large" size bucket).
+
+Fix options: (a) add a prompt instruction to not quote from table of contents entries — only from
+body text; (b) detect and skip ToC-only chunks during merging; (c) accept REVIEW status for
+these docs as a known structural limitation of multi-chunk agenda extraction.
 
 ---
 

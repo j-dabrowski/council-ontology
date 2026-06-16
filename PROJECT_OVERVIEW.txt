@@ -1,6 +1,6 @@
 COUNCIL ONTOLOGY — PROJECT OVERVIEW
 =====================================
-Generated: 2026-05-28
+Generated: 2026-06-11
 
 
 PURPOSE
@@ -15,25 +15,25 @@ Three-layer ontology:
   Dynamic   — feedback loops and emergent patterns (voting blocs, relationship edges)
 
 
-CURRENT STATE (as of 2026-05-29)
+CURRENT STATE (as of 2026-06-11)
 ----------------------------------
-  537 PDFs downloaded (Cambridge, 1995–2026)
-  537 in manifest
-  196 ingested into DB
-  341 pending extraction
+  590 PDFs in manifest (Cambridge, 1995–2026):
+    507 minutes / 79 agendas / 4 addenda
+  242 extracted into DB:
+    178 minutes / 60 agendas / 4 addenda
+  348 pending extraction:
+    329 minutes / 19 agendas
 
-  949 motions extracted
-  330 votes recorded
-   54 councillors seen
-  Prompt eval score: 100/100 (benchmark saturated)
+  1,896 motions extracted
+  4,667 votes recorded
+    189 councillors seen
 
   Level 0 census complete:
-    536 extractable PDFs / 1 empty / 0 errors
+    536 extractable PDFs / 1 empty / 0 errors (original 537-PDF corpus)
     ~175M total chars across corpus
     ~29,000 estimated motions
     ~5,700 estimated planning items
     ~1,650 estimated interest declarations
-    18 documents with no motion keywords (flagged for Level 1 review)
 
   Level 1 inventory complete:
     535 ok / 1 error (c1cdc1fa.pdf — known empty PDF)
@@ -45,6 +45,28 @@ CURRENT STATE (as of 2026-05-29)
     system_prompt.txt updated with new fields, extraction rules, and PROVENANCE RULE
     source_quotes field on all 13 entity types; extraction_evidence table persists
     verbatim quotes with char offsets (best-effort UI convenience; not used for validation)
+
+  Phase 2 document-type-aware pipeline complete (code, 2026-06-11):
+    590 manifest entries classified by document type (filename-based rule)
+    agenda_system_prompt.txt — separate prompt for agendas (officer recommendations,
+      no vote outcomes)
+    meetings.document_type and motions.officer_recommendation columns added to DB
+    Extractor selects prompt by document_type from manifest
+    Validation branches determine_status, GAP_KEYWORDS, and schema completeness by type
+
+  Level 5 partial extraction complete:
+    June 9 batch: 86 docs extracted (full-document, all chunks)
+    June 11 batch: 89/95 docs re-extracted with Phase 2 agenda prompt; 6 failed
+    Validation of 2024+ corpus (n=85): 48 PASS / 37 REVIEW / 0 FAIL
+      completeness 98.7% / paraphrase 16.4% / coverage 10.39% / kwgap 12.9%
+      All aggregate metrics within target.
+
+  Known blockers:
+    1. 6 docs failed with ValidationError (individual_votes.choice field name) —
+       prompt fix needed before re-extraction
+    2. 7 large agenda docs show 100% paraphrase (ToC-hallucination in multi-chunk
+       extraction) — prompt or merge-logic fix needed
+    3. 348 docs still pending extraction
 
 
 PARTS OF THE PROJECT
@@ -405,60 +427,70 @@ Underlying library functions (callable from Python directly):
 WHAT IS UNFINISHED
 ===================
 
-1. EXTRACTION BACKLOG (341 PDFs)
-   Levels 0–4 are complete. Batch API tooling is done. Next: run Level 5, then Level 6.
-   Standard (fast iteration):
-     council extract cambridge --limit 20   # extract batch
-     council validate cambridge             # score after each batch
+1. SCHEMA FIX — individual_votes.choice (6 docs, IMMEDIATE)
+   The model outputs "vote": "for" instead of "choice": "for" in individual vote objects.
+   Fix: update the individual_votes output schema block in system_prompt.txt and
+   agenda_system_prompt.txt to explicitly show "choice" as the field name.
+   Then re-extract the 6 failed docs:
+     council extract cambridge --force --files \
+       0cb7f9ed.pdf 18327cf3.pdf 2955c03b.pdf 5afc9908.pdf 67b12d29.pdf 67426dda.pdf
+     council validate cambridge --force --files <same list>
+
+2. EXTRACTION BACKLOG (348 PDFs)
+   329 minutes + 19 agendas still pending. Run after the schema fix above.
    Batch mode (50% off, production):
      council extract cambridge --max-chars full --batch   # submit; prints batch_id
      council batch-collect cambridge msgbatch_xxx         # save to DB when done
      council validate cambridge                           # score results
-   Many pre-Level-2b extractions (196 already in DB) have no extraction_evidence rows —
-   they were extracted before the provenance system was built. These will fail Level 4
-   validation (completeness_rate = 0) and should be re-extracted with --force.
    See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for the full sequence.
 
-2. DYNAMIC LAYER IS EMPTY
+3. LARGE AGENDA ToC-HALLUCINATION (7 docs, REVIEW)
+   Large agenda PDFs (11–20 extraction chunks) produce 100% paraphrase rate. Chunk 0 is
+   a table of contents; the model generates quotes for items inferred from the ToC that
+   don't appear verbatim in the body text. Fix options:
+     (a) Prompt instruction: "Do not extract source quotes from table of contents entries."
+     (b) Detect and skip chunks that are predominantly ToC during merge.
+     (c) Accept REVIEW status as a known structural limitation for large agendas.
+   Affected: 202496e2, 2420cee0, 34449c77, 4e282dd3, 68da87da, 7242bbb8, 936cc360.
+
+4. DYNAMIC LAYER IS EMPTY
    The relationships table and RelationshipKind enum are fully modelled.
    voting_alignment_matrix() in queries.py computes pairwise agreement in memory.
    Nothing ever writes to the relationships table.
    Next step: script that thresholds alignment scores and persists edges
      (e.g. agreement_rate > 0.85 → ALLY, < 0.40 → OPPONENT).
 
-3. COUNCILLOR_TERMS NEVER POPULATED
+5. COUNCILLOR_TERMS NEVER POPULATED
    The model has ward/role/term dates per councillor per council.
    Councillors are created from vote records only — no ward, no role, no dates.
 
-4. THREE MEETING FIELDS ALWAYS NULL
+6. THREE MEETING FIELDS ALWAYS NULL
    minutes_pdf_url  — source URL is in the manifest but never written to DB
    minutes_text     — raw extracted text is discarded after extraction
    extracted_at     — timestamp is never set
 
-5. LONG DOCUMENTS — CONTROLLABLE VIA --max-chars
+7. LONG DOCUMENTS — CONTROLLABLE VIA --max-chars
    Default extraction is 80k single-chunk (fast, cheap).
    Multi-chunk full-document extraction: pass --max-chars full to extract/extract-sample.
    Chunks are merged (metadata from chunk 0, entity lists concatenated).
    319/537 Cambridge docs exceed 200k chars.
 
-6. ONLY ONE COUNCIL
+8. ONLY ONE COUNCIL
    The COUNCILS dict in cli.py has a single entry. The full architecture supports
    multiple councils — adding one is two lines in cli.py plus a new scraper subclass.
 
-7. MULTI-LEVEL PIPELINE STATUS
+9. MULTI-LEVEL PIPELINE STATUS
    Level 0 (census): done.
    Level 1 (inventory): done. other_content_rate 1.7%.
    Level 2 (schema/prompt/provenance): done (2026-05-29).
    Level 3a (sample selection): done (2026-05-30). 18 docs, data/cambridge_sample.json.
-   Level 3b (sample extraction): done (2026-05-30). 18/18 extracted, extraction_evidence
-     populated for all sample docs.
-   Level 3c (sample validation): done (2026-05-31). Final baselines (--max-chars full):
-     completeness 95.0%, paraphrase 4.3%, coverage 22.89%, keyword gap 9.3%.
-     14 PASS / 4 REVIEW / 0 FAIL. All metrics within target.
-   Level 4 (validate): done (2026-05-31). council validate cambridge. Per-doc confidence
-     scoring with entity density and schema completeness on top of L3c metrics.
-     Shared logic in src/validation/core.py.
-   Level 5 (full extraction): pending.
+   Level 3b (sample extraction): done (2026-05-30). 18/18 extracted.
+   Level 3c (sample validation): done (2026-05-31). Baselines: completeness 95.0%,
+     paraphrase 4.3%, coverage 22.89%, keyword gap 9.3%. 14 PASS / 4 REVIEW / 0 FAIL.
+   Level 4 (validate): done (2026-05-31).
+   Phase 2 (document-type-aware pipeline): code done (2026-06-11). Partial re-extraction
+     done. 6 docs blocked by ValidationError (individual_votes.choice) — see item 1.
+   Level 5 (full extraction): partial. 242/590 docs extracted. 348 pending.
    Level 6 (human audit): pending.
    See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for detail and build order.
 
