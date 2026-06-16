@@ -1348,6 +1348,34 @@ def main() -> None:
              dry_run=a.dry_run)
     p_rel.set_defaults(func=_cmd_build_relationships)
 
+    # audit
+    p_audit = sub.add_parser(
+        "audit",
+        help="Level 6: generate a human-review audit report for a stratified sample of extracted docs",
+    )
+    p_audit.add_argument("council", help="Council key (e.g. cambridge)")
+    p_audit.add_argument("--count", type=int, default=12,
+                         help="Number of docs to sample (default: 12)")
+    p_audit.add_argument("--from-year", type=int, default=2024, dest="from_year",
+                         help="Only include docs from this year onwards (default: 2024)")
+    p_audit.add_argument("--all-years", action="store_true", dest="all_years",
+                         help="Include all extracted years (overrides --from-year)")
+    p_audit.add_argument("--output", type=Path, default=None,
+                         help="Output path (default: data/audit_report.md)")
+    p_audit.add_argument("--seed", type=int, default=None,
+                         help="Random seed for reproducible sampling")
+    p_audit.add_argument("--list-only", action="store_true", dest="list_only",
+                         help="List candidates without generating a report")
+
+    def _cmd_audit(a):
+        from scripts.audit_report import run as _run, DEFAULT_OUTPUT
+        from_year = None if a.all_years else a.from_year
+        output = a.output if a.output else DEFAULT_OUTPUT
+        _run(a.council, count=a.count, from_year=from_year,
+             output=output, seed=a.seed, list_only=a.list_only)
+
+    p_audit.set_defaults(func=_cmd_audit)
+
     args = parser.parse_args()
     if args.verbose:
         logger.setLevel(logging.DEBUG)
