@@ -233,9 +233,10 @@ SQLite at data/council.db. Tables:
                             (char_offset=None when verbatim text.find() fails — best-effort only)
 
   Dynamic layer:
-    relationships  — typed edges between any entities [ALWAYS EMPTY — not yet populated]
+    relationships  — typed edges between any entities [EMPTY — tool built, not yet run]
       RelationshipKind values: ALLY, OPPONENT, COALITION, DECLARED_INTEREST,
                                AMENDS, SUPERSEDES, RELATES_TO, SUBJECT_OF
+      Populate with: council build-relationships cambridge
 
 Useful DB queries:
   sqlite3 data/council.db ".tables"
@@ -346,6 +347,22 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
 
   — ANALYSIS —
 
+  council build-relationships cambridge [--min-shared N] [--ally F] [--opponent F]
+                                        [--from-year YYYY] [--all-years] [--dry-run]
+      Dynamic layer: compute pairwise voting alignment and write ALLY/OPPONENT edges
+      to the relationships table. Clears existing edges before re-inserting (safe to re-run).
+      Defaults: min_shared=10, ally≥0.85, opponent≤0.40, from-year=2024.
+      --dry-run: preview edges without writing to DB.
+
+  council audit cambridge [--count N] [--from-year YYYY] [--seed N] [--output PATH]
+                          [--all-years] [--list-only]
+      Level 6: generate a human-review audit report. Selects N documents stratified
+      by era × size bucket, excluding the Level 3 sample. Formats all extracted entities
+      with source quotes and validation status as markdown with AUDIT comment placeholders.
+      Output: data/audit_report.md + data/audit_selection.json.
+      Default: --count 12 --from-year 2024.
+      --list-only: list candidate documents without generating a report.
+
   council analyse cambridge <query> [options]
       Run analysis queries against the DB. Queries:
         councillors              — all councillors sorted by vote count
@@ -373,6 +390,8 @@ Each has a run(args) function that does the work; main() handles argparse.
   scripts/stratified_sample.py    →  council sample cambridge ...
   scripts/validate_sample.py      →  council validate-sample cambridge ...
   scripts/validate_extraction.py  →  council validate cambridge ...
+  scripts/build_relationships.py  →  council build-relationships cambridge ...
+  scripts/audit_report.py         →  council audit cambridge ...
   scripts/compare_models.py       →  council compare <pdf> ...
   estimate_costs.py               →  council costs ...
 
@@ -434,17 +453,8 @@ Underlying library functions (callable from Python directly):
 WHAT IS UNFINISHED
 ===================
 
-1. SCHEMA FIX — individual_votes.choice (6 docs, IMMEDIATE)
-   The model outputs "vote": "for" instead of "choice": "for" in individual vote objects.
-   Fix: update the individual_votes output schema block in system_prompt.txt and
-   agenda_system_prompt.txt to explicitly show "choice" as the field name.
-   Then re-extract the 6 failed docs:
-     council extract cambridge --force --files \
-       0cb7f9ed.pdf 18327cf3.pdf 2955c03b.pdf 5afc9908.pdf 67b12d29.pdf 67426dda.pdf
-     council validate cambridge --force --files <same list>
-
-2. EXTRACTION BACKLOG (348 PDFs)
-   329 minutes + 19 agendas still pending. Run after the schema fix above.
+1. EXTRACTION BACKLOG (347 PDFs)
+   329 minutes + 18 agendas still pending.
    Batch mode (50% off, production):
      council extract cambridge --max-chars full --batch   # submit; prints batch_id
      council batch-collect cambridge msgbatch_xxx         # save to DB when done
@@ -460,12 +470,12 @@ WHAT IS UNFINISHED
      (c) Accept REVIEW status as a known structural limitation for large agendas.
    Affected: 202496e2, 2420cee0, 34449c77, 4e282dd3, 68da87da, 7242bbb8, 936cc360.
 
-4. DYNAMIC LAYER IS EMPTY
-   The relationships table and RelationshipKind enum are fully modelled.
-   voting_alignment_matrix() in queries.py computes pairwise agreement in memory.
-   Nothing ever writes to the relationships table.
-   Next step: script that thresholds alignment scores and persists edges
-     (e.g. agreement_rate > 0.85 → ALLY, < 0.40 → OPPONENT).
+4. DYNAMIC LAYER — TOOL BUILT, TABLE STILL EMPTY
+   `scripts/build_relationships.py` + `council build-relationships cambridge` computes
+   pairwise voting alignment and writes ALLY/OPPONENT edges to the relationships table.
+   Defaults: min_shared=10, ally≥0.85, opponent≤0.40, --from-year 2024.
+   Not yet run against live data — run when enough 2024+ votes are in DB.
+   The relationships table remains empty until first run.
 
 5. COUNCILLOR_TERMS NEVER POPULATED
    The model has ward/role/term dates per councillor per council.
@@ -499,8 +509,10 @@ WHAT IS UNFINISHED
    Level 4 (validate): done (2026-05-31).
    Phase 2 (document-type-aware pipeline): code done (2026-06-11). Partial re-extraction
      done. 6 docs blocked by ValidationError (individual_votes.choice) — see item 1.
-   Level 5 (full extraction): partial. 242/590 docs extracted. 348 pending.
-   Level 6 (human audit): pending.
+   Level 5 (full extraction): partial. 243/590 docs extracted. 347 pending.
+   Level 6 (human audit): tooling done (2026-06-18). Human review pending.
+     council audit cambridge --count 12 --from-year 2024 --seed 42
+     → data/audit_report.md (12 docs, open side-by-side with PDFs to annotate)
    See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for detail and build order.
 
 
@@ -519,6 +531,8 @@ DATA DIRECTORIES
   data/model_comparison/       — per-PDF model comparison reports (council compare)
   data/cost_estimates/         — cost estimation reports
   data/extraction_errors.json  — latest extraction error report (grouped by error class)
+  data/audit_report.md         — Level 6 human-review audit report (council audit)
+  data/audit_selection.json    — which documents were selected for the audit
   data/processed/              — exists but empty (unused)
   .cache/llm_responses/        — cached raw LLM responses ({hash}_{prompt-version}.json)
   council.log                  — DEBUG-level pipeline log

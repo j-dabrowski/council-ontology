@@ -28,7 +28,7 @@ patched, since earlier partial extractions predate provenance and schema improve
 | 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — all metrics within target |
 | 4 | Confidence metrics and validation script | **Done** (2026-05-31) |
 | 5 | Batch extraction (~$7-20) | **Done** (2026-06-09) — 86 docs, $19.58 batch; Phase 2 re-extraction 2026-06-11 (89/95 docs, 6 failed — see Known Issues) |
-| 6 | Human audit | Pending |
+| 6 | Human audit | **Tooling done** (2026-06-18) — report generator built; human review pending |
 
 ### Phase 2 — Document-type-aware pipeline upgrade
 
@@ -73,9 +73,8 @@ text of. Those quotes fail verbatim matching.
 Affected docs: `202496e2`, `2420cee0`, `34449c77`, `4e282dd3`, `68da87da`, `7242bbb8`,
 `936cc360` (all 2024–2026 agendas, all "large" size bucket).
 
-Fix options: (a) add a prompt instruction to not quote from table of contents entries — only from
-body text; (b) detect and skip ToC-only chunks during merging; (c) accept REVIEW status for
-these docs as a known structural limitation of multi-chunk agenda extraction.
+Fix (a) applied: `agenda_system_prompt.txt` updated with rule 4 ("do not quote from the table of
+contents"). Re-extraction of the 7 affected docs is deferred; they remain REVIEW until re-run.
 
 ---
 
@@ -578,19 +577,29 @@ council validate cambridge                                     # score all resul
 
 Final human verification on a random sample from the fully extracted corpus.
 
-### Tasks
-- Select 10-15 documents at random. NOT from the Level 3 sample. Stratify by era and size.
-- For each: open the PDF and the extraction side by side. Go section by section.
-- Record:
-  - Precision: what % of extracted facts are correct?
-  - Recall: what % of facts in the document were extracted?
-  - Error rate: what % of extracted facts are wrong?
-  - Provenance accuracy: do source quotes correctly support their associated facts?
-- Document findings in `data/audit_report.md`.
+### Tooling (done 2026-06-18)
+
+`scripts/audit_report.py` + `council audit cambridge [--count N] [--from-year YYYY] [--seed N]`
+
+Selects N documents stratified by era × size bucket, excluding the Level 3 sample. For each
+document, pulls all extracted entities from DB (motions, votes, planning applications, etc.)
+with source quotes and validation status, and formats them as a human-readable markdown
+report with `<!-- AUDIT: [Y/N/PARTIAL] -->` comment placeholders per entity.
+
+Output files:
+- `data/audit_report.md` — full report (open side-by-side with PDFs)
+- `data/audit_selection.json` — which documents were sampled
+
+Current report: 12 docs, 2024+, seed=42, generated 2026-06-18.
+
+### Human review task (pending)
+- Open each PDF alongside the report section.
+- For each extracted entity, mark `[Y]` (correct), `[N]` (wrong), or `[PARTIAL]` and add notes.
+- Record precision/recall/error-rate summary.
 
 ### Output
-- Audit report with quantified precision/recall/error metrics.
-- This is the project's quality statement: "Across N audited documents, extraction captured X% of motions, Y% of votes, Z% of planning applications. Most common gap: ... Most common error: ..."
+- Completed `data/audit_report.md` with filled-in AUDIT annotations.
+- Quality statement: "Across N audited documents, extraction captured X% of motions, Y% of votes, Z% of planning applications. Most common gap: ... Most common error: ..."
 
 ---
 
@@ -653,6 +662,8 @@ scripts/
   stratified_sample.py         # Level 3a
   validate_sample.py           # Level 3c
   validate_extraction.py       # Level 4
+  build_relationships.py       # Dynamic layer: ALLY/OPPONENT edges from voting alignment
+  audit_report.py              # Level 6: human-review audit report generator
 
 src/validation/
   core.py                      # Shared validation logic (Levels 3c and 4)

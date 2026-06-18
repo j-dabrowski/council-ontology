@@ -367,21 +367,18 @@ All code changes landed in commit `5fa9d5c`. Re-extraction partially done (see L
 
 ---
 
-## Level 6: Audit
+## Level 6: Audit ✅ TOOLING COMPLETE (2026-06-18)
 
-**Already exists:**
-- `council compare <pdf>` gives multi-model comparison for individual PDFs.
+**What was built:**
+- `scripts/audit_report.py` + `council audit cambridge [--count N] [--from-year YYYY] [--seed N] [--list-only]`
+- Stratified sampling (era × size_bucket from `census.json`) with Level 3 sample excluded.
+- For each selected meeting: pulls motions + votes + all entity tables + `extraction_evidence` from DB,
+  loads validation JSON, formats as a markdown report with `<!-- AUDIT: [Y/N/PARTIAL] -->` per entity.
+- Writes `data/audit_report.md` and `data/audit_selection.json` (selection record).
+- `--list-only` flag shows candidates without generating the full report.
 
-**Can be composed now:**
-- Manual audit using `council extract --files <list>` on a random sample, then hand-comparing PDFs to DB records.
-- `council validate cambridge --files <list>` to score the audited subset.
-
-**Needs new work:**
-- Audit report generator: select N random documents from the extracted set, pull their extractions, format for human review.
-- Precision/recall computation framework (semi-automated: human marks correct/incorrect/missing, script computes stats).
-- Output: `data/audit_report.md`.
-
-**Effort: Small.** Mostly a reporting script wrapping existing data.
+**Human review task still pending.** Reviewer opens PDFs side-by-side with the report and fills in
+AUDIT annotations. No automated precision/recall computation yet — manual tally from annotations.
 
 ---
 
@@ -400,9 +397,10 @@ All code changes landed in commit `5fa9d5c`. Re-extraction partially done (see L
 | 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | **Done** (2026-05-31) |
 | 10 | Phase 2: document-type-aware extraction + validation | Level 4 | Medium | **Done** (2026-06-11) — code; re-extraction complete (2026-06-17) |
 | 11 | Fix `individual_votes.choice` schema error (6 docs) | Phase 2 | Small | **Done** (2026-06-17) — schema hardened; all 6 collected and validated |
-| 12 | Fix large-agenda ToC-hallucination (7 docs) | Phase 2 | Medium | **Pending** — prompt or merge fix |
-| 13 | Level 5: extract remaining 347 docs (329 minutes + 18 agendas) | Phase 2 | Small | **Pending** |
-| 14 | Level 6: audit report generator | Level 5 | Small | **Pending** |
+| 12 | Fix large-agenda ToC-hallucination (7 docs) | Phase 2 | Medium | **Partial** — prompt rule added to `agenda_system_prompt.txt`; 7 docs still need re-extraction |
+| 13 | Dynamic layer: `scripts/build_relationships.py` | Level 5 | Small | **Done** (2026-06-18) — ALLY/OPPONENT edges from voting alignment; `--from-year 2024` default |
+| 14 | Level 5: extract remaining 347 docs (329 minutes + 18 agendas) | Phase 2 | Small | **Pending** |
+| 15 | Level 6: audit report generator | Level 5 | Small | **Done** (2026-06-18) — human review still pending |
 
 **Current critical path:** Level 5 batch extraction of remaining 347 pending documents.
 
@@ -434,6 +432,6 @@ All code changes landed in commit `5fa9d5c`. Re-extraction partially done (see L
 
 These can be done independently of the main pipeline sequence:
 
-- Populate `minutes_pdf_url` from manifest into meetings table (trivial — URL is in manifest.json, never written to DB)
+- ~~Populate `minutes_pdf_url` from manifest into meetings table~~ **Done 2026-06-17** — backfilled for all 243 meetings.
 - Populate `extracted_at` timestamp on meetings (trivial — set datetime.utcnow() in save_extraction)
 - Store `minutes_text` in meetings table (small — raw text is now passed to save_extraction via `text=`; just write it to `meeting.minutes_text`)
