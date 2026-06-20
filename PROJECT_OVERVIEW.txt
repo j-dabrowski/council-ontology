@@ -423,34 +423,92 @@ Output locations:
   data/cost_estimates/estimate_<timestamp>.json + latest.json (costs)
 
 
-8. ANALYSIS — src/analysis/queries.py + council analyse
----------------------------------------------------------
+8. ANALYSIS — src/analysis/queries.py + src/analysis/divergence.py + council analyse
+--------------------------------------------------------------------------------------
 Query helpers exposed via `council analyse <council> <query>`.
+All subcommands accept --from-year YYYY and --to-year YYYY to filter by meeting date.
+Omit both for all years; pass --from-year 2024 to limit to the complete 2024+ corpus.
 
-  council analyse cambridge councillors
+  — EXISTING —
+
+  council analyse cambridge councillors [--from-year YYYY] [--to-year YYYY] [--limit N]
       All councillors seen in votes, sorted by vote count.
 
   council analyse cambridge alignment [--min-shared N] [--limit N]
+                                      [--from-year YYYY] [--to-year YYYY]
       Pairwise voting agreement matrix. Green ≥85%, yellow 50-85%, red <50%.
-      --min-shared filters out pairs with too few shared votes (default: 5).
+      --min-shared filters pairs with too few shared votes (default: 5).
 
   council analyse cambridge contested [--min-against N] [--limit N]
+                                      [--from-year YYYY] [--to-year YYYY]
       Motions that carried but had meaningful opposition (default: ≥2 against).
 
-  council analyse cambridge planning [--limit N]
-      Top sites by number of planning applications.
+  council analyse cambridge planning [--limit N] [--from-year YYYY] [--to-year YYYY]
+      Planning application outcome breakdown (approved/refused/deferred/pending),
+      approval rate, top sites by application count, and top applicants.
 
   council analyse cambridge councillor --name <family-name>
+                                       [--from-year YYYY] [--to-year YYYY]
       One councillor's vote summary: totals, dissent rate, declared interests.
-      Partial family name match (e.g. --name Brad).
+      Partial family name match (e.g. --name Mack).
 
   council analyse cambridge motions --tag <tag> [--limit N]
+                                    [--from-year YYYY] [--to-year YYYY]
       Motions filtered by LLM-assigned tag (e.g. planning, budget, governance).
 
+  — NEW (2026-06-20) —
+
+  council analyse cambridge activity [--min-votes N] [--from-year YYYY] [--to-year YYYY]
+      Per-councillor activity summary: first/last vote date, total votes, active
+      status (last vote within 18 months), and dissent rate (votes against a motion
+      that carried). --min-votes 10 (default) suppresses AGM proxy voters.
+
+  council analyse cambridge trends [--from-year YYYY] [--to-year YYYY]
+      Two tables: (1) contestation rate by year — % of carried motions with ≥1
+      dissenting vote, with the most-contested motion per year; (2) topic
+      distribution by year — motion counts per LLM tag, top 8 tags tracked.
+
+  council analyse cambridge co-movers [--min-count N] [--active-only]
+                                      [--from-year YYYY] [--to-year YYYY]
+      Most frequent mover+seconder pairs. --active-only limits to councillors
+      with is_active=True. Default --min-count 5.
+
+  council analyse cambridge interests [--limit N] [--from-year YYYY] [--to-year YYYY]
+      Per-councillor interest declaration counts broken down by type
+      (financial/impartiality/proximity/other), plus top 3 motion topics where
+      each councillor declared. FINANCIAL declarations highlighted in yellow.
+
+  council analyse cambridge engagement [--from-year YYYY] [--to-year YYYY]
+      Public questions, deputations, and petitions per year (minutes only).
+      Three data points in the 2024+ corpus; full trend after pre-2024 extraction.
+
+  council analyse cambridge budget [--limit N] [--from-year YYYY] [--to-year YYYY]
+      Budget items per year: count, items with extracted amounts, indicative total
+      dollar value, and largest single item. Note: total may double-count sub-items
+      extracted from the same budget cycle.
+
+  council analyse cambridge divergence [--limit N] [--from-year YYYY] [--to-year YYYY]
+      Officer recommendation vs. council decision. Matches agenda motions (with
+      officer_recommendation) to minutes motions (with outcome) for the same
+      meeting date. Reports divergence rate and lists motions where council
+      DEFERRED or LOST something officers had recommended.
+      2024+ result: 133 matched pairs, 4 diverged (3%).
+
+  council geocode cambridge [--force] [--dry-run]
+      Geocode planning application sites via Nominatim (OpenStreetMap). Writes
+      lat/lng to sites.latitude / sites.longitude. Rate-limited to 1 req/sec.
+      Incremental: skips sites already geocoded unless --force.
+
 Underlying library functions (callable from Python directly):
-  get_council_by_name, list_councillors, meetings_in_range, motions_by_tag,
-  planning_motions, contested_motions, voting_alignment_matrix,
-  councillor_vote_summary, top_planning_sites
+  src/analysis/queries.py:
+    get_council_by_name, list_councillors, meetings_in_range, motions_by_tag,
+    planning_motions, contested_motions, voting_alignment_matrix,
+    councillor_vote_summary, top_planning_sites,
+    councillor_activity_ranges, contestation_by_year, topic_distribution_by_year,
+    co_mover_pairs, interest_declarations_summary, public_engagement_by_year,
+    budget_by_year, planning_outcomes
+  src/analysis/divergence.py:
+    officer_divergence
 
 
 WHAT IS UNFINISHED

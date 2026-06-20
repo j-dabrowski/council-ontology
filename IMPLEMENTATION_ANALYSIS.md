@@ -473,6 +473,7 @@ council build-relationships cambridge        # refresh edges
 | 18 | Level 5: extract remaining 329 pre-2024 docs | — | Medium | **Pending** — deferred until demo frontend built |
 | 19 | Level 6: audit report generator | Level 5 | Small | **Done** (2026-06-18) — human review still pending |
 | 20 | Councillor deduplication + extractor name normalisation | Dynamic layer | Medium | **Done** (2026-06-20) — 193 → 106 councillors; 62 ALLY edges written |
+| 21 | Analysis query layer expansion + geocoding + officer divergence | Level 5 complete | Medium | **Done** (2026-06-20) — see Analysis section below |
 
 **Current critical path:** Pre-2024 batch extraction (329 minutes) — deferred until demo frontend done.
 
@@ -497,6 +498,73 @@ council build-relationships cambridge        # refresh edges
   - Highlights the currently-configured model with `*` in the model table.
   - `--force` flag shows cost for the full corpus (all docs), as if running with `--force` — useful for planning a from-scratch re-extraction.
   - Batch pricing annotation: `(50% off, up to 24h)`.
+
+---
+
+## Analysis Query Layer ✅ COMPLETE (2026-06-20)
+
+**What was built:**
+
+- `src/analysis/queries.py` — 8 new query functions added; 5 existing functions updated with
+  `from_year`/`to_year` parameters (`contested_motions`, `motions_by_tag`, `top_planning_sites`,
+  `councillor_vote_summary`, `list_councillors`). New functions:
+  - `councillor_activity_ranges(session, council_id, from_year, to_year, min_votes=10)` —
+    per-councillor date span, is_active flag (last vote within 18 months), and dissent rate
+    (fraction of votes cast against a motion that carried). `min_votes=10` suppresses AGM proxy
+    voters (family members with 1–7 votes at a single special meeting).
+  - `contestation_by_year(session, council_id, from_year, to_year)` — % of carried motions with
+    ≥1 dissenting vote per year, plus top 3 most-contested motion titles per year.
+  - `topic_distribution_by_year(session, council_id, from_year, to_year, top_tags=8)` — per-year
+    motion counts per tag. Tags split from comma-separated `motions.tags` in Python; top 8 tags
+    tracked, remainder binned as "other".
+  - `co_mover_pairs(session, council_id, from_year, to_year, min_count=5, active_only=False)` —
+    (mover, seconder) pairs ranked by frequency. Uses SQLAlchemy aliased joins for two
+    simultaneous councillor lookups. `active_only` filters via `councillor_activity_ranges`.
+  - `interest_declarations_summary(session, council_id, from_year, to_year)` — per-councillor
+    declaration counts by type (financial/impartiality/proximity/other) plus top 3 motion topics
+    where declarations occurred (approximated via meeting-level join to motions).
+  - `public_engagement_by_year(session, council_id, from_year, to_year)` — public questions,
+    deputations, and petitions per year. Three separate subqueries merged by year key.
+  - `budget_by_year(session, council_id, from_year, to_year, top_n=5)` — budget item counts,
+    items with extracted amounts, indicative total, and top N items by amount per year.
+  - `planning_outcomes(session, council_id, from_year, to_year, limit=10)` — outcome breakdown
+    (approved/refused/deferred/pending), approval rate, top sites, and top applicants.
+    Replaces the previous `top_planning_sites`-only planning query in the CLI.
+
+- `src/analysis/divergence.py` — new module for officer recommendation vs. council decision
+  matching. For each meeting date with both an agenda and a minutes document: matches agenda
+  motions (with `officer_recommendation`) to minutes motions (with `outcome`) by exact item
+  number first, then title fuzzy match (`difflib.SequenceMatcher`, threshold 0.5). Classifies
+  each matched pair: CARRIED → FOLLOWED, LOST/DEFERRED → DIVERGED, others skipped.
+  **2024+ result:** 133 matched pairs, 4 diverged (3%) — 3 DEFERREDs, 1 LOST.
+  Exposed via `council analyse cambridge divergence [--from-year YYYY] [--limit N]`.
+
+- `scripts/geocode_sites.py` — Nominatim geocoding script. Reads sites where `latitude IS NULL`,
+  queries `nominatim.openstreetmap.org` with address + "City of Cambridge WA Australia" context,
+  writes `latitude`/`longitude` back. Rate-limited to 1.1 req/sec (Nominatim policy). Incremental
+  by default; `--force` re-geocodes existing. `--dry-run` shows what would be geocoded without
+  API calls. Note: `Site.latitude` and `Site.longitude` columns already existed in the schema —
+  no migration required.
+  Exposed via `council geocode cambridge [--force] [--dry-run]`.
+
+- `src/cli.py` — 7 new `council analyse cambridge <query>` subcommands: `activity`, `trends`,
+  `co-movers`, `interests`, `engagement`, `budget`, `divergence`. `--from-year`/`--to-year` args
+  added to the `analyse` subparser and threaded through all branches (new and existing).
+  New args: `--min-votes` (activity), `--min-count` (co-movers), `--active-only` (co-movers).
+  `council geocode` subcommand added.
+
+**2024+ corpus results from new queries:**
+- Activity: 13 councillors (≥10 votes), 9 active. Xavier Carr highest dissent rate (4.2%).
+- Trends: contestation 15% (2024) → 9% (2025) → 5% (2026).
+- Co-movers (active only): Cutler→Le Page leads (30); Mack→Le Page (26); Kennerly→Le Page (25).
+- Interests: Le Page 72 declarations, Barlow 69, Carr 60. Gary Mack has 10 FINANCIAL declarations.
+- Engagement: public questions 48 (2024) → 136 (2025) → 88 (2026).
+- Budget: indicative totals $184M (2024), $816M (2025), $3.1B (2026) — includes large building permit aggregates.
+- Planning: 50% approval rate (8/16 decided); Floreat Activity Centre the most-contested site (4 applications).
+- Divergence: 133 agenda↔minutes pairs matched, 4 diverged (3%).
+
+**Full corpus gain:** Run all queries without `--from-year` after pre-2024 extraction completes.
+Re-run `council geocode cambridge` to pick up new planning sites from pre-2024 docs.
 
 ---
 

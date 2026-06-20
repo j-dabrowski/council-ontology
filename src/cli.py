@@ -1033,11 +1033,20 @@ def cmd_validate(args) -> None:
 def cmd_analyse(args) -> None:
     from sqlalchemy import func
     from src.analysis.queries import (
-        voting_alignment_matrix,
-        contested_motions,
-        top_planning_sites,
+        budget_by_year,
+        co_mover_pairs,
+        contestation_by_year,
+        councillor_activity_ranges,
         councillor_vote_summary,
+        contested_motions,
+        interest_declarations_summary,
+        list_councillors,
         motions_by_tag,
+        planning_outcomes,
+        public_engagement_by_year,
+        topic_distribution_by_year,
+        top_planning_sites,
+        voting_alignment_matrix,
     )
     from src.models import Councillor, Meeting, Motion, Vote
     from src.storage.database import init_db, make_session_factory
@@ -1048,19 +1057,20 @@ def cmd_analyse(args) -> None:
     council = _get_council(session, short_name)
     council_id = council.id
     q = args.query
+    from_year = getattr(args, "from_year", None)
+    to_year = getattr(args, "to_year", None)
+
+    year_label = ""
+    if from_year and to_year:
+        year_label = f" {from_year}–{to_year}"
+    elif from_year:
+        year_label = f" {from_year}+"
+    elif to_year:
+        year_label = f" –{to_year}"
 
     if q == "councillors":
-        rows = (
-            session.query(Councillor, func.count(Vote.id).label("n"))
-            .join(Vote, Vote.councillor_id == Councillor.id)
-            .join(Motion, Vote.motion_id == Motion.id)
-            .join(Meeting, Motion.meeting_id == Meeting.id)
-            .filter(Meeting.council_id == council_id)
-            .group_by(Councillor.id)
-            .order_by(func.count(Vote.id).desc())
-            .all()
-        )
-        table = Table(title=f"{short_name} — Councillors ({len(rows)})")
+        rows = list_councillors(session, council_id, from_year=from_year, to_year=to_year)
+        table = Table(title=f"{short_name} — Councillors{year_label} ({len(rows)})")
         table.add_column("Name")
         table.add_column("Votes", justify="right")
         for c, n in rows:
@@ -1068,9 +1078,9 @@ def cmd_analyse(args) -> None:
         console.print(table)
 
     elif q == "alignment":
-        pairs = voting_alignment_matrix(session, council_id)
+        pairs = voting_alignment_matrix(session, council_id, from_year=from_year, to_year=to_year)
         pairs = [p for p in pairs if p.total_shared_votes >= args.min_shared]
-        table = Table(title=f"{short_name} — Voting Alignment (≥{args.min_shared} shared votes)")
+        table = Table(title=f"{short_name} — Voting Alignment{year_label} (≥{args.min_shared} shared votes)")
         table.add_column("Councillor A")
         table.add_column("Councillor B")
         table.add_column("Shared", justify="right")
@@ -1087,8 +1097,11 @@ def cmd_analyse(args) -> None:
         console.print(table)
 
     elif q == "contested":
-        motions = contested_motions(session, council_id, min_against=args.min_against)
-        table = Table(title=f"{short_name} — Contested Motions (≥{args.min_against} against)")
+        motions = contested_motions(
+            session, council_id, min_against=args.min_against,
+            from_year=from_year, to_year=to_year,
+        )
+        table = Table(title=f"{short_name} — Contested Motions{year_label} (≥{args.min_against} against)")
         table.add_column("Date")
         table.add_column("Item")
         table.add_column("Title")
@@ -1106,13 +1119,29 @@ def cmd_analyse(args) -> None:
         console.print(table)
 
     elif q == "planning":
-        sites = top_planning_sites(session, council_id, limit=args.limit)
-        table = Table(title=f"{short_name} — Top Planning Sites")
-        table.add_column("Address")
-        table.add_column("Applications", justify="right")
-        for address, n in sites:
-            table.add_row(address, str(n))
-        console.print(table)
+        outcomes = planning_outcomes(session, council_id, from_year=from_year, to_year=to_year, limit=args.limit)
+        console.print(f"\n[bold]{short_name} — Planning Applications{year_label}[/bold]")
+        console.print(f"  Total: {outcomes.total} | Approved: {outcomes.approved} | "
+                      f"Refused: {outcomes.refused} | Deferred: {outcomes.deferred} | "
+                      f"Pending: {outcomes.pending}")
+        decided = outcomes.approved + outcomes.refused
+        if decided:
+            console.print(f"  Approval rate: [green]{outcomes.approval_rate:.0%}[/green] "
+                          f"({outcomes.approved}/{decided} decided)")
+        if outcomes.top_sites:
+            table = Table(title="Top Sites by Application Count")
+            table.add_column("Address")
+            table.add_column("Applications", justify="right")
+            for addr, n in outcomes.top_sites:
+                table.add_row(addr, str(n))
+            console.print(table)
+        if outcomes.top_applicants:
+            table = Table(title="Top Applicants")
+            table.add_column("Applicant")
+            table.add_column("Applications", justify="right")
+            for name, n in outcomes.top_applicants:
+                table.add_row(name, str(n))
+            console.print(table)
 
     elif q == "councillor":
         if not args.name:
@@ -1126,9 +1155,9 @@ def cmd_analyse(args) -> None:
         if not match:
             console.print(f"[red]No councillor found matching '{args.name}'[/red]")
             raise SystemExit(1)
-        summary = councillor_vote_summary(session, match.id, council_id)
+        summary = councillor_vote_summary(session, match.id, council_id, from_year=from_year, to_year=to_year)
         table = Table(
-            title=f"{match.given_name} {match.family_name}".strip(),
+            title=f"{match.given_name} {match.family_name}".strip() + year_label,
             show_header=False, box=None, pad_edge=False,
         )
         table.add_column("", style="dim")
@@ -1145,9 +1174,9 @@ def cmd_analyse(args) -> None:
         if not args.tag:
             console.print("[red]--tag required for 'motions' query[/red]")
             raise SystemExit(1)
-        results = motions_by_tag(session, council_id, args.tag)
+        results = motions_by_tag(session, council_id, args.tag, from_year=from_year, to_year=to_year)
         showing = min(len(results), args.limit)
-        table = Table(title=f"{short_name} — Motions tagged '{args.tag}' ({len(results)} total, showing {showing})")
+        table = Table(title=f"{short_name} — Motions tagged '{args.tag}'{year_label} ({len(results)} total, showing {showing})")
         table.add_column("Date")
         table.add_column("Item")
         table.add_column("Title")
@@ -1161,6 +1190,174 @@ def cmd_analyse(args) -> None:
                 m.outcome.value if m.outcome else "–",
             )
         console.print(table)
+
+    elif q == "activity":
+        rows = councillor_activity_ranges(
+            session, council_id,
+            from_year=from_year, to_year=to_year,
+            min_votes=args.min_votes,
+        )
+        table = Table(title=f"{short_name} — Councillor Activity{year_label} (min {args.min_votes} votes)")
+        table.add_column("Name")
+        table.add_column("First vote")
+        table.add_column("Last vote")
+        table.add_column("Votes", justify="right")
+        table.add_column("Active")
+        table.add_column("Dissent", justify="right")
+        for r in rows:
+            name = f"{r.given_name} {r.family_name}".strip()
+            active = "[green]Yes[/green]" if r.is_active else "[dim]No[/dim]"
+            table.add_row(
+                name,
+                str(r.first_vote_date),
+                str(r.last_vote_date),
+                str(r.total_votes),
+                active,
+                f"{r.dissent_rate:.1%}",
+            )
+        console.print(table)
+
+    elif q == "trends":
+        contest = contestation_by_year(session, council_id, from_year=from_year, to_year=to_year)
+        topics = topic_distribution_by_year(session, council_id, from_year=from_year, to_year=to_year)
+
+        table = Table(title=f"{short_name} — Contestation by Year{year_label}")
+        table.add_column("Year")
+        table.add_column("Carried", justify="right")
+        table.add_column("Contested", justify="right")
+        table.add_column("Rate", justify="right")
+        table.add_column("Most contested (top 1)")
+        for s in contest:
+            color = "red" if s.contestation_rate >= 0.15 else "yellow" if s.contestation_rate >= 0.05 else "dim"
+            top = s.most_contested[0][0][:50] if s.most_contested else "—"
+            table.add_row(
+                str(s.year),
+                str(s.total_carried),
+                str(s.contested),
+                f"[{color}]{s.contestation_rate:.0%}[/{color}]",
+                top,
+            )
+        console.print(table)
+
+        if topics:
+            all_tags = sorted({t for yr_tags in topics.values() for t in yr_tags if t != "other"})
+            table2 = Table(title=f"{short_name} — Topic Distribution by Year{year_label}")
+            table2.add_column("Year")
+            for tag in all_tags:
+                table2.add_column(tag.capitalize(), justify="right")
+            table2.add_column("other", justify="right")
+            for yr, tag_counts in sorted(topics.items()):
+                table2.add_row(
+                    str(yr),
+                    *[str(tag_counts.get(t, 0)) for t in all_tags],
+                    str(tag_counts.get("other", 0)),
+                )
+            console.print(table2)
+
+    elif q == "co-movers":
+        pairs = co_mover_pairs(
+            session, council_id,
+            from_year=from_year, to_year=to_year,
+            min_count=args.min_count,
+            active_only=args.active_only,
+        )
+        active_label = " (active only)" if args.active_only else ""
+        table = Table(title=f"{short_name} — Co-mover Pairs{year_label}{active_label} (≥{args.min_count})")
+        table.add_column("Mover")
+        table.add_column("Seconder")
+        table.add_column("Count", justify="right")
+        for p in pairs[:args.limit]:
+            table.add_row(p.mover_name, p.seconder_name, str(p.count))
+        console.print(table)
+
+    elif q == "interests":
+        rows = interest_declarations_summary(session, council_id, from_year=from_year, to_year=to_year)
+        table = Table(title=f"{short_name} — Interest Declarations{year_label}")
+        table.add_column("Councillor")
+        table.add_column("Total", justify="right")
+        table.add_column("Financial", justify="right")
+        table.add_column("Impartiality", justify="right")
+        table.add_column("Proximity", justify="right")
+        table.add_column("Other", justify="right")
+        table.add_column("Top topics")
+        for r in rows[:args.limit]:
+            fin = r.by_type.get("financial", 0)
+            imp = r.by_type.get("impartiality", 0)
+            prox = r.by_type.get("proximity", 0)
+            oth = r.by_type.get("other", 0)
+            fin_cell = f"[yellow]{fin}[/yellow]" if fin else str(fin)
+            table.add_row(
+                r.councillor_name,
+                str(r.total),
+                fin_cell,
+                str(imp),
+                str(prox),
+                str(oth),
+                ", ".join(r.top_topics[:3]),
+            )
+        console.print(table)
+
+    elif q == "engagement":
+        rows = public_engagement_by_year(session, council_id, from_year=from_year, to_year=to_year)
+        table = Table(title=f"{short_name} — Public Engagement{year_label}")
+        table.add_column("Year")
+        table.add_column("Questions", justify="right")
+        table.add_column("Deputations", justify="right")
+        table.add_column("Petitions", justify="right")
+        table.add_column("Total", justify="right")
+        for r in rows:
+            table.add_row(
+                str(r.year),
+                str(r.public_questions),
+                str(r.deputations),
+                str(r.petitions),
+                str(r.total),
+            )
+        console.print(table)
+
+    elif q == "budget":
+        rows = budget_by_year(session, council_id, from_year=from_year, to_year=to_year, top_n=3)
+        table = Table(title=f"{short_name} — Budget Items{year_label}")
+        table.add_column("Year")
+        table.add_column("Items", justify="right")
+        table.add_column("With $", justify="right")
+        table.add_column("Total $ (indicative)", justify="right")
+        table.add_column("Largest item")
+        for r in rows[:args.limit]:
+            amt = f"${r.total_amount:,.0f}" if r.total_amount is not None else "—"
+            top = f"{r.largest_items[0][0][:40]} (${r.largest_items[0][1]:,.0f})" if r.largest_items else "—"
+            table.add_row(str(r.year), str(r.total_items), str(r.items_with_amount), amt, top)
+        console.print(table)
+        console.print("[dim]Note: total $ is the sum of extracted amounts and may double-count sub-items.[/dim]")
+
+    elif q == "divergence":
+        from src.analysis.divergence import officer_divergence
+        results = officer_divergence(session, council_id, from_year=from_year, to_year=to_year)
+        if not results:
+            console.print("[yellow]No matched agenda+minutes pairs found for this period.[/yellow]")
+        else:
+            matched = len(results)
+            diverged = sum(1 for r in results if r.diverged)
+            console.print(
+                f"\n[bold]{short_name} — Officer vs Council{year_label}[/bold]\n"
+                f"  Matched pairs: {matched} | Diverged: {diverged} | "
+                f"Rate: [{'red' if diverged/matched > 0.1 else 'green'}]{diverged/matched:.0%}[/]\n"
+            )
+            table = Table(title=f"Divergences (showing up to {args.limit})")
+            table.add_column("Date")
+            table.add_column("Item")
+            table.add_column("Title")
+            table.add_column("Outcome")
+            table.add_column("Match")
+            for r in [x for x in results if x.diverged][:args.limit]:
+                table.add_row(
+                    str(r.meeting_date),
+                    r.item_number or "–",
+                    (r.title or "")[:50],
+                    r.council_outcome or "–",
+                    f"{r.match_confidence:.0%}",
+                )
+            console.print(table)
 
     session.close()
 
@@ -1390,20 +1587,40 @@ def main() -> None:
     p_analyse.add_argument("council", choices=list(COUNCILS))
     p_analyse.add_argument(
         "query",
-        choices=["councillors", "alignment", "contested", "planning", "councillor", "motions"],
+        choices=[
+            "councillors", "alignment", "contested", "planning", "councillor", "motions",
+            "activity", "trends", "co-movers", "interests", "engagement", "budget", "divergence",
+        ],
         help=(
             "councillors: all councillors by vote count  |  "
             "alignment: pairwise voting agreement  |  "
             "contested: carried motions with opposition  |  "
-            "planning: top sites by application count  |  "
+            "planning: top sites + approval rate  |  "
             "councillor: one councillor's vote summary (--name)  |  "
-            "motions: motions by tag (--tag)"
+            "motions: motions by tag (--tag)  |  "
+            "activity: councillor date spans, active status, dissent rate  |  "
+            "trends: contestation rate and topic distribution by year  |  "
+            "co-movers: most frequent mover+seconder pairs  |  "
+            "interests: interest declarations per councillor by type  |  "
+            "engagement: public questions, deputations, petitions by year  |  "
+            "budget: budget items and amounts by year  |  "
+            "divergence: officer recommendations vs council outcomes"
         ),
     )
+    p_analyse.add_argument("--from-year", type=int, metavar="YYYY", default=None,
+                           dest="from_year", help="Filter to meetings from this year onwards")
+    p_analyse.add_argument("--to-year", type=int, metavar="YYYY", default=None,
+                           dest="to_year", help="Filter to meetings up to this year")
     p_analyse.add_argument("--min-against", type=int, default=2, dest="min_against",
                            help="Min against votes for 'contested' (default: 2)")
     p_analyse.add_argument("--min-shared", type=int, default=5, dest="min_shared",
                            help="Min shared votes for 'alignment' (default: 5)")
+    p_analyse.add_argument("--min-votes", type=int, default=10, dest="min_votes",
+                           help="Min vote count for 'activity' — suppresses AGM proxies (default: 10)")
+    p_analyse.add_argument("--min-count", type=int, default=5, dest="min_count",
+                           help="Min co-mover occurrences for 'co-movers' (default: 5)")
+    p_analyse.add_argument("--active-only", action="store_true", dest="active_only",
+                           help="Limit 'co-movers' to currently active councillors")
     p_analyse.add_argument("--limit", type=int, default=20,
                            help="Max rows to display (default: 20)")
     p_analyse.add_argument("--name", metavar="NAME",
@@ -1467,6 +1684,15 @@ def main() -> None:
              output=output, seed=a.seed, list_only=a.list_only)
 
     p_audit.set_defaults(func=_cmd_audit)
+
+    # geocode
+    p_geocode = sub.add_parser("geocode", help="Geocode planning sites via Nominatim (E1)")
+    p_geocode.add_argument("council", choices=list(COUNCILS))
+    p_geocode.add_argument("--force", action="store_true",
+                           help="Re-geocode sites that already have coordinates")
+    p_geocode.add_argument("--dry-run", action="store_true", dest="dry_run",
+                           help="Show what would be geocoded without making API calls")
+    p_geocode.set_defaults(func=lambda a: __import__("scripts.geocode_sites", fromlist=["run"]).run(a))
 
     args = parser.parse_args()
     if args.verbose:
