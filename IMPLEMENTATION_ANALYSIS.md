@@ -401,6 +401,54 @@ AUDIT annotations. No automated precision/recall computation yet — manual tall
 
 ---
 
+## Councillor Deduplication ✅ COMPLETE (2026-06-20)
+
+**Problem:** `_get_or_create_councillor` created a separate DB record for every distinct
+name format returned by the LLM. The same person accumulated records under "Cr Barlow",
+"Kate Barlow", "Barlow", "null Barlow", "Barlow Cr" (swapped), etc. — 193 councillors
+for a council with ~13 active members. This fragmented vote counts and polluted the
+alignment matrix (165 ally pairs, many self-pairings at 100%).
+
+**What was built:**
+
+- `_normalise_councillor_name(given, family)` added to `extractor.py`. Handles:
+  - Swapped fields (`Barlow Cr` → `Cr Barlow` → `Barlow`)
+  - Honorific prefixes (`Cr`, `Mayor`, `Councillor`, `Deputy Mayor`) stripped from given_name
+  - Multi-token prefixes (`Cr Gavin Foley` → `Gavin Foley`)
+  - Placeholder given names (`null`, `Name`, `Unknown`) cleared
+  - Self-repetitions (`Barlow Barlow`) cleared
+  - Compound surname particles (`Le` + `Page` → `Le Page`)
+  - Family-name-only fallback: when given_name is empty after normalisation, prefers an
+    existing full-name councillor with the same family_name over creating a new stub.
+
+- Duplicate-vote dedup key in `save_extraction()` updated to use normalised names, so
+  "Cr Barlow" and "Kate Barlow" in the same motion are correctly treated as the same person.
+
+- `scripts/dedup_councillors.py` — one-time migration script. Two passes:
+  - Pass 1: bad records (title/placeholder/swapped/self-repeat given_name) → merged into
+    canonical using normalised-slug match, single-canonical, or 2024+-votes-winner heuristic.
+  - Pass 2: family-only stubs → merged using same heuristic.
+  - Updates FK columns: `votes.councillor_id`, `motions.moved_by_id/.seconded_by_id`,
+    `appointments.councillor_id`, `interest_declarations.councillor_id`.
+  - Deletes duplicate votes before remapping to avoid UNIQUE(motion_id, councillor_id) violations.
+  - `--apply` flag required to write changes; dry-run by default.
+
+**Result:**
+- Councillors: 193 → 106 (84 merged, 3 in-place slug fixes)
+- `council build-relationships cambridge` re-run: 62 ALLY edges, 0 OPPONENT (from 165/0 before)
+- Shared vote counts now correct: Gary Mack / Georgie Randklev shows 375 shared votes
+  (was split across ~12 phantom records)
+- Cambridge votes near-unanimously — 0 opponent pairs at the ≤40% threshold
+
+**To re-run dedup after future extractions:**
+```bash
+python scripts/dedup_councillors.py          # preview
+python scripts/dedup_councillors.py --apply  # write
+council build-relationships cambridge        # refresh edges
+```
+
+---
+
 ## Build Order: Dependency Graph
 
 | Priority | Component | Blocked by | Effort | Status |
@@ -424,6 +472,7 @@ AUDIT annotations. No automated precision/recall computation yet — manual tall
 | 17 | Level 5: 2024+ corpus complete | Phase 2 | — | **Done** (2026-06-20) — 244 extracted; n=87: 57 PASS/30 REVIEW/0 FAIL |
 | 18 | Level 5: extract remaining 329 pre-2024 docs | — | Medium | **Pending** — deferred until demo frontend built |
 | 19 | Level 6: audit report generator | Level 5 | Small | **Done** (2026-06-18) — human review still pending |
+| 20 | Councillor deduplication + extractor name normalisation | Dynamic layer | Medium | **Done** (2026-06-20) — 193 → 106 councillors; 62 ALLY edges written |
 
 **Current critical path:** Pre-2024 batch extraction (329 minutes) — deferred until demo frontend done.
 

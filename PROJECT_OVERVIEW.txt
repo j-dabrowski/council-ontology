@@ -473,35 +473,49 @@ WHAT IS UNFINISHED
      (c) Accept REVIEW status as a known structural limitation for large agendas.
    Affected: 202496e2, 2420cee0, 34449c77, 4e282dd3, 68da87da, 7242bbb8, 936cc360.
 
-4. DYNAMIC LAYER — TOOL BUILT, TABLE STILL EMPTY
-   `scripts/build_relationships.py` + `council build-relationships cambridge` computes
-   pairwise voting alignment and writes ALLY/OPPONENT edges to the relationships table.
-   Defaults: min_shared=10, ally≥0.85, opponent≤0.40, --from-year 2024.
-   Not yet run against live data — run when enough 2024+ votes are in DB.
-   The relationships table remains empty until first run.
+4. DYNAMIC LAYER — POPULATED (2026-06-20)
+   `council build-relationships cambridge` (defaults: min_shared=10, ally≥0.85,
+   opponent≤0.40, --from-year 2024) has been run against the 2024+ corpus.
+   Result: 62 ALLY edges written; 0 OPPONENT pairs (Cambridge votes near-unanimously).
+   Re-run after each new batch of extraction to refresh.
+   Note: councillor deduplication was required first — see item below.
 
-5. COUNCILLOR_TERMS NEVER POPULATED
+5. COUNCILLOR NAME DEDUPLICATION — DONE (2026-06-20)
+   The extractor previously created duplicate councillor records for different name
+   formats of the same person ("Cr Barlow", "Kate Barlow", "Barlow", "null Barlow",
+   "Barlow Cr"). This fragmented vote counts and polluted the alignment matrix.
+   Fixed in two parts:
+     (a) `_normalise_councillor_name()` added to extractor.py — strips honorifics
+         (Cr, Mayor, Councillor), fixes swapped fields, clears placeholders, re-joins
+         compound particles (Le+Page → Le Page). Family-only names now fall back to
+         an existing full-name record rather than creating a new stub.
+     (b) `scripts/dedup_councillors.py` — one-time migration. Merged 84 duplicates
+         into canonical records; councillors 193 → 106. Run again if new stubs appear:
+           python scripts/dedup_councillors.py          # dry run
+           python scripts/dedup_councillors.py --apply  # write changes
+
+6. COUNCILLOR_TERMS NEVER POPULATED
    The model has ward/role/term dates per councillor per council.
    Councillors are created from vote records only — no ward, no role, no dates.
 
-6. TWO MEETING FIELDS NULL FOR PRE-PHASE-2 EXTRACTIONS
+7. TWO MEETING FIELDS NULL FOR PRE-PHASE-2 EXTRACTIONS
    minutes_pdf_url  — populated for all 243 meetings (backfilled from manifest 2026-06-17)
    minutes_text     — populated for 99 recent extractions; null for 144 older ones
                       (will be populated on re-extraction)
    extracted_at     — populated for 99 recent extractions; null for 144 older ones
                       (will be populated on re-extraction)
 
-7. LONG DOCUMENTS — CONTROLLABLE VIA --max-chars
+8. LONG DOCUMENTS — CONTROLLABLE VIA --max-chars
    Default extraction is 80k single-chunk (fast, cheap).
    Multi-chunk full-document extraction: pass --max-chars full to extract/extract-sample.
    Chunks are merged (metadata from chunk 0, entity lists concatenated).
    319/537 Cambridge docs exceed 200k chars.
 
-8. ONLY ONE COUNCIL
+9. ONLY ONE COUNCIL
    The COUNCILS dict in cli.py has a single entry. The full architecture supports
    multiple councils — adding one is two lines in cli.py plus a new scraper subclass.
 
-9. MULTI-LEVEL PIPELINE STATUS
+10. MULTI-LEVEL PIPELINE STATUS
    Level 0 (census): done.
    Level 1 (inventory): done. other_content_rate 1.7%.
    Level 2 (schema/prompt/provenance): done (2026-05-29).
@@ -510,12 +524,13 @@ WHAT IS UNFINISHED
    Level 3c (sample validation): done (2026-05-31). Baselines: completeness 95.0%,
      paraphrase 4.3%, coverage 22.89%, keyword gap 9.3%. 14 PASS / 4 REVIEW / 0 FAIL.
    Level 4 (validate): done (2026-05-31).
-   Phase 2 (document-type-aware pipeline): code done (2026-06-11). Partial re-extraction
-     done. 6 docs blocked by ValidationError (individual_votes.choice) — see item 1.
-   Level 5 (full extraction): partial. 243/590 docs extracted. 347 pending.
+   Phase 2 (document-type-aware pipeline): done (2026-06-20). All 6 failures resolved.
+   Level 5 (full extraction): 2024+ complete (244 docs). 346 pre-2024 pending (deferred).
    Level 6 (human audit): tooling done (2026-06-18). Human review pending.
      council audit cambridge --count 12 --from-year 2024 --seed 42
      → data/audit_report.md (12 docs, open side-by-side with PDFs to annotate)
+   Dynamic layer: 62 ALLY edges written (2026-06-20). 0 opponents (near-unanimous voting).
+   Councillor dedup: done (2026-06-20). 193 → 106 records. Extractor normalisation fixed.
    See PIPELINE.md and IMPLEMENTATION_ANALYSIS.md for detail and build order.
 
 

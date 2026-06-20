@@ -580,15 +580,88 @@ def _resolve_offset(text: str, quote: str) -> "tuple[int, int] | tuple[None, Non
 
 
 
+_COUNCILLOR_HONORIFICS = frozenset({
+    "cr", "cr.", "councillor", "mayor", "deputy", "deputy mayor",
+})
+_COUNCILLOR_PLACEHOLDERS = frozenset({
+    "null", "name", "unknown", "none", "n/a",
+})
+
+
+def _normalise_councillor_name(given: str | None, family: str | None) -> tuple[str, str]:
+    """Strip titles and placeholders from councillor name fields.
+
+    Handles:
+    - "Cr" / "Councillor" / "Mayor" as given_name prefix → stripped
+    - Swapped fields where family_name is a title ("Barlow", "Cr" → "Cr", "Barlow" → "", "Barlow")
+    - Placeholder given_names ("null", "Name", "Unknown") → cleared
+    - Given equals family ("Barlow Barlow") → given cleared
+    - Multi-token prefix ("Cr Gavin Foley" → "Gavin", "Foley")
+    """
+    given = (given or "").strip()
+    family = (family or "").strip()
+
+    # Fix swapped fields: family_name is a title, given_name is the real surname
+    if family.lower().rstrip(".") in _COUNCILLOR_HONORIFICS:
+        given, family = family, given
+
+    # Strip honorific tokens from the start of given_name (handles "Cr Jane", "Deputy Mayor")
+    parts = given.split()
+    while parts:
+        two = " ".join(parts[:2]).lower() if len(parts) >= 2 else ""
+        one = parts[0].lower().rstrip(".")
+        if two in _COUNCILLOR_HONORIFICS:
+            parts = parts[2:]
+        elif one in _COUNCILLOR_HONORIFICS:
+            parts = parts[1:]
+        else:
+            break
+    given = " ".join(parts)
+
+    # Rejoin compound surname particles split across fields ("Le"+"Page" → "Le Page")
+    _PARTICLES = frozenset({"le", "van", "de", "du", "von", "la", "di", "der", "den"})
+    if given.lower() in _PARTICLES and family:
+        family = f"{given} {family}"
+        given = ""
+
+    # Clear placeholder given names and self-repetitions ("Barlow Barlow")
+    if given.lower() in _COUNCILLOR_PLACEHOLDERS or (family and given.lower() == family.lower()):
+        given = ""
+
+    return given, family
+
+
 def _get_or_create_councillor(session, given_name: str, family_name: str):
     from src.models import Councillor
 
-    given_name = given_name or ""
-    family_name = family_name or ""
-    slug = re.sub(r"[^a-z0-9]+", "-", f"{given_name}-{family_name}".lower()).strip("-")
+    given_name, family_name = _normalise_councillor_name(given_name, family_name)
+
+    if not family_name:
+        family_name = given_name or "Unknown"
+        given_name = ""
+
+    slug_input = f"{given_name}-{family_name}" if given_name else family_name
+    slug = re.sub(r"[^a-z0-9]+", "-", slug_input.lower()).strip("-")
+
     obj = session.query(Councillor).filter_by(slug=slug).first()
     if obj:
         return obj
+
+    # Family-name-only lookup: if we only have a surname, prefer an existing full-name record
+    # over creating a new family-only stub (avoids fragmenting votes across stub vs real record).
+    if not given_name:
+        from sqlalchemy import func as sa_func
+        existing = (
+            session.query(Councillor)
+            .filter(sa_func.lower(Councillor.family_name) == family_name.lower())
+            .filter(Councillor.given_name.isnot(None))
+            .filter(Councillor.given_name != "")
+            .order_by(Councillor.id)
+            .first()
+        )
+        if existing:
+            return existing
+
     obj = Councillor(given_name=given_name, family_name=family_name, slug=slug)
     session.add(obj)
     session.flush()
@@ -752,10 +825,15 @@ def save_extraction(
         _ev("motions", motion.id, em.source_quotes)
 
         # Individual votes — deduplicate by councillor (LLM occasionally lists same
-        # councillor twice in one motion, violating the UNIQUE(motion_id, councillor_id) constraint)
+        # councillor twice in one motion, violating the UNIQUE(motion_id, councillor_id) constraint).
+        # Dedup key uses normalised names so "Cr Barlow" and "Kate Barlow" in the same motion
+        # are treated as the same person.
         seen_councillor_keys: set[str] = set()
         for ev in em.individual_votes:
-            key = f"{ev.councillor_given_name or ''}|{ev.councillor_family_name or ''}".lower()
+            norm_g, norm_f = _normalise_councillor_name(
+                ev.councillor_given_name, ev.councillor_family_name
+            )
+            key = f"{norm_g}|{norm_f}".lower()
             if key in seen_councillor_keys:
                 logger.warning(
                     "Duplicate vote for councillor '%s %s' in motion %s — skipping",
