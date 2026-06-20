@@ -1,6 +1,6 @@
 COUNCIL ONTOLOGY — PROJECT OVERVIEW
 =====================================
-Generated: 2026-06-17
+Generated: 2026-06-20
 
 
 PURPOSE
@@ -15,18 +15,20 @@ Three-layer ontology:
   Dynamic   — feedback loops and emergent patterns (voting blocs, relationship edges)
 
 
-CURRENT STATE (as of 2026-06-17)
+CURRENT STATE (as of 2026-06-20)
 ----------------------------------
   590 PDFs in manifest (Cambridge, 1995–2026):
     507 minutes / 79 agendas / 4 addenda
-  243 extracted into DB:
-    178 minutes / 61 agendas / 4 addenda
-  347 pending extraction:
-    329 minutes / 18 agendas
+  244 extracted into DB:
+    179 minutes / 61 agendas / 4 addenda
+  346 pending extraction:
+    329 pre-2024 minutes (deferred — see strategy below)
+    ~17 2024+ PDFs that are unreadable (fitz + pypdf both infinite-loop on malformed
+       content streams); their meeting dates are covered by other extracted PDFs
 
-  1,931 motions extracted
-  4,327 votes recorded
-    191 councillors seen
+  1,860 motions extracted
+  4,140 votes recorded
+    193 councillors seen
 
   Level 0 census complete:
     536 extractable PDFs / 1 empty / 0 errors (original 537-PDF corpus)
@@ -46,7 +48,7 @@ CURRENT STATE (as of 2026-06-17)
     source_quotes field on all 13 entity types; extraction_evidence table persists
     verbatim quotes with char offsets (best-effort UI convenience; not used for validation)
 
-  Phase 2 document-type-aware pipeline complete (code, 2026-06-11):
+  Phase 2 document-type-aware pipeline complete (2026-06-11):
     590 manifest entries classified by document type (filename-based rule)
     agenda_system_prompt.txt — separate prompt for agendas (officer recommendations,
       no vote outcomes)
@@ -54,26 +56,27 @@ CURRENT STATE (as of 2026-06-17)
     Extractor selects prompt by document_type from manifest
     Validation branches determine_status, GAP_KEYWORDS, and schema completeness by type
 
-  Level 5 partial extraction complete:
-    June 9 batch: 86 docs extracted (full-document, all chunks)
-    June 11 batch: 89/95 docs re-extracted with Phase 2 agenda prompt; 6 initially failed
-    June 17: 6 failed docs resolved — schemas.py hardened for vote field variations;
-      all 6 collected and validated (3 PASS / 3 REVIEW / 0 FAIL)
-    Validation of 2024+ corpus (n=85): 48 PASS / 37 REVIEW / 0 FAIL
-      completeness 98.7% / paraphrase 16.4% / coverage 10.39% / kwgap 12.9%
+  2024+ corpus COMPLETE (2026-06-20):
+    All 2024+ meeting dates covered in DB. Validation (n=87, --from-year 2024):
+      57 PASS / 30 REVIEW / 0 FAIL
+      completeness 98.1% / paraphrase 6.2% / coverage 12.6% / kwgap 12.6%
       All aggregate metrics within target.
+    Unreadable PDFs: ~17 files where fitz and pypdf both infinite-loop on malformed
+      content streams. Their meeting dates are already covered by other extracted files.
+      The extract command now correctly skips these (secondary date+type check in
+      pre-filter; see cli.py).
 
   Current strategy:
-    Iterating on prompts, schema, and system quality using 2024+ corpus only.
-    Pre-2024 docs (329 minutes) will be (re-)extracted as a fresh batch once the
-    pipeline has stabilised — using the then-current prompt regardless of any prior
-    partial extractions, since earlier runs predate provenance and schema improvements.
-    Do not run bulk pre-2024 extraction until this iteration phase is complete.
+    2024+ corpus is complete and ready for demo/analysis.
+    Pre-2024 docs (329 minutes) will be extracted as a fresh batch once the demo
+    frontend is built and the pipeline has stabilised — using the then-current prompt.
+    Do not run bulk pre-2024 extraction until demo work is done.
 
   Known issues:
-    1. 7 large agenda docs show 100% paraphrase (ToC-hallucination in multi-chunk
-       extraction) — prompt fix queued; re-extraction deferred
-    2. 347 docs pending (329 pre-2024 minutes + 18 2024+ agendas)
+    1. 7 large agenda docs show high paraphrase rate (ToC-hallucination in multi-chunk
+       extraction) — prompt fix applied to agenda_system_prompt.txt; these are REVIEW
+       status but data is usable
+    2. 329 pre-2024 minutes pending (deferred)
 
 
 PARTS OF THE PROJECT

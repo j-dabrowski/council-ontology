@@ -4,13 +4,13 @@
 
 This document defines the multi-level extraction pipeline for processing council meeting minutes PDFs into structured, auditable data. The core principle is **recursive refinement**: cheap broad passes feed expensive deep passes, and every pass validates the one after it. No blind extraction. By the time a document hits the full LLM call, we already know what it contains, what we expect to get back, and how to verify it.
 
-Current state: 590 PDFs in manifest (Cambridge, 1995–2026). 243 extracted. 347 pending.
+Current state: 590 PDFs in manifest (Cambridge, 1995–2026). 244 extracted (179 min/61 agenda/4 addendum). 346 pending (329 pre-2024 minutes, deferred).
 
-**Current strategy (as of 2026-06-17):** Iterating on prompts, schema, and system quality using
-the 2024+ corpus only. Pre-2024 documents will be extracted once the pipeline has stabilised and
-all known issues are resolved. When pre-2024 extraction runs, it will be treated as a fresh batch
-— all pre-2024 docs should be (re-)extracted with the then-current prompt, not incrementally
-patched, since earlier partial extractions predate provenance and schema improvements.
+**Current strategy (as of 2026-06-20):** 2024+ corpus is complete and validated (n=87:
+57 PASS / 30 REVIEW / 0 FAIL; all metrics within target). Pre-2024 documents will be extracted
+as a fresh batch once the demo frontend is built. When pre-2024 extraction runs, it will be
+treated as a fresh batch — all pre-2024 docs (re-)extracted with the then-current prompt, not
+incrementally patched, since earlier partial extractions predate provenance and schema improvements.
 
 ---
 
@@ -27,7 +27,7 @@ patched, since earlier partial extractions predate provenance and schema improve
 | 3b | Sample extraction (`council extract-sample`) | **Done** (2026-05-30) |
 | 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — all metrics within target |
 | 4 | Confidence metrics and validation script | **Done** (2026-05-31) |
-| 5 | Batch extraction (~$7-20) | **Done** (2026-06-09) — 86 docs, $19.58 batch; Phase 2 re-extraction 2026-06-11 (89/95 docs, 6 failed — see Known Issues) |
+| 5 | Batch extraction (~$7-20) | **Done** — 2024+ corpus complete (2026-06-20); 244 total extracted; validation n=87: 57 PASS/30 REVIEW/0 FAIL, all metrics in target |
 | 6 | Human audit | **Tooling done** (2026-06-18) — report generator built; human review pending |
 
 ### Phase 2 — Document-type-aware pipeline upgrade
@@ -46,13 +46,13 @@ aware of document type so agendas are extracted and validated correctly in their
 | P2-2c | Agenda extraction prompt — `agenda_system_prompt.txt` | **Done** (2026-06-11) |
 | P2-2d | Extractor — prompt selection by type; write `document_type` to DB | **Done** (2026-06-11) |
 | P2-3 | Validation — branch `determine_status`, `GAP_KEYWORDS`, schema completeness by type | **Done** (2026-06-11) |
-| P2-4 | Re-extract agendas with agenda prompt; re-validate 2024+ corpus | **Done** (2026-06-17) — all 6 failures resolved via schema hardening |
+| P2-4 | Re-extract agendas with agenda prompt; re-validate 2024+ corpus | **Done** (2026-06-20) — all 6 failures resolved; 2024+ corpus complete; 57 PASS/30 REVIEW/0 FAIL |
 | P2-5 | Inventory prompt variant for agendas (Level 1) | **Pending** (low priority) |
 | P2-6 | Sample selection stratified by document type (Level 3a) | **Pending** (low priority) |
 
 P2-5 and P2-6 are independent improvements that can follow the main pipeline.
 
-### Known Issues / Blockers (as of 2026-06-17)
+### Known Issues / Blockers (as of 2026-06-20)
 
 **Issue 1 — ✅ RESOLVED (2026-06-17): ValidationError on individual vote objects (6 docs)**
 
@@ -63,18 +63,48 @@ P2-5 and P2-6 are independent improvements that can follow the main pipeline.
 All 6 docs collected and validated: 3 PASS / 3 REVIEW / 0 FAIL. REVIEWs are structural artifacts
 (large-doc L1 inventory mismatch, sparse keyword hits) — not extraction quality problems.
 
-**Issue 2 — Large agenda ToC-hallucination (7 docs, produces 100% paraphrase rate)**
+**Issue 2 — ✅ RESOLVED (2026-06-20): interest_type ValidationError (`"author_subject_to_policy"`)**
 
-Large agenda PDFs (800k–1.5M chars, 11–20 extraction chunks) show 100% paraphrase on validation.
-Root cause: chunk 0 of these documents is a table of contents. The model infers agenda items from
-the ToC and generates plausible-sounding source quotes for items it hasn't actually seen the body
-text of. Those quotes fail verbatim matching.
+LLM returned non-standard interest type string from a WA Author Interest declaration. Fixed via
+`ExtractedInterestDeclaration.normalise_lower` validator: unknown values coerced to `"other"`.
+
+**Issue 3 — ✅ RESOLVED (2026-06-20): Phantom pending docs (date+type already in DB)**
+
+Cambridge has multiple PDFs per meeting date (agenda + minutes). The pre-2024 extraction had set
+`minutes_pdf_path` to one filename; a subsequent extraction of the other PDF for the same meeting
+wrote a new path, orphaning the original — or left the row with a mismatched path. This caused
+14 meetings to appear pending even though they were already extracted.
+
+Two fixes applied to `cli.py`:
+1. `save_extraction()` in `extractor.py` always updates `minutes_pdf_path` (removed the `not
+   meeting.minutes_pdf_path` guard).
+2. Pre-filter in `cmd_extract` now checks both filename AND (date+meeting_type) in DB before
+   flagging a PDF as pending. If the date+type already exists, the PDF is treated as done.
+
+**Issue 4 — ✅ RESOLVED (2026-06-20): Batch submission subprocess deadlock / pypdf timeout**
+
+`council extract --batch` previously used a `ThreadPoolExecutor(max_workers=1)` for PDF text
+extraction in the batch-build phase. PyMuPDF (fitz) hangs indefinitely in worker threads for some
+malformed PDFs — threads cannot be killed, so the entire batch build hung.
+
+Fixes:
+- Switched to per-PDF `multiprocessing.Process` with `terminate()` / `kill()` on timeout.
+- Subprocess uses only pypdf (first) then fitz (fallback) — no Anthropic client import.
+- Queue deadlock prevented: `q.get(timeout=...)` called BEFORE `p.join()` so the parent drains
+  the pipe before waiting on the child.
+- Request building (Anthropic client, prompt construction) stays in the main process via the new
+  `build_requests_from_text()` method on `MinutesExtractor`.
+
+**Issue 5 — Large agenda ToC-hallucination (7 docs, REVIEW status)**
+
+Large agenda PDFs (800k–1.5M chars, 11–20 extraction chunks) show high paraphrase on validation.
+Root cause: chunk 0 is a table of contents; model generates quotes for items not yet seen in body.
 
 Affected docs: `202496e2`, `2420cee0`, `34449c77`, `4e282dd3`, `68da87da`, `7242bbb8`,
 `936cc360` (all 2024–2026 agendas, all "large" size bucket).
 
-Fix (a) applied: `agenda_system_prompt.txt` updated with rule 4 ("do not quote from the table of
-contents"). Re-extraction of the 7 affected docs is deferred; they remain REVIEW until re-run.
+Fix applied: `agenda_system_prompt.txt` updated with rule ("do not quote from the table of
+contents"). These 7 docs remain REVIEW until re-extracted; data is usable for analysis.
 
 ---
 

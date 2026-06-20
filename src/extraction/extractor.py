@@ -58,14 +58,30 @@ _AGENDA_SYSTEM_PROMPT = (Path(__file__).parent / "agenda_system_prompt.txt").rea
 
 
 def extract_text_from_pdf(pdf_path: Path) -> str:
-    """Extract plain text from a PDF file using PyMuPDF."""
-    doc = fitz.open(str(pdf_path))
-    parts: list[str] = []
-    for page in doc:
-        text = page.get_text()
+    """Extract plain text from a PDF, trying PyMuPDF first then pypdf as fallback."""
+    try:
+        doc = fitz.open(str(pdf_path))
+        parts: list[str] = []
+        for page in doc:
+            text = page.get_text()
+            if text:
+                parts.append(text)
+        doc.close()
+        result = "\n\n".join(parts)
+        if result.strip():
+            return result
+        # fitz returned empty — fall through to pypdf
+        logger.debug("fitz returned empty text for %s, trying pypdf", pdf_path.name)
+    except Exception as exc:
+        logger.warning("fitz failed for %s (%s), trying pypdf", pdf_path.name, exc)
+
+    from pypdf import PdfReader
+    reader = PdfReader(str(pdf_path))
+    parts = []
+    for page in reader.pages:
+        text = page.extract_text() or ""
         if text:
             parts.append(text)
-    doc.close()
     return "\n\n".join(parts)
 
 
@@ -439,6 +455,53 @@ class MinutesExtractor:
 
         return requests, id_map
 
+    def build_requests_from_text(
+        self,
+        pdf: Path,
+        text: str,
+        max_chars: "int | None",
+        council_name: str | None = None,
+        manifest: "dict | None" = None,
+    ) -> "tuple[list[dict], dict[str, dict]]":
+        """Build batch request dicts from pre-extracted text.
+        Used by the batch-submit path after text is extracted in a subprocess."""
+        if not text.strip():
+            return [], {}
+        meta = (manifest or {}).get(pdf.name, {})
+        date_hint: "str | None" = meta.get("meeting_date")
+        doc_type: "str | None" = meta.get("document_type")
+        system_prompt = _AGENDA_SYSTEM_PROMPT if doc_type == "agenda" else _SYSTEM_PROMPT
+        if max_chars is not None:
+            chunks = [_chunk_text(text, max_chars)[0]]
+        else:
+            chunks = _chunk_text(text, DEFAULT_MAX_CHARS)
+        requests: list[dict] = []
+        id_map: dict[str, dict] = {}
+        n = len(chunks)
+        for i, chunk in enumerate(chunks):
+            cid = f"{pdf.stem}__c{i}of{n}"
+            requests.append({"custom_id": cid, "params": dict(
+                model=self._model,
+                max_tokens=64_000,
+                system=system_prompt,
+                messages=[{"role": "user", "content": self._make_user_content(
+                    chunk,
+                    council_name=council_name,
+                    meeting_date_hint=date_hint if i == 0 else None,
+                    chunk_index=i,
+                    total_chunks=n,
+                    document_type=doc_type,
+                )}],
+            )})
+            id_map[cid] = {
+                "pdf_path": str(pdf),
+                "chunk_idx": i,
+                "n_chunks": n,
+                "meeting_date_hint": date_hint if i == 0 else None,
+                "document_type": doc_type,
+            }
+        return requests, id_map
+
     def submit_batch(self, requests: "list[dict]") -> str:
         """Submit requests to the Anthropic batch API. Returns the batch_id."""
         batch = self._client.messages.batches.create(requests=requests)
@@ -634,7 +697,7 @@ def save_extraction(
         session.flush()
         logger.info("Cleared existing entities for meeting id=%d (re-extraction)", mid)
 
-    if pdf_path and not meeting.minutes_pdf_path:
+    if pdf_path:
         meeting.minutes_pdf_path = str(pdf_path)
     if pdf_url:
         meeting.minutes_pdf_url = pdf_url

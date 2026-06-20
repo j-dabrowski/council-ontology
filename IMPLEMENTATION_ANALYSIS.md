@@ -269,21 +269,22 @@ council validate cambridge                                     # score results
 - `_make_user_content()` extracted as a shared helper used by both sync and batch paths.
 - Job metadata persisted at `data/batch_jobs/{batch_id}.json`: includes the full `custom_id → {pdf_path, chunk_idx, n_chunks, meeting_date_hint}` mapping needed by the collect phase.
 
-**Actual results (Cambridge, as of 2026-06-11):**
-- **242 docs extracted** total: 178 minutes, 60 agendas, 4 addenda.
-- **348 docs pending**: 329 minutes, 19 agendas.
+**Actual results (Cambridge, as of 2026-06-20 — 2024+ corpus COMPLETE):**
+- **244 docs extracted** total: 179 minutes, 61 agendas, 4 addenda.
+- **346 docs pending**: 329 pre-2024 minutes (deferred — see strategy).
 - June 9 batch (`msgbatch_013dcu8czK79suJXKYvTmW9S`): 86 docs, 585 requests (full-doc, all chunks), $19.58.
-- June 11 batch (`msgbatch_01TSrRKeTuz74GvByzFdzFA1`): 95 docs re-extracted with Phase 2 agenda prompt; 89 succeeded, 6 failed (see Known Issues below).
-- DB totals: 1,896 motions, 4,667 votes, 189 councillors.
+- June 11 batch (`msgbatch_01TSrRKeTuz74GvByzFdzFA1`): 95 docs re-extracted with Phase 2 agenda prompt; 89 succeeded, 6 failed.
+- June 17 batch + fixes: all 6 failures resolved (schema hardening + interest_type coercion).
+- DB totals: 1,860 motions, 4,140 votes, 193 councillors.
 
-**Validation results (2024+ corpus, n=85, 2026-06-11 --max-chars full --force):**
-- Quote completeness: 98.7% ✓ (target >80%)
-- Paraphrase rate: 16.4% ✓ (target <30%)
-- Coverage ratio: 10.39% ✓ (target >5%)
-- Keyword gap rate: 12.9% ✓ (target <25%)
-- Status: 48 PASS / 37 REVIEW / 0 FAIL
+**Validation results (2024+ corpus, n=87, 2026-06-20):**
+- Quote completeness: 98.1% ✓ (target >80%)
+- Paraphrase rate: 6.2% ✓ (target <30%)
+- Coverage ratio: 12.6% ✓ (target >5%)
+- Keyword gap rate: 12.6% ✓ (target <25%)
+- Status: 57 PASS / 30 REVIEW / 0 FAIL
 
-**Known issues (updated 2026-06-17):**
+**Known issues (updated 2026-06-20):**
 
 1. **✅ RESOLVED — ValidationError on individual vote objects (6 docs)** — `schemas.py` hardened
    with coercions for all observed model output variations: `"vote"`/`"position"` → `"choice"`;
@@ -293,13 +294,30 @@ council validate cambridge                                     # score results
    All 6 docs collected via `msgbatch_018i8noAF3cf2Q3CSmSYKBVj`: 3 PASS / 3 REVIEW / 0 FAIL.
    REVIEWs are structural artifacts (large-doc L1 mismatch, sparse keyword hits) — not quality issues.
 
-2. **Large agenda ToC-hallucination (100% paraphrase rate)** — 7 large agenda PDFs (11–20
-   chunks) were saved successfully but produce 100% paraphrase on validation. Chunk 0 of these
-   documents is a table of contents; the model generates plausible-sounding source quotes for
-   agenda items visible only in the ToC. Those quotes don't appear verbatim in the source text.
-   Affected: `202496e2`, `2420cee0`, `34449c77`, `4e282dd3`, `68da87da`, `7242bbb8`, `936cc360`.
-   Fix options: prompt instruction to not quote from ToC; ToC-chunk detection during merge;
-   or accept REVIEW as a structural limitation.
+2. **✅ RESOLVED — interest_type ValidationError (`"author_subject_to_policy"`)** — LLM returned
+   a non-standard WA Author Interest declaration string. Added `normalise_lower` validator to
+   `ExtractedInterestDeclaration`: strips `" interest"` suffix, lower-cases, then maps any
+   unrecognised value to `"other"`.
+
+3. **✅ RESOLVED — Phantom pending docs (secondary date+type pre-filter)** — Cambridge has multiple
+   PDFs per meeting date (agenda + minutes). A meeting already in DB appeared pending because its
+   `minutes_pdf_path` pointed to a different filename. Two fixes: (a) `save_extraction()` always
+   updates `minutes_pdf_path` (removed `not meeting.minutes_pdf_path` guard); (b) pre-filter in
+   `cmd_extract` checks both filename AND date+meeting_type before treating a PDF as pending. If
+   the date+type exists in DB, the PDF is skipped. Reduced phantom pending from 14 to 0.
+
+4. **✅ RESOLVED — Batch build subprocess deadlock** — `council extract --batch` previously used
+   `ThreadPoolExecutor(max_workers=1)` for PDF text extraction. PyMuPDF hangs in worker threads
+   for malformed PDFs; threads can't be killed. Switched to per-PDF `multiprocessing.Process`
+   with terminate/kill on timeout. Queue deadlock prevented by calling `q.get(timeout=...)` before
+   `p.join()`. Subprocess is lightweight (pypdf/fitz only). New `build_requests_from_text()`
+   method keeps Anthropic client and prompt construction in the main process.
+
+5. **Large agenda ToC-hallucination (REVIEW status, 7 docs)** — 7 large agenda PDFs (11–20
+   chunks) show high paraphrase on validation. Chunk 0 is a table of contents; model generates
+   quotes for items not yet seen in body text. Affected: `202496e2`, `2420cee0`, `34449c77`,
+   `4e282dd3`, `68da87da`, `7242bbb8`, `936cc360`. Prompt rule added to `agenda_system_prompt.txt`
+   ("do not quote from the table of contents"). These docs remain REVIEW; data is usable.
 
 **Still not built:**
 - Feedback loop: after every ~100 documents, re-run Level 0 keyword scan with updated keyword list. Not automated.
@@ -358,12 +376,13 @@ All code changes landed in commit `5fa9d5c`. Re-extraction partially done (see L
   `motions_null_outcome` and `ordinary_meeting_no_motions` flags for agendas.
   `determine_status_l4()` skips entity-density check for agendas.
 
-**P2-4 — Re-extraction results** (2026-06-11):
+**P2-4 — Re-extraction results** (completed 2026-06-20):
 - Batch `msgbatch_01TSrRKeTuz74GvByzFdzFA1`: 95 docs, 89 succeeded, 6 failed.
-- Validation of 2024+ corpus (n=85): 48 PASS / 37 REVIEW / 0 FAIL. All 4 aggregate metrics
-  within target. REVIEWs decompose into: 7 large agendas with ToC-hallucination (structural
-  limitation), 6 failed docs needing re-extraction after schema fix, remainder are minutes with
-  `motions_null_outcome` or keyword gap flags.
+- All 6 failures subsequently resolved: schema hardening (vote field coercions) + interest_type
+  coercion + secondary date+type pre-filter + subprocess deadlock fix.
+- Validation of 2024+ corpus (n=87): 57 PASS / 30 REVIEW / 0 FAIL. All 4 aggregate metrics
+  within target. REVIEWs: 7 large agendas with ToC-hallucination (REVIEW, prompt rule applied),
+  remainder are minutes with `motions_null_outcome` or keyword gap flags.
 
 ---
 
@@ -395,14 +414,18 @@ AUDIT annotations. No automated precision/recall computation yet — manual tall
 | 7 | Level 3b: `council extract-sample` CLI command | Level 3a | Small | **Done** (2026-05-30) |
 | 8 | Level 3c: `council validate-sample` + `scripts/validate_sample.py` | Level 3b | Medium | **Done** (2026-05-30) |
 | 9 | Level 4: `scripts/validate_extraction.py` (per-doc confidence scorer) | Level 3c | Medium | **Done** (2026-05-31) |
-| 10 | Phase 2: document-type-aware extraction + validation | Level 4 | Medium | **Done** (2026-06-11) — code; re-extraction complete (2026-06-17) |
+| 10 | Phase 2: document-type-aware extraction + validation | Level 4 | Medium | **Done** (2026-06-11) — code; re-extraction complete (2026-06-20) |
 | 11 | Fix `individual_votes.choice` schema error (6 docs) | Phase 2 | Small | **Done** (2026-06-17) — schema hardened; all 6 collected and validated |
-| 12 | Fix large-agenda ToC-hallucination (7 docs) | Phase 2 | Medium | **Partial** — prompt rule added to `agenda_system_prompt.txt`; 7 docs still need re-extraction |
-| 13 | Dynamic layer: `scripts/build_relationships.py` | Level 5 | Small | **Done** (2026-06-18) — ALLY/OPPONENT edges from voting alignment; `--from-year 2024` default |
-| 14 | Level 5: extract remaining 347 docs (329 minutes + 18 agendas) | Phase 2 | Small | **Pending** |
-| 15 | Level 6: audit report generator | Level 5 | Small | **Done** (2026-06-18) — human review still pending |
+| 12 | Fix `interest_type` validation error | Phase 2 | Small | **Done** (2026-06-20) — `normalise_lower` validator; unknown values → `"other"` |
+| 13 | Fix phantom pending docs (secondary date+type pre-filter) | Phase 2 | Small | **Done** (2026-06-20) — `save_extraction()` always updates path; pre-filter checks date+type |
+| 14 | Fix batch build subprocess deadlock | Phase 2 | Medium | **Done** (2026-06-20) — multiprocessing.Process per PDF; queue drain before join; pypdf-first worker |
+| 15 | Fix large-agenda ToC-hallucination (7 docs) | Phase 2 | Medium | **Partial** — prompt rule added; 7 docs remain REVIEW until re-extracted |
+| 16 | Dynamic layer: `scripts/build_relationships.py` | Level 5 | Small | **Done** (2026-06-18) — ALLY/OPPONENT edges from voting alignment; `--from-year 2024` default |
+| 17 | Level 5: 2024+ corpus complete | Phase 2 | — | **Done** (2026-06-20) — 244 extracted; n=87: 57 PASS/30 REVIEW/0 FAIL |
+| 18 | Level 5: extract remaining 329 pre-2024 docs | — | Medium | **Pending** — deferred until demo frontend built |
+| 19 | Level 6: audit report generator | Level 5 | Small | **Done** (2026-06-18) — human review still pending |
 
-**Current critical path:** Level 5 batch extraction of remaining 347 pending documents.
+**Current critical path:** Pre-2024 batch extraction (329 minutes) — deferred until demo frontend done.
 
 ---
 

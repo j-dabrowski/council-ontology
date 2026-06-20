@@ -238,6 +238,8 @@ class ExtractedInterestDeclaration(BaseModel):
             v = v.lower().strip()
             # Model sometimes outputs "financial interest", "impartiality interest", etc.
             v = v.removesuffix(" interest")
+            if v not in ("financial", "impartiality", "proximity", "other"):
+                v = "other"
         return v
 
 

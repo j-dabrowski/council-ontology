@@ -36,6 +36,35 @@ console = Console()
 _log = logging.getLogger(__name__)
 
 
+def _extract_pdf_text_worker(pdf_str: str, q) -> None:
+    """Subprocess worker: extract plain text from one PDF, put result in queue.
+    Deliberately imports only pypdf and fitz — no Anthropic client, no dotenv —
+    so subprocess startup is fast and the full timeout is available for PDF I/O.
+    Runs in a child process so the parent can SIGKILL it if a library hangs.
+
+    pypdf is tried first: the census proved it doesn't hang on any Cambridge PDF.
+    fitz is the fallback for files pypdf can't read (corrupted streams etc.)."""
+    try:
+        from pypdf import PdfReader as _PdfReader
+        reader = _PdfReader(pdf_str)
+        parts = [t for page in reader.pages for t in [page.extract_text() or ""] if t]
+        text = "\n\n".join(parts)
+        if text.strip():
+            q.put(("ok", text))
+            return
+    except Exception:
+        pass  # fall through to fitz
+
+    try:
+        import fitz as _fitz
+        doc = _fitz.open(pdf_str)
+        parts = [p for page in doc for p in [page.get_text()] if p]
+        doc.close()
+        q.put(("ok", "\n\n".join(parts)))
+    except Exception as exc:
+        q.put(("error", str(exc)))
+
+
 def _parse_max_chars(value: str) -> "int | None":
     """Argparse type for --max-chars: accepts an integer or 'full'/'none'/'unlimited'."""
     if value.lower() in ("full", "none", "unlimited"):
@@ -220,6 +249,45 @@ def cmd_extract(args) -> None:
     from src.extraction.extractor import DEFAULT_MAX_CHARS
     max_chars = getattr(args, "max_chars", DEFAULT_MAX_CHARS)
 
+    # ── Pre-filter: skip already-extracted PDFs (unless --force) ──────────
+    # Done here so that dry-run and the cost estimate both reflect pending docs only.
+    # The downstream filters in _cmd_batch_submit and the sync loop are safety nets.
+    if pdfs and not getattr(args, "force", False):
+        from src.models import Meeting as _Meeting
+        from src.storage.database import init_db, make_session_factory
+        _engine = init_db()
+        _session = make_session_factory(_engine)()
+        from src.models import Council as _Council
+        _council_row = _session.query(_Council).filter_by(
+            short_name=COUNCILS[key]["short_name"]
+        ).first()
+        _council_id = _council_row.id if _council_row else None
+
+        _pending, _n_already = [], 0
+        for _p in pdfs:
+            # Primary check: exact path match
+            if _session.query(_Meeting).filter_by(minutes_pdf_path=str(_p)).first():
+                _n_already += 1
+                continue
+            # Secondary check: another PDF for the same meeting is already extracted.
+            # Cambridge has multiple PDFs per meeting date (agenda + minutes); both map
+            # to the same DB row. If the meeting row exists under any filename, skip.
+            _meta = manifest.get(_p.name, {})
+            _date = _meta.get("meeting_date")
+            _mtype = _meta.get("meeting_type")
+            if _date and _mtype and _council_id and _session.query(_Meeting).filter_by(
+                council_id=_council_id,
+                meeting_date=_date,
+                meeting_type=_mtype,
+            ).first():
+                _n_already += 1
+                continue
+            _pending.append(_p)
+        _session.close()
+        if _n_already:
+            console.print(f"[dim]{_n_already} already extracted — skipping (use --force to re-run)[/dim]")
+        pdfs = _pending
+
     # ── Pre-flight cost estimate ───────────────────────────────────────────
     if pdfs:
         from src.cost_estimator import (
@@ -385,41 +453,61 @@ def _cmd_batch_submit(args, key: str, pdfs: list, max_chars: "int | None", manif
     id_map: dict[str, dict] = {}
     build_errors: list[str] = []
 
-    # pypdf can infinite-loop on malformed content streams; run each PDF in a
-    # thread so we can detect a hang and skip rather than blocking forever.
-    _PDF_BUILD_TIMEOUT = 30  # seconds per PDF
+    # fitz can infinite-loop on malformed content streams. Thread-level timeouts
+    # cannot kill hanging threads, so each PDF is extracted in a child process
+    # that can be SIGTERM'd / SIGKILL'd if it exceeds the timeout.
+    _PDF_BUILD_TIMEOUT = 30  # seconds per PDF; pypdf reads even large docs in <15s
 
-    import concurrent.futures as _cf
-    with _cf.ThreadPoolExecutor(max_workers=1) as _pool:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            console=console,
-        ) as progress:
-            task = progress.add_task("Reading PDFs...", total=len(pdfs))
-            for pdf in pdfs:
-                progress.update(task, description=f"[cyan]{pdf.name}[/cyan]")
-                future = _pool.submit(
-                    extractor.build_batch_requests,
-                    [pdf], max_chars, council_full_name, manifest,
+    import multiprocessing as _mp
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Reading PDFs...", total=len(pdfs))
+        for pdf in pdfs:
+            progress.update(task, description=f"[cyan]{pdf.name}[/cyan]")
+            q: "_mp.Queue[tuple]" = _mp.Queue()
+            p = _mp.Process(
+                target=_extract_pdf_text_worker,
+                args=(str(pdf), q),
+            )
+            p.start()
+            # Read from queue BEFORE joining — large payloads block q.put() in the
+            # subprocess until the parent drains the pipe. If we join first, both sides
+            # deadlock: subprocess waits on put(), parent waits on join().
+            import queue as _queue
+            try:
+                status, *rest = q.get(timeout=_PDF_BUILD_TIMEOUT)
+            except _queue.Empty:
+                # Subprocess timed out or died without putting a result
+                p.terminate()
+                p.join(2)
+                if p.is_alive():
+                    p.kill()
+                    p.join(1)
+                build_errors.append(pdf.name)
+                _log.warning(
+                    "SKIP %s: PDF text extraction timed out after %ds (subprocess killed)",
+                    pdf.name, _PDF_BUILD_TIMEOUT,
                 )
-                try:
-                    reqs, mapping = future.result(timeout=_PDF_BUILD_TIMEOUT)
-                except _cf.TimeoutError:
-                    build_errors.append(pdf.name)
-                    _log.warning(
-                        "SKIP %s: PDF text extraction timed out after %ds "
-                        "(pypdf infinite loop on malformed content stream)",
-                        pdf.name, _PDF_BUILD_TIMEOUT,
-                    )
-                    console.print(
-                        f"  [red]✗[/red] {pdf.name}: skipped — pypdf timed out after "
-                        f"{_PDF_BUILD_TIMEOUT}s (malformed content stream)"
-                    )
-                    progress.advance(task)
-                    continue
+                console.print(
+                    f"  [red]✗[/red] {pdf.name}: skipped — timed out after "
+                    f"{_PDF_BUILD_TIMEOUT}s (unreadable PDF)"
+                )
+                progress.advance(task)
+                continue
+            finally:
+                p.join(5)
+                if p.is_alive():
+                    p.kill()
+            if status == "ok":
+                text = rest[0]
+                reqs, mapping = extractor.build_requests_from_text(
+                    pdf, text, max_chars, council_full_name, manifest
+                )
                 if reqs:
                     all_requests.extend(reqs)
                     id_map.update(mapping)
@@ -427,7 +515,11 @@ def _cmd_batch_submit(args, key: str, pdfs: list, max_chars: "int | None", manif
                     build_errors.append(pdf.name)
                     _log.warning("SKIP %s: no text extracted from PDF", pdf.name)
                     console.print(f"  [yellow]⚠[/yellow] {pdf.name}: no text extracted, skipping")
-                progress.advance(task)
+            else:
+                build_errors.append(pdf.name)
+                _log.warning("SKIP %s: %s", pdf.name, rest[0])
+                console.print(f"  [yellow]⚠[/yellow] {pdf.name}: {rest[0]}")
+            progress.advance(task)
 
     if build_errors:
         console.print(f"[yellow]Skipped {len(build_errors)} PDFs (no text / read error)[/yellow]")
