@@ -41,3 +41,7 @@ data/batch_jobs/
 # Generated outputs
 cost_report.txt
 council.log
+
+data/council.db-wal
+data/council.db-shm
+PROJECT_STUDY_GUIDE.txt
