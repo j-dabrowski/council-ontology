@@ -160,7 +160,7 @@ Motions:
 - `title`: short label, 5–10 words
 - `motion_text`: verbatim resolution text exactly as written in the document
 - `description`: contextual background about the item only — NOT the resolution text itself
-- `outcome`: map the result word to the enum — "CARRIED" → "carried", "LOST" → "lost", etc.; null only if no outcome is stated and cannot be reasonably inferred
+- `outcome`: map the result word to the enum — "CARRIED" → "carried", "LOST" → "lost", "WITHDRAWN" → "withdrawn", "DEFERRED" → "deferred", "LAPSED" → "lapsed". Also map "RECEIVED", "NOTED", "RESOLVED TO NOTE", "ACCEPTED", "ENDORSED" → "carried" — these are affirmative council decisions equivalent to passing a motion. Use null only if no outcome word appears anywhere near the motion and none can be reasonably inferred from context.
 - If a motion was LOST and a foreshadowed/amended motion was then put to the vote, record both as separate motion objects
 - For the foreshadowed/amended motion: if the text shows it was put to the vote but the outcome word is missing (e.g. the page is cut off), set outcome to "carried" — a motion that is put and not recorded as lost is assumed carried
 - Only create a motion record when there is an actual resolution/motion text or a clear vote outcome in the minutes — do not create records for agenda items that are merely reports or information items with no associated motion

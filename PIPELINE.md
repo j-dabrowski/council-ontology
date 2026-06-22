@@ -6,12 +6,14 @@ This document defines the multi-level extraction pipeline for processing council
 
 Current state: 613 PDFs in manifest (Cambridge, 1995–2026, cleaned 2026-06-22). 244 extracted (179 min/61 agenda/4 addendum). ~370 pending pre-2024.
 
-**Current strategy (as of 2026-06-22):** 2024+ corpus is complete and validated. Manifest has
-been audited and cleaned (54 noise docs removed, 8 reclassified). Corpus gaps for 2022 H1 and
-2023 H1 are confirmed and documented — see Known Corpus Gaps below. Pre-2024 extraction is the
-immediate next step. When it runs, treat all pre-2024 docs as a fresh batch — extract with the
-then-current prompt, not incrementally, since earlier partial extractions predate provenance and
-schema improvements.
+**Current strategy (as of 2026-06-22):** Full corpus extracted. 2024+ complete (244 docs);
+pre-2024 batch completed 2026-06-22 (341 docs saved, 3 unreadable PDFs skipped, 0 failures
+after schema fixes — see Phase C below). Phase C cleanup is the immediate next step.
+
+**Schema fixes applied during pre-2024 batch (2026-06-22):**
+- `ExtractedCommunitySubmission.position`: added synonym map ("objection" → "object", "in support" → "support", etc.) + null fallback for unknowns — previously caused ValidationError on 3 docs
+- `ExtractedPlanningApplication.status`: added synonym map + null fallback for unknowns — previously caused ValidationError on 2 docs
+- `system_prompt.txt` motion outcome rule: added RECEIVED/NOTED/ACCEPTED/ENDORSED → "carried" mapping
 
 ## Next Steps (as of 2026-06-22)
 
@@ -19,7 +21,7 @@ schema improvements.
 
 ```bash
 council census cambridge                                      # update census for new/reclassified docs
-council costs --to-year 2023 --max-chars full                # estimate batch spend (~$15-30)
+council costs --to-year 2023 --max-chars full                # estimate batch spend (actual 2026-06-22: ~$81 batch / ~$162 standard, 345 docs)
 ```
 
 ### Phase B — Pre-2024 batch extraction (submit today; ~24h wait)
@@ -662,7 +664,7 @@ Shared validation logic lives in `src/validation/core.py` — imported by both
 
 ---
 
-## Level 5: Batch Extraction (main cost, ~$7–20 standard / ~$3–10 batch)
+## Level 5: Batch Extraction (main cost, ~$81 batch / ~$163 standard for 345 pending pre-2024 docs; full corpus run was $19.58 batch for the 2024+ subset)
 
 Full extraction across entire corpus. Two modes:
 
@@ -678,7 +680,7 @@ council validate cambridge
 
 **Batch mode** — 50% off, async (up to 24h), good for the full corpus:
 ```bash
-council extract cambridge --max-chars full --batch --dry-run   # preview: ~$133 vs ~$267
+council extract cambridge --max-chars full --batch --dry-run   # preview cost (2026-06-22: $81 batch / $163 standard for 348 remaining docs)
 council extract cambridge --max-chars full --batch             # submit; prints batch_id
 # ... wait up to 24h ...
 council batch-collect cambridge msgbatch_abc123                # parse + save to DB

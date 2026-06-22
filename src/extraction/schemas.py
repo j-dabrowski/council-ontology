@@ -133,11 +133,25 @@ class ExtractedCommunitySubmission(BaseModel):
     position: Optional[Literal["support", "object", "neutral"]] = None
     summary: Optional[str] = None
 
-    @field_validator("submitter_type", "position", mode="before")
+    @field_validator("submitter_type", mode="before")
     @classmethod
     def normalise_lower(cls, v: Any) -> Any:
         if isinstance(v, str):
             return v.lower()
+        return v
+
+    @field_validator("position", mode="before")
+    @classmethod
+    def normalise_position(cls, v: Any) -> Any:
+        if isinstance(v, str):
+            v = v.lower().strip()
+            if v in ("object", "objection", "objecting", "oppose", "opposed", "opposition", "against", "objector"):
+                return "object"
+            if v in ("support", "supporting", "supporter", "in support", "in favour", "in favor", "favour", "favor"):
+                return "support"
+            if v in ("neutral", "neither", "informational", "information", "comment", "general comment"):
+                return "neutral"
+            return None  # unknown → null rather than ValidationError
         return v
 
 
@@ -157,7 +171,20 @@ class ExtractedPlanningApplication(BaseModel):
     @classmethod
     def normalise_status(cls, v: Any) -> Any:
         if isinstance(v, str):
-            return v.lower()
+            v = v.lower().strip()
+            if v in ("approved", "granted", "issued", "accepted", "approval", "approved subject to conditions"):
+                return "approved"
+            if v in ("refused", "rejected", "not approved", "not supported", "refused by council"):
+                return "refused"
+            if v in ("deferred", "deferred pending", "further consideration"):
+                return "deferred"
+            if v in ("withdrawn", "withdrawn by applicant"):
+                return "withdrawn"
+            if v in ("pending", "under assessment", "not determined", "undetermined"):
+                return "pending"
+            if v in ("appealed",):
+                return "appealed"
+            return None  # unknown → null rather than ValidationError
         return v
 
 
