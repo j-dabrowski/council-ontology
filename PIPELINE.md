@@ -4,13 +4,65 @@
 
 This document defines the multi-level extraction pipeline for processing council meeting minutes PDFs into structured, auditable data. The core principle is **recursive refinement**: cheap broad passes feed expensive deep passes, and every pass validates the one after it. No blind extraction. By the time a document hits the full LLM call, we already know what it contains, what we expect to get back, and how to verify it.
 
-Current state: 590 PDFs in manifest (Cambridge, 1995–2026). 244 extracted (179 min/61 agenda/4 addendum). 346 pending (329 pre-2024 minutes, deferred).
+Current state: 613 PDFs in manifest (Cambridge, 1995–2026, cleaned 2026-06-22). 244 extracted (179 min/61 agenda/4 addendum). ~370 pending pre-2024.
 
-**Current strategy (as of 2026-06-20):** 2024+ corpus is complete and validated (n=87:
-57 PASS / 30 REVIEW / 0 FAIL; all metrics within target). Pre-2024 documents will be extracted
-as a fresh batch once the demo frontend is built. When pre-2024 extraction runs, it will be
-treated as a fresh batch — all pre-2024 docs (re-)extracted with the then-current prompt, not
-incrementally patched, since earlier partial extractions predate provenance and schema improvements.
+**Current strategy (as of 2026-06-22):** 2024+ corpus is complete and validated. Manifest has
+been audited and cleaned (54 noise docs removed, 8 reclassified). Corpus gaps for 2022 H1 and
+2023 H1 are confirmed and documented — see Known Corpus Gaps below. Pre-2024 extraction is the
+immediate next step. When it runs, treat all pre-2024 docs as a fresh batch — extract with the
+then-current prompt, not incrementally, since earlier partial extractions predate provenance and
+schema improvements.
+
+## Next Steps (as of 2026-06-22)
+
+### Phase A — Prepare (no LLM cost, ~10 min)
+
+```bash
+council census cambridge                                      # update census for new/reclassified docs
+council costs --to-year 2023 --max-chars full                # estimate batch spend (~$15-30)
+```
+
+### Phase B — Pre-2024 batch extraction (submit today; ~24h wait)
+
+```bash
+council extract cambridge --to-year 2023 --max-chars full --batch --dry-run   # confirm cost
+council extract cambridge --to-year 2023 --max-chars full --batch              # submit
+# While waiting: do Level 6 human audit on 2024+ corpus (see below)
+council batch-collect cambridge <batch_id>
+council validate cambridge --to-year 2023
+```
+
+**Level 6 human audit (do during batch wait):**
+```bash
+council audit cambridge --count 12 --from-year 2024 --seed 42
+# Open data/audit_report.md alongside each PDF and fill in AUDIT: [Y/N/PARTIAL] annotations
+```
+
+### Phase C — Post-extraction cleanup (after batch collects)
+
+```bash
+python scripts/dedup_councillors.py          # preview new councillor name variants
+python scripts/dedup_councillors.py --apply  # merge duplicates
+council build-relationships cambridge --all-years   # refresh ALLY/OPPONENT with full corpus
+council geocode cambridge                           # geocode new planning sites from pre-2024 docs
+```
+
+Then run all analysis queries without `--from-year` to see 30-year trends.
+
+### Phase D — Gap recovery (parallel, low urgency)
+
+Email admin@cambridge.wa.gov.au requesting missing minutes for 2022 Jan/Feb/Mar/Apr/Jun and
+2023 Jan/Feb/Mar/Apr/Jun/Jul (WA Local Government Act 1995 s.5.22). If no response in 4 weeks,
+lodge FOI via foi@cambridge.wa.gov.au. If PDFs are obtained: drop into data/raw/cambridge/,
+run `council census cambridge`, then extract with `--files`.
+
+### Longer term
+
+- **Full Level 6 audit**: `council audit cambridge --count 20 --all-years` after pre-2024 extraction
+- **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically
+- **`councillor_terms`**: ward, role, term dates never populated — requires a separate source (council governance page, Advance WA candidate database, or annual reports)
+
+---
 
 ---
 
