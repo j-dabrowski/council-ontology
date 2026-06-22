@@ -2991,7 +2991,7 @@
     "meeting_date": "2025-12-09",
     "meeting_type": "Ordinary Council Meeting",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2025/12.-december/policy-and-legislation-committee-9-december-2025.pdf",
-    "document_type": "agenda"
+    "document_type": "unknown"
   },
   "65d38891.pdf": {
     "meeting_date": "2025-12-02",
@@ -3015,7 +3015,7 @@
     "meeting_date": "2025-11-12",
     "meeting_type": "Public Art Committee",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2025/11.-november/public-art-committee-12-november-2025-public.pdf",
-    "document_type": "agenda"
+    "document_type": "unknown"
   },
   "0fd866db.pdf": {
     "meeting_date": "2025-10-28",
@@ -3039,7 +3039,7 @@
     "meeting_date": "2025-09-09",
     "meeting_type": "Audit Committee",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2025/9.-september/audit-and-risk-committee-9-setember-2025-public-with-confidential-attachments-v2.pdf",
-    "document_type": "agenda"
+    "document_type": "unknown"
   },
   "933f39dc.pdf": {
     "meeting_date": "2024-12-23",
@@ -3167,12 +3167,6 @@
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2022/council-agendas/2022_12_20a.pdf",
     "document_type": "agenda"
   },
-  "1da118d5.pdf": {
-    "meeting_date": "2022-12-13",
-    "meeting_type": "Ordinary Council Meeting",
-    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-agendas/2022_12_13-dva.pdf",
-    "document_type": "agenda"
-  },
   "12372a18.pdf": {
     "meeting_date": "2022-12-12",
     "meeting_type": "Ordinary Council Meeting",
@@ -3189,7 +3183,7 @@
     "meeting_date": "2022-11-15",
     "meeting_type": "Ordinary Council Meeting",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-agendas/2022_11_15dva.pdf",
-    "document_type": "agenda"
+    "document_type": "unknown"
   },
   "3b778c43.pdf": {
     "meeting_date": "2022-11-15",
@@ -3219,7 +3213,7 @@
     "meeting_date": "2022-10-18",
     "meeting_type": "Ordinary Council Meeting",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-agendas/2022_10_18dva.pdf",
-    "document_type": "agenda"
+    "document_type": "unknown"
   },
   "9323d96c.pdf": {
     "meeting_date": "2026-06-09",
@@ -3238,12 +3232,6 @@
     "meeting_type": "Ordinary Council Meeting",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/5.-may/public-agenda-briefing-forum-notes-19.05.2026.pdf",
     "document_type": "agenda"
-  },
-  "fd9284f5.pdf": {
-    "meeting_date": "2026-05-26",
-    "meeting_type": "Ordinary Council Meeting",
-    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/5.-may/public-cr-question-register-may-2026.pdf",
-    "document_type": "minutes"
   },
   "56bd3f05.pdf": {
     "meeting_date": "2026-05-26",
@@ -3267,7 +3255,7 @@
     "meeting_date": "2026-05-05",
     "meeting_type": "Public Art Committee",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/4.-april/public-art-committee-5-may-2026-public.pdf",
-    "document_type": "agenda"
+    "document_type": "unknown"
   },
   "270c930d.pdf": {
     "meeting_date": "2026-05-05",
@@ -3297,7 +3285,7 @@
     "meeting_date": "2026-03-31",
     "meeting_type": "Special Council Meeting",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/3.-march/public-31-march-special-council-meeting-2026.pdf",
-    "document_type": "minutes"
+    "document_type": "unknown"
   },
   "ece6c4c1.pdf": {
     "meeting_date": "2026-03-24",
@@ -3425,12 +3413,6 @@
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2024/12.december/confirmed-special-council-meeting-minutes-23-december-2024-public.pdf",
     "document_type": "minutes"
   },
-  "e6e977d2.pdf": {
-    "meeting_date": "2024-12-23",
-    "meeting_type": "Special Council Meeting",
-    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/public-notices/2024/special-council-meeting-public-notice-23-december-2024.pdf",
-    "document_type": "minutes"
-  },
   "58bfb2b0.pdf": {
     "meeting_date": "2024-12-16",
     "meeting_type": "Audit Committee",
@@ -3537,6 +3519,162 @@
     "meeting_date": "2024-09-17",
     "meeting_type": "Ordinary Council Meeting",
     "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2024/9.september/ordinary-council-meeting-minutes-17-september-2024-public-confirmed.pdf",
+    "document_type": "minutes"
+  },
+  "6ca0a3ae.pdf": {
+    "meeting_date": "2026-06-30",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/6.-june/public-agenda-30-june-2026-ocm-redacted.pdf",
+    "document_type": "agenda"
+  },
+  "1d3ca542.pdf": {
+    "meeting_date": "2026-06-17",
+    "meeting_type": "Special Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2026/6.-june/public-agenda-17-june-2026-special-council-meeting.pdf",
+    "document_type": "agenda"
+  },
+  "7215146e.pdf": {
+    "meeting_date": "2023-12-19",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2023/council-minutes/minutes-council-19-december-2023.pdf",
+    "document_type": "minutes"
+  },
+  "3d1d5461.pdf": {
+    "meeting_date": "2023-12-19",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/attachments/12/attachments-council-19-december-2023.pdf",
+    "document_type": "unknown"
+  },
+  "cc8a44b0.pdf": {
+    "meeting_date": "2023-12-11",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/2/documents-and-files/aaa-agenda-and-minutes/2023/committee-minutes/minutes-development-committee-11-december-2023.pdf",
+    "document_type": "minutes"
+  },
+  "d894eb57.pdf": {
+    "meeting_date": "2023-12-11",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/attachments/12/attachments-development-committee-11-december-2023.pdf",
+    "document_type": "unknown"
+  },
+  "fa8353b2.pdf": {
+    "meeting_date": "2023-11-28",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/2/documents-and-files/aaa-agenda-and-minutes/2023/attachments/11/attachments-council-28-november-2023.pdf",
+    "document_type": "unknown"
+  },
+  "f54ce76c.pdf": {
+    "meeting_date": "2023-11-21",
+    "meeting_type": "Special Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/council-minutes/minutes-special-council-21-november-2023-incl-attach.pdf",
+    "document_type": "minutes"
+  },
+  "1ec84a5a.pdf": {
+    "meeting_date": "2023-11-21",
+    "meeting_type": "Special Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/council-minutes/minutes-special-council-21-november-2023-at-6.30-pm.pdf",
+    "document_type": "minutes"
+  },
+  "5ebcca63.pdf": {
+    "meeting_date": "2023-11-21",
+    "meeting_type": "Special Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/attachments/11/attachment-special-council-21-november-2023.pdf",
+    "document_type": "unknown"
+  },
+  "5a210da3.pdf": {
+    "meeting_date": "2023-11-13",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/committee-minutes/minutes-development-committee-13-november-2023.pdf",
+    "document_type": "minutes"
+  },
+  "7c0d9094.pdf": {
+    "meeting_date": "2023-11-13",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/attachments/11/attachments-development-committee-13-november-2023.pdf",
+    "document_type": "unknown"
+  },
+  "7c9d66b5.pdf": {
+    "meeting_date": "2023-10-31",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/council-minutes/minutes-council-31-october-2023-incl-attachments.pdf",
+    "document_type": "minutes"
+  },
+  "70fa510d.pdf": {
+    "meeting_date": "2023-10-31",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/attachments/10/attachments-council-31-october-2023.pdf",
+    "document_type": "unknown"
+  },
+  "3cbc0d1b.pdf": {
+    "meeting_date": "2023-10-09",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/committee-minutes/minutes-development-committee-9-october-2023.pdf",
+    "document_type": "minutes"
+  },
+  "d802ec47.pdf": {
+    "meeting_date": "2023-10-09",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/attachments/10/attachments-development-committee-9-october-2023.pdf",
+    "document_type": "unknown"
+  },
+  "06552ded.pdf": {
+    "meeting_date": "2023-09-20",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/attachments/9/attachments-council-20-september-2023.pdf",
+    "document_type": "unknown"
+  },
+  "89f9321e.pdf": {
+    "meeting_date": "2023-09-20",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/council-agendas/ocm-agenda-20-sep-2023-public-reports-only.pdf",
+    "document_type": "agenda"
+  },
+  "7257d970.pdf": {
+    "meeting_date": "2023-09-11",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/committee-minutes/minutes-development-committee-11-september-2023.pdf",
+    "document_type": "minutes"
+  },
+  "b1c466d4.pdf": {
+    "meeting_date": "2022-12-20",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2022/council-minutes/2022_12_20m.pdf",
+    "document_type": "minutes"
+  },
+  "89d77ddb.pdf": {
+    "meeting_date": "2022-12-13",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2022/committee-minutes/minutes-development-committee-13-december-2022.pdf",
+    "document_type": "minutes"
+  },
+  "b0e78646.pdf": {
+    "meeting_date": "2022-11-22",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2022/council-minutes/2022_11_22m.pdf",
+    "document_type": "minutes"
+  },
+  "044be820.pdf": {
+    "meeting_date": "2022-11-15",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/2/documents-and-files/aaa-agenda-and-minutes/2022/committee-minutes/minutes-development-committee-15-november-2022.pdf",
+    "document_type": "minutes"
+  },
+  "459d4c0c.pdf": {
+    "meeting_date": "2022-11-14",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-minutes/minutes-community-and-resources-committee-14-november-2022.pdf",
+    "document_type": "minutes"
+  },
+  "7402bfdf.pdf": {
+    "meeting_date": "2022-10-25",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/4/documents-and-files/aaa-agenda-and-minutes/2022/council-minutes/2022_10_25m.pdf",
+    "document_type": "minutes"
+  },
+  "27a49ee9.pdf": {
+    "meeting_date": "2022-10-18",
+    "meeting_type": "Ordinary Council Meeting",
+    "source_url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-minutes/minutes-development-committee-18-october-2022.pdf",
     "document_type": "minutes"
   }
 }

@@ -55,7 +55,7 @@ from xml.etree import ElementTree
 import httpx
 from bs4 import BeautifulSoup
 
-from .base import BaseCouncilScraper, MinutesDocument
+from .base import BaseCouncilScraper, MinutesDocument, is_meeting_document
 
 logger = logging.getLogger(__name__)
 
@@ -313,13 +313,15 @@ def _collect_from_playwright(
 
                         ajax_soup = BeautifulSoup(inner_html, "html.parser")
 
-                        # Collect ALL PDF links from the accordion response.
-                        # Emitting each PDF separately ensures minutes are
-                        # never missed when both agenda and minutes are listed.
+                        # Collect meeting-document PDF links from the accordion.
+                        # Filter out individual DA reports, item attachments,
+                        # and other support PDFs that are linked from the same
+                        # accordion but are not meeting records.
                         pdf_hrefs: list[str] = [
                             link["href"]
                             for link in ajax_soup.find_all("a", href=True)
                             if link["href"].lower().endswith(".pdf")
+                            and is_meeting_document(link["href"])
                         ]
 
                     except PWTimeout:

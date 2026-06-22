@@ -15,6 +15,32 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
+import re as _re
+
+# Filename patterns that confirm a PDF is a meeting minute.
+# Cambridge shorthand: YYYY_MM_DD followed by optional suffix letter(s) then 'm'.
+_MINUTES_SHORTHAND = _re.compile(r"\d{4}_\d{2}_\d{2}[a-z]*m\.pdf$")
+# Agenda shorthand: ends in 'a' (but not 'dva' which is a DA-variance attachment).
+# Explicit list of safe suffixes to avoid false-positives:
+#   a   = agenda
+#   cra = committee-report agenda
+#   scma = special council meeting agenda
+_AGENDA_SHORTHAND = _re.compile(r"\d{4}_\d{2}_\d{2}(cra|scma?|a)\.pdf$")
+
+# Filename patterns that identify known non-meeting support documents.
+# These are downloaded alongside the main meeting PDFs but are individual DA
+# reports, item attachments, or public notices — not meeting records.
+_NOISE_PATTERNS = _re.compile(
+    r"^dv\d{2}_"               # individual development-application reports
+    r"|attachment.to.item"      # item attachment PDFs
+    r"|cr-item-attachment"      # committee-report item attachments
+    r"|-dva\.pdf$"              # development-variance agenda (standalone DA doc)
+    r"|_dva\.pdf$"
+    r"|public.notice"           # public notices (not meeting minutes)
+    r"|question.register"       # public question registers
+)
+
+
 def classify_document_type(url: str) -> str:
     """
     Infer document type from the PDF filename portion of a URL.
@@ -34,7 +60,43 @@ def classify_document_type(url: str) -> str:
     if "briefing-forum" in fname or "briefing-notes" in fname or \
        "briefing_forum" in fname or "briefing_notes" in fname:
         return "briefing_notes"
+    # Shorthand filename conventions used by Cambridge before the CMS migration.
+    if _MINUTES_SHORTHAND.search(fname):
+        return "minutes"
+    if _AGENDA_SHORTHAND.search(fname):
+        return "agenda"
     return "unknown"
+
+
+_MEETING_KEYWORD_RE = _re.compile(
+    r"\b(council|ordinary|special|electors?|agm|committee|briefing|scm|sca|scma)\b"
+)
+
+def is_meeting_document(url: str) -> bool:
+    """
+    Return True if the PDF URL looks like a meeting document (minutes, agenda,
+    addendum, briefing notes) rather than a support attachment.
+
+    Used by scrapers to filter out individual DA reports, item attachments,
+    and other non-meeting PDFs that are linked from the same accordion.
+    """
+    fname = url.rstrip("/").rsplit("/", 1)[-1].lower()
+    if _NOISE_PATTERNS.search(fname):
+        return False
+    doc_type = classify_document_type(url)
+    # Accept anything the classifier can positively identify.
+    if doc_type != "unknown":
+        return True
+    # For unknown filenames: accept if the name contains council/meeting keywords
+    # or a date-like component in any of the naming conventions Cambridge has used.
+    # Only reject files with no such signal — those are purely descriptive support docs.
+    has_keyword = bool(_MEETING_KEYWORD_RE.search(fname))
+    has_date = bool(
+        _re.search(r"\d{4}[_-]\d{1,2}[_-]\d{1,2}", fname)   # YYYY-M-D or YYYY-MM-DD
+        or _re.search(r"\d{1,2}[_-]\d{1,2}[_-]\d{4}", fname)  # D-M-YYYY or DD-MM-YYYY
+        or _re.search(r"\d{1,2}[_-][a-z]{3,}[_-]\d{2,4}", fname)  # D-Month-YY or D-Month-YYYY
+    )
+    return has_keyword or has_date
 
 RAW_DIR = Path(__file__).parent.parent.parent / "data" / "raw"
 

@@ -52,6 +52,60 @@ aware of document type so agendas are extracted and validated correctly in their
 
 P2-5 and P2-6 are independent improvements that can follow the main pipeline.
 
+### Known Corpus Gaps (Cambridge, confirmed 2026-06-22)
+
+`council scraper-audit cambridge` reports these years below the completeness quota.
+All gaps were investigated via Playwright re-scrape, Wayback CDX, and direct URL
+probing before being declared unrecoverable from online sources.
+
+**2022 — missing Jan, Feb, Mar, Apr, Jun (13 meeting dates total vs expected ~18)**
+
+*Speculated cause:* Cambridge migrated from static HTML meeting pages (reliably
+indexed in their sitemap up to 2021) to a JS-rendered OpenCities CMS around
+May 2022. Meetings published before the migration were on the old system and were
+not carried into the new CMS. Wayback Machine has no crawl of the old pages for
+Jan–Jun 2022 (the site was behind Akamai CDN that Wayback's crawler could not
+access). The CMS year-filter (used by the Playwright scraper) returns nothing for
+those months.
+
+**2023 — missing Jan, Feb, Mar, Apr, Jun, Jul (11 meeting dates total vs expected ~18)**
+
+*Speculated cause:* The CMS transition effects appear to have extended into H1
+2023. The Playwright scraper finds no meetings in the new accordion for those
+months, and Wayback has no archived records either.
+
+**Minor single-month absences (below quota threshold, not investigated further)**
+- 1995: Feb–Mar missing — start of archive; earliest digitised record is April 1995.
+- 2006: Nov missing — likely the council did not hold an ordinary meeting that month.
+- 2017: Feb missing — same; single-month gaps at this level are within normal schedule variation.
+- All years: Jan missing — Cambridge council traditionally does not hold ordinary meetings in January.
+
+**Recovery options (attempt in order before accepting gap)**
+
+1. **Manual browser check** — Open `https://www.cambridge.wa.gov.au/About/Town-Council/Agendas-Minutes`
+   in a browser, select the failing year from the dropdown, and count meetings shown. If the site
+   shows meetings for the missing months that the scraper missed, re-inspect the form element names
+   via DevTools (`ctl11$ctl00$ctl18$ctl00$ctl00` was the selector as of 2026-04).
+
+2. **Council website search** — Search `site:cambridge.wa.gov.au "council meeting" "minutes" "february 2022"`
+   or browse any separate "archive" or "past meetings" section outside the main accordion page.
+
+3. **Contact the council directly** — Under WA Local Government Act 1995 s.5.22, councils must make
+   minutes available for public inspection. The Records Officer can provide digital copies.
+   - Phone: (08) 9347 6000
+   - Email: admin@cambridge.wa.gov.au
+   - Request: *"Digital copies of Ordinary Council Meeting minutes for [months/year] that do not
+     appear to be published on the council website."*
+
+4. **Freedom of Information (FOI)** — If the council does not respond or claims the records are not
+   publicly available, lodge a FOI request under WA Freedom of Information Act 1992 via
+   foi@cambridge.wa.gov.au.
+
+`council scraper-audit cambridge` will print these instructions automatically when gaps are detected.
+`council wayback-fill cambridge 2022 2023 --months 1-7` re-runs the CDX search if needed.
+
+---
+
 ### Known Issues / Blockers (as of 2026-06-20)
 
 **Issue 1 — ✅ RESOLVED (2026-06-17): ValidationError on individual vote objects (6 docs)**

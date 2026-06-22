@@ -1685,6 +1685,53 @@ def main() -> None:
 
     p_audit.set_defaults(func=_cmd_audit)
 
+    # scraper-audit
+    p_saudit = sub.add_parser(
+        "scraper-audit",
+        help="Audit scraped corpus completeness; optionally clean manifest of noise docs",
+    )
+    p_saudit.add_argument("council", choices=list(COUNCILS))
+    p_saudit.add_argument(
+        "mode", nargs="?", default="report", choices=["report", "clean"],
+        help="report (default) or clean",
+    )
+    p_saudit.add_argument(
+        "--apply", action="store_true",
+        help="With 'clean': write changes to manifest and delete noise files",
+    )
+
+    def _cmd_scraper_audit(a):
+        from scripts.scraper_audit import clean as _clean, report as _report
+        if a.mode == "clean":
+            _clean(a.council, getattr(a, "apply", False))
+        else:
+            _report(a.council)
+
+    p_saudit.set_defaults(func=_cmd_scraper_audit)
+
+    # wayback-fill
+    p_wbfill = sub.add_parser(
+        "wayback-fill",
+        help="Query Wayback Machine CDX for missing council minutes in given years/months",
+    )
+    p_wbfill.add_argument("council", choices=list(COUNCILS))
+    p_wbfill.add_argument("years", nargs="+", type=int, metavar="YEAR",
+                          help="Year(s) to check (e.g. 2022 2023)")
+    p_wbfill.add_argument("--months", type=str, default=None, metavar="M-N",
+                          help="Month range to check, e.g. 1-4 for Jan-Apr")
+    p_wbfill.add_argument("--download", action="store_true",
+                          help="Download newly found PDFs and update manifest")
+
+    def _cmd_wayback_fill(a):
+        from scripts.wayback_gap_fill import report_and_download
+        months = None
+        if a.months:
+            parts = a.months.split("-")
+            months = list(range(int(parts[0]), int(parts[1]) + 1)) if len(parts) == 2 else [int(parts[0])]
+        report_and_download(a.council, a.years, months, a.download)
+
+    p_wbfill.set_defaults(func=_cmd_wayback_fill)
+
     # geocode
     p_geocode = sub.add_parser("geocode", help="Geocode planning sites via Nominatim (E1)")
     p_geocode.add_argument("council", choices=list(COUNCILS))
