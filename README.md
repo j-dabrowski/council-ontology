@@ -85,6 +85,21 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ---
 
+## Dashboard
+
+A React/Vite frontend with a FastAPI backend visualises the extracted data. Six panels: officer recommendation compliance, interest declarations by councillor, contestation rate by year, co-mover network, public engagement by year, and voting alignment heatmap.
+
+```bash
+# Start the API (from project root)
+uvicorn api.main:app --reload --port 8000
+
+# Start the frontend (separate terminal)
+cd frontend && npm run dev
+# → http://localhost:5173
+```
+
+---
+
 ## CLI — `council <command>`
 
 All commands accept `-v` / `--verbose` for detailed logging.
@@ -273,6 +288,48 @@ council analyse cambridge contested --min-against 3      # carried motions with 
 council analyse cambridge planning --limit 20            # top sites by application count
 council analyse cambridge councillor --name Bradley      # one councillor's vote summary
 council analyse cambridge motions --tag planning         # motions by tag
+council analyse cambridge activity                       # councillor date spans, active status, dissent rate
+council analyse cambridge trends                         # contestation rate and topic distribution by year
+council analyse cambridge co-movers --min-count 5        # most frequent mover+seconder pairs
+council analyse cambridge interests                      # interest declarations per councillor by type
+council analyse cambridge engagement                     # public questions, deputations, petitions by year
+council analyse cambridge budget                         # budget items and amounts by year
+council analyse cambridge divergence                     # officer recommendations vs council outcomes
+```
+
+All queries accept `--from-year` and `--to-year` to filter by meeting date.
+
+---
+
+#### `council build-relationships cambridge`
+**Dynamic layer.** Computes ALLY/OPPONENT edges from voting alignment and persists them to the `Relationship` table. Run after `council validate` once the corpus is stable.
+
+```bash
+council build-relationships cambridge
+council build-relationships cambridge --min-shared 10 --ally 0.85 --opponent 0.60
+council build-relationships cambridge --from-year 2024
+```
+
+---
+
+#### `council audit cambridge`
+**Level 6.** Selects a stratified sample of extracted documents and generates a human-readable markdown report (`data/audit_report.md`) with `<!-- AUDIT: [Y/N/PARTIAL] -->` placeholders per entity. Open side-by-side with PDFs to verify extraction quality.
+
+```bash
+council audit cambridge
+council audit cambridge --count 20 --from-year 2020
+council audit cambridge --all-years --seed 42
+```
+
+---
+
+#### `council geocode cambridge`
+Geocodes planning `Site` records via Nominatim. Adds lat/lng coordinates to the `Site` table for mapping. Skips already-geocoded sites unless `--force`.
+
+```bash
+council geocode cambridge
+council geocode cambridge --dry-run
+council geocode cambridge --force
 ```
 
 ---
@@ -290,14 +347,28 @@ src/
   extraction/
     extractor.py          — PDF text → Claude API; sync and batch modes
     schemas.py            — Pydantic models for structured Claude output (13 entity types)
-    system_prompt.txt     — extraction prompt (edit this to tune quality)
+    system_prompt.txt     — extraction prompt for minutes (edit to tune quality)
+    agenda_system_prompt.txt — extraction prompt for agendas
     inventory_prompt.txt  — Level 1 inventory-only prompt
   storage/
     database.py           — SQLite init, session factory, schema creation
   analysis/
-    queries.py            — reusable query helpers
+    queries.py            — reusable query helpers (13 query functions)
   validation/
     core.py               — shared validation logic (five metrics, three-tier quote matching)
+
+api/
+  main.py                 — FastAPI backend exposing analysis queries as REST endpoints
+                            (run: uvicorn api.main:app --reload --port 8000)
+
+frontend/
+  src/
+    App.tsx               — six-panel dashboard layout
+    api.ts                — typed fetch wrappers for the API
+    components/           — AlignmentHeatmap, CoMoverGraph, DivergencePanel,
+                            EngagementChart, InterestsChart, TrendsChart
+    hooks/useData.ts      — shared data-fetching hook
+  (run: cd frontend && npm run dev)
 
 scripts/
   census.py               — Level 0: keyword scan and census across all PDFs
@@ -306,6 +377,9 @@ scripts/
   stratified_sample.py    — Level 3a: stratified sample selection
   validate_sample.py      — Level 3c: three-tier quote matching validation on sample
   validate_extraction.py  — Level 4: per-doc confidence scoring for all extracted docs
+  build_relationships.py  — Dynamic layer: ALLY/OPPONENT edges from voting alignment
+  audit_report.py         — Level 6: human-review audit report generator
+  geocode_sites.py        — Nominatim geocoding for planning Site records
   compare_models.py       — dev tool: side-by-side model comparison for a single PDF
 
 estimate_costs.py         — API cost estimator for pending documents
@@ -321,6 +395,7 @@ data/
   validation/             — Level 4: per-doc confidence reports + summary.json
   batch_jobs/             — batch job metadata ({batch_id}.json, custom_id → PDF mapping)
   extraction_errors.json  — latest extraction error report (grouped by error class)
+  audit_report.md         — Level 6: human audit findings (open alongside PDFs)
   raw/cambridge/          — downloaded PDFs + manifest.json (gitignored except manifest)
   council.db              — SQLite database (gitignored, re-generated from PDFs)
 
@@ -341,8 +416,8 @@ data/
 | 3b | Sample extraction | ~$0.50 | **Done** |
 | 3c | Sample validation — all metrics within target | Free | **Done** |
 | 4 | Per-document confidence scoring (`council validate`) | Free | **Done** |
-| 5 | Full extraction (`council extract`) | ~$7–20 standard / ~$3–10 batch | Pending |
-| 6 | Human audit on random sample | Free | Pending |
+| 5 | Full extraction (`council extract`) | $19.58 batch | **Done** (2024+; 244 docs; pre-2024 deferred) |
+| 6 | Human audit on random sample | Free | **Tooling done**; human review pending |
 
 See `PIPELINE.md` for the detailed plan and `IMPLEMENTATION_ANALYSIS.md` for build order and dependencies.
 
