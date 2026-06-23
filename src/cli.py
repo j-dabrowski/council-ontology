@@ -1707,7 +1707,7 @@ def cmd_publish(args) -> None:
         dissent_profiles, dissent_coalition_pairs, contestation_by_tag,
         conflict_recusal_stats, tender_concentration,
         objection_dose_response, transparency_by_year, councillor_tenure,
-        mayoral_agenda_setting,
+        mayoral_agenda_setting, voting_power,
     )
     from src.analysis.divergence import officer_divergence
 
@@ -1954,13 +1954,34 @@ def cmd_publish(args) -> None:
         ],
     })
 
+    # voting power: who wins on contested decisions, and whose dissent prevails?
+    power = voting_power(session, council_id)
+    _write("power", {
+        "base_carry_rate": power.base_carry_rate,
+        "base_fail_rate": power.base_fail_rate,
+        "n_contested": power.n_contested,
+        "profiles": [
+            {"name": p.name, "n": p.n, "win_rate": p.win_rate,
+             "dissent_rate": p.dissent_rate, "dissent_n": p.dissent_n,
+             "dissent_effectiveness": p.dissent_effectiveness,
+             "is_active": p.is_active}
+            for p in power.profiles
+        ],
+        "over_time": [
+            {"name": o.name,
+             "points": [{"term": pt.term, "win_rate": pt.win_rate, "n": pt.n}
+                        for pt in o.points]}
+            for o in power.over_time
+        ],
+    })
+
     session.close()
 
     # Manifest records what was published and when
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral"],
+        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power"],
     }, indent=2))
 
     console.print(Panel(

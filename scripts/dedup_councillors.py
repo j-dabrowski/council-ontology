@@ -190,6 +190,35 @@ def load_vote_dates(conn: sqlite3.Connection) -> dict[int, tuple[str, str]]:
     return {r[0]: (r[1], r[2]) for r in rows}
 
 
+def load_motion_sets(conn: sqlite3.Connection) -> dict[int, set[int]]:
+    """Return the set of motion_ids each councillor cast a vote on, keyed by id.
+
+    Used as a gold-standard identity signal: a real person can cast at most one
+    vote per motion, so two records that *never* share a motion can be the same
+    person, whereas any shared motion proves they are distinct people.
+    """
+    out: dict[int, set[int]] = defaultdict(set)
+    for cid, mid in conn.execute("SELECT councillor_id, motion_id FROM votes"):
+        out[cid].add(mid)
+    return dict(out)
+
+
+def vote_spans_overlap(
+    a_dates: tuple[str, str] | None,
+    b_dates: tuple[str, str] | None,
+) -> bool:
+    """True if two (first, last) vote-date spans overlap (6-month buffer)."""
+    if not a_dates or not b_dates:
+        return False
+    try:
+        a0, a1 = date.fromisoformat(a_dates[0]), date.fromisoformat(a_dates[1])
+        b0, b1 = date.fromisoformat(b_dates[0]), date.fromisoformat(b_dates[1])
+    except (ValueError, TypeError):
+        return False
+    buf = timedelta(days=183)
+    return a0 - buf <= b1 and a1 + buf >= b0
+
+
 def check_term_coverage(
     stub_first: str | None,
     stub_last: str | None,
@@ -243,6 +272,7 @@ def find_target(
     already_merging: set[int],
     terms: dict[int, list[dict]] | None = None,
     vote_dates: dict[int, tuple[str, str]] | None = None,
+    motion_sets: dict[int, set[int]] | None = None,
 ) -> tuple[dict | None, str]:
     """Return (target_record, reason) for merging c into, or (None, reason) to skip/in-place."""
     family_key = c["norm_family"].lower()
@@ -304,6 +334,39 @@ def find_target(
             elif len(term_confirmed) > 1:
                 real = term_confirmed  # narrowed set; fall through to vote tiebreak
 
+    # Vote-evidence disambiguation (gold standard).  A real person casts at most
+    # one vote per motion, so the true match is a candidate who (a) actually
+    # appears in the vote record, (b) never shares a motion with the stub, and
+    # (c) has an overlapping vote-date span.  This separates an active councillor
+    # (e.g. "Ian Everett", 97 votes) from phantom same-surname records that have
+    # no votes and no terms (e.g. "Julian/Graham/Rod Everett") — cases the term
+    # and 2024-vote tiebreaks below cannot resolve.
+    if motion_sets is not None and vote_dates is not None and len(real) > 1:
+        stub_motions = motion_sets.get(c["id"], set())
+        stub_dates = vote_dates.get(c["id"])
+        evidenced = [
+            x for x in real
+            if motion_sets.get(x["id"])  # candidate has real votes
+            and not (motion_sets.get(x["id"], set()) & stub_motions)  # no collision
+            and vote_spans_overlap(stub_dates, vote_dates.get(x["id"]))
+        ]
+        if len(evidenced) == 1:
+            t = evidenced[0]
+            return t, f"vote-evidence (no shared motion, span overlap) → '{t['given_name']} {t['family_name']}'"
+        if len(evidenced) > 1:
+            # Several vote-bearing candidates pass (often the same real person split
+            # again, e.g. "Julian"/"Graham" Everett = stray motions of Ian Everett).
+            # Merge into the dominant one only when it clearly outweighs the rest
+            # (>=2x runner-up); genuinely co-serving namesakes have comparable
+            # histories and stay ambiguous.
+            ev = sorted(evidenced, key=lambda x: -len(motion_sets.get(x["id"], set())))
+            top = len(motion_sets.get(ev[0]["id"], set()))
+            runner = len(motion_sets.get(ev[1]["id"], set()))
+            if top >= 2 * max(runner, 1):
+                t = ev[0]
+                return t, (f"vote-evidence dominant ({top} vs {runner} votes, no shared motion) "
+                           f"→ '{t['given_name']} {t['family_name']}'")
+
     # Multiple candidates remaining — pick the one with most 2024+ votes.
     scored = sorted(real, key=lambda x: -votes_2024.get(x["id"], 0))
     top_count = votes_2024.get(scored[0]["id"], 0)
@@ -334,6 +397,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     # Always load terms — used for disambiguation in all passes, not just annotation
     terms = load_terms(conn)
     vote_dates = load_vote_dates(conn)
+    motion_sets = load_motion_sets(conn)
 
     # Group by normalised family name
     by_family: dict[str, list[dict]] = defaultdict(list)
@@ -353,7 +417,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
 
     bad_records = [c for c in councillors if c["is_bad"]]
     for c in bad_records:
-        target, reason = find_target(c, by_family, votes_2024, merging_ids, terms, vote_dates)
+        target, reason = find_target(c, by_family, votes_2024, merging_ids, terms, vote_dates, motion_sets)
         if target:
             merges.append((c, target, reason))
             merging_ids.add(c["id"])
@@ -381,7 +445,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
         if not c["is_bad"] and not is_real_given(c["given_name"]) and c["id"] not in merging_ids
     ]
     for c in family_only:
-        target, reason = find_target(c, by_family, votes_2024, merging_ids, terms, vote_dates)
+        target, reason = find_target(c, by_family, votes_2024, merging_ids, terms, vote_dates, motion_sets)
         if target:
             merges.append((c, target, f"[stub] {reason}"))
             merging_ids.add(c["id"])

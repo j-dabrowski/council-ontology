@@ -250,6 +250,35 @@ export interface MayoralData {
   per_mayor: MayorContest[];
 }
 
+export interface PowerProfile {
+  name: string;
+  n: number;
+  win_rate: number;
+  dissent_rate: number;
+  dissent_n: number;
+  dissent_effectiveness: number | null;
+  is_active: boolean;
+}
+
+export interface PowerTermPoint {
+  term: string;
+  win_rate: number;
+  n: number;
+}
+
+export interface PowerOverTime {
+  name: string;
+  points: PowerTermPoint[];
+}
+
+export interface PowerData {
+  base_carry_rate: number;
+  base_fail_rate: number;
+  n_contested: number;
+  profiles: PowerProfile[];
+  over_time: PowerOverTime[];
+}
+
 export const api = {
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
   divergence: () => getSnapshot<DivergenceData>("divergence"),
@@ -265,4 +294,5 @@ export const api = {
   transparency: () => getSnapshot<TransparencyData>("transparency"),
   tenure:     () => getSnapshot<TenureData>("tenure"),
   mayoral:    () => getSnapshot<MayoralData>("mayoral"),
+  power:      () => getSnapshot<PowerData>("power"),
 };

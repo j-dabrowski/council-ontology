@@ -1200,6 +1200,190 @@ def dissent_coalition_pairs(
     ]
 
 
+# ---------------------------------------------------------------------------
+# Voting power — who wins on a split council?
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PowerProfile:
+    councillor_id: int
+    name: str
+    n: int                              # contested votes cast (FOR/AGAINST)
+    win_rate: float                     # share on the winning side
+    dissent_rate: float                 # share voted AGAINST
+    dissent_n: int                      # number of AGAINST votes
+    dissent_effectiveness: float | None  # of AGAINST votes, share where motion LOST
+    is_active: bool
+
+
+@dataclass
+class PowerTermPoint:
+    term: str
+    win_rate: float
+    n: int
+
+
+@dataclass
+class PowerOverTime:
+    name: str
+    points: list[PowerTermPoint] = field(default_factory=list)
+
+
+@dataclass
+class VotingPowerStats:
+    profiles: list[PowerProfile]
+    base_carry_rate: float   # share of contested motions that still carried (~pure-FOR win rate)
+    base_fail_rate: float    # share that failed — the chance baseline for dissent effectiveness
+    n_contested: int
+    over_time: list[PowerOverTime] = field(default_factory=list)
+
+
+# Four-year council terms (vote data only densifies from the 2003 election on).
+_POWER_TERMS = [
+    ("2003-07", date(2003, 5, 1), date(2007, 10, 1)),
+    ("2007-11", date(2007, 10, 1), date(2011, 10, 1)),
+    ("2011-15", date(2011, 10, 1), date(2015, 10, 1)),
+    ("2015-19", date(2015, 10, 1), date(2019, 10, 1)),
+    ("2019-23", date(2019, 10, 1), date(2023, 10, 1)),
+    ("2023-27", date(2023, 10, 1), date(2027, 10, 1)),
+]
+
+
+def voting_power(
+    session: Session,
+    council_id: int,
+    min_votes: int = 30,
+    min_dissents: int = 15,
+) -> VotingPowerStats:
+    """
+    Who wins on contested decisions?
+
+    Over every motion that drew at least one AGAINST vote and CARRIED or was
+    LOST, classify each councillor's vote as on the winning side (FOR a carried
+    motion, or AGAINST a lost one) or not. Reports per councillor:
+      - win_rate: share of their contested votes on the winning side
+      - dissent_rate / dissent_effectiveness: how often they vote AGAINST, and
+        of those, how often the motion actually failed (their objection prevailed)
+
+    The chance baseline for dissent effectiveness is the overall fail rate
+    (~24%): a councillor above it lands genuine opposition; below it, they
+    object to things that pass anyway. Win rate's baseline is the carry rate
+    (~76%) — what a councillor who simply voted FOR on everything would score.
+    """
+    rows = (
+        session.query(
+            Vote.councillor_id,
+            Councillor.given_name,
+            Councillor.family_name,
+            Vote.choice,
+            Motion.outcome,
+            Meeting.meeting_date,
+        )
+        .join(Councillor, Vote.councillor_id == Councillor.id)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Motion.votes_against > 0,
+            Motion.outcome.in_([MotionOutcome.CARRIED, MotionOutcome.LOST]),
+            Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]),
+        )
+        .all()
+    )
+
+    # Base rates over the contested motions themselves (not vote rows).
+    contested = (
+        session.query(Motion.outcome, func.count(Motion.id))
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Motion.votes_against > 0,
+            Motion.outcome.in_([MotionOutcome.CARRIED, MotionOutcome.LOST]),
+        )
+        .group_by(Motion.outcome)
+        .all()
+    )
+    n_contested = sum(c for _, c in contested)
+    carried = sum(c for o, c in contested if o == MotionOutcome.CARRIED)
+    base_carry_rate = round(carried / n_contested, 4) if n_contested else 0.0
+    base_fail_rate = round(1 - base_carry_rate, 4)
+
+    cutoff = date.today() - timedelta(days=548)  # ~18 months
+
+    agg: dict[int, dict] = defaultdict(lambda: {
+        "name": "", "n": 0, "win": 0, "diss": 0, "diss_win": 0,
+        "last": None, "terms": defaultdict(lambda: [0, 0]),  # term -> [n, win]
+    })
+
+    for cid, given, family, choice, outcome, mdate in rows:
+        a = agg[cid]
+        a["name"] = f"{given or ''} {family or ''}".strip()
+        a["n"] += 1
+        won = (choice == VoteChoice.FOR and outcome == MotionOutcome.CARRIED) or \
+              (choice == VoteChoice.AGAINST and outcome == MotionOutcome.LOST)
+        if won:
+            a["win"] += 1
+        if choice == VoteChoice.AGAINST:
+            a["diss"] += 1
+            if outcome == MotionOutcome.LOST:
+                a["diss_win"] += 1
+        if mdate and (a["last"] is None or mdate > a["last"]):
+            a["last"] = mdate
+        # term bucket
+        if mdate:
+            for label, ts, te in _POWER_TERMS:
+                if ts <= mdate < te:
+                    bucket = a["terms"][label]
+                    bucket[0] += 1
+                    if won:
+                        bucket[1] += 1
+                    break
+
+    profiles: list[PowerProfile] = []
+    over_raw: list[tuple[int, dict]] = []
+    for cid, a in agg.items():
+        name = a["name"]
+        if a["n"] < min_votes or "unknown" in name.lower() or not name:
+            continue
+        profiles.append(PowerProfile(
+            councillor_id=cid,
+            name=name,
+            n=a["n"],
+            win_rate=round(a["win"] / a["n"], 4),
+            dissent_rate=round(a["diss"] / a["n"], 4),
+            dissent_n=a["diss"],
+            dissent_effectiveness=(round(a["diss_win"] / a["diss"], 4)
+                                   if a["diss"] >= min_dissents else None),
+            is_active=a["last"] >= cutoff if a["last"] else False,
+        ))
+        over_raw.append((cid, a))
+
+    profiles.sort(key=lambda p: p.win_rate)
+
+    # Power over time: long-servers active across >=3 terms, top by total votes.
+    over_time: list[PowerOverTime] = []
+    over_raw.sort(key=lambda x: -x[1]["n"])
+    for cid, a in over_raw:
+        pts = [
+            PowerTermPoint(term=label, win_rate=round(w / n, 4), n=n)
+            for label in (t[0] for t in _POWER_TERMS)
+            for (n, w) in [a["terms"].get(label, [0, 0])]
+            if n >= 10
+        ]
+        if len(pts) >= 3:
+            over_time.append(PowerOverTime(name=a["name"], points=pts))
+        if len(over_time) >= 6:
+            break
+
+    return VotingPowerStats(
+        profiles=profiles,
+        base_carry_rate=base_carry_rate,
+        base_fail_rate=base_fail_rate,
+        n_contested=n_contested,
+        over_time=over_time,
+    )
+
+
 @dataclass
 class TagContestationStats:
     tag: str

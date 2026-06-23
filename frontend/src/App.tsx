@@ -14,6 +14,7 @@ import { ObjectionDosePanel } from "./components/ObjectionDosePanel";
 import { TransparencyTrendPanel } from "./components/TransparencyTrendPanel";
 import { TenurePanel } from "./components/TenurePanel";
 import { MayoralAgendaPanel } from "./components/MayoralAgendaPanel";
+import { PowerPanel } from "./components/PowerPanel";
 
 export default function App() {
   return (
@@ -32,6 +33,11 @@ export default function App() {
         {/* Conflict of interest — flagship */}
         <section className="grid-full">
           <ConflictRecusalPanel />
+        </section>
+
+        {/* Voting power — who wins on contested decisions (second flagship) */}
+        <section className="grid-full">
+          <PowerPanel />
         </section>
 
         {/* Tenders — where the money went */}

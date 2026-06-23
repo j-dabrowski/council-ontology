@@ -48,3 +48,5 @@ data/council.db-wal
 data/council.db-shm
 PROJECT_STUDY_GUIDE.txt
 temp_notes.txt
+
+data/council.db.bak*
