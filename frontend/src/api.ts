@@ -97,6 +97,58 @@ export interface EngagementStat {
   petitions: number;
 }
 
+export interface PlanningTrendYear {
+  year: number;
+  n_applications: number;
+  decided: number;
+  approved: number;
+  refused: number;
+  approval_pct: number;
+}
+
+export interface PlanningObjectionGroup {
+  n: number;
+  approved: number;
+  refused: number;
+  approval_pct: number;
+}
+
+export interface PlanningData {
+  trend: PlanningTrendYear[];
+  objections: {
+    with_objection: PlanningObjectionGroup;
+    no_objection: PlanningObjectionGroup;
+  };
+}
+
+export interface DissenterProfile {
+  name: string;
+  total_votes_on_carried: number;
+  against_count: number;
+  dissent_rate: number;
+  is_active: boolean;
+  top_dissent_tags: string[];
+}
+
+export interface DissentPair {
+  name_a: string;
+  name_b: string;
+  shared_dissent: number;
+}
+
+export interface TagContestationStat {
+  tag: string;
+  total_carried: number;
+  contested: number;
+  contestation_rate: number;
+}
+
+export interface DissentData {
+  profiles: DissenterProfile[];
+  coalitions: DissentPair[];
+  by_tag: TagContestationStat[];
+}
+
 export const api = {
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
   divergence: () => getSnapshot<DivergenceData>("divergence"),
@@ -104,4 +156,6 @@ export const api = {
   alignment:  () => getSnapshot<{ pairs: AlignmentPair[] }>("alignment"),
   trends:     () => getSnapshot<TrendsData>("trends"),
   engagement: () => getSnapshot<EngagementStat[]>("engagement"),
+  planning:   () => getSnapshot<PlanningData>("planning"),
+  dissent:    () => getSnapshot<DissentData>("dissent"),
 };

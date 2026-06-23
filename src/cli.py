@@ -1703,6 +1703,8 @@ def cmd_publish(args) -> None:
         interest_declarations_summary, co_mover_pairs,
         voting_alignment_matrix, contestation_by_year,
         topic_distribution_by_year, public_engagement_by_year,
+        planning_trend_by_year, planning_objection_stats,
+        dissent_profiles, dissent_coalition_pairs, contestation_by_tag,
     )
     from src.analysis.divergence import officer_divergence
 
@@ -1787,13 +1789,79 @@ def cmd_publish(args) -> None:
         for r in public_engagement_by_year(session, council_id, None, None)
     ])
 
+    # planning: 30-year approval trend + objection effectiveness
+    trend = planning_trend_by_year(session, council_id)
+    obj_stats = planning_objection_stats(session, council_id)
+    _write("planning", {
+        "trend": [
+            {
+                "year": r.year,
+                "n_applications": r.n_applications,
+                "decided": r.decided,
+                "approved": r.approved,
+                "refused": r.refused,
+                "approval_pct": r.approval_pct,
+            }
+            for r in trend
+        ],
+        "objections": {
+            "with_objection": {
+                "n": obj_stats.with_objection_n,
+                "approved": obj_stats.with_objection_approved,
+                "refused": obj_stats.with_objection_refused,
+                "approval_pct": obj_stats.with_objection_pct,
+            },
+            "no_objection": {
+                "n": obj_stats.no_objection_n,
+                "approved": obj_stats.no_objection_approved,
+                "refused": obj_stats.no_objection_refused,
+                "approval_pct": obj_stats.no_objection_pct,
+            },
+        },
+    })
+
+    # dissent: councillor profiles + co-opposition pairs + contestation by topic
+    profiles = dissent_profiles(session, council_id, min_votes=50)
+    coalitions = dissent_coalition_pairs(session, council_id, min_count=10)
+    by_tag = contestation_by_tag(session, council_id)
+    _write("dissent", {
+        "profiles": [
+            {
+                "name": p.name,
+                "total_votes_on_carried": p.total_votes_on_carried,
+                "against_count": p.against_count,
+                "dissent_rate": p.dissent_rate,
+                "is_active": p.is_active,
+                "top_dissent_tags": p.top_dissent_tags,
+            }
+            for p in profiles
+        ],
+        "coalitions": [
+            {
+                "name_a": c.name_a,
+                "name_b": c.name_b,
+                "shared_dissent": c.shared_dissent,
+            }
+            for c in coalitions
+        ],
+        "by_tag": [
+            {
+                "tag": t.tag,
+                "total_carried": t.total_carried,
+                "contested": t.contested,
+                "contestation_rate": t.contestation_rate,
+            }
+            for t in by_tag
+        ],
+    })
+
     session.close()
 
     # Manifest records what was published and when
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement"],
+        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent"],
     }, indent=2))
 
     console.print(Panel(

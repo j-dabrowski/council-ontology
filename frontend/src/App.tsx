@@ -4,6 +4,10 @@ import { CoMoverGraph } from "./components/CoMoverGraph";
 import { ContestationChart } from "./components/TrendsChart";
 import { EngagementChart } from "./components/EngagementChart";
 import { AlignmentHeatmap } from "./components/AlignmentHeatmap";
+import { PlanningTrendChart } from "./components/PlanningTrendChart";
+import { PlanningObjectionsPanel } from "./components/PlanningObjectionsPanel";
+import { DissentProfilesChart } from "./components/DissentProfilesChart";
+import { DissentCoalitionsPanel } from "./components/DissentCoalitionsPanel";
 
 export default function App() {
   return (
@@ -19,6 +23,25 @@ export default function App() {
       </header>
 
       <main className="main-grid">
+        {/* Planning analysis */}
+        <section className="grid-full">
+          <PlanningTrendChart />
+        </section>
+
+        <section className="grid-half">
+          <PlanningObjectionsPanel />
+        </section>
+
+        <section className="grid-half">
+          <DissentCoalitionsPanel />
+        </section>
+
+        {/* Dissent analysis */}
+        <section className="grid-full">
+          <DissentProfilesChart />
+        </section>
+
+        {/* Existing panels */}
         <section className="grid-full">
           <DivergencePanel />
         </section>
@@ -26,6 +49,7 @@ export default function App() {
         <section className="grid-full">
           <InterestsChart />
         </section>
+
         <section className="grid-full">
           <AlignmentHeatmap />
         </section>

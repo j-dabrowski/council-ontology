@@ -17,9 +17,11 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from src.models import (
+    ApplicationStatus,
     BudgetItem,
     Councillor,
     Council,
+    CommunitySubmission,
     Deputation,
     InterestDeclaration,
     InterestDeclarationType,
@@ -901,3 +903,350 @@ def top_planning_sites(
         .all()
     )
     return [(address, n) for address, n in rows]
+
+
+# ---------------------------------------------------------------------------
+# Planning trend + objection-effectiveness queries
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class PlanningYearStats:
+    year: int
+    n_applications: int
+    decided: int
+    approved: int
+    refused: int
+    approval_pct: float
+
+
+def planning_trend_by_year(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+) -> list[PlanningYearStats]:
+    """Planning application volume and approval rate per calendar year."""
+    from sqlalchemy import case
+
+    q = (
+        session.query(
+            func.strftime("%Y", Meeting.meeting_date).label("yr"),
+            func.count(PlanningApplication.id).label("total"),
+            func.sum(case((PlanningApplication.status == ApplicationStatus.APPROVED, 1), else_=0)).label("approved"),
+            func.sum(case((PlanningApplication.status == ApplicationStatus.REFUSED, 1), else_=0)).label("refused"),
+        )
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id)
+    )
+    q = _year_filter_query(q, Meeting, from_year, to_year)
+    rows = q.group_by("yr").order_by("yr").all()
+
+    results = []
+    for yr_str, total, approved, refused in rows:
+        approved = approved or 0
+        refused = refused or 0
+        decided = approved + refused
+        results.append(PlanningYearStats(
+            year=int(yr_str),
+            n_applications=total or 0,
+            decided=decided,
+            approved=approved,
+            refused=refused,
+            approval_pct=round(100 * approved / decided, 1) if decided else 0.0,
+        ))
+    return results
+
+
+@dataclass
+class PlanningObjectionStats:
+    with_objection_n: int
+    with_objection_approved: int
+    with_objection_refused: int
+    with_objection_pct: float
+    no_objection_n: int
+    no_objection_approved: int
+    no_objection_refused: int
+    no_objection_pct: float
+
+
+def planning_objection_stats(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+) -> PlanningObjectionStats:
+    """Approval rate split by whether the application received community objections."""
+    # Load all decided applications for this council
+    q = (
+        session.query(PlanningApplication.id, PlanningApplication.status)
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]),
+        )
+    )
+    q = _year_filter_query(q, Meeting, from_year, to_year)
+    decided = q.all()
+
+    if not decided:
+        return PlanningObjectionStats(0, 0, 0, 0.0, 0, 0, 0, 0.0)
+
+    app_ids = [row[0] for row in decided]
+
+    # Which of those have at least one objection?
+    objection_app_ids = {
+        row[0] for row in
+        session.query(CommunitySubmission.application_id)
+        .filter(
+            CommunitySubmission.application_id.in_(app_ids),
+            CommunitySubmission.position == "object",
+        )
+        .distinct()
+        .all()
+    }
+
+    with_obj: dict[str, int] = {"n": 0, "approved": 0, "refused": 0}
+    no_obj: dict[str, int] = {"n": 0, "approved": 0, "refused": 0}
+
+    for app_id, status in decided:
+        bucket = with_obj if app_id in objection_app_ids else no_obj
+        bucket["n"] += 1
+        if status == ApplicationStatus.APPROVED:
+            bucket["approved"] += 1
+        else:
+            bucket["refused"] += 1
+
+    def _pct(d: dict) -> float:
+        return round(100 * d["approved"] / d["n"], 1) if d["n"] else 0.0
+
+    return PlanningObjectionStats(
+        with_objection_n=with_obj["n"],
+        with_objection_approved=with_obj["approved"],
+        with_objection_refused=with_obj["refused"],
+        with_objection_pct=_pct(with_obj),
+        no_objection_n=no_obj["n"],
+        no_objection_approved=no_obj["approved"],
+        no_objection_refused=no_obj["refused"],
+        no_objection_pct=_pct(no_obj),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Dissent analysis queries
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class DissenterProfile:
+    councillor_id: int
+    name: str
+    total_votes_on_carried: int
+    against_count: int
+    dissent_rate: float
+    is_active: bool
+    top_dissent_tags: list[str]
+
+
+def dissent_profiles(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+    min_votes: int = 50,
+) -> list[DissenterProfile]:
+    """Per-councillor dissent rate on carried motions, with top topics dissented on."""
+    from sqlalchemy import case as sa_case
+
+    # Votes on CARRIED motions: total and against count, plus last vote date for active flag
+    q = (
+        session.query(
+            Vote.councillor_id,
+            Councillor.given_name,
+            Councillor.family_name,
+            func.count(Vote.id).label("total"),
+            func.sum(sa_case((Vote.choice == VoteChoice.AGAINST, 1), else_=0)).label("against"),
+            func.max(Meeting.meeting_date).label("last_vote"),
+        )
+        .join(Councillor, Vote.councillor_id == Councillor.id)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Motion.outcome == MotionOutcome.CARRIED,
+        )
+    )
+    q = _year_filter_query(q, Meeting, from_year, to_year)
+    rows = [
+        r for r in q.group_by(Vote.councillor_id).all()
+        if r[3] >= min_votes
+    ]
+
+    if not rows:
+        return []
+
+    # Top dissent tags per councillor: tags from motions they voted AGAINST (still CARRIED)
+    cid_list = [r[0] for r in rows]
+    tag_q = (
+        session.query(Vote.councillor_id, Motion.tags)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Vote.councillor_id.in_(cid_list),
+            Vote.choice == VoteChoice.AGAINST,
+            Motion.outcome == MotionOutcome.CARRIED,
+            Motion.tags.isnot(None),
+        )
+    )
+    tag_q = _year_filter_query(tag_q, Meeting, from_year, to_year)
+
+    tag_counts: dict[int, dict[str, int]] = defaultdict(lambda: defaultdict(int))
+    for cid, tags_str in tag_q.all():
+        for tag in tags_str.split(","):
+            tag = tag.strip()
+            if tag:
+                tag_counts[cid][tag] += 1
+
+    cutoff = date.today() - timedelta(days=548)  # ~18 months
+
+    results = []
+    for cid, given, family, total, against, last_vote in rows:
+        against = against or 0
+        top_tags = [t for t, _ in sorted(tag_counts[cid].items(), key=lambda x: -x[1])[:3]]
+        results.append(DissenterProfile(
+            councillor_id=cid,
+            name=f"{given or ''} {family or ''}".strip(),
+            total_votes_on_carried=total,
+            against_count=against,
+            dissent_rate=round(against / total, 4),
+            is_active=last_vote >= cutoff if last_vote else False,
+            top_dissent_tags=top_tags,
+        ))
+
+    results.sort(key=lambda r: r.dissent_rate, reverse=True)
+    return results
+
+
+@dataclass
+class DissentPair:
+    id_a: int
+    name_a: str
+    id_b: int
+    name_b: str
+    shared_dissent: int
+
+
+def dissent_coalition_pairs(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+    min_count: int = 10,
+) -> list[DissentPair]:
+    """Pairs of councillors who most often voted AGAINST the same carried motions."""
+    from sqlalchemy.orm import aliased
+    from sqlalchemy import and_
+
+    V2 = aliased(Vote, name="v2")
+    C1 = aliased(Councillor, name="c1")
+    C2 = aliased(Councillor, name="c2")
+
+    q = (
+        session.query(
+            Vote.councillor_id.label("cid_a"),
+            V2.councillor_id.label("cid_b"),
+            C1.given_name.label("gn_a"),
+            C1.family_name.label("fn_a"),
+            C2.given_name.label("gn_b"),
+            C2.family_name.label("fn_b"),
+            func.count().label("n"),
+        )
+        .join(V2, and_(
+            V2.motion_id == Vote.motion_id,
+            V2.councillor_id > Vote.councillor_id,
+            V2.choice == VoteChoice.AGAINST,
+        ))
+        .join(Motion, Motion.id == Vote.motion_id)
+        .join(Meeting, Meeting.id == Motion.meeting_id)
+        .join(C1, C1.id == Vote.councillor_id)
+        .join(C2, C2.id == V2.councillor_id)
+        .filter(
+            Meeting.council_id == council_id,
+            Vote.choice == VoteChoice.AGAINST,
+            Motion.outcome == MotionOutcome.CARRIED,
+        )
+    )
+    q = _year_filter_query(q, Meeting, from_year, to_year)
+    q = (
+        q.group_by(Vote.councillor_id, V2.councillor_id)
+        .having(func.count() >= min_count)
+        .order_by(func.count().desc())
+    )
+
+    return [
+        DissentPair(
+            id_a=cid_a,
+            name_a=f"{gn_a or ''} {fn_a or ''}".strip(),
+            id_b=cid_b,
+            name_b=f"{gn_b or ''} {fn_b or ''}".strip(),
+            shared_dissent=n,
+        )
+        for cid_a, cid_b, gn_a, fn_a, gn_b, fn_b, n in q.all()
+    ]
+
+
+@dataclass
+class TagContestationStats:
+    tag: str
+    total_carried: int
+    contested: int
+    contestation_rate: float
+
+
+def contestation_by_tag(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+    min_motions: int = 20,
+) -> list[TagContestationStats]:
+    """Contestation rate broken down by motion topic tag (minutes only)."""
+    q = (
+        session.query(Motion.tags, Motion.votes_against)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Motion.outcome == MotionOutcome.CARRIED,
+            Motion.tags.isnot(None),
+            Meeting.document_type == "minutes",
+        )
+    )
+    q = _year_filter_query(q, Meeting, from_year, to_year)
+
+    tag_total: dict[str, int] = defaultdict(int)
+    tag_contested: dict[str, int] = defaultdict(int)
+
+    for tags_str, votes_against in q.all():
+        is_contested = (votes_against or 0) >= 1
+        for tag in tags_str.split(","):
+            tag = tag.strip()
+            if tag:
+                tag_total[tag] += 1
+                if is_contested:
+                    tag_contested[tag] += 1
+
+    results = [
+        TagContestationStats(
+            tag=tag,
+            total_carried=total,
+            contested=tag_contested.get(tag, 0),
+            contestation_rate=round(tag_contested.get(tag, 0) / total, 4),
+        )
+        for tag, total in tag_total.items()
+        if total >= min_motions
+    ]
+    results.sort(key=lambda r: r.contestation_rate, reverse=True)
+    return results
