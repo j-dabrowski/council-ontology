@@ -149,6 +149,107 @@ export interface DissentData {
   by_tag: TagContestationStat[];
 }
 
+export interface RecusalProfile {
+  name: string;
+  declared_votes: number;
+  recused: number;
+  recusal_rate: number;
+  is_active: boolean;
+}
+
+export interface ConflictRecusalData {
+  declared_total: number;
+  declared_recused: number;
+  declared_recusal_pct: number;
+  declared_against_pct: number;
+  baseline_total: number;
+  baseline_recusal_pct: number;
+  baseline_against_pct: number;
+  profiles: RecusalProfile[];
+}
+
+export interface ContractorTotal {
+  name: string;
+  n_awards: number;
+  total_amount: number;
+}
+
+export interface TenderData {
+  total_awards: number;
+  total_amount: number;
+  named_awards: number;
+  named_amount: number;
+  redacted_awards: number;
+  redacted_amount: number;
+  distinct_named: number;
+  top10_amount: number;
+  top10_share: number;
+  contractors: ContractorTotal[];
+}
+
+export interface ObjectionDoseBucket {
+  label: string;
+  n: number;
+  refused: number;
+  refusal_pct: number;
+}
+
+export interface ObjectionDoseData {
+  total_decided: number;
+  max_objections: number;
+  headline_examples: string[];
+  buckets: ObjectionDoseBucket[];
+}
+
+export interface TransparencyYear {
+  year: number;
+  total: number;
+  confidential: number;
+  confidential_pct: number;
+}
+
+export interface TransparencyData {
+  pre_era_pct: number;
+  peak_year: number;
+  peak_pct: number;
+  category_totals: Record<string, { total: number; confidential: number }>;
+  years: TransparencyYear[];
+}
+
+export interface TenureProfile {
+  name: string;
+  years: number;
+  n_votes: number;
+  first: string;
+  last: string;
+  is_active: boolean;
+}
+
+export interface TenureData {
+  median_years: number;
+  n_councillors: number;
+  histogram: Record<string, number>;
+  profiles: TenureProfile[];
+}
+
+export interface MayorContest {
+  name: string;
+  carried: number;
+  contested: number;
+  contest_pct: number;
+}
+
+export interface MayoralData {
+  mayor_moved: number;
+  mayor_carried_pct: number;
+  mayor_contest_pct: number;
+  other_moved: number;
+  other_carried_pct: number;
+  other_contest_pct: number;
+  contest_factor: number;
+  per_mayor: MayorContest[];
+}
+
 export const api = {
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
   divergence: () => getSnapshot<DivergenceData>("divergence"),
@@ -158,4 +259,10 @@ export const api = {
   engagement: () => getSnapshot<EngagementStat[]>("engagement"),
   planning:   () => getSnapshot<PlanningData>("planning"),
   dissent:    () => getSnapshot<DissentData>("dissent"),
+  declared:   () => getSnapshot<ConflictRecusalData>("declared"),
+  tenders:    () => getSnapshot<TenderData>("tenders"),
+  dose:       () => getSnapshot<ObjectionDoseData>("dose"),
+  transparency: () => getSnapshot<TransparencyData>("transparency"),
+  tenure:     () => getSnapshot<TenureData>("tenure"),
+  mayoral:    () => getSnapshot<MayoralData>("mayoral"),
 };

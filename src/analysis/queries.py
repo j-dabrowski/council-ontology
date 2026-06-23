@@ -20,6 +20,7 @@ from src.models import (
     ApplicationStatus,
     BudgetItem,
     Councillor,
+    CouncillorTerm,
     Council,
     CommunitySubmission,
     Deputation,
@@ -32,6 +33,7 @@ from src.models import (
     PlanningApplication,
     PublicQuestion,
     Site,
+    Tender,
     Vote,
     VoteChoice,
 )
@@ -1250,3 +1252,646 @@ def contestation_by_tag(
     ]
     results.sort(key=lambda r: r.contestation_rate, reverse=True)
     return results
+
+
+# ---------------------------------------------------------------------------
+# Conflict of interest — recusal behaviour
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class RecusalProfile:
+    councillor_id: int
+    name: str
+    declared_votes: int
+    recused: int          # ABSENT on a declared-interest vote = stepped out
+    recusal_rate: float
+    is_active: bool
+
+
+@dataclass
+class ConflictRecusalStats:
+    # Headline contrast: recusal & against rates for declared vs not-declared
+    declared_total: int
+    declared_recused: int
+    declared_recusal_pct: float
+    declared_against_pct: float       # of votes actually cast (FOR/AGAINST)
+    baseline_total: int
+    baseline_recusal_pct: float
+    baseline_against_pct: float
+    profiles: list[RecusalProfile] = field(default_factory=list)
+
+
+def conflict_recusal_stats(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+    min_declared: int = 8,
+) -> ConflictRecusalStats:
+    """
+    How declaring a conflict of interest changes voting behaviour.
+
+    Uses Vote.declared_interest as ground truth. A vote of ABSENT on a
+    declared-interest item is read as a recusal (the councillor stepped out).
+    Returns the declared-vs-baseline contrast plus per-councillor recusal
+    rates for councillors with at least ``min_declared`` declared votes.
+    """
+    from sqlalchemy import case as sa_case
+
+    def _bucket(declared: bool):
+        q = (
+            session.query(
+                func.count(Vote.id).label("total"),
+                func.sum(sa_case((Vote.choice == VoteChoice.ABSENT, 1), else_=0)).label("absent"),
+                func.sum(sa_case((Vote.choice == VoteChoice.AGAINST, 1), else_=0)).label("against"),
+                func.sum(sa_case((Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]), 1), else_=0)).label("cast"),
+            )
+            .join(Motion, Vote.motion_id == Motion.id)
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Vote.declared_interest == declared,  # noqa: E712
+            )
+        )
+        q = _year_filter_query(q, Meeting, from_year, to_year)
+        total, absent, against, cast = q.one()
+        total = total or 0
+        absent = absent or 0
+        against = against or 0
+        cast = cast or 0
+        return total, absent, against, cast
+
+    d_total, d_absent, d_against, d_cast = _bucket(True)
+    b_total, b_absent, b_against, b_cast = _bucket(False)
+
+    # Per-councillor recusal rate on declared votes
+    prof_q = (
+        session.query(
+            Vote.councillor_id,
+            Councillor.given_name,
+            Councillor.family_name,
+            func.count(Vote.id).label("declared"),
+            func.sum(sa_case((Vote.choice == VoteChoice.ABSENT, 1), else_=0)).label("recused"),
+            func.max(Meeting.meeting_date).label("last_vote"),
+        )
+        .join(Councillor, Vote.councillor_id == Councillor.id)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Vote.declared_interest == True,  # noqa: E712
+        )
+    )
+    prof_q = _year_filter_query(prof_q, Meeting, from_year, to_year)
+    prof_rows = prof_q.group_by(Vote.councillor_id).all()
+
+    cutoff = date.today() - timedelta(days=548)  # ~18 months
+    profiles = []
+    for cid, given, family, declared, recused, last_vote in prof_rows:
+        if declared < min_declared:
+            continue
+        recused = recused or 0
+        profiles.append(RecusalProfile(
+            councillor_id=cid,
+            name=f"{given or ''} {family or ''}".strip(),
+            declared_votes=declared,
+            recused=recused,
+            recusal_rate=round(recused / declared, 4) if declared else 0.0,
+            is_active=last_vote >= cutoff if last_vote else False,
+        ))
+    # Sort by recusal rate desc, then by declared count desc
+    profiles.sort(key=lambda r: (r.recusal_rate, r.declared_votes), reverse=True)
+
+    return ConflictRecusalStats(
+        declared_total=d_total,
+        declared_recused=d_absent,
+        declared_recusal_pct=round(100 * d_absent / d_total, 1) if d_total else 0.0,
+        declared_against_pct=round(100 * d_against / d_cast, 1) if d_cast else 0.0,
+        baseline_total=b_total,
+        baseline_recusal_pct=round(100 * b_absent / b_total, 1) if b_total else 0.0,
+        baseline_against_pct=round(100 * b_against / b_cast, 1) if b_cast else 0.0,
+        profiles=profiles,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tenders — where the money went
+# ---------------------------------------------------------------------------
+
+
+def _normalise_contractor(name: str) -> str:
+    """Collapse spelling/whitespace/suffix variants so 'R J Vincent' == 'RJ Vincent'."""
+    n = name.lower().strip()
+    for suffix in (" pty ltd", " pty. ltd.", " pty ltd.", " ltd", " pty", " p/l"):
+        n = n.replace(suffix, "")
+    n = n.replace(".", "").replace(",", "")
+    n = "".join(n.split())  # drop all internal whitespace: 'r j vincent' -> 'rjvincent'
+    return n
+
+
+@dataclass
+class ContractorTotal:
+    name: str
+    n_awards: int
+    total_amount: float
+
+
+@dataclass
+class TenderConcentration:
+    total_awards: int          # awards with a known amount
+    total_amount: float
+    named_awards: int
+    named_amount: float
+    redacted_awards: int       # confidential "Respondent N" placeholders + unnamed
+    redacted_amount: float
+    distinct_named: int
+    top10_amount: float
+    top10_share: float         # top-10 contractors' share of the named dollars
+    contractors: list[ContractorTotal] = field(default_factory=list)
+
+
+def tender_concentration(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+    limit: int = 15,
+) -> TenderConcentration:
+    """
+    Concentration of tendered spend among contractors.
+
+    Splits the corpus into *named* contractors and the confidential
+    "Respondent N" placeholders used in closed tender reports, then ranks
+    named contractors by total awarded dollars (spelling variants merged).
+    """
+    q = (
+        session.query(Tender.awarded_to, Tender.amount)
+        .join(Meeting, Tender.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Tender.amount.isnot(None),
+        )
+    )
+    q = _year_filter_query(q, Meeting, from_year, to_year)
+    rows = q.all()
+
+    total_amount = 0.0
+    total_awards = 0
+    redacted_awards = 0       # confidential "Respondent N" or no named recipient
+    redacted_amount = 0.0
+    agg_amount: dict[str, float] = defaultdict(float)
+    agg_count: dict[str, int] = defaultdict(int)
+    display_name: dict[str, str] = {}
+
+    for awarded_to, amount in rows:
+        amount = float(amount or 0)
+        total_amount += amount
+        total_awards += 1
+        name = (awarded_to or "").strip()
+        key = _normalise_contractor(name) if name else ""
+        if not key or name.lower().startswith("respondent"):
+            redacted_awards += 1
+            redacted_amount += amount
+            continue
+        agg_amount[key] += amount
+        agg_count[key] += 1
+        # Keep the longest spelling seen as the display label
+        if awarded_to.strip() and len(awarded_to.strip()) > len(display_name.get(key, "")):
+            display_name[key] = awarded_to.strip()
+
+    named_amount = sum(agg_amount.values())
+    named_awards = sum(agg_count.values())
+
+    ranked = sorted(agg_amount.items(), key=lambda kv: -kv[1])
+    top10_amount = sum(amt for _, amt in ranked[:10])
+
+    contractors = [
+        ContractorTotal(
+            name=display_name.get(key, key),
+            n_awards=agg_count[key],
+            total_amount=round(amt),
+        )
+        for key, amt in ranked[:limit]
+    ]
+
+    return TenderConcentration(
+        total_awards=total_awards,
+        total_amount=round(total_amount),
+        named_awards=named_awards,
+        named_amount=round(named_amount),
+        redacted_awards=redacted_awards,
+        redacted_amount=round(redacted_amount),
+        distinct_named=len(agg_amount),
+        top10_amount=round(top10_amount),
+        top10_share=round(top10_amount / named_amount, 4) if named_amount else 0.0,
+        contractors=contractors,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Objection dose-response — how many objectors does it take to sink a DA?
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ObjectionDoseBucket:
+    label: str          # "0", "1", "2-4", "5+"
+    n: int              # decided applications in this bucket
+    refused: int
+    refusal_pct: float
+
+
+@dataclass
+class ObjectionDoseStats:
+    buckets: list[ObjectionDoseBucket]
+    total_decided: int
+    max_objections: int          # most objections seen on any single decided app
+    headline_examples: list[str] = field(default_factory=list)  # high-objector refusals
+
+
+def objection_dose_response(session: Session, council_id: int) -> ObjectionDoseStats:
+    """
+    Refusal rate as a function of *how many* community objections an application
+    drew. The existing objection panel treats objection as binary; this asks
+    whether there is a threshold where neighbour opposition starts to bite.
+
+    Buckets: 0, 1, 2-4, 5+ objectors. Decided applications only (APPROVED /
+    REFUSED). Objections = community_submissions with position='object'.
+    """
+    rows = (
+        session.query(
+            PlanningApplication.id,
+            PlanningApplication.status,
+            PlanningApplication.description,
+            PlanningApplication.reference_number,
+            func.count(CommunitySubmission.id).label("n_obj"),
+        )
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .outerjoin(
+            CommunitySubmission,
+            (CommunitySubmission.application_id == PlanningApplication.id)
+            & (func.lower(CommunitySubmission.position) == "object"),
+        )
+        .filter(
+            Meeting.council_id == council_id,
+            PlanningApplication.status.in_(
+                [ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]
+            ),
+        )
+        .group_by(PlanningApplication.id)
+        .all()
+    )
+
+    def _bucket(n: int) -> str:
+        if n == 0:
+            return "0"
+        if n == 1:
+            return "1"
+        if n <= 4:
+            return "2-4"
+        return "5+"
+
+    order = ["0", "1", "2-4", "5+"]
+    agg: dict[str, list[int]] = {k: [0, 0] for k in order}  # [n, refused]
+    max_obj = 0
+    examples: list[tuple[int, str]] = []
+    for _id, status, desc, ref, n_obj in rows:
+        n_obj = int(n_obj or 0)
+        max_obj = max(max_obj, n_obj)
+        refused = status == ApplicationStatus.REFUSED
+        b = _bucket(n_obj)
+        agg[b][0] += 1
+        agg[b][1] += 1 if refused else 0
+        if n_obj >= 5 and refused:
+            examples.append((n_obj, (desc or ref or "").strip()))
+
+    buckets = [
+        ObjectionDoseBucket(
+            label=k,
+            n=agg[k][0],
+            refused=agg[k][1],
+            refusal_pct=round(100 * agg[k][1] / agg[k][0], 1) if agg[k][0] else 0.0,
+        )
+        for k in order
+    ]
+    examples.sort(key=lambda e: -e[0])
+    headline = [f"{n} objectors — {txt[:80]}" for n, txt in examples[:4]]
+
+    return ObjectionDoseStats(
+        buckets=buckets,
+        total_decided=sum(b.n for b in buckets),
+        max_objections=max_obj,
+        headline_examples=headline,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Transparency — share of council business decided behind closed doors
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TransparencyYear:
+    year: int
+    total: int
+    confidential: int
+    confidential_pct: float
+
+
+@dataclass
+class TransparencyStats:
+    years: list[TransparencyYear]
+    pre_era_pct: float          # avg confidential % 1995-2017
+    peak_year: int
+    peak_pct: float
+    category_totals: dict[str, dict[str, int]]  # {tenders: {total, confidential}, ...}
+
+
+def transparency_by_year(session: Session, council_id: int) -> TransparencyStats:
+    """
+    Share of decided council items recorded as confidential, per year.
+
+    Pools four item types that carry an is_confidential flag — tenders,
+    'other items', delegated decisions and budget items — over minutes (not
+    agendas). Surfaces whether the proportion of business taken behind closed
+    doors has shifted over the 30-year record.
+    """
+    from sqlalchemy import text as sql_text
+
+    sql = sql_text(
+        """
+        WITH allitems AS (
+            SELECT m.meeting_date d, t.is_confidential c, 'tenders' AS cat
+              FROM tenders t JOIN meetings m ON t.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes'
+            UNION ALL
+            SELECT m.meeting_date, o.is_confidential, 'other'
+              FROM other_items o JOIN meetings m ON o.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes'
+            UNION ALL
+            SELECT m.meeting_date, dd.is_confidential, 'delegated'
+              FROM delegated_decisions dd JOIN meetings m ON dd.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes'
+            UNION ALL
+            SELECT m.meeting_date, b.is_confidential, 'budget'
+              FROM budget_items b JOIN meetings m ON b.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes'
+        )
+        SELECT CAST(substr(d, 1, 4) AS INTEGER) yr,
+               cat,
+               COUNT(*) tot,
+               SUM(CASE WHEN c THEN 1 ELSE 0 END) conf
+          FROM allitems
+         WHERE d IS NOT NULL
+         GROUP BY yr, cat
+        """
+    )
+    rows = session.execute(sql, {"cid": council_id}).fetchall()
+
+    per_year: dict[int, list[int]] = defaultdict(lambda: [0, 0])  # [total, conf]
+    cat_totals: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "confidential": 0})
+    for yr, cat, tot, conf in rows:
+        per_year[yr][0] += tot
+        per_year[yr][1] += conf or 0
+        cat_totals[cat]["total"] += tot
+        cat_totals[cat]["confidential"] += conf or 0
+
+    years = [
+        TransparencyYear(
+            year=yr,
+            total=tot,
+            confidential=conf,
+            confidential_pct=round(100 * conf / tot, 1) if tot else 0.0,
+        )
+        for yr, (tot, conf) in sorted(per_year.items())
+    ]
+
+    # Pre-2018 baseline (the two-decade norm) vs the peak year
+    pre = [y for y in years if y.year <= 2017]
+    pre_tot = sum(y.total for y in pre)
+    pre_conf = sum(y.confidential for y in pre)
+    pre_pct = round(100 * pre_conf / pre_tot, 1) if pre_tot else 0.0
+    # Peak by % among years with a meaningful sample (>= 50 items)
+    eligible = [y for y in years if y.total >= 50]
+    peak = max(eligible, key=lambda y: y.confidential_pct) if eligible else years[-1]
+
+    return TransparencyStats(
+        years=years,
+        pre_era_pct=pre_pct,
+        peak_year=peak.year,
+        peak_pct=peak.confidential_pct,
+        category_totals=dict(cat_totals),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Tenure — career councillors vs one-term blow-ins
+# ---------------------------------------------------------------------------
+
+@dataclass
+class TenureProfile:
+    name: str
+    years: float
+    n_votes: int
+    first: str          # YYYY-MM
+    last: str
+    is_active: bool
+
+
+@dataclass
+class TenureStats:
+    profiles: list[TenureProfile]       # longest-serving first
+    histogram: dict[str, int]           # service-length buckets
+    median_years: float
+    n_councillors: int
+
+
+def councillor_tenure(session: Session, council_id: int, min_votes: int = 20) -> TenureStats:
+    """
+    Length of service per councillor, derived from the span of their recorded
+    votes (councillor_terms is too sparse to use directly). Returns a
+    longest-serving leaderboard plus a histogram of service length.
+    """
+    rows = (
+        session.query(
+            Councillor.given_name,
+            Councillor.family_name,
+            func.count(Vote.id).label("n"),
+            func.min(Meeting.meeting_date).label("first"),
+            func.max(Meeting.meeting_date).label("last"),
+        )
+        .join(Vote, Vote.councillor_id == Councillor.id)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id)
+        .group_by(Councillor.id)
+        .having(func.count(Vote.id) >= min_votes)
+        .all()
+    )
+
+    cutoff = date.today() - timedelta(days=548)  # ~18 months
+    profiles: list[TenureProfile] = []
+    for given, family, n, first, last in rows:
+        name = f"{given or ''} {family or ''}".strip()
+        if "unknown" in name.lower() or not first or not last:
+            continue  # drop mis-split / undated identities
+        yrs = (last.year + last.month / 12) - (first.year + first.month / 12)
+        profiles.append(TenureProfile(
+            name=name,
+            years=round(yrs, 1),
+            n_votes=n,
+            first=first.strftime("%Y-%m"),
+            last=last.strftime("%Y-%m"),
+            is_active=last >= cutoff,
+        ))
+
+    profiles.sort(key=lambda p: p.years, reverse=True)
+
+    buckets = {"<2y": 0, "2-5y": 0, "5-10y": 0, "10-15y": 0, "15y+": 0}
+    for p in profiles:
+        if p.years < 2:
+            buckets["<2y"] += 1
+        elif p.years < 5:
+            buckets["2-5y"] += 1
+        elif p.years < 10:
+            buckets["5-10y"] += 1
+        elif p.years < 15:
+            buckets["10-15y"] += 1
+        else:
+            buckets["15y+"] += 1
+
+    spans = sorted(p.years for p in profiles)
+    n = len(spans)
+    median = spans[n // 2] if n % 2 else (spans[n // 2 - 1] + spans[n // 2]) / 2 if n else 0.0
+
+    return TenureStats(
+        profiles=profiles,
+        histogram=buckets,
+        median_years=round(median, 1),
+        n_councillors=n,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Mayoral agenda-setting — does the chamber fall in line behind the Mayor?
+# ---------------------------------------------------------------------------
+
+@dataclass
+class MayorContest:
+    name: str
+    carried: int          # carried motions moved while serving as Mayor
+    contested: int        # of those, how many drew a dissenting (AGAINST) vote
+    contest_pct: float
+
+
+@dataclass
+class MayoralStats:
+    mayor_moved: int
+    mayor_carried_pct: float
+    mayor_contest_pct: float        # of carried mayor-moved motions, % that drew dissent
+    other_moved: int
+    other_carried_pct: float
+    other_contest_pct: float
+    contest_factor: float           # mayor_contest_pct / other_contest_pct
+    per_mayor: list[MayorContest] = field(default_factory=list)
+
+
+def mayoral_agenda_setting(
+    session: Session, council_id: int, min_carried: int = 10
+) -> MayoralStats:
+    """
+    Whether motions personally moved by the sitting Mayor enjoy a procedural
+    advantage. Tags each moved motion as mayor- or backbench-moved by checking
+    whether the mover held a 'Mayor' term covering the meeting date, then
+    compares passage rate and the share of *carried* motions that drew at least
+    one dissenting (AGAINST) vote.
+
+    Only 7 mayors carry dated terms (1999–), so pre-1999 mayoral motions fall
+    into the 'other' bucket — reported honestly in the panel note.
+    """
+    terms = (
+        session.query(
+            CouncillorTerm.councillor_id,
+            CouncillorTerm.term_start,
+            CouncillorTerm.term_end,
+        )
+        .filter(CouncillorTerm.role == "Mayor")
+        .all()
+    )
+
+    def mayor_at(cid: int, d: date) -> bool:
+        for mc, ts, te in terms:
+            if mc == cid and (ts is None or ts <= d) and (te is None or d <= te):
+                return True
+        return False
+
+    rows = (
+        session.query(
+            Motion.moved_by_id,
+            Meeting.meeting_date,
+            Motion.outcome,
+            Motion.votes_against,
+            Councillor.given_name,
+            Councillor.family_name,
+        )
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .join(Councillor, Motion.moved_by_id == Councillor.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Motion.moved_by_id.isnot(None),
+            Meeting.meeting_date.isnot(None),
+            Motion.outcome.in_([MotionOutcome.CARRIED, MotionOutcome.LOST]),
+        )
+        .all()
+    )
+
+    agg = {"mayor": {"n": 0, "carried": 0, "contested": 0},
+           "other": {"n": 0, "carried": 0, "contested": 0}}
+    per_mayor: dict[int, dict] = defaultdict(
+        lambda: {"name": "", "carried": 0, "contested": 0}
+    )
+
+    for cid, d, outcome, va, given, family in rows:
+        is_mayor = mayor_at(cid, d)
+        bucket = agg["mayor" if is_mayor else "other"]
+        bucket["n"] += 1
+        if outcome == MotionOutcome.CARRIED:
+            bucket["carried"] += 1
+            contested = (va or 0) > 0
+            if contested:
+                bucket["contested"] += 1
+            if is_mayor:
+                pm = per_mayor[cid]
+                pm["name"] = f"{given or ''} {family or ''}".strip()
+                pm["carried"] += 1
+                pm["contested"] += 1 if contested else 0
+
+    def _pct(a, b):
+        return round(100 * a / b, 1) if b else 0.0
+
+    m, o = agg["mayor"], agg["other"]
+    m_contest = _pct(m["contested"], m["carried"])
+    o_contest = _pct(o["contested"], o["carried"])
+
+    mayors = [
+        MayorContest(
+            name=pm["name"],
+            carried=pm["carried"],
+            contested=pm["contested"],
+            contest_pct=_pct(pm["contested"], pm["carried"]),
+        )
+        for pm in per_mayor.values()
+        if pm["carried"] >= min_carried
+    ]
+    mayors.sort(key=lambda x: x.contest_pct, reverse=True)
+
+    return MayoralStats(
+        mayor_moved=m["n"],
+        mayor_carried_pct=_pct(m["carried"], m["n"]),
+        mayor_contest_pct=m_contest,
+        other_moved=o["n"],
+        other_carried_pct=_pct(o["carried"], o["n"]),
+        other_contest_pct=o_contest,
+        contest_factor=round(m_contest / o_contest, 1) if o_contest else 0.0,
+        per_mayor=mayors,
+    )

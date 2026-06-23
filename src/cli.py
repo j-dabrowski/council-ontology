@@ -1705,6 +1705,9 @@ def cmd_publish(args) -> None:
         topic_distribution_by_year, public_engagement_by_year,
         planning_trend_by_year, planning_objection_stats,
         dissent_profiles, dissent_coalition_pairs, contestation_by_tag,
+        conflict_recusal_stats, tender_concentration,
+        objection_dose_response, transparency_by_year, councillor_tenure,
+        mayoral_agenda_setting,
     )
     from src.analysis.divergence import officer_divergence
 
@@ -1855,13 +1858,109 @@ def cmd_publish(args) -> None:
         ],
     })
 
+    # conflict of interest: recusal behaviour when an interest is declared
+    recusal = conflict_recusal_stats(session, council_id, min_declared=8)
+    _write("declared", {
+        "declared_total": recusal.declared_total,
+        "declared_recused": recusal.declared_recused,
+        "declared_recusal_pct": recusal.declared_recusal_pct,
+        "declared_against_pct": recusal.declared_against_pct,
+        "baseline_total": recusal.baseline_total,
+        "baseline_recusal_pct": recusal.baseline_recusal_pct,
+        "baseline_against_pct": recusal.baseline_against_pct,
+        "profiles": [
+            {
+                "name": p.name,
+                "declared_votes": p.declared_votes,
+                "recused": p.recused,
+                "recusal_rate": p.recusal_rate,
+                "is_active": p.is_active,
+            }
+            for p in recusal.profiles
+        ],
+    })
+
+    # tenders: concentration of $148M of awarded work among contractors
+    tenders = tender_concentration(session, council_id, limit=15)
+    _write("tenders", {
+        "total_awards": tenders.total_awards,
+        "total_amount": tenders.total_amount,
+        "named_awards": tenders.named_awards,
+        "named_amount": tenders.named_amount,
+        "redacted_awards": tenders.redacted_awards,
+        "redacted_amount": tenders.redacted_amount,
+        "distinct_named": tenders.distinct_named,
+        "top10_amount": tenders.top10_amount,
+        "top10_share": tenders.top10_share,
+        "contractors": [
+            {"name": c.name, "n_awards": c.n_awards, "total_amount": c.total_amount}
+            for c in tenders.contractors
+        ],
+    })
+
+    # objection dose-response: does the NUMBER of objectors change the outcome?
+    dose = objection_dose_response(session, council_id)
+    _write("dose", {
+        "total_decided": dose.total_decided,
+        "max_objections": dose.max_objections,
+        "headline_examples": dose.headline_examples,
+        "buckets": [
+            {"label": b.label, "n": b.n, "refused": b.refused, "refusal_pct": b.refusal_pct}
+            for b in dose.buckets
+        ],
+    })
+
+    # transparency: share of council business decided behind closed doors over time
+    trans = transparency_by_year(session, council_id)
+    _write("transparency", {
+        "pre_era_pct": trans.pre_era_pct,
+        "peak_year": trans.peak_year,
+        "peak_pct": trans.peak_pct,
+        "category_totals": trans.category_totals,
+        "years": [
+            {"year": y.year, "total": y.total, "confidential": y.confidential,
+             "confidential_pct": y.confidential_pct}
+            for y in trans.years
+        ],
+    })
+
+    # tenure: career councillors vs one-term blow-ins
+    tenure = councillor_tenure(session, council_id)
+    _write("tenure", {
+        "median_years": tenure.median_years,
+        "n_councillors": tenure.n_councillors,
+        "histogram": tenure.histogram,
+        "profiles": [
+            {"name": p.name, "years": p.years, "n_votes": p.n_votes,
+             "first": p.first, "last": p.last, "is_active": p.is_active}
+            for p in tenure.profiles
+        ],
+    })
+
+    # mayoral agenda-setting: do motions moved by the Mayor draw more dissent?
+    mayoral = mayoral_agenda_setting(session, council_id)
+    _write("mayoral", {
+        "mayor_moved": mayoral.mayor_moved,
+        "mayor_carried_pct": mayoral.mayor_carried_pct,
+        "mayor_contest_pct": mayoral.mayor_contest_pct,
+        "other_moved": mayoral.other_moved,
+        "other_carried_pct": mayoral.other_carried_pct,
+        "other_contest_pct": mayoral.other_contest_pct,
+        "contest_factor": mayoral.contest_factor,
+        "per_mayor": [
+            {"name": p.name, "carried": p.carried, "contested": p.contested,
+             "contest_pct": p.contest_pct}
+            for p in mayoral.per_mayor
+        ],
+    })
+
     session.close()
 
     # Manifest records what was published and when
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent"],
+        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral"],
     }, indent=2))
 
     console.print(Panel(

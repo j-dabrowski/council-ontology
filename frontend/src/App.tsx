@@ -8,6 +8,12 @@ import { PlanningTrendChart } from "./components/PlanningTrendChart";
 import { PlanningObjectionsPanel } from "./components/PlanningObjectionsPanel";
 import { DissentProfilesChart } from "./components/DissentProfilesChart";
 import { DissentCoalitionsPanel } from "./components/DissentCoalitionsPanel";
+import { ConflictRecusalPanel } from "./components/ConflictRecusalPanel";
+import { TenderConcentrationPanel } from "./components/TenderConcentrationPanel";
+import { ObjectionDosePanel } from "./components/ObjectionDosePanel";
+import { TransparencyTrendPanel } from "./components/TransparencyTrendPanel";
+import { TenurePanel } from "./components/TenurePanel";
+import { MayoralAgendaPanel } from "./components/MayoralAgendaPanel";
 
 export default function App() {
   return (
@@ -23,6 +29,21 @@ export default function App() {
       </header>
 
       <main className="main-grid">
+        {/* Conflict of interest — flagship */}
+        <section className="grid-full">
+          <ConflictRecusalPanel />
+        </section>
+
+        {/* Tenders — where the money went */}
+        <section className="grid-full">
+          <TenderConcentrationPanel />
+        </section>
+
+        {/* Transparency — confidential business over time */}
+        <section className="grid-full">
+          <TransparencyTrendPanel />
+        </section>
+
         {/* Planning analysis */}
         <section className="grid-full">
           <PlanningTrendChart />
@@ -33,12 +54,26 @@ export default function App() {
         </section>
 
         <section className="grid-half">
+          <ObjectionDosePanel />
+        </section>
+
+        <section className="grid-full">
           <DissentCoalitionsPanel />
         </section>
 
         {/* Dissent analysis */}
         <section className="grid-full">
           <DissentProfilesChart />
+        </section>
+
+        {/* Mayoral agenda-setting */}
+        <section className="grid-full">
+          <MayoralAgendaPanel />
+        </section>
+
+        {/* Council composition — tenure */}
+        <section className="grid-full">
+          <TenurePanel />
         </section>
 
         {/* Existing panels */}
