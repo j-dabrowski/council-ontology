@@ -319,9 +319,36 @@ council validate cambridge                                     # score results
    `4e282dd3`, `68da87da`, `7242bbb8`, `936cc360`. Prompt rule added to `agenda_system_prompt.txt`
    ("do not quote from the table of contents"). These docs remain REVIEW; data is usable.
 
+**LLM response archive (built 2026-06-23):**
+
+Every extraction run (sync and batch) now auto-archives raw LLM responses to `data/llm_archive/`
+before parsing. Archive is keyed by run ID (`sync_YYYYMMDD_HHMMSS` for sync, `msgbatch_...` for batch).
+
+What was built:
+- `_write_archive_chunk()` in `extractor.py` — module-level function; writes one JSON file per chunk;
+  non-fatal (archive failure logs a warning, never aborts extraction).
+- `archive_dir` param threaded through `extract_from_pdf()` → `extract()` → `_extract_chunk()`.
+  Each chunk file is `{stem}__c{i}of{n}.json` (matching the batch custom_id pattern).
+- `archive_dir` + `id_map` params added to `retrieve_batch_results()`; raw responses written
+  before markdown stripping so the authentic API response is preserved.
+- `cmd_extract()` (sync): creates `sync_YYYYMMDD_HHMMSS` run dir, passes to extractor, writes
+  manifest and updates `data/llm_archive/index.json` after the loop.
+- `cmd_batch_collect()`: creates `{batch_id}` run dir, passes to `retrieve_batch_results()`,
+  writes manifest + updates index after collection.
+- `scripts/archive_import.py` — standalone re-import script. Reads chunk files, merges, applies
+  metadata overrides, re-reads PDFs for provenance, calls `save_extraction()`. Marks run imported.
+- `council archive-status cambridge` — table view of all archived runs with import status.
+- `council archive-import cambridge <run_id> [--force]` — re-import without any API calls.
+
+Archive format: `data/llm_archive/{run_id}/{stem}__c{i}of{n}.json` with fields:
+`custom_id`, `pdf_path`, `chunk_idx`, `n_chunks`, `document_type`, `meeting_date_hint`,
+`model`, `archived_at`, `source` (sync/batch), `status` (ok/error), `raw_response`.
+
+**Note:** Inventory responses already cached at `.cache/llm_responses/{sha}_{prompt_version}.json`.
+Re-running `council inventory` reads from cache for free — no separate archive needed.
+
 **Still not built:**
 - Feedback loop: after every ~100 documents, re-run Level 0 keyword scan with updated keyword list. Not automated.
-- LLM response caching for the extraction path (Level 1 caches inventory calls; extraction calls are not cached).
 
 ---
 

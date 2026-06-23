@@ -6,6 +6,7 @@ entities from council meeting minutes text.
 """
 
 import logging
+import json
 import re
 from datetime import date, datetime
 from pathlib import Path
@@ -55,6 +56,38 @@ def _parse_date_from_text(text: str) -> "date | None":
 
 _SYSTEM_PROMPT = (Path(__file__).parent / "system_prompt.txt").read_text(encoding="utf-8").strip()
 _AGENDA_SYSTEM_PROMPT = (Path(__file__).parent / "agenda_system_prompt.txt").read_text(encoding="utf-8").strip()
+
+
+def _write_archive_chunk(
+    archive_dir: Path,
+    custom_id: str,
+    raw_response: str,
+    chunk_meta: dict,
+    model: str,
+    source: str = "sync",
+    status: str = "ok",
+) -> None:
+    """Write a single LLM response to the archive. Non-fatal on failure."""
+    try:
+        archive_dir.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "custom_id": custom_id,
+            "pdf_path": chunk_meta.get("pdf_path"),
+            "chunk_idx": chunk_meta.get("chunk_idx", 0),
+            "n_chunks": chunk_meta.get("n_chunks", 1),
+            "document_type": chunk_meta.get("document_type"),
+            "meeting_date_hint": chunk_meta.get("meeting_date_hint"),
+            "model": model,
+            "archived_at": datetime.utcnow().isoformat() + "Z",
+            "source": source,
+            "status": status,
+            "raw_response": raw_response,
+        }
+        (archive_dir / f"{custom_id}.json").write_text(
+            json.dumps(entry, indent=2), encoding="utf-8"
+        )
+    except Exception as exc:
+        logger.warning("Archive write failed for %s: %s", custom_id, exc)
 
 
 def extract_text_from_pdf(pdf_path: Path) -> str:
@@ -149,6 +182,9 @@ class MinutesExtractor:
         meeting_date_hint: str | None = None,
         max_chars: "int | None" = DEFAULT_MAX_CHARS,
         document_type: str | None = None,
+        archive_dir: "Path | None" = None,
+        pdf_stem: str | None = None,
+        pdf_path_str: str | None = None,
     ) -> ExtractedMeeting:
         """
         Extract structured data from minutes text.
@@ -186,6 +222,9 @@ class MinutesExtractor:
                 council_name=council_name,
                 meeting_date_hint=meeting_date_hint,
                 document_type=document_type,
+                archive_dir=archive_dir,
+                archive_custom_id=f"{pdf_stem}__c0of1" if pdf_stem else None,
+                archive_pdf_path=pdf_path_str,
             )
 
         # Unlimited multi-chunk mode
@@ -198,6 +237,9 @@ class MinutesExtractor:
                 council_name=council_name,
                 meeting_date_hint=meeting_date_hint,
                 document_type=document_type,
+                archive_dir=archive_dir,
+                archive_custom_id=f"{pdf_stem}__c0of1" if pdf_stem else None,
+                archive_pdf_path=pdf_path_str,
             )
 
         logger.info(
@@ -207,16 +249,20 @@ class MinutesExtractor:
             len(text),
         )
         results: list[ExtractedMeeting] = []
+        n = len(chunks)
         for i, chunk in enumerate(chunks):
-            chunk_hint = f"{source_hint} [{i + 1}/{len(chunks)}]" if source_hint else f"chunk {i + 1}/{len(chunks)}"
+            chunk_hint = f"{source_hint} [{i + 1}/{n}]" if source_hint else f"chunk {i + 1}/{n}"
             result = self._extract_chunk(
                 chunk,
                 source_hint=chunk_hint,
                 council_name=council_name,
                 meeting_date_hint=meeting_date_hint if i == 0 else None,
                 chunk_index=i,
-                total_chunks=len(chunks),
+                total_chunks=n,
                 document_type=document_type,
+                archive_dir=archive_dir,
+                archive_custom_id=f"{pdf_stem}__c{i}of{n}" if pdf_stem else None,
+                archive_pdf_path=pdf_path_str,
             )
             results.append(result)
 
@@ -224,7 +270,7 @@ class MinutesExtractor:
         logger.info(
             "%s: merged %d chunks → %d motions, %d councillors present",
             source_hint or "document",
-            len(chunks),
+            n,
             len(merged.motions),
             len(merged.councillors_present),
         )
@@ -276,6 +322,9 @@ class MinutesExtractor:
         chunk_index: int = 0,
         total_chunks: int = 1,
         document_type: str | None = None,
+        archive_dir: "Path | None" = None,
+        archive_custom_id: str | None = None,
+        archive_pdf_path: str | None = None,
     ) -> ExtractedMeeting:
         """Extract from a single chunk of text and return an ExtractedMeeting."""
         system_prompt = _AGENDA_SYSTEM_PROMPT if document_type == "agenda" else _SYSTEM_PROMPT
@@ -316,6 +365,24 @@ class MinutesExtractor:
             return next(b.text for b in msg.content if b.type == "text")
 
         raw = _call_api()
+
+        # Archive the raw response before any post-processing
+        if archive_dir and archive_custom_id:
+            _write_archive_chunk(
+                archive_dir,
+                archive_custom_id,
+                raw,
+                {
+                    "pdf_path": archive_pdf_path,
+                    "chunk_idx": chunk_index,
+                    "n_chunks": total_chunks,
+                    "document_type": document_type,
+                    "meeting_date_hint": meeting_date_hint,
+                },
+                self._model,
+                source="sync",
+            )
+
         # Strip markdown code fences if present
         raw = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.MULTILINE)
         raw = re.sub(r"\s*```$", "", raw.strip(), flags=re.MULTILINE)
@@ -361,6 +428,7 @@ class MinutesExtractor:
         meeting_date_hint: str | None = None,
         max_chars: "int | None" = DEFAULT_MAX_CHARS,
         document_type: str | None = None,
+        archive_dir: "Path | None" = None,
     ) -> "tuple[ExtractedMeeting, str]":
         """Extract text from PDF then run extraction. Returns (result, raw_text)."""
         logger.info("Reading PDF: %s", pdf_path)
@@ -374,6 +442,9 @@ class MinutesExtractor:
             meeting_date_hint=meeting_date_hint,
             max_chars=max_chars,
             document_type=document_type,
+            archive_dir=archive_dir,
+            pdf_stem=pdf_path.stem,
+            pdf_path_str=str(pdf_path),
         )
         return result, text
 
@@ -511,12 +582,18 @@ class MinutesExtractor:
     def retrieve_batch_results(
         self,
         batch_id: str,
+        archive_dir: "Path | None" = None,
+        id_map: "dict | None" = None,
     ) -> "tuple[str, dict[str, ExtractedMeeting | Exception]]":
         """
         Check batch status and retrieve parsed results if finished.
 
         Returns (processing_status, {custom_id: ExtractedMeeting | Exception}).
         If processing_status != 'ended', the results dict is empty.
+
+        archive_dir: if set, raw responses are written to {archive_dir}/{custom_id}.json
+                     before parsing. Pass id_map (from the batch job file) to include
+                     per-chunk metadata (pdf_path, chunk_idx, etc.) in each archive file.
         """
         batch = self._client.messages.batches.retrieve(batch_id)
         if batch.processing_status != "ended":
@@ -525,14 +602,19 @@ class MinutesExtractor:
         results: "dict[str, ExtractedMeeting | Exception]" = {}
         for item in self._client.messages.batches.results(batch_id):
             cid = item.custom_id
+            chunk_meta = (id_map or {}).get(cid, {})
             if item.result.type == "succeeded":
                 raw = next(
                     (b.text for b in item.result.message.content if b.type == "text"),
                     None,
                 )
                 if raw is None:
+                    if archive_dir:
+                        _write_archive_chunk(archive_dir, cid, "", chunk_meta, self._model, source="batch", status="error")
                     results[cid] = ValueError("No text block in batch response")
                     continue
+                if archive_dir:
+                    _write_archive_chunk(archive_dir, cid, raw, chunk_meta, self._model, source="batch")
                 raw = re.sub(r"^```(?:json)?\s*", "", raw.strip(), flags=re.MULTILINE)
                 raw = re.sub(r"\s*```$", "", raw.strip(), flags=re.MULTILINE)
                 try:
@@ -553,6 +635,8 @@ class MinutesExtractor:
                     detail = f": {item.result.error.error.message}"
                 except AttributeError:
                     pass
+                if archive_dir:
+                    _write_archive_chunk(archive_dir, cid, "", chunk_meta, self._model, source="batch", status="error")
                 results[cid] = RuntimeError(f"Batch request {item.result.type}{detail}")
 
         return "ended", results

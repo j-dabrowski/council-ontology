@@ -145,6 +145,230 @@ def _filter_pdfs_by_year(
 
 
 # ---------------------------------------------------------------------------
+# Archive helpers
+# ---------------------------------------------------------------------------
+
+
+def _update_archive_index(archive_base: Path, entry: dict) -> None:
+    """Upsert a run entry in data/llm_archive/index.json."""
+    import json as _json
+    archive_base.mkdir(parents=True, exist_ok=True)
+    index_file = archive_base / "index.json"
+    index = _json.loads(index_file.read_text()) if index_file.exists() else []
+    index = [e for e in index if e.get("run_id") != entry["run_id"]]
+    index.append({k: entry[k] for k in (
+        "run_id", "source", "council", "model", "created_at",
+        "n_docs", "n_chunks", "imported", "imported_at",
+    ) if k in entry})
+    index.sort(key=lambda e: e.get("created_at") or "", reverse=True)
+    index_file.write_text(_json.dumps(index, indent=2))
+
+
+def cmd_archive_status(args) -> None:
+    import json as _json
+    from rich.table import Table
+
+    key = args.council
+    archive_base = Path("data/llm_archive")
+    index_file = archive_base / "index.json"
+
+    index = _json.loads(index_file.read_text()) if index_file.exists() else []
+    runs = [e for e in index if e.get("council") == key]
+
+    if runs:
+        table = Table(title=f"LLM Response Archive — {key}")
+        table.add_column("Run ID", style="cyan", no_wrap=True)
+        table.add_column("Source", style="dim")
+        table.add_column("Model", style="dim")
+        table.add_column("Docs", justify="right")
+        table.add_column("Chunks", justify="right")
+        table.add_column("Archived", style="dim")
+        table.add_column("Imported")
+
+        for run in runs:
+            if run.get("imported"):
+                imported = f"[green]✓[/green] {(run.get('imported_at') or '')[:10]}"
+            else:
+                imported = "[dim]—[/dim]"
+            model = run.get("model") or "?"
+            model_short = model.replace("claude-", "").replace("-20251001", "")
+            table.add_row(
+                run["run_id"],
+                run.get("source", "?"),
+                model_short,
+                str(run.get("n_docs", "?")),
+                str(run.get("n_chunks", "?")),
+                (run.get("created_at") or "?")[:19].replace("T", " "),
+                imported,
+            )
+
+        console.print(table)
+        console.print(f"\n[dim]Archive directory: {archive_base.resolve()}[/dim]")
+        console.print(f"[dim]Import a run:  council archive-import {key} <run_id>[/dim]")
+        console.print(f"[dim]Import with re-extract:  council archive-import {key} <run_id> --force[/dim]")
+
+    # Warn about batch jobs not yet in archive
+    import json as _json
+    archived_ids = {r["run_id"] for r in runs}
+    job_dir = Path("data/batch_jobs")
+    unarchived = [
+        f.stem for f in sorted(job_dir.glob("*.json"))
+        if f.stem not in archived_ids
+        and _json.loads(f.read_text()).get("council") == key
+    ]
+    if unarchived:
+        console.print(
+            f"\n[yellow]{len(unarchived)} batch job(s) not yet in archive:[/yellow]"
+        )
+        for bid in unarchived:
+            console.print(f"  [dim]{bid}[/dim]")
+        console.print(
+            f"[dim]Download all:  council archive-download {key} --all[/dim]"
+        )
+
+
+def cmd_archive_import(args) -> None:
+    from scripts.archive_import import run as _run
+    _run(
+        council=args.council,
+        run_id=args.run_id,
+        force=getattr(args, "force", False),
+    )
+
+
+def cmd_archive_download(args) -> None:
+    """Download historical batch results from Anthropic API into local archive (no DB write)."""
+    import json as _json
+    from datetime import datetime, timezone
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+
+    job_dir = Path("data/batch_jobs")
+
+    if getattr(args, "all_batches", False):
+        # Collect all batch IDs for this council from data/batch_jobs/
+        batch_ids = []
+        for job_file in sorted(job_dir.glob("*.json")):
+            try:
+                job = _json.loads(job_file.read_text())
+                if job.get("council") == key:
+                    batch_ids.append(job_file.stem)
+            except Exception:
+                continue
+        if not batch_ids:
+            console.print(f"[yellow]No batch job files found for council: {key}[/yellow]")
+            return
+        console.print(f"[dim]Found {len(batch_ids)} batch job files for {key}[/dim]")
+    else:
+        if not getattr(args, "batch_id", None):
+            console.print("[red]Provide a batch_id or use --all[/red]")
+            sys.exit(1)
+        batch_ids = [args.batch_id]
+
+    from src.extraction.extractor import MinutesExtractor
+    extractor = MinutesExtractor()
+
+    archive_base = Path("data/llm_archive")
+    n_downloaded = 0
+    n_skipped = 0
+    n_failed = 0
+
+    for batch_id in batch_ids:
+        console.print(f"\n[bold cyan]{batch_id}[/bold cyan]")
+
+        archive_dir = archive_base / batch_id
+        existing_chunks = (
+            [f for f in archive_dir.glob("*.json") if f.name != "manifest.json"]
+            if archive_dir.exists() else []
+        )
+
+        if existing_chunks and not getattr(args, "force", False):
+            console.print(
+                f"  [dim]Already archived ({len(existing_chunks)} chunks) — "
+                "skip (--force to re-download)[/dim]"
+            )
+            n_skipped += 1
+            continue
+
+        job_file = job_dir / f"{batch_id}.json"
+        if not job_file.exists():
+            console.print(f"  [red]Job file not found: {job_file}[/red]")
+            n_failed += 1
+            continue
+
+        job = _json.loads(job_file.read_text())
+        id_map: dict = job.get("id_map", {})
+        council_full_name: str = job.get("council_name", COUNCILS[key]["short_name"])
+        n_requests = job.get("request_count", len(id_map))
+
+        console.print(
+            f"  [dim]Downloading {n_requests} responses "
+            f"({job.get('n_docs', '?')} docs, submitted {(job.get('submitted_at') or '?')[:10]})...[/dim]"
+        )
+
+        archive_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            status, results = extractor.retrieve_batch_results(
+                batch_id, archive_dir=archive_dir, id_map=id_map
+            )
+        except Exception as exc:
+            console.print(f"  [red]API error: {exc}[/red]")
+            n_failed += 1
+            continue
+
+        if status != "ended":
+            console.print(
+                f"  [yellow]Batch not yet complete (status: {status}) — skipping[/yellow]"
+            )
+            n_skipped += 1
+            continue
+
+        chunk_files = [f for f in archive_dir.glob("*.json") if f.name != "manifest.json"]
+        n_ok = sum(1 for v in results.values() if not isinstance(v, Exception))
+        n_err = len(results) - n_ok
+
+        # Write manifest. imported=False: data is already in DB from original batch-collect;
+        # this archive entry is for future re-import only.
+        manifest = {
+            "run_id": batch_id,
+            "source": "batch",
+            "council": key,
+            "council_name": council_full_name,
+            "model": job.get("model", extractor._model),
+            "max_chars": job.get("max_chars"),
+            "created_at": job.get("submitted_at"),
+            "n_docs": job.get("n_docs", 0),
+            "n_chunks": len(chunk_files),
+            "imported": False,
+            "imported_at": None,
+            "retroactive_archive": True,
+        }
+        (archive_dir / "manifest.json").write_text(_json.dumps(manifest, indent=2))
+        _update_archive_index(archive_base, manifest)
+
+        console.print(
+            f"  [green]✓[/green] {len(chunk_files)} chunks archived "
+            f"({n_ok} ok, {n_err} errors) → {archive_dir}"
+        )
+        n_downloaded += 1
+
+    console.print(
+        f"\n[bold]Done:[/bold] {n_downloaded} downloaded, "
+        f"{n_skipped} skipped, {n_failed} failed"
+    )
+    if n_downloaded:
+        console.print(
+            "[dim]Note: data is already in the DB from the original batch-collect. "
+            "Use 'archive-import --force' only if you need to rebuild the DB from scratch.[/dim]"
+        )
+        console.print("[dim]View: council archive-status cambridge[/dim]")
+
+
+# ---------------------------------------------------------------------------
 # Sub-commands
 # ---------------------------------------------------------------------------
 
@@ -315,6 +539,14 @@ def cmd_extract(args) -> None:
     council_full_name = council.name
     extractor = MinutesExtractor()
 
+    # Create an archive run directory for this sync extraction batch
+    import json as _json
+    from datetime import datetime as _dt, timezone as _tz
+    _archive_run_id = f"sync_{_dt.now(_tz.utc).strftime('%Y%m%d_%H%M%S')}"
+    _archive_dir = Path("data/llm_archive") / _archive_run_id
+    _archive_dir.mkdir(parents=True, exist_ok=True)
+    _archive_start = _dt.now(_tz.utc).isoformat()
+
     succeeded = 0
     failed = 0
     failures: list[dict] = []
@@ -351,6 +583,7 @@ def cmd_extract(args) -> None:
                     meeting_date_hint=meeting_date_hint,
                     max_chars=max_chars,
                     document_type=doc_type,
+                    archive_dir=_archive_dir,
                 )
                 meeting_id = save_extraction(
                     session, council_id, extracted, pdf,
@@ -381,6 +614,27 @@ def cmd_extract(args) -> None:
         f"\n[bold]Done:[/bold] {succeeded} extracted, {failed} failed, {skipped} skipped"
     )
     _log.info("Done: %d extracted, %d failed, %d skipped", succeeded, failed, skipped)
+
+    # Write archive manifest and update index
+    _archive_chunk_files = [f for f in _archive_dir.glob("*.json") if f.name != "manifest.json"]
+    _archive_stems = {f.stem.split("__c")[0] for f in _archive_chunk_files if "__c" in f.stem}
+    _archive_manifest = {
+        "run_id": _archive_run_id,
+        "source": "sync",
+        "council": key,
+        "council_name": council_full_name,
+        "model": extractor._model,
+        "max_chars": max_chars,
+        "created_at": _archive_start,
+        "n_docs": len(_archive_stems),
+        "n_chunks": len(_archive_chunk_files),
+        "imported": True,
+        "imported_at": _dt.now(_tz.utc).isoformat(),
+    }
+    (_archive_dir / "manifest.json").write_text(_json.dumps(_archive_manifest, indent=2))
+    _update_archive_index(Path("data/llm_archive"), _archive_manifest)
+    if _archive_chunk_files:
+        console.print(f"[dim]Archive: {len(_archive_chunk_files)} responses → {_archive_dir}[/dim]")
 
     if failures:
         import json as _json
@@ -586,8 +840,14 @@ def cmd_batch_collect(args) -> None:
 
     extractor = MinutesExtractor()
 
+    # Prepare archive directory — responses are written per-chunk inside retrieve_batch_results
+    _archive_dir = Path("data/llm_archive") / batch_id
+    _archive_dir.mkdir(parents=True, exist_ok=True)
+
     console.print(f"[dim]Checking batch {batch_id}...[/dim]")
-    status, chunk_results = extractor.retrieve_batch_results(batch_id)
+    status, chunk_results = extractor.retrieve_batch_results(
+        batch_id, archive_dir=_archive_dir, id_map=id_map
+    )
 
     if status != "ended":
         console.print(f"[yellow]Batch status: {status}[/yellow]")
@@ -724,6 +984,26 @@ def cmd_batch_collect(args) -> None:
     session.close()
     console.print(f"\n[bold]Done:[/bold] {succeeded} saved, {failed} failed")
     _log.info("batch-collect done: %d saved, %d failed", succeeded, failed)
+
+    # Write archive manifest and update index
+    _archive_chunk_files = [f for f in _archive_dir.glob("*.json") if f.name != "manifest.json"]
+    _archive_manifest = {
+        "run_id": batch_id,
+        "source": "batch",
+        "council": key,
+        "council_name": council_full_name,
+        "model": job.get("model", extractor._model),
+        "max_chars": job.get("max_chars"),
+        "created_at": job.get("submitted_at"),
+        "n_docs": succeeded + failed,
+        "n_chunks": len(_archive_chunk_files),
+        "imported": True,
+        "imported_at": datetime.now(timezone.utc).isoformat(),
+    }
+    (_archive_dir / "manifest.json").write_text(_json.dumps(_archive_manifest, indent=2))
+    _update_archive_index(Path("data/llm_archive"), _archive_manifest)
+    if _archive_chunk_files:
+        console.print(f"[dim]Archive: {len(_archive_chunk_files)} responses → {_archive_dir}[/dim]")
 
     if failures:
         error_path = Path("data/extraction_errors.json")
@@ -1821,6 +2101,50 @@ def main() -> None:
         _run(apply=a.apply, use_terms=a.use_terms)
 
     p_dedup.set_defaults(func=_cmd_dedup)
+
+    # archive-status
+    p_archive_status = sub.add_parser(
+        "archive-status",
+        help="List archived LLM response runs for a council",
+    )
+    p_archive_status.add_argument("council", choices=list(COUNCILS))
+    p_archive_status.set_defaults(func=cmd_archive_status)
+
+    # archive-import
+    p_archive_import = sub.add_parser(
+        "archive-import",
+        help="Re-import LLM responses from local archive into DB (no API calls)",
+    )
+    p_archive_import.add_argument("council", choices=list(COUNCILS))
+    p_archive_import.add_argument(
+        "run_id",
+        help="Archive run ID shown by archive-status (sync_... or msgbatch_...)",
+    )
+    p_archive_import.add_argument(
+        "--force", action="store_true",
+        help="Re-import docs already in the DB (re-extraction from archive)",
+    )
+    p_archive_import.set_defaults(func=cmd_archive_import)
+
+    # archive-download
+    p_archive_dl = sub.add_parser(
+        "archive-download",
+        help="Download historical batch results from Anthropic API into local archive (no DB write)",
+    )
+    p_archive_dl.add_argument("council", choices=list(COUNCILS))
+    p_archive_dl.add_argument(
+        "batch_id", nargs="?",
+        help="Batch ID to download (find IDs in data/batch_jobs/)",
+    )
+    p_archive_dl.add_argument(
+        "--all", dest="all_batches", action="store_true",
+        help="Download all batch IDs in data/batch_jobs/ for this council",
+    )
+    p_archive_dl.add_argument(
+        "--force", action="store_true",
+        help="Re-download even if already archived locally",
+    )
+    p_archive_dl.set_defaults(func=cmd_archive_download)
 
     args = parser.parse_args()
     if args.verbose:

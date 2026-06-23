@@ -9,6 +9,9 @@ Current state: 613 PDFs in manifest (Cambridge, 1995–2026, cleaned 2026-06-22)
 **Current strategy (as of 2026-06-23):** Full corpus extracted. Pre-2024 batch complete.
 Council Setup (terms seeding + dedup) complete. 14,013 motions / 16,249 votes / 405 councillors.
 Phase C cleanup (build-relationships, geocode) and Level 6 human audit are the immediate next steps.
+LLM response archive system added (2026-06-23) — all future extraction runs automatically archive
+raw API responses to `data/llm_archive/` for deterministic DB rebuilding. All 12 historical batches
+retroactively downloaded (3,358 chunk files, 66 MB). Archive covers the full DB.
 
 **Schema fixes applied during pre-2024 batch (2026-06-22):**
 - `ExtractedCommunitySubmission.position`: added synonym map ("objection" → "object", "in support" → "support", etc.) + null fallback for unknowns — previously caused ValidationError on 3 docs
@@ -881,15 +884,21 @@ data/
     {filename}.json
   extraction_errors.json       # Level 5: error log by class
   audit_report.md              # Level 6: human audit findings
+  llm_archive/                 # LLM response archive (all extraction runs, sync + batch)
+    index.json                 #   catalog of all runs: run_id, council, model, dates, imported flag
+    {run_id}/                  #   one directory per run (sync_YYYYMMDD_HHMMSS or msgbatch_...)
+      manifest.json            #     run metadata + import status
+      {stem}__c{i}of{n}.json  #     raw API response per chunk, keyed by custom_id
 
 .cache/
-  llm_responses/               # Cached raw LLM responses
-    {hash}.json                # Keyed by doc_hash + prompt_version
+  llm_responses/               # Cached raw LLM responses for Level 1 inventory
+    {hash}.json                # Keyed by doc_hash + prompt_version (re-running inventory reads from here)
 
 scripts/
   extract_cambridge_elections.py  # Council Setup: download + parse Elections WA PDFs → CSV
   import_terms.py              # Council Setup: CSV → councillor_terms DB rows
   dedup_councillors.py         # Post-setup: merge councillor name variants
+  archive_import.py            # Re-import LLM responses from archive into DB (no API calls)
   census.py                    # Level 0
   inventory.py                 # Level 1
   inventory_typology.py        # Level 1→2 (council typology)
@@ -906,6 +915,28 @@ data/
 src/validation/
   core.py                      # Shared validation logic (Levels 3c and 4)
 ```
+
+### LLM Response Archive
+
+Every extraction run (sync or batch) automatically archives raw LLM responses before parsing.
+This enables deterministic DB rebuilding without re-calling the API.
+
+**Archive commands:**
+```bash
+council archive-status cambridge                     # list all archived runs + unarchived batch jobs
+council archive-download cambridge --all             # download all historical batches from Anthropic API
+council archive-download cambridge <batch_id>        # download a specific batch
+council archive-import cambridge <run_id>            # re-import into DB (skips already-extracted)
+council archive-import cambridge <run_id> --force    # re-import + overwrite existing extractions
+python scripts/archive_import.py cambridge <run_id>  # standalone (same as CLI)
+```
+
+**Archive format** (`data/llm_archive/`):
+- `index.json` — catalog with run_id, source (sync/batch), model, dates, imported flag
+- `{run_id}/manifest.json` — run-level metadata
+- `{run_id}/{stem}__c{i}of{n}.json` — one file per LLM chunk with raw response + chunk metadata
+
+**Note on inventory:** Level 1 inventory responses are already cached at `.cache/llm_responses/{sha}_{prompt_version}.json`. Re-running `council inventory` reads from cache for free — no separate archive needed.
 
 ---
 

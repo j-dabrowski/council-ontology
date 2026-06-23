@@ -338,6 +338,26 @@ All commands are invoked as: council <command>  (or: python -m src <command>)
   council docs cambridge [--filter all|pending|ingested|no-manifest]
       Per-file table: filename, date, type, manifest ✓/–, DB ✓/pending, meeting ID.
 
+  — ARCHIVE —
+
+  council archive-status cambridge
+      List all archived LLM extraction runs. Shows run ID, source (sync/batch), model,
+      doc/chunk counts, archive date, and import status. Also lists any batch job files
+      not yet downloaded to the archive.
+
+  council archive-download cambridge [<batch_id>] [--all] [--force]
+      Download historical batch results from the Anthropic API into the local archive.
+      Does NOT write to the DB — data is already there from the original batch-collect.
+      Use after a batch-collect that predates the archive system, or to recover responses
+      before Anthropic's 29-day expiry. --all downloads every batch in data/batch_jobs/.
+
+  council archive-import cambridge <run_id> [--force]
+      Re-import a previously archived extraction run into the DB without making any
+      API calls. Reads raw LLM responses from data/llm_archive/{run_id}/, re-parses,
+      merges multi-chunk docs, and calls save_extraction(). Re-reads PDFs for provenance.
+      --force: re-import docs already in the DB (overwrites existing extraction).
+      Use this to rebuild the DB deterministically from the same responses.
+
   — UTILITIES —
 
   council compare <pdf.pdf> [--council cambridge] [--no-save]
@@ -635,6 +655,10 @@ DATA DIRECTORIES
   data/extraction_errors.json  — latest extraction error report (grouped by error class)
   data/audit_report.md         — Level 6 human-review audit report (council audit)
   data/audit_selection.json    — which documents were selected for the audit
+  data/llm_archive/            — LLM extraction response archive (written by every extract run)
+    index.json                 —   catalog: run_id, council, model, dates, import status
+    {run_id}/manifest.json     —   run metadata (sync_YYYYMMDD or msgbatch_...)
+    {run_id}/{cid}.json        —   raw LLM response per chunk ({stem}__c{i}of{n}.json)
   data/processed/              — exists but empty (unused)
-  .cache/llm_responses/        — cached raw LLM responses ({hash}_{prompt-version}.json)
+  .cache/llm_responses/        — cached raw LLM responses for inventory ({hash}_{prompt-version}.json)
   council.log                  — DEBUG-level pipeline log

@@ -35,6 +35,7 @@ data/inventory_quality/
 data/sample_validation/
 data/validation/
 data/batch_jobs/
+data/llm_archive/
 data/raw/terms/
 
 .cache/
