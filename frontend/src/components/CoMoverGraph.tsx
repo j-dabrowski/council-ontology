@@ -1,17 +1,35 @@
 import ForceGraph2D from "react-force-graph-2d";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 
 export function CoMoverGraph() {
   const { data, loading, error } = useData(() => api.coMovers());
+  const containerRef = useRef<HTMLDivElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const fgRef = useRef<any>(null);
+  const [graphWidth, setGraphWidth] = useState(600);
+
+  const handleEngineStop = useCallback(() => {
+    fgRef.current?.zoomToFit(400, 32);
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    setGraphWidth(el.offsetWidth);
+    const ro = new ResizeObserver(([entry]) => setGraphWidth(entry.contentRect.width));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
   if (!data.nodes.length) {
     return (
-      <Card title="Co-Mover Network" subtitle="2024–present">
+      <Card title="Co-Mover Network" subtitle="1995–2026">
         <p className="chart-note">No co-mover pairs found with current filters.</p>
       </Card>
     );
@@ -39,12 +57,15 @@ export function CoMoverGraph() {
   };
 
   return (
-    <Card title="Co-Mover Network" subtitle="Active councillors, 2024–present">
-      <div style={{ width: "100%", height: 420, borderRadius: 8, overflow: "hidden", background: "#0f172a" }}>
+    <Card title="Co-Mover Network" subtitle="Active councillors, 1995–2026">
+      <div ref={containerRef} style={{ width: "100%", height: 420, borderRadius: 8, overflow: "hidden", background: "#0f172a" }}>
         <ForceGraph2D
+          ref={fgRef}
           graphData={graphData}
-          width={undefined as unknown as number}
+          width={graphWidth}
           height={420}
+          onEngineStop={handleEngineStop}
+          cooldownTicks={150}
           backgroundColor="#0f172a"
           nodeLabel="name"
           nodeColor={() => "#60a5fa"}
@@ -71,7 +92,6 @@ export function CoMoverGraph() {
               ctx.fillText(label.split(" ").slice(-1)[0], node.x ?? 0, (node.y ?? 0) + r + fontSize);
             }
           }}
-          cooldownTicks={100}
         />
       </div>
       <div className="comover-legend">

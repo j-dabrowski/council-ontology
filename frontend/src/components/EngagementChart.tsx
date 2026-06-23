@@ -20,7 +20,7 @@ export function EngagementChart() {
 
   return (
     <Card title="Public Engagement by Year" subtitle="Questions, deputations and petitions at meetings">
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={340}>
         <BarChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
@@ -36,7 +36,7 @@ export function EngagementChart() {
         </BarChart>
       </ResponsiveContainer>
       <p className="chart-note">
-        Public questions nearly tripled from 2024 to 2025. Full trend visible once 30-year corpus is extracted.
+        Public engagement across the full 30-year corpus (1995–2026).
       </p>
     </Card>
   );

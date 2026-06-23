@@ -1643,6 +1643,168 @@ def cmd_analyse(args) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Publish
+# ---------------------------------------------------------------------------
+
+
+def cmd_publish(args) -> None:
+    """Export analysis query results as static JSON snapshots for the frontend.
+
+    Writes frontend/public/data/{name}.json for each dashboard query.
+    The frontend reads these files; the site only reflects data from the
+    last time this command was run.
+
+    Run pipeline steps (dedup, build-relationships, geocode) separately
+    before publishing when you have new extraction data.
+    """
+    import json as _json
+    from dataclasses import asdict
+    from datetime import datetime, timezone
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+
+    short_name = COUNCILS[key]["short_name"]
+    output_dir = Path("frontend/public/data")
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    console.print(Panel(f"Publishing [bold]{key}[/bold] → {output_dir}", style="blue"))
+    published_at = datetime.now(timezone.utc).isoformat()
+
+    def _dc(obj) -> dict:
+        d = asdict(obj)
+        for k, v in d.items():
+            if hasattr(v, "isoformat"):
+                d[k] = v.isoformat()
+        return d
+
+    from src.storage.database import init_db, make_session_factory
+    from src.analysis.queries import get_council_by_name
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+    council_id = council_obj.id
+
+    n_written = 0
+
+    def _write(name: str, data) -> None:
+        nonlocal n_written
+        path = output_dir / f"{name}.json"
+        path.write_text(_json.dumps({"published_at": published_at, "data": data}, indent=2))
+        console.print(f"  [green]✓[/green] {name}.json")
+        n_written += 1
+
+    from src.analysis.queries import (
+        interest_declarations_summary, co_mover_pairs,
+        voting_alignment_matrix, contestation_by_year,
+        topic_distribution_by_year, public_engagement_by_year,
+    )
+    from src.analysis.divergence import officer_divergence
+
+    # interests
+    _write("interests", [_dc(s) for s in
+        interest_declarations_summary(session, council_id, None, None)])
+
+    # divergence
+    pairs = officer_divergence(session, council_id, None, None)
+    diverged = [p for p in pairs if p.diverged]
+    total = len(pairs)
+    years = [p.meeting_date.year for p in pairs if p.meeting_date]
+    _write("divergence", {
+        "total_matched": total,
+        "diverged_count": len(diverged),
+        "followed_count": total - len(diverged),
+        "compliance_rate": round((total - len(diverged)) / total, 4) if total else None,
+        "year_min": min(years) if years else None,
+        "year_max": max(years) if years else None,
+        "exceptions": [
+            {
+                "meeting_date": p.meeting_date.isoformat(),
+                "item_number": p.item_number,
+                "title": p.title,
+                "officer_recommendation": p.officer_recommendation,
+                "council_outcome": p.council_outcome,
+                "match_confidence": round(p.match_confidence, 2),
+            }
+            for p in diverged
+        ],
+    })
+
+    # co-movers
+    pairs_cm = co_mover_pairs(session, council_id, None, None, min_count=5, active_only=True)
+    names: set[str] = set()
+    for p in pairs_cm:
+        names.add(p.mover_name)
+        names.add(p.seconder_name)
+    _write("co-movers", {
+        "nodes": [{"id": n} for n in sorted(names)],
+        "links": [{"source": p.mover_name, "target": p.seconder_name, "value": p.count} for p in pairs_cm],
+        "pairs": [_dc(p) for p in pairs_cm],
+    })
+
+    # alignment
+    ALLY, OPP = 0.85, 0.40
+    rows = [r for r in voting_alignment_matrix(session, council_id, from_year=None, to_year=None)
+            if r.total_shared_votes >= 10]
+    _write("alignment", {"pairs": [
+        {
+            "name_a": r.councillor_a.strip(),
+            "name_b": r.councillor_b.strip(),
+            "agreement_rate": round(r.agreement_rate, 4),
+            "shared_votes": r.total_shared_votes,
+            "is_ally": r.agreement_rate >= ALLY,
+            "is_opponent": r.agreement_rate <= OPP,
+        }
+        for r in rows
+    ]})
+
+    # trends
+    contestation = contestation_by_year(session, council_id, None, None)
+    topics = topic_distribution_by_year(session, council_id, None, None)
+    _write("trends", {
+        "contestation": [
+            {
+                "year": r.year,
+                "total_carried": r.total_carried,
+                "total_with_dissent": r.contested,
+                "contestation_rate": round(r.contestation_rate, 4),
+                "most_contested": [t for t, _ in (r.most_contested[:3] if r.most_contested else [])],
+            }
+            for r in contestation
+        ],
+        "topics": {str(k): v for k, v in topics.items()},
+    })
+
+    # engagement
+    _write("engagement", [
+        {"year": r.year, "public_questions": r.public_questions,
+         "deputations": r.deputations, "petitions": r.petitions}
+        for r in public_engagement_by_year(session, council_id, None, None)
+    ])
+
+    session.close()
+
+    # Manifest records what was published and when
+    (output_dir / "manifest.json").write_text(_json.dumps({
+        "published_at": published_at,
+        "council": key,
+        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement"],
+    }, indent=2))
+
+    console.print(Panel(
+        f"[green]✓[/green] {n_written} snapshots → {output_dir}\n"
+        f"[dim]Published at: {published_at}[/dim]\n"
+        f"[dim]Site reflects this data until you run publish again.[/dim]",
+        style="green",
+    ))
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -2145,6 +2307,14 @@ def main() -> None:
         help="Re-download even if already archived locally",
     )
     p_archive_dl.set_defaults(func=cmd_archive_download)
+
+    # publish
+    p_publish = sub.add_parser(
+        "publish",
+        help="Refresh derived data and export dashboard snapshots for the frontend",
+    )
+    p_publish.add_argument("council", choices=list(COUNCILS))
+    p_publish.set_defaults(func=cmd_publish)
 
     args = parser.parse_args()
     if args.verbose:

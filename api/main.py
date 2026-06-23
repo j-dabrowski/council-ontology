@@ -87,7 +87,7 @@ def _dc(obj) -> dict:
 
 @app.get("/api/interests")
 def interests(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> list[dict]:
     """Per-councillor interest declaration counts by type."""
@@ -103,7 +103,7 @@ def interests(
 
 @app.get("/api/divergence")
 def divergence(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> dict:
     """Officer recommendation vs. council decision divergence rate and exceptions."""
@@ -138,7 +138,7 @@ def divergence(
 
 @app.get("/api/co-movers")
 def co_movers(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     min_count: int = Query(default=5),
     active_only: bool = Query(default=True),
@@ -171,7 +171,7 @@ def co_movers(
 
 @app.get("/api/alignment")
 def alignment(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     min_shared: int = Query(default=10),
     limit: int = Query(default=50),
@@ -206,7 +206,7 @@ def alignment(
 
 @app.get("/api/trends")
 def trends(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> dict:
     """Contestation rate and topic distribution by year."""
@@ -235,7 +235,7 @@ def trends(
 
 @app.get("/api/engagement")
 def engagement(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> list[dict]:
     """Public questions, deputations, and petitions per year."""
@@ -259,7 +259,7 @@ def engagement(
 
 @app.get("/api/activity")
 def activity(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     min_votes: int = Query(default=10),
 ) -> list[dict]:
@@ -276,7 +276,7 @@ def activity(
 
 @app.get("/api/planning")
 def planning(
-    from_year: int | None = Query(default=2024),
+    from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     limit: int = Query(default=10),
 ) -> dict:

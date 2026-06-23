@@ -15,25 +15,24 @@ Three-layer ontology:
   Dynamic   — feedback loops and emergent patterns (voting blocs, relationship edges)
 
 
-CURRENT STATE (as of 2026-06-22)
+CURRENT STATE (as of 2026-06-23)
 ----------------------------------
   613 PDFs in manifest (Cambridge, 1995–2026; cleaned 2026-06-22):
     ~507 minutes / ~79 agendas / 4 addenda  (54 noise docs removed; 8 reclassified)
-  244 extracted into DB:
-    179 minutes / 61 agendas / 4 addenda
-  ~370 pending extraction:
-    ~353 pre-2024 minutes + some newly-scraped 2022–2023 docs
-    ~17 2024+ PDFs that are unreadable (fitz + pypdf both infinite-loop on malformed
-       content streams); their meeting dates are covered by other extracted PDFs
+  580 extracted into DB (full corpus complete as of 2026-06-22):
+    506 minutes / 66 agendas / 4 addenda / 4 unknown
+  0 pending extraction.
+    ~17 unreadable PDFs (fitz + pypdf both infinite-loop on malformed content streams);
+       their meeting dates are covered by other extracted PDFs — safely skipped.
 
   Confirmed corpus gaps (not recoverable from web):
     2022 Jan/Feb/Mar/Apr/Jun — CMS migration; old static pages not carried over
     2023 Jan/Feb/Mar/Apr/Jun/Jul — same cause; transition extended into H1 2023
     Recovery: email admin@cambridge.wa.gov.au citing LGA 1995 s.5.22; FOI if needed
 
-  1,860 motions extracted
-  4,140 votes recorded
-    193 councillors seen
+  14,013 motions extracted
+  16,249 votes recorded
+     405 councillors seen
 
   Level 0 census complete:
     536 extractable PDFs / 1 empty / 0 errors (original 537-PDF corpus)
@@ -72,16 +71,16 @@ CURRENT STATE (as of 2026-06-22)
       pre-filter; see cli.py).
 
   Current strategy:
-    2024+ corpus is complete and ready for demo/analysis.
-    Manifest audited and cleaned (2026-06-22); scraper tooling hardened.
-    Pre-2024 extraction is the immediate next step — treat all pre-2024 docs as a
-    fresh batch with the current prompt (do not patch incrementally).
+    Full corpus extracted. Phase C cleanup (build-relationships --all-years, geocode)
+    is the immediate next step, followed by Level 6 human audit (Phase D).
+    Council Setup (terms seeding + dedup) complete — 58 terms imported, 405 councillors
+    after 83 merges.
 
   Known issues:
     1. 7 large agenda docs show high paraphrase rate (ToC-hallucination in multi-chunk
        extraction) — prompt fix applied to agenda_system_prompt.txt; these are REVIEW
        status but data is usable
-    2. 329 pre-2024 minutes pending (deferred)
+    2. build-relationships and geocode not yet re-run with full corpus (Phase C pending)
 
 
 PARTS OF THE PROJECT
@@ -539,32 +538,31 @@ Underlying library functions (callable from Python directly):
 WHAT IS UNFINISHED
 ===================
 
-IMMEDIATE PRIORITY — pre-2024 batch extraction
------------------------------------------------
-  A. Update census and estimate cost:
-       council census cambridge
-       council costs --to-year 2023 --max-chars full
+IMMEDIATE PRIORITY — Phase C post-extraction cleanup
+------------------------------------------------------
+  Full corpus extracted (2026-06-22). Run Phase C to refresh derived data:
 
-  B. Submit batch (after confirming cost):
-       council extract cambridge --to-year 2023 --max-chars full --batch --dry-run
-       council extract cambridge --to-year 2023 --max-chars full --batch
-       # While waiting (~24h): run Level 6 human audit on 2024+ corpus (see item 6 below)
-       council batch-collect cambridge <batch_id>
-       council validate cambridge --to-year 2023
-
-  C. Post-extraction cleanup:
-       python scripts/dedup_councillors.py --apply         # merge new name variants
+  A. Refresh relationship edges and geocoding:
+       python scripts/dedup_councillors.py --apply         # merge any new name variants
        council build-relationships cambridge --all-years   # refresh ALLY/OPPONENT edges
        council geocode cambridge                           # geocode pre-2024 planning sites
+
+  B. Run all analysis queries without --from-year to see 30-year trends.
+
+  C. Website data refresh (programmatic):
+       Design and implement a `council publish cambridge` command (or equivalent script)
+       that regenerates all website-facing figures and graphs from the current DB state.
+       Needs to cover: serializing analysis query results to JSON/CSV, regenerating chart
+       assets, and pushing to wherever the frontend reads from. Format TBD (static JSON
+       files, SQLite query layer, or API). Run this after every new extraction batch.
 
   D. Gap recovery (low urgency, parallel):
        Email admin@cambridge.wa.gov.au requesting 2022 Jan/Feb/Mar/Apr/Jun and
        2023 Jan/Feb/Mar/Apr/Jun/Jul minutes (LGA 1995 s.5.22).
        If no response in 4 weeks → FOI via foi@cambridge.wa.gov.au.
 
-1. EXTRACTION BACKLOG (~370 PDFs)
-   ~353 pre-2024 + newly-scraped 2022–2023 docs still pending.
-   See IMMEDIATE PRIORITY above for the full command sequence.
+1. EXTRACTION BACKLOG
+   Full corpus extracted (580 docs as of 2026-06-22). No pending backlog.
 
 3. LARGE AGENDA ToC-HALLUCINATION (7 docs, REVIEW)
    Large agenda PDFs (11–20 extraction chunks) produce 100% paraphrase rate. Chunk 0 is
@@ -628,7 +626,7 @@ IMMEDIATE PRIORITY — pre-2024 batch extraction
    Level 4 (validate): done (2026-05-31).
    Phase 2 (document-type-aware pipeline): done (2026-06-20). All 6 failures resolved.
    Scraper audit tooling: done (2026-06-22). council scraper-audit / council wayback-fill.
-   Level 5 (full extraction): 2024+ complete (244 docs). ~370 pre-2024 pending → NEXT.
+   Level 5 (full extraction): complete (2026-06-22). 580 docs total; 0 pending.
    Level 6 (human audit): tooling done (2026-06-18). Human review pending.
      council audit cambridge --count 12 --from-year 2024 --seed 42
      → data/audit_report.md (12 docs, open side-by-side with PDFs to annotate)

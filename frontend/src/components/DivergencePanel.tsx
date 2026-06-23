@@ -12,14 +12,20 @@ export function DivergencePanel() {
     ? `${(data.compliance_rate * 100).toFixed(0)}%`
     : "—";
 
+  const yearRange = data.year_min && data.year_max
+    ? `${data.year_min}–${data.year_max}`
+    : "years unknown";
+
   return (
-    <Card title="Officer Recommendation Compliance" subtitle="2024–present">
+    <Card title="Officer Recommendation Compliance" subtitle={yearRange}>
       <div className="divergence-hero">
         <span className="hero-number">{pct}</span>
         <span className="hero-label">
           of council motions followed officer recommendations
           <br />
-          <span className="hero-sub">({data.total_matched} agenda–minutes pairs matched)</span>
+          <span className="hero-sub">
+            ({data.total_matched} agenda–minutes pairs matched · {yearRange} only — requires both agenda and minutes for same meeting)
+          </span>
         </span>
       </div>
 

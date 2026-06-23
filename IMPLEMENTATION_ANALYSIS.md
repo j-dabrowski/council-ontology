@@ -269,13 +269,14 @@ council validate cambridge                                     # score results
 - `_make_user_content()` extracted as a shared helper used by both sync and batch paths.
 - Job metadata persisted at `data/batch_jobs/{batch_id}.json`: includes the full `custom_id → {pdf_path, chunk_idx, n_chunks, meeting_date_hint}` mapping needed by the collect phase.
 
-**Actual results (Cambridge, as of 2026-06-20 — 2024+ corpus COMPLETE):**
-- **244 docs extracted** total: 179 minutes, 61 agendas, 4 addenda.
-- **346 docs pending**: 329 pre-2024 minutes (deferred — see strategy).
+**Actual results (Cambridge, as of 2026-06-22 — full corpus COMPLETE):**
+- **580 docs extracted** total: 506 minutes, 66 agendas, 4 addenda, 4 unknown.
+- **0 docs pending** (full corpus done).
 - June 9 batch (`msgbatch_013dcu8czK79suJXKYvTmW9S`): 86 docs, 585 requests (full-doc, all chunks), $19.58.
 - June 11 batch (`msgbatch_01TSrRKeTuz74GvByzFdzFA1`): 95 docs re-extracted with Phase 2 agenda prompt; 89 succeeded, 6 failed.
 - June 17 batch + fixes: all 6 failures resolved (schema hardening + interest_type coercion).
-- DB totals: 1,860 motions, 4,140 votes, 193 councillors.
+- Pre-2024 batch (2026-06-22): all remaining ~329 pre-2024 minutes extracted. Actual cost: ~$50 batch.
+- DB totals: 14,013 motions, 16,249 votes, 405 councillors.
 
 **Validation results (2024+ corpus, n=87, 2026-06-20):**
 - Quote completeness: 98.1% ✓ (target >80%)
@@ -497,12 +498,12 @@ council build-relationships cambridge        # refresh edges
 | 15 | Fix large-agenda ToC-hallucination (7 docs) | Phase 2 | Medium | **Partial** — prompt rule added; 7 docs remain REVIEW until re-extracted |
 | 16 | Dynamic layer: `scripts/build_relationships.py` | Level 5 | Small | **Done** (2026-06-18) — ALLY/OPPONENT edges from voting alignment; `--from-year 2024` default |
 | 17 | Level 5: 2024+ corpus complete | Phase 2 | — | **Done** (2026-06-20) — 244 extracted; n=87: 57 PASS/30 REVIEW/0 FAIL |
-| 18 | Level 5: extract remaining 329 pre-2024 docs | — | Medium | **Pending** — deferred until demo frontend built |
+| 18 | Level 5: extract remaining pre-2024 docs | — | Medium | **Done** (2026-06-22) — full corpus complete; 580 extracted |
 | 19 | Level 6: audit report generator | Level 5 | Small | **Done** (2026-06-18) — human review still pending |
 | 20 | Councillor deduplication + extractor name normalisation | Dynamic layer | Medium | **Done** (2026-06-20) — 193 → 106 councillors; 62 ALLY edges written |
 | 21 | Analysis query layer expansion + geocoding + officer divergence | Level 5 complete | Medium | **Done** (2026-06-20) — see Analysis section below |
 
-**Current critical path:** Pre-2024 batch extraction (329 minutes) — deferred until demo frontend done.
+**Current critical path:** Phase C cleanup — `council build-relationships cambridge --all-years` + `council geocode cambridge` — then Level 6 human audit.
 
 ---
 

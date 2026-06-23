@@ -19,7 +19,7 @@ export function ContestationChart() {
 
   return (
     <Card title="Contestation Rate by Year" subtitle="% of carried motions with ≥1 dissenting vote">
-      <ResponsiveContainer width="100%" height={280}>
+      <ResponsiveContainer width="100%" height={320}>
         <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
@@ -50,15 +50,17 @@ export function ContestationChart() {
         </LineChart>
       </ResponsiveContainer>
       <p className="chart-note">
-        Contestation is falling. 2024–2026 data only — trend may shift with 30-year corpus.
+        Contestation rate across the full 30-year corpus (1995–2026).
       </p>
       <h3 className="section-heading">Most contested motion per year</h3>
-      {data.contestation.map((r) => (
-        <div key={r.year} className="contested-row">
-          <span className="contested-year">{r.year}</span>
-          <span className="contested-title">{r.most_contested[0] ?? "—"}</span>
-        </div>
-      ))}
+      <div className="contested-list">
+        {data.contestation.map((r) => (
+          <div key={r.year} className="contested-row">
+            <span className="contested-year">{r.year}</span>
+            <span className="contested-title">{r.most_contested[0] ?? "—"}</span>
+          </div>
+        ))}
+      </div>
     </Card>
   );
 }

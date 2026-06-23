@@ -36,7 +36,7 @@ export function AlignmentHeatmap() {
   });
 
   return (
-    <Card title="Voting Alignment Heatmap" subtitle="Agreement rate on shared votes, 2024–present">
+    <Card title="Voting Alignment Heatmap" subtitle="Agreement rate on shared votes, 1995–2026">
       <div className="heatmap-scroll">
         <table className="heatmap-table">
           <thead>

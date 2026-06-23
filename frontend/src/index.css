@@ -18,6 +18,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background: #0f172a;
+  overflow-x: clip;
 }
 
 a {
@@ -29,9 +30,9 @@ a:hover { text-decoration: underline; }
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 
 .app {
-  max-width: 1400px;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 0 16px 48px;
+  padding: 0 24px 48px;
 }
 
 .site-header {
@@ -64,6 +65,10 @@ a:hover { text-decoration: underline; }
   gap: 24px;
 }
 
+.main-grid > * {
+  min-width: 0; /* grid items can shrink below content size */
+}
+
 .grid-full  { grid-column: 1 / -1; }
 .grid-half  { grid-column: span 1; }
 
@@ -87,6 +92,8 @@ a:hover { text-decoration: underline; }
   border: 1px solid #334155;
   border-radius: 12px;
   padding: 24px;
+  min-width: 0; /* prevent grid blowout */
+  overflow: hidden;
 }
 
 .card-header {
@@ -210,6 +217,7 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid #1e293b;
   color: #cbd5e1;
   vertical-align: top;
+  word-break: break-word;
 }
 
 .exception-table tr:last-child td { border-bottom: none; }
@@ -226,17 +234,12 @@ a:hover { text-decoration: underline; }
 
 .badge-red { background: #450a0a; color: #f87171; }
 
-/* ── Co-mover graph ──────────────────────────────────────────────────────── */
+/* ── Contestation chart extras ───────────────────────────────────────────── */
 
-.comover-legend { margin-top: 12px; }
-
-.comover-table-wrap {
-  margin-top: 20px;
-  max-height: 240px;
+.contested-list {
+  max-height: 320px;
   overflow-y: auto;
 }
-
-/* ── Contestation chart extras ───────────────────────────────────────────── */
 
 .contested-row {
   display: flex;
@@ -256,6 +259,16 @@ a:hover { text-decoration: underline; }
 .contested-title {
   color: #cbd5e1;
   line-height: 1.4;
+}
+
+/* ── Co-mover graph ──────────────────────────────────────────────────────── */
+
+.comover-legend { margin-top: 12px; }
+
+.comover-table-wrap {
+  margin-top: 20px;
+  max-height: 240px;
+  overflow-y: auto;
 }
 
 /* ── Alignment heatmap ───────────────────────────────────────────────────── */

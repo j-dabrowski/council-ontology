@@ -1,6 +1,7 @@
+// Reserved for future interactive API endpoints (councillor drill-downs etc.)
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
-async function get<T>(path: string, params?: Record<string, string | number | boolean>): Promise<T> {
+export async function get<T>(path: string, params?: Record<string, string | number | boolean | undefined>): Promise<T> {
   const url = new URL(`${BASE}${path}`);
   if (params) {
     for (const [k, v] of Object.entries(params)) {
@@ -10,6 +11,16 @@ async function get<T>(path: string, params?: Record<string, string | number | bo
   const res = await fetch(url.toString());
   if (!res.ok) throw new Error(`API error ${res.status}: ${path}`);
   return res.json();
+}
+
+// Read a pre-computed snapshot written by `council publish <council>`.
+// Snapshots live at frontend/public/data/{name}.json and are served as
+// static files — the site only reflects data from the last publish run.
+async function getSnapshot<T>(name: string): Promise<T> {
+  const res = await fetch(`/data/${name}.json`);
+  if (!res.ok) throw new Error(`Snapshot not found: ${name}.json — run 'council publish' first`);
+  const json = await res.json();
+  return json.data as T;
 }
 
 export interface InterestSummary {
@@ -25,6 +36,8 @@ export interface DivergenceData {
   diverged_count: number;
   followed_count: number;
   compliance_rate: number;
+  year_min: number | null;
+  year_max: number | null;
   exceptions: {
     meeting_date: string;
     item_number: string | null;
@@ -85,12 +98,10 @@ export interface EngagementStat {
 }
 
 export const api = {
-  interests: (fromYear = 2024) => get<InterestSummary[]>("/api/interests", { from_year: fromYear }),
-  divergence: (fromYear = 2024) => get<DivergenceData>("/api/divergence", { from_year: fromYear }),
-  coMovers: (fromYear = 2024, activeOnly = true) =>
-    get<CoMoverData>("/api/co-movers", { from_year: fromYear, active_only: activeOnly }),
-  alignment: (fromYear = 2024, minShared = 10) =>
-    get<{ pairs: AlignmentPair[] }>("/api/alignment", { from_year: fromYear, min_shared: minShared }),
-  trends: (fromYear = 2024) => get<TrendsData>("/api/trends", { from_year: fromYear }),
-  engagement: (fromYear = 2024) => get<EngagementStat[]>("/api/engagement", { from_year: fromYear }),
+  interests:  () => getSnapshot<InterestSummary[]>("interests"),
+  divergence: () => getSnapshot<DivergenceData>("divergence"),
+  coMovers:   () => getSnapshot<CoMoverData>("co-movers"),
+  alignment:  () => getSnapshot<{ pairs: AlignmentPair[] }>("alignment"),
+  trends:     () => getSnapshot<TrendsData>("trends"),
+  engagement: () => getSnapshot<EngagementStat[]>("engagement"),
 };

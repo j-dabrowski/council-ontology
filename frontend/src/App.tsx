@@ -12,8 +12,8 @@ export default function App() {
         <div className="header-inner">
           <h1 className="site-title">City of Cambridge Council</h1>
           <p className="site-subtitle">
-            Analysis of meeting minutes · 2024–2026 ·{" "}
-            <span className="data-note">30-year corpus extraction in progress</span>
+            Analysis of meeting minutes · 1995–2026 ·{" "}
+            <span className="data-note">Full 30-year corpus</span>
           </p>
         </div>
       </header>
@@ -23,10 +23,14 @@ export default function App() {
           <DivergencePanel />
         </section>
 
-        <section className="grid-half">
+        <section className="grid-full">
           <InterestsChart />
         </section>
-        <section className="grid-half">
+        <section className="grid-full">
+          <AlignmentHeatmap />
+        </section>
+
+        <section className="grid-full">
           <ContestationChart />
         </section>
 
@@ -34,11 +38,8 @@ export default function App() {
           <CoMoverGraph />
         </section>
 
-        <section className="grid-half">
+        <section className="grid-full">
           <EngagementChart />
-        </section>
-        <section className="grid-half">
-          <AlignmentHeatmap />
         </section>
       </main>
 

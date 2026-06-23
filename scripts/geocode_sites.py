@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import time
 import urllib.parse
 import urllib.request
@@ -25,9 +26,24 @@ USER_AGENT = "council-ontology/1.0 (josef.dabrowski@gmail.com)"
 RATE_LIMIT_SECS = 1.1  # Nominatim: max 1 req/sec
 
 
-def _geocode_address(address: str, city_context: str = "City of Cambridge WA Australia") -> tuple[float, float] | None:
+def _clean_address(address: str) -> str:
+    """Strip council lot notation so Nominatim can find the street address.
+
+    'Lot 82 (No. 25) Brighton Street, West Leederville' → '25 Brighton Street, West Leederville'
+    'Lot 395 Brighton Street, West Leederville'         → 'Brighton Street, West Leederville'
+    """
+    m = re.match(r'Lot\s+\d+\s+\(No\.\s*(\d+[A-Za-z]?)\)\s+(.+)', address, re.IGNORECASE)
+    if m:
+        return f"{m.group(1)} {m.group(2)}"
+    m = re.match(r'Lot\s+\d+\s+(.+)', address, re.IGNORECASE)
+    if m:
+        return m.group(1)
+    return address
+
+
+def _geocode_address(address: str, city_context: str = "WA Australia") -> tuple[float, float] | None:
     """Query Nominatim for a single address. Returns (lat, lng) or None."""
-    query = f"{address}, {city_context}"
+    query = f"{_clean_address(address)}, {city_context}"
     params = urllib.parse.urlencode({
         "q": query,
         "format": "json",
@@ -53,7 +69,7 @@ def run(args) -> None:
 
     engine = init_db()
     session = make_session_factory(engine)()
-    council = get_council_by_name(session, args.council)
+    council = get_council_by_name(session, args.council.capitalize())
     if not council:
         print(f"Council '{args.council}' not found in DB.")
         raise SystemExit(1)

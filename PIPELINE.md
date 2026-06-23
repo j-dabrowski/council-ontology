@@ -77,6 +77,19 @@ without a nickname dictionary:
 Seats up were O'Connor and Grinceri (Coast) and MacRae and King (Wembley) from the 2013 cohort.
 To fill: check Elections WA for a Cambridge-specific 2017 notice PDF, or contact the Town directly.
 
+### Phase E — Website data refresh (programmatic)
+
+A script or CLI command that regenerates all website-facing figures and graphs from the
+current DB state. Run after each new extraction batch or analysis re-run.
+
+What it needs to cover:
+- Run all `council analyse cambridge` queries and serialize results to JSON/CSV
+- Regenerate any static chart assets (voting alignment heatmap, contestation-by-year, etc.)
+- Push updated data files to wherever the frontend reads from
+
+**Pending design:** what format does the frontend consume — static JSON files, a SQLite
+query layer, an API? Once decided, this becomes a single `council publish cambridge` command.
+
 ### Longer term
 
 - **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0**
@@ -98,7 +111,7 @@ To fill: check Elections WA for a Cambridge-specific 2017 notice PDF, or contact
 | 3b | Sample extraction (`council extract-sample`) | **Done** (2026-05-30) |
 | 3c | Sample validation (`council validate-sample`) | **Done** (2026-05-30) — all metrics within target |
 | 4 | Confidence metrics and validation script | **Done** (2026-05-31) |
-| 5 | Batch extraction (~$7-20) | **Done** — 2024+ corpus complete (2026-06-20); 244 total extracted; validation n=87: 57 PASS/30 REVIEW/0 FAIL, all metrics in target |
+| 5 | Batch extraction (~$7-20) | **Done** — full corpus complete (2026-06-22); 580 total extracted (506 min/66 agenda/4 addendum/4 unknown); 14,013 motions / 16,249 votes / 405 councillors |
 | 6 | Human audit | **Tooling done** (2026-06-18) — report generator built; human review pending |
 
 ### Phase 2 — Document-type-aware pipeline upgrade
@@ -760,7 +773,7 @@ Shared validation logic lives in `src/validation/core.py` — imported by both
 
 ---
 
-## Level 5: Batch Extraction (main cost, ~$81 batch / ~$163 standard for 345 pending pre-2024 docs; full corpus run was $19.58 batch for the 2024+ subset)
+## Level 5: Batch Extraction (actual costs: $19.58 batch for 2024+ subset; ~$50 batch for pre-2024 corpus; ~$70 total)
 
 Full extraction across entire corpus. Two modes:
 
@@ -776,7 +789,7 @@ council validate cambridge
 
 **Batch mode** — 50% off, async (up to 24h), good for the full corpus:
 ```bash
-council extract cambridge --max-chars full --batch --dry-run   # preview cost (2026-06-22: $81 batch / $163 standard for 348 remaining docs)
+council extract cambridge --max-chars full --batch --dry-run   # preview cost (actual pre-2024 batch: ~$50)
 council extract cambridge --max-chars full --batch             # submit; prints batch_id
 # ... wait up to 24h ...
 council batch-collect cambridge msgbatch_abc123                # parse + save to DB

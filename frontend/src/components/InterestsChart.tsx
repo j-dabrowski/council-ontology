@@ -29,9 +29,11 @@ export function InterestsChart() {
 
   const maxFinancial = Math.max(...chartData.map((d) => d.financial));
 
+  const chartHeight = Math.max(300, chartData.length * 28);
+
   return (
-    <Card title="Interest Declarations by Councillor" subtitle="2024–present">
-      <ResponsiveContainer width="100%" height={340}>
+    <Card title="Interest Declarations by Councillor" subtitle="1995–2026">
+      <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart
           data={chartData}
           layout="vertical"
