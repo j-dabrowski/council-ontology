@@ -1641,8 +1641,8 @@ def main() -> None:
                        help="Agreement rate threshold for ALLY (default: 0.85)")
     p_rel.add_argument("--opponent", type=float, default=0.40,
                        help="Agreement rate threshold for OPPONENT (default: 0.40)")
-    p_rel.add_argument("--from-year", type=int, default=2024, dest="from_year",
-                       help="Only include votes from this year onwards (default: 2024)")
+    p_rel.add_argument("--from-year", type=int, default=None, dest="from_year",
+                       help="Only include votes from this year onwards (default: all years)")
     p_rel.add_argument("--to-year", type=int, default=None, dest="to_year",
                        help="Only include votes up to this year (default: no limit)")
     p_rel.add_argument("--all-years", action="store_true", dest="all_years",
@@ -1665,8 +1665,8 @@ def main() -> None:
     p_audit.add_argument("council", help="Council key (e.g. cambridge)")
     p_audit.add_argument("--count", type=int, default=12,
                          help="Number of docs to sample (default: 12)")
-    p_audit.add_argument("--from-year", type=int, default=2024, dest="from_year",
-                         help="Only include docs from this year onwards (default: 2024)")
+    p_audit.add_argument("--from-year", type=int, default=None, dest="from_year",
+                         help="Only include docs from this year onwards (default: all years)")
     p_audit.add_argument("--all-years", action="store_true", dest="all_years",
                          help="Include all extracted years (overrides --from-year)")
     p_audit.add_argument("--output", type=Path, default=None,
