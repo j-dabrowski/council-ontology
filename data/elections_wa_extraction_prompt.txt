@@ -1,0 +1,19 @@
+These are Western Australian Electoral Commission documents covering local government elections for the Town of Cambridge. Please extract all election results for Town of Cambridge only (ignore all other councils in statewide reports).
+
+For each election, extract a table with these columns:
+election_date, ward, role, given_name, family_name, elected, votes
+
+Rules:
+- election_date: the actual polling date in YYYY-MM-DD format (or YYYY-MM if day unknown)
+- ward: the ward name exactly as printed (e.g. "Coast", "Wembley", "Mayor" for mayoral elections)
+- role: "Mayor", "Deputy Mayor", or "Councillor"
+- given_name / family_name: split the candidate name into given and family name
+- elected: TRUE or FALSE
+- votes: vote count if shown, else blank
+
+Include ALL candidates (elected and not elected) so I can see who ran and who won.
+Include ALL election years present in the document.
+
+After the table, list any by-elections or extraordinary elections separately, with the same columns plus a "type" column (ordinary / by-election / extraordinary).
+
+Output as a plain CSV with a header row. No commentary outside the CSV.

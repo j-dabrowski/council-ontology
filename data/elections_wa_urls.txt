@@ -1,0 +1,19 @@
+Elections WA PDFs — download these and upload to Claude for term extraction
+
+1. Cambridge noticeboard (all ordinary elections — start here):
+https://www.elections.wa.gov.au/sites/default/files/Town%20of%20Cambridge%20-%20Election%20Results%20-%20Noticeboard%20%5BORDINARY%5D.pdf
+
+2. 2023 statewide report (has Cambridge appendix):
+https://www.elections.wa.gov.au/sites/default/files/LG%202023%20Statewide%20report%20-%20with%20appendices_0.pdf
+
+3. 2021 statewide report:
+https://www.elections.wa.gov.au/sites/default/files/2021_LG_Election_Report%20online%20vf.pdf
+
+4. 2019 statewide report:
+https://www.elections.wa.gov.au/sites/default/files/waec/lg_elections/Reports/2019_LG_Election_Report%20FINAL%20online.pdf
+
+5. 2017 statewide report:
+https://www.elections.wa.gov.au/sites/default/files/2017_LG_Election_Report.pdf
+
+Older reports (if needed for pre-2017 verification):
+https://www.elections.wa.gov.au/elections/local-government-elections/reports

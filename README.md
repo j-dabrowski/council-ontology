@@ -301,6 +301,62 @@ All queries accept `--from-year` and `--to-year` to filter by meeting date.
 
 ---
 
+#### `council merge-pdfs <input_dir> <output>`
+Concatenates all PDFs in a directory into a single file. Useful for bundling image-based PDFs (e.g. Elections WA reports) into one upload for Google Drive OCR.
+
+```bash
+council merge-pdfs data/raw/terms/ data/raw/terms/combined.pdf
+council merge-pdfs data/raw/terms/ data/raw/terms/combined.pdf --exclude Survey Stakeholder
+```
+
+`--exclude` skips files whose names contain any of the given substrings (case-insensitive).
+
+---
+
+#### `council derive-terms <council>`
+Generates a seed CSV (`data/{council}_terms_seed.csv`) of councillor term records derived from vote date spans. Splits councillors with gaps > 2 years in voting activity into separate rows, flagged for review. Edit the CSV to add ward/role and correct dates to actual election dates, then import with `import-terms`.
+
+```bash
+council derive-terms cambridge
+council derive-terms cambridge --gap-years 3
+```
+
+---
+
+#### `council import-terms <council> <csv>`
+Imports a councillor terms CSV into the `councillor_terms` table. Dry run by default; pass `--apply` to write. Matches rows by `councillor_id` (preferred) or `given_name` + `family_name`. Replaces existing terms for affected councillors, making re-runs idempotent.
+
+```bash
+council import-terms cambridge data/cambridge_terms_seed.csv
+council import-terms cambridge data/cambridge_terms.csv --apply
+```
+
+CSV columns: `councillor_id, given_name, family_name, ward, role, term_start, term_end, source, notes`
+
+**Populating the CSV from Elections WA PDFs:**
+1. Merge PDFs: `council merge-pdfs data/raw/terms/ data/raw/terms/combined.pdf --exclude Survey`
+2. Upload `combined.pdf` to Google Drive → right-click → Open with Google Docs (auto-OCRs)
+3. Select all, copy, paste into Claude with the prompt at `data/terms_ocr_prompt.txt`
+4. Save Claude's CSV output to `data/cambridge_terms_from_elections_wa.csv`
+5. Match names to councillor IDs using the seed CSV (`data/cambridge_terms_seed.csv`) and fill `councillor_id`
+6. Run `council import-terms cambridge data/cambridge_terms_from_elections_wa.csv --apply`
+
+---
+
+#### `council dedup`
+Deduplicates councillor records — merges title/placeholder/swapped-field variants and family-name-only stubs into their canonical records. Dry run by default.
+
+```bash
+council dedup                        # dry run
+council dedup --apply                # write changes
+council dedup --use-terms            # annotate merges with term coverage (TERM ✓ / ✗ / ?)
+council dedup --use-terms --apply    # only apply TERM ✓ confirmed merges
+```
+
+With `--use-terms`, merges where the stub's vote dates fall outside all known terms for the candidate are held for manual review rather than auto-applied.
+
+---
+
 #### `council build-relationships cambridge`
 **Dynamic layer.** Computes ALLY/OPPONENT edges from voting alignment and persists them to the `Relationship` table. Run after `council validate` once the corpus is stable.
 

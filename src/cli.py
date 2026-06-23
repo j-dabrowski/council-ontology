@@ -1741,6 +1741,87 @@ def main() -> None:
                            help="Show what would be geocoded without making API calls")
     p_geocode.set_defaults(func=lambda a: __import__("scripts.geocode_sites", fromlist=["run"]).run(a))
 
+    # merge-pdfs
+    p_merge = sub.add_parser(
+        "merge-pdfs",
+        help="Concatenate all PDFs in a directory into a single file for OCR upload",
+    )
+    p_merge.add_argument("input_dir", type=Path, help="Directory containing PDFs to merge")
+    p_merge.add_argument("output", type=Path, help="Output PDF path")
+    p_merge.add_argument(
+        "--exclude", nargs="*", default=[], metavar="PATTERN",
+        help="Filename substrings to exclude (e.g. Survey Stakeholder)",
+    )
+
+    def _cmd_merge_pdfs(a):
+        import fitz
+        pdfs = sorted(p for p in Path(a.input_dir).glob("*.pdf")
+                      if not any(x.lower() in p.name.lower() for x in a.exclude))
+        if not pdfs:
+            print("No PDFs found.")
+            return
+        out = fitz.open()
+        for p in pdfs:
+            print(f"  + {p.name}")
+            with fitz.open(str(p)) as src:
+                out.insert_pdf(src)
+        out.save(str(a.output))
+        size_mb = Path(a.output).stat().st_size / 1_048_576
+        print(f"\nMerged {len(pdfs)} PDFs → {a.output}  ({size_mb:.1f} MB)")
+
+    p_merge.set_defaults(func=_cmd_merge_pdfs)
+
+    # derive-terms
+    p_derive = sub.add_parser(
+        "derive-terms",
+        help="Generate a seed CSV of councillor term records from vote date spans (scripts/derive_terms.py)",
+    )
+    p_derive.add_argument("council", choices=list(COUNCILS))
+    p_derive.add_argument(
+        "--gap-years", type=int, default=2, dest="gap_years",
+        help="Gap in calendar years that triggers a period split (default: 2)",
+    )
+
+    def _cmd_derive_terms(a):
+        from scripts.derive_terms import run as _run
+        _run(a.council, gap_years=a.gap_years)
+
+    p_derive.set_defaults(func=_cmd_derive_terms)
+
+    # import-terms
+    p_import = sub.add_parser(
+        "import-terms",
+        help="Import a councillor terms CSV into councillor_terms (scripts/import_terms.py)",
+    )
+    p_import.add_argument("council", choices=list(COUNCILS))
+    p_import.add_argument("csv", type=Path, help="Path to terms CSV")
+    p_import.add_argument("--apply", action="store_true", help="Write changes (default: dry run)")
+
+    def _cmd_import_terms(a):
+        from scripts.import_terms import run as _run
+        _run(a.council, a.csv, apply=a.apply)
+
+    p_import.set_defaults(func=_cmd_import_terms)
+
+    # dedup
+    p_dedup = sub.add_parser(
+        "dedup",
+        help="Deduplicate councillor records — merge title/placeholder/stub variants (scripts/dedup_councillors.py)",
+    )
+    p_dedup.add_argument("council", choices=list(COUNCILS), nargs="?",
+                         help="Council (unused — dedup operates globally; kept for CLI consistency)")
+    p_dedup.add_argument("--apply", action="store_true", help="Write changes (default: dry run)")
+    p_dedup.add_argument(
+        "--use-terms", action="store_true", dest="use_terms",
+        help="Annotate merges with councillor_terms coverage; with --apply only applies TERM ✓ merges",
+    )
+
+    def _cmd_dedup(a):
+        from scripts.dedup_councillors import run as _run
+        _run(apply=a.apply, use_terms=a.use_terms)
+
+    p_dedup.set_defaults(func=_cmd_dedup)
+
     args = parser.parse_args()
     if args.verbose:
         logger.setLevel(logging.DEBUG)

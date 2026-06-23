@@ -144,9 +144,11 @@ class CouncillorTerm(Base):
     councillor_id: Mapped[int] = mapped_column(ForeignKey("councillors.id"))
     council_id: Mapped[int] = mapped_column(ForeignKey("councils.id"))
     ward: Mapped[Optional[str]] = mapped_column(String(100))
-    role: Mapped[Optional[str]] = mapped_column(String(100))  # Mayor, Deputy Mayor, etc.
+    role: Mapped[Optional[str]] = mapped_column(String(100))  # Mayor, Deputy Mayor, Councillor
     term_start: Mapped[Optional[date]] = mapped_column(Date)
     term_end: Mapped[Optional[date]] = mapped_column(Date)
+    source: Mapped[Optional[str]] = mapped_column(String(200))  # elections_wa, council_website, manual, derived_from_votes
+    notes: Mapped[Optional[str]] = mapped_column(Text)
 
     councillor: Mapped["Councillor"] = relationship(back_populates="terms")
     council: Mapped["Council"] = relationship(back_populates="councillors")

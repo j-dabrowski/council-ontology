@@ -1,0 +1,37 @@
+Use this prompt when you have OCR'd text from Elections WA PDFs (e.g. pasted from Google Docs
+after opening an image-based PDF). Paste this prompt followed by the OCR'd text.
+
+The output CSV feeds directly into:
+    council import-terms cambridge data/cambridge_terms_from_elections_wa.csv --apply
+
+------------------------------------------------------------
+PROMPT (paste everything below this line to Claude):
+------------------------------------------------------------
+
+The text below is OCR'd output from Western Australian Electoral Commission local government
+election reports. It may contain OCR artifacts (split words, garbled characters, merged columns).
+
+Extract all election results for the Town of Cambridge ONLY. Ignore all other councils.
+
+Output a single CSV with these exact columns:
+  election_date, ward, role, given_name, family_name, elected, votes
+
+Rules:
+- election_date: actual polling/declaration date in YYYY-MM-DD format. If only the year is
+  clear, use YYYY-10-01 as a placeholder (WA LG elections are held in October post-2011,
+  May pre-2011). If the exact date appears anywhere on the page, use it.
+- ward: exactly as printed — typically "Coast", "Wembley", or "Mayor" for mayoral contests.
+  If wards are not shown (pre-2000 reports may not list them), leave blank.
+- role: "Mayor" for mayoral elections, "Deputy Mayor" if listed, "Councillor" for all others.
+- given_name / family_name: split the candidate name. If OCR has merged them, use your best
+  judgement. Preserve hyphens (e.g. Haddon-Casey).
+- elected: TRUE if the candidate won the seat, FALSE otherwise. If running unopposed, TRUE.
+- votes: integer vote count if shown, blank if not.
+
+Include ALL candidates (elected and not elected) so the full contest is visible.
+Include ALL election years present in the text.
+If a candidate ran unopposed (no other candidates listed), set elected=TRUE and votes blank.
+
+Output ONLY the CSV — no commentary, no markdown fences, just the header row and data rows.
+
+[PASTE OCR TEXT BELOW THIS LINE]

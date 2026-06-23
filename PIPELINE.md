@@ -4,65 +4,79 @@
 
 This document defines the multi-level extraction pipeline for processing council meeting minutes PDFs into structured, auditable data. The core principle is **recursive refinement**: cheap broad passes feed expensive deep passes, and every pass validates the one after it. No blind extraction. By the time a document hits the full LLM call, we already know what it contains, what we expect to get back, and how to verify it.
 
-Current state: 613 PDFs in manifest (Cambridge, 1995–2026, cleaned 2026-06-22). 244 extracted (179 min/61 agenda/4 addendum). ~370 pending pre-2024.
+Current state: 613 PDFs in manifest (Cambridge, 1995–2026, cleaned 2026-06-22). 580 extracted (506 min/66 agenda/4 addendum/4 unknown). Full corpus complete.
 
-**Current strategy (as of 2026-06-22):** Full corpus extracted. 2024+ complete (244 docs);
-pre-2024 batch completed 2026-06-22 (341 docs saved, 3 unreadable PDFs skipped, 0 failures
-after schema fixes — see Phase C below). Phase C cleanup is the immediate next step.
+**Current strategy (as of 2026-06-23):** Full corpus extracted. Pre-2024 batch complete.
+Council Setup (terms seeding + dedup) complete. 14,013 motions / 16,249 votes / 405 councillors.
+Phase C cleanup (build-relationships, geocode) and Level 6 human audit are the immediate next steps.
 
 **Schema fixes applied during pre-2024 batch (2026-06-22):**
 - `ExtractedCommunitySubmission.position`: added synonym map ("objection" → "object", "in support" → "support", etc.) + null fallback for unknowns — previously caused ValidationError on 3 docs
 - `ExtractedPlanningApplication.status`: added synonym map + null fallback for unknowns — previously caused ValidationError on 2 docs
 - `system_prompt.txt` motion outcome rule: added RECEIVED/NOTED/ACCEPTED/ENDORSED → "carried" mapping
 
-## Next Steps (as of 2026-06-22)
+## Next Steps (as of 2026-06-23)
 
-### Phase A — Prepare (no LLM cost, ~10 min)
+### ✅ Phase A — Prepare — DONE
+### ✅ Phase B — Pre-2024 batch extraction — DONE (580 meetings total; 506 min/66 agenda/4 addendum/4 unknown)
+### ✅ Council Setup — Terms seeding + dedup — DONE (58 terms imported; 405 councillors after 83 merges)
 
-```bash
-council census cambridge                                      # update census for new/reclassified docs
-council costs --to-year 2023 --max-chars full                # estimate batch spend (actual 2026-06-22: ~$81 batch / ~$162 standard, 345 docs)
-```
-
-### Phase B — Pre-2024 batch extraction (submit today; ~24h wait)
+### Phase C — Post-extraction cleanup (immediate)
 
 ```bash
-council extract cambridge --to-year 2023 --max-chars full --batch --dry-run   # confirm cost
-council extract cambridge --to-year 2023 --max-chars full --batch              # submit
-# While waiting: do Level 6 human audit on 2024+ corpus (see below)
-council batch-collect cambridge <batch_id>
-council validate cambridge --to-year 2023
-```
-
-**Level 6 human audit (do during batch wait):**
-```bash
-council audit cambridge --count 12 --from-year 2024 --seed 42
-# Open data/audit_report.md alongside each PDF and fill in AUDIT: [Y/N/PARTIAL] annotations
-```
-
-### Phase C — Post-extraction cleanup (after batch collects)
-
-```bash
-python scripts/dedup_councillors.py          # preview new councillor name variants
-python scripts/dedup_councillors.py --apply  # merge duplicates
-council build-relationships cambridge --all-years   # refresh ALLY/OPPONENT with full corpus
-council geocode cambridge                           # geocode new planning sites from pre-2024 docs
+council build-relationships cambridge --all-years   # refresh ALLY/OPPONENT edges with full corpus
+council geocode cambridge                           # geocode planning sites from pre-2024 docs
 ```
 
 Then run all analysis queries without `--from-year` to see 30-year trends.
 
-### Phase D — Gap recovery (parallel, low urgency)
+### Phase D — Level 6 human audit
+
+```bash
+council audit cambridge --count 20 --all-years --seed 42
+# Open data/audit_report.md alongside each PDF and fill in AUDIT: [Y/N/PARTIAL] annotations
+```
+
+### Phase E — Gap recovery (parallel, low urgency)
 
 Email admin@cambridge.wa.gov.au requesting missing minutes for 2022 Jan/Feb/Mar/Apr/Jun and
 2023 Jan/Feb/Mar/Apr/Jun/Jul (WA Local Government Act 1995 s.5.22). If no response in 4 weeks,
 lodge FOI via foi@cambridge.wa.gov.au. If PDFs are obtained: drop into data/raw/cambridge/,
 run `council census cambridge`, then extract with `--files`.
 
+### Known dedup gaps (not blocking; will self-resolve with more data)
+
+The following councillor ambiguities remain after dedup and are documented for future resolution.
+None affect the 2024+ corpus (all current-serving councillors are fully resolved).
+
+**Ambiguous family-only stubs** — multiple candidates share a surname and none have term records.
+Will resolve once pre-2024 votes are attributed during Phase C and future extraction runs:
+- ` Everett` (234 votes) — Ian / Julian / Graham / Rod Everett — none with terms
+- ` McKerracher` (259 votes) — Kate / Margaret / James / Kerry McKerracher — none with terms
+- ` Steele` (50 votes + 2 `name unknown` variants) — Ian vs David Steele — neither has terms
+
+**Fuzzy single-candidate, no term confirmation** — single close-match candidate exists but has
+no electoral record to confirm. Low stakes (0–2 votes each); leave as stubs until pre-2024
+extraction provides vote dates that can confirm the match:
+- ` Robert` → J Roberts (92% name match, 0 votes)
+- ` Peters` → Eric Peterson (86% match, 0 votes)
+- ` McAlister` → Jo McAllister (95% match, 2 votes)
+
+**Same-person under different first-name forms** — requires manual merge; not auto-detectable
+without a nickname dictionary:
+- Kate Barlow (id=2, terms from 2023) and Catherine Barlow (id=79, terms from 2019) are the
+  same councillor. Merge id=79 → id=2 once confirmed. Check via:
+  ```bash
+  sqlite3 data/council.db "SELECT id, given_name, family_name FROM councillors WHERE family_name='Barlow' ORDER BY id"
+  ```
+
+**2017 terms gap** — no Cambridge election results for 2017 (absent from statewide PDF).
+Seats up were O'Connor and Grinceri (Coast) and MacRae and King (Wembley) from the 2013 cohort.
+To fill: check Elections WA for a Cambridge-specific 2017 notice PDF, or contact the Town directly.
+
 ### Longer term
 
-- **Full Level 6 audit**: `council audit cambridge --count 20 --all-years` after pre-2024 extraction
-- **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically
-- **`councillor_terms`**: ward, role, term dates never populated — requires a separate source (council governance page, Advance WA candidate database, or annual reports)
+- **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0**
 
 ---
 
@@ -404,6 +418,85 @@ Add `document_type` as a stratification axis. Guarantee the sample contains at l
 - 1 special meeting (minutes or agenda)
 
 Or maintain separate sample files: `data/cambridge_minutes_sample.json` and `data/cambridge_agenda_sample.json`.
+
+---
+
+## Council Setup: Terms Seeding (run once per council, before Level 0)
+
+Populates `councillor_terms` with ward, role, and term dates from electoral commission
+records. This is ground truth that all downstream steps depend on:
+- Councillor deduplication (`scripts/dedup_councillors.py`) uses term coverage to
+  distinguish same-name councillors across eras and to confirm merges
+- Relationship building (`council build-relationships`) needs accurate term windows
+  to assign voting behaviour to the correct councillor
+- Analysis queries can filter to "sitting councillors" for any given meeting date
+
+**Do this before running Level 0 on any new council.**
+
+### WA councils — Elections WA statewide reports
+
+Elections WA publishes statewide PDF reports with full candidate and vote results for
+every ordinary election (1999–present). Text is embedded in the PDFs (no OCR needed).
+
+**Step 1 — Extract election results:**
+
+A council-specific extraction script fetches the relevant PDF pages and outputs a CSV:
+
+```bash
+# Cambridge (1999–2023, 12 elections):
+python scripts/extract_cambridge_elections.py
+# → data/cambridge_elections_raw.csv  (132 rows, all candidates + elected flag)
+```
+
+For a new WA council, create a matching script by:
+1. Finding the council's result pages across the statewide reports (probe with the
+   `pdfplumber` approach in `extract_cambridge_elections.py` — search for `COUNCIL NAME`
+   in all-caps across page text)
+2. Confirming the page indices and running the same parser
+
+Report URLs are listed in `data/elections_wa_urls.txt`. The 2003–2023 statewide reports
+all have embedded text; 1999–2001 appendices also work. Reports older than 1999 are not
+digitised — contact the council directly for pre-1999 ordinary elections.
+
+**Step 2 — Import into DB:**
+
+```bash
+council import-terms cambridge data/cambridge_elections_raw.csv --apply
+```
+
+The CSV format is:
+```
+election_date, ward, role, given_name, family_name, elected, votes
+```
+Only rows with `elected=TRUE` are imported as terms; `votes` is informational only.
+
+**Step 3 — Verify coverage then dedup:**
+
+```bash
+python scripts/dedup_councillors.py          # preview: shows TERM ✓ vs TERM ? merges
+python scripts/dedup_councillors.py --apply  # merge confirmed duplicates
+```
+
+### Known gaps (Cambridge)
+
+- **2017**: The 2017 statewide report PDF is missing Cambridge's results page (the page
+  is absent, though the election occurred — 7,354 voters participated). The seats up in
+  2017 were O'Connor and Grinceri (Coast) and MacRae and King (Wembley), all from 2013.
+  **To fill:** check if Elections WA published a Cambridge-specific 2017 notice PDF, or
+  contact the Town of Cambridge directly.
+- **Pre-1999**: Cambridge ran in-person elections before joining the postal system.
+  Results for 1993, 1995, 1997 are not in the Elections WA online archive.
+  **To fill:** contact the Town of Cambridge (admin@cambridge.wa.gov.au) or check
+  council annual reports from those years.
+
+### Other states / councils
+
+Each state's electoral commission publishes results differently:
+- **NSW**: NSW Electoral Commission election results portal (downloadable CSVs)
+- **VIC**: Victorian Electoral Commission, council election results by LGA
+- **QLD**: ECQ publishes by-election and general election results per council
+
+In all cases, the target is the same CSV format above, imported via `council import-terms`.
 
 ---
 
@@ -794,6 +887,9 @@ data/
     {hash}.json                # Keyed by doc_hash + prompt_version
 
 scripts/
+  extract_cambridge_elections.py  # Council Setup: download + parse Elections WA PDFs → CSV
+  import_terms.py              # Council Setup: CSV → councillor_terms DB rows
+  dedup_councillors.py         # Post-setup: merge councillor name variants
   census.py                    # Level 0
   inventory.py                 # Level 1
   inventory_typology.py        # Level 1→2 (council typology)
@@ -802,6 +898,10 @@ scripts/
   validate_extraction.py       # Level 4
   build_relationships.py       # Dynamic layer: ALLY/OPPONENT edges from voting alignment
   audit_report.py              # Level 6: human-review audit report generator
+
+data/
+  elections_wa_urls.txt        # Council Setup: Elections WA report PDF URLs (WA councils)
+  cambridge_elections_raw.csv  # Council Setup: extracted election results (Cambridge, 1999–2023)
 
 src/validation/
   core.py                      # Shared validation logic (Levels 3c and 4)
