@@ -545,16 +545,15 @@ IMMEDIATE PRIORITY — Phase C post-extraction cleanup
   A. Refresh relationship edges and geocoding:
        python scripts/dedup_councillors.py --apply         # merge any new name variants
        council build-relationships cambridge --all-years   # refresh ALLY/OPPONENT edges
-       council geocode cambridge                           # geocode pre-2024 planning sites
+       council geocode cambridge                           # geocode planning sites (full corpus)
 
   B. Run all analysis queries without --from-year to see 30-year trends.
 
-  C. Website data refresh (programmatic):
-       Design and implement a `council publish cambridge` command (or equivalent script)
-       that regenerates all website-facing figures and graphs from the current DB state.
-       Needs to cover: serializing analysis query results to JSON/CSV, regenerating chart
-       assets, and pushing to wherever the frontend reads from. Format TBD (static JSON
-       files, SQLite query layer, or API). Run this after every new extraction batch.
+  C. Website data refresh (programmatic) — Done (2026-06-23):
+       `council publish cambridge` exports 6 static JSON snapshots to
+       frontend/public/data/ (interests, divergence, co-movers, alignment,
+       trends, engagement + manifest). Frontend reads these directly.
+       Run after any pipeline step that updates analysis results.
 
   D. Gap recovery (low urgency, parallel):
        Email admin@cambridge.wa.gov.au requesting 2022 Jan/Feb/Mar/Apr/Jun and

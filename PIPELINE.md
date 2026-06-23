@@ -79,16 +79,19 @@ To fill: check Elections WA for a Cambridge-specific 2017 notice PDF, or contact
 
 ### Phase E — Website data refresh (programmatic)
 
-A script or CLI command that regenerates all website-facing figures and graphs from the
-current DB state. Run after each new extraction batch or analysis re-run.
+**Done (2026-06-23).** `council publish cambridge` exports six static JSON snapshots to
+`frontend/public/data/` which the React frontend reads directly (no live API needed).
 
-What it needs to cover:
-- Run all `council analyse cambridge` queries and serialize results to JSON/CSV
-- Regenerate any static chart assets (voting alignment heatmap, contestation-by-year, etc.)
-- Push updated data files to wherever the frontend reads from
+Snapshots: `interests`, `divergence`, `co-movers`, `alignment`, `trends`, `engagement`,
+plus a `manifest.json`. Each file has `{"published_at": "<ISO>", "data": ...}`.
 
-**Pending design:** what format does the frontend consume — static JSON files, a SQLite
-query layer, an API? Once decided, this becomes a single `council publish cambridge` command.
+Run after any pipeline step that changes analysis results (build-relationships, new batch, etc.):
+
+```
+council publish cambridge
+```
+
+Pipeline steps (dedup, build-relationships, geocode) must be run separately beforehand.
 
 ### Longer term
 
