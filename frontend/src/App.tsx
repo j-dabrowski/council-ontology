@@ -9,6 +9,7 @@ import { PlanningObjectionsPanel } from "./components/PlanningObjectionsPanel";
 import { DissentProfilesChart } from "./components/DissentProfilesChart";
 import { DissentCoalitionsPanel } from "./components/DissentCoalitionsPanel";
 import { ConflictRecusalPanel } from "./components/ConflictRecusalPanel";
+import { RecusalTrendPanel } from "./components/RecusalTrendPanel";
 import { TenderConcentrationPanel } from "./components/TenderConcentrationPanel";
 import { ObjectionDosePanel } from "./components/ObjectionDosePanel";
 import { TransparencyTrendPanel } from "./components/TransparencyTrendPanel";
@@ -33,6 +34,11 @@ export default function App() {
         {/* Conflict of interest — flagship */}
         <section className="grid-full">
           <ConflictRecusalPanel />
+        </section>
+
+        {/* Recusal compliance over time — the Inquiry conduct shock */}
+        <section className="grid-full">
+          <RecusalTrendPanel />
         </section>
 
         {/* Voting power — who wins on contested decisions (second flagship) */}

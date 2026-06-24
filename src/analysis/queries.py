@@ -2079,3 +2079,213 @@ def mayoral_agenda_setting(
         contest_factor=round(m_contest / o_contest, 1) if o_contest else 0.0,
         per_mayor=mayors,
     )
+
+
+# ---------------------------------------------------------------------------
+# Recusal compliance over time — did "declare a conflict, then stay" become
+# the norm, and did it track the 2018–2021 Authorised Inquiry?
+# ---------------------------------------------------------------------------
+#
+# Builds on the pooled ConflictRecusalPanel by adding the TWO dimensions that
+# panel collapses away: TIME (era) and the legal TYPE of interest.
+#
+# Under the WA Local Government Act a *financial* interest (and the financial
+# flavour of a *proximity* interest) obliges a member to leave the room and not
+# vote — "must-leave" interests. An *impartiality* interest only has to be
+# disclosed; the member may stay and vote. So the headline test is whether
+# recusal collapsed even WITHIN the must-leave categories (which a shift in the
+# legal mix toward impartiality interests cannot explain).
+#
+# Linkage is item-level: interest_declarations.item_reference == motions.item_number
+# at the same meeting, then that councillor's vote on that motion. This avoids the
+# meeting-level cross-contamination where a councillor declaring several interest
+# types at one meeting would otherwise have every type attributed to every vote.
+
+_RECUSAL_ERAS = [
+    ("pre", "Before Inquiry (pre-2018)", None, 2017),
+    ("inquiry", "Authorised Inquiry (2018–2021)", 2018, 2021),
+    ("post", "After Inquiry (2022+)", 2022, None),
+]
+_MUST_LEAVE = ("FINANCIAL", "PROXIMITY")
+
+
+def _recusal_era(year: int) -> str:
+    if year < 2018:
+        return "pre"
+    if year <= 2021:
+        return "inquiry"
+    return "post"
+
+
+@dataclass
+class RecusalTypeEra:
+    interest_type: str    # financial / proximity / impartiality / other
+    era: str              # pre / inquiry / post
+    declared: int
+    recused: int
+    recusal_pct: float
+
+
+@dataclass
+class RecusalYearPoint:
+    year: int
+    must_leave_declared: int
+    must_leave_recused: int
+    must_leave_pct: float | None     # None when n too small to plot a rate
+    declared_share_pct: float         # declared-interest votes / all votes that year
+
+
+@dataclass
+class RecusalDriver:
+    name: str
+    stayed: int           # must-leave declarations where they stayed and voted (post-2022)
+    total: int
+
+
+@dataclass
+class RecusalTrendStats:
+    inquiry_window: list[int]
+    # headline: must-leave recusal by era
+    must_leave_pre_pct: float
+    must_leave_pre_n: int
+    must_leave_inquiry_pct: float
+    must_leave_inquiry_n: int
+    must_leave_post_pct: float
+    must_leave_post_n: int
+    # financial-only (the confound-beater): recusal even where leaving is mandatory
+    financial_inquiry_pct: float
+    financial_inquiry_n: int
+    financial_post_pct: float
+    financial_post_n: int
+    # impartiality boilerplate explosion
+    impartiality_post_declared: int
+    impartiality_post_recusal_pct: float
+    by_type_era: list[RecusalTypeEra]
+    by_year: list[RecusalYearPoint]
+    drivers: list[RecusalDriver]
+
+
+def recusal_compliance_trend(
+    session: Session,
+    council_id: int,
+    min_year_n: int = 4,
+) -> RecusalTrendStats:
+    """Recusal compliance over time, split by the legal type of interest."""
+    from sqlalchemy import text
+
+    # Item-level linked declaration -> that councillor's vote on that item.
+    linked = session.execute(text("""
+        SELECT i.interest_type AS itype,
+               CAST(strftime('%Y', mt.meeting_date) AS INTEGER) AS yr,
+               v.choice AS choice,
+               (c.given_name || ' ' || c.family_name) AS name
+        FROM interest_declarations i
+        JOIN meetings mt ON i.meeting_id = mt.id
+        JOIN motions m ON m.meeting_id = i.meeting_id
+            AND lower(trim(m.item_number)) = lower(trim(i.item_reference))
+        JOIN votes v ON v.motion_id = m.id AND v.councillor_id = i.councillor_id
+        JOIN councillors c ON c.id = i.councillor_id
+        WHERE mt.council_id = :cid
+          AND mt.document_type = 'minutes'
+          AND i.councillor_id IS NOT NULL
+          AND i.item_reference IS NOT NULL AND trim(i.item_reference) != ''
+    """), {"cid": council_id}).all()
+
+    def _norm_type(t) -> str:
+        t = (t or "OTHER").upper()
+        return t.lower()
+
+    def _recused(choice) -> bool:
+        # Enum stored uppercase; ABSENT == stepped out of the room.
+        return (choice or "").upper() == "ABSENT"
+
+    # by type x era
+    te: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])  # [declared, recused]
+    # must-leave by year
+    ml_year: dict[int, list[int]] = defaultdict(lambda: [0, 0])
+    # post-2022 must-leave drivers (stayed and voted)
+    drv: dict[str, list[int]] = defaultdict(lambda: [0, 0])  # [stayed, total]
+
+    for itype, yr, choice, name in linked:
+        t = _norm_type(itype)
+        era = _recusal_era(yr)
+        rec = _recused(choice)
+        te[(t, era)][0] += 1
+        if rec:
+            te[(t, era)][1] += 1
+        if (itype or "").upper() in _MUST_LEAVE:
+            ml_year[yr][0] += 1
+            if rec:
+                ml_year[yr][1] += 1
+            if yr >= 2022:
+                drv[name][1] += 1
+                if not rec:
+                    drv[name][0] += 1
+
+    by_type_era = [
+        RecusalTypeEra(
+            interest_type=t, era=era, declared=d, recused=r,
+            recusal_pct=round(100 * r / d, 1) if d else 0.0,
+        )
+        for (t, era), (d, r) in sorted(te.items())
+        if d > 0
+    ]
+
+    # declared-interest share of all votes, per year (the "declarations rising" leg)
+    share_rows = session.execute(text("""
+        SELECT CAST(strftime('%Y', mt.meeting_date) AS INTEGER) AS yr,
+               SUM(CASE WHEN v.declared_interest = 1 THEN 1 ELSE 0 END) AS dec,
+               COUNT(*) AS tot
+        FROM votes v
+        JOIN motions m ON v.motion_id = m.id
+        JOIN meetings mt ON m.meeting_id = mt.id
+        WHERE mt.council_id = :cid AND mt.document_type = 'minutes'
+        GROUP BY yr
+    """), {"cid": council_id}).all()
+    share = {yr: (100 * dec / tot if tot else 0.0) for yr, dec, tot in share_rows}
+
+    years = sorted(set(ml_year) | set(share))
+    by_year = [
+        RecusalYearPoint(
+            year=yr,
+            must_leave_declared=ml_year[yr][0],
+            must_leave_recused=ml_year[yr][1],
+            must_leave_pct=(round(100 * ml_year[yr][1] / ml_year[yr][0], 1)
+                            if ml_year[yr][0] >= min_year_n else None),
+            declared_share_pct=round(share.get(yr, 0.0), 1),
+        )
+        for yr in years
+    ]
+
+    def _era_pct(types, era):
+        d = sum(te[(t, era)][0] for t in types if (t, era) in te)
+        r = sum(te[(t, era)][1] for t in types if (t, era) in te)
+        return (round(100 * r / d, 1) if d else 0.0), d
+
+    ml = ("financial", "proximity")
+    ml_pre_pct, ml_pre_n = _era_pct(ml, "pre")
+    ml_inq_pct, ml_inq_n = _era_pct(ml, "inquiry")
+    ml_post_pct, ml_post_n = _era_pct(ml, "post")
+    fin_inq_pct, fin_inq_n = _era_pct(("financial",), "inquiry")
+    fin_post_pct, fin_post_n = _era_pct(("financial",), "post")
+    imp_post_pct, imp_post_n = _era_pct(("impartiality",), "post")
+
+    drivers = [
+        RecusalDriver(name=n, stayed=s, total=t)
+        for n, (s, t) in sorted(drv.items(), key=lambda kv: -kv[1][0])
+        if t >= 3 and s >= 1
+    ][:8]
+
+    return RecusalTrendStats(
+        inquiry_window=[2018, 2021],
+        must_leave_pre_pct=ml_pre_pct, must_leave_pre_n=ml_pre_n,
+        must_leave_inquiry_pct=ml_inq_pct, must_leave_inquiry_n=ml_inq_n,
+        must_leave_post_pct=ml_post_pct, must_leave_post_n=ml_post_n,
+        financial_inquiry_pct=fin_inq_pct, financial_inquiry_n=fin_inq_n,
+        financial_post_pct=fin_post_pct, financial_post_n=fin_post_n,
+        impartiality_post_declared=imp_post_n,
+        impartiality_post_recusal_pct=imp_post_pct,
+        by_type_era=by_type_era,
+        by_year=by_year,
+        drivers=drivers,
+    )

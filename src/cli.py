@@ -1707,7 +1707,7 @@ def cmd_publish(args) -> None:
         dissent_profiles, dissent_coalition_pairs, contestation_by_tag,
         conflict_recusal_stats, tender_concentration,
         objection_dose_response, transparency_by_year, councillor_tenure,
-        mayoral_agenda_setting, voting_power,
+        mayoral_agenda_setting, voting_power, recusal_compliance_trend,
     )
     from src.analysis.divergence import officer_divergence
 
@@ -1975,13 +1975,47 @@ def cmd_publish(args) -> None:
         ],
     })
 
+    # recusal compliance over time: did "declare, then stay" become the norm,
+    # and did it track the 2018–2021 Authorised Inquiry?
+    rct = recusal_compliance_trend(session, council_id)
+    _write("recusal", {
+        "inquiry_window": rct.inquiry_window,
+        "must_leave_pre_pct": rct.must_leave_pre_pct,
+        "must_leave_pre_n": rct.must_leave_pre_n,
+        "must_leave_inquiry_pct": rct.must_leave_inquiry_pct,
+        "must_leave_inquiry_n": rct.must_leave_inquiry_n,
+        "must_leave_post_pct": rct.must_leave_post_pct,
+        "must_leave_post_n": rct.must_leave_post_n,
+        "financial_inquiry_pct": rct.financial_inquiry_pct,
+        "financial_inquiry_n": rct.financial_inquiry_n,
+        "financial_post_pct": rct.financial_post_pct,
+        "financial_post_n": rct.financial_post_n,
+        "impartiality_post_declared": rct.impartiality_post_declared,
+        "impartiality_post_recusal_pct": rct.impartiality_post_recusal_pct,
+        "by_type_era": [
+            {"interest_type": t.interest_type, "era": t.era,
+             "declared": t.declared, "recused": t.recused, "recusal_pct": t.recusal_pct}
+            for t in rct.by_type_era
+        ],
+        "by_year": [
+            {"year": y.year, "must_leave_declared": y.must_leave_declared,
+             "must_leave_recused": y.must_leave_recused, "must_leave_pct": y.must_leave_pct,
+             "declared_share_pct": y.declared_share_pct}
+            for y in rct.by_year
+        ],
+        "drivers": [
+            {"name": d.name, "stayed": d.stayed, "total": d.total}
+            for d in rct.drivers
+        ],
+    })
+
     session.close()
 
     # Manifest records what was published and when
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power"],
+        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal"],
     }, indent=2))
 
     console.print(Panel(

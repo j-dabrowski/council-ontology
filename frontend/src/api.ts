@@ -279,6 +279,47 @@ export interface PowerData {
   over_time: PowerOverTime[];
 }
 
+export interface RecusalTypeEra {
+  interest_type: string;   // financial | proximity | impartiality | other
+  era: string;             // pre | inquiry | post
+  declared: number;
+  recused: number;
+  recusal_pct: number;
+}
+
+export interface RecusalYearPoint {
+  year: number;
+  must_leave_declared: number;
+  must_leave_recused: number;
+  must_leave_pct: number | null;
+  declared_share_pct: number;
+}
+
+export interface RecusalDriver {
+  name: string;
+  stayed: number;
+  total: number;
+}
+
+export interface RecusalData {
+  inquiry_window: number[];
+  must_leave_pre_pct: number;
+  must_leave_pre_n: number;
+  must_leave_inquiry_pct: number;
+  must_leave_inquiry_n: number;
+  must_leave_post_pct: number;
+  must_leave_post_n: number;
+  financial_inquiry_pct: number;
+  financial_inquiry_n: number;
+  financial_post_pct: number;
+  financial_post_n: number;
+  impartiality_post_declared: number;
+  impartiality_post_recusal_pct: number;
+  by_type_era: RecusalTypeEra[];
+  by_year: RecusalYearPoint[];
+  drivers: RecusalDriver[];
+}
+
 export const api = {
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
   divergence: () => getSnapshot<DivergenceData>("divergence"),
@@ -295,4 +336,5 @@ export const api = {
   tenure:     () => getSnapshot<TenureData>("tenure"),
   mayoral:    () => getSnapshot<MayoralData>("mayoral"),
   power:      () => getSnapshot<PowerData>("power"),
+  recusal:    () => getSnapshot<RecusalData>("recusal"),
 };
