@@ -47,6 +47,37 @@ Email admin@cambridge.wa.gov.au requesting missing minutes for 2022 Jan/Feb/Mar/
 lodge FOI via foi@cambridge.wa.gov.au. If PDFs are obtained: drop into data/raw/cambridge/,
 run `council census cambridge`, then extract with `--files`.
 
+**[ ] Agenda coverage — SCOPED 2026-06-24 (INVESTIGATIONS [24]). Conclusion: the live
+scrape is largely a dead end; the real unlock is finance-aware RE-EXTRACTION of minutes.**
+
+Findings from scoping the scrape:
+- The Playwright scraper (`src/scraper/cambridge.py`) already collects *all* meeting-document
+  PDFs per OpenCities accordion item (agenda + minutes both, where the CMS lists them) — it is
+  NOT the bottleneck. 66 agendas (2021–2026) are already captured and extracted; 42 dates have
+  both an agenda and minutes.
+- **The CMS only publishes agendas from 2021 onward** (1 in 2021 → 8/8/14/22/13 through 2026).
+  There are NO pre-2021 agendas online. So re-running the live scrape yields ~zero new agendas.
+- Therefore agendas CANNOT help [24]'s critical window: the portfolio peak ($73M, Apr 2018) and
+  most of the drawdown (2018–2021) predate any available agenda. My earlier note overstated the
+  agenda payoff for [24] — corrected here.
+
+What WOULD make [24] buildable (and is the better investment):
+1. **Finance-aware re-extraction of EXISTING minutes** (1995–2026). The monthly "Investment
+   Schedule" and budget-review reports are already in the minutes — but as free text in
+   `budget_items.description`. Re-extract into typed fields (report-as-at date, fund_type =
+   municipal/reserve/endowment-lands/trust, balance, and reserve-transfer transactions with
+   from/to/amount/purpose). This densifies the series enough to normalise to EOFY and to
+   classify drawdowns as planned vs distress — the actual [24] crux. See DATA_ENRICHMENT.md #1.
+2. **2021+ agendas** (already in DB) give forward-looking officer rationale for the recent tail
+   only. Marginal for [24]; more useful for the officer-capture genre (DATA_ENRICHMENT.md #3).
+
+Pre-2021 agenda avenues (low priority, low yield): Wayback CDX (same path that returned nothing
+for the 2022–23 minutes gap; council likely never published pre-2021 agendas) or FOI to the
+council. Not worth pursuing for [24].
+
+Hygiene if agendas are ever widened: **dedup agenda vs minutes for the same month's report** so
+the same Investment Schedule isn't double-counted; carry existing agenda-contamination filtering.
+
 ### Known dedup gaps (not blocking; will self-resolve with more data)
 
 The following councillor ambiguities remain after dedup and are documented for future resolution.

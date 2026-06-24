@@ -1,0 +1,481 @@
+# Council Investigation Methodology — Research Synthesis
+
+A reference for the council-ontology project. Three questions:
+1. What criteria are councils formally *measured against*?
+2. How are councils in (and after) crisis *actually investigated*?
+3. What does that imply for a data-driven investigator working from minutes?
+
+The throughline: councils are judged against a small, stable set of criteria;
+they fail in a small number of recognisable ways; and the people who investigate
+them work to a defined standard of proof. A credible data investigator borrows
+all three — the criteria, the failure taxonomy, and the standard of proof — so
+that a finding lands as "this is a breach of *X recognised principle*, to *Y
+standard*," not "here is a chart I found interesting."
+
+**Read PART 0 first.** Parts 1–5 are the lens; Part 0 is the evidence locker —
+the actual corpus, database schema, query tools, and (critically) the data
+caveats you must carry through every query. A finding built on a
+misunderstood column is worse than no finding. Everything below assumes you are
+working the City of Cambridge (WA) corpus described in Part 0.
+
+---
+
+## PART 0 — YOUR DATA, SCHEMA, AND TOOLING (read before investigating)
+
+You are not working from raw PDFs. A multi-level extraction pipeline has already
+turned ~580 council documents into a structured, provenance-linked SQLite
+database. Your job is to query that database, find patterns that clear the
+Part 4 bar, and (where they do) write them up. This section tells you exactly
+what you have.
+
+### 0.1 The corpus
+
+- **One council: the City of Cambridge, Western Australia.** A small inner-Perth
+  metropolitan council (~13 elected members at any time). The full architecture
+  supports more councils, but only Cambridge is loaded.
+- **Span: 1995–2026** (31 years of meeting records).
+- **580 documents extracted** into the DB: **506 minutes**, 66 agendas, 4 addenda,
+  4 unknown. Minutes are the authoritative political record (votes, outcomes);
+  agendas carry officer *recommendations* but no vote outcomes (the meeting
+  hadn't happened yet).
+- **Known corpus gaps** (not recoverable online, confirmed 2026-06-22): 2022
+  Jan–Apr + Jun, and 2023 Jan–Apr + Jun–Jul are missing (a council CMS migration
+  dropped them). Cambridge also holds no ordinary meeting in January. Treat any
+  per-year trend touching 2022–2023 as undercounted, not as a real decline.
+
+### 0.2 The database — `data/council.db` (SQLite)
+
+Three ontological layers. Approximate row counts (as of 2026-06-24):
+
+**Semantic layer** (entities):
+- `councils` — the council registry (Cambridge).
+- `councillors` (~400) — every person seen in a vote. **Deduplicated** (was 405,
+  merged to ~400 via `scripts/dedup_councillors.py`); see caveat 0.4.
+- `councillor_terms` — ward / role / term dates from Elections WA results.
+  **Sparsely populated** — only councillors with imported electoral records have
+  terms (1999–2023; 2017 missing; pre-1999 absent). Many councillors have *no*
+  term row. Never assume a missing term means a person didn't serve.
+- `sites` — physical addresses from planning applications (some geocoded to
+  lat/lng via `council geocode`).
+
+**Kinetic layer** (actions/events):
+- `meetings` (580) — one row per document. Key fields: `meeting_date`,
+  `meeting_type`, `document_type` (`minutes`/`agenda`/`addendum`/`unknown`),
+  `minutes_pdf_path`, `minutes_pdf_url`.
+- `motions` (~14,000) — `title`, `motion_text`, `outcome`, `moved_by_id`,
+  `seconded_by_id`, `votes_for`/`votes_against`, `tags` (comma-separated LLM
+  tags), `officer_recommendation` (agendas only), `item_number`.
+- `votes` (~16,250) — one row per councillor per motion. Fields: `choice`,
+  `declared_interest` (bool), `interest_description`. `UNIQUE(motion_id,
+  councillor_id)`.
+- `planning_applications` (~3,100) — `reference_number`, `status`,
+  `estimated_value`, `site_id`, applicant. **`application_date` and
+  `decision_date` are 100% NULL** — processing-latency analysis is impossible on
+  this corpus; do not attempt it.
+- `community_submissions` — public submissions on DAs (`position` = object/support);
+  `submitter_name` is mostly generic placeholders ("Adjoining neighbour"), so
+  repeat-submitter identity analysis is unsupportable.
+- `interest_declarations` (~2,000) — `interest_type`
+  (financial/impartiality/proximity/other), `item_reference`, `councillor_id`.
+  The legal distinction matters: **financial and proximity interests legally
+  require leaving the room; impartiality interests permit staying and voting.**
+- `tenders` (~840) — `awarded_to`, `amount`, `is_confidential`. ~1/3 of dollars
+  are awarded under redacted "Respondent N" placeholders.
+- `budget_items` (~4,000), `deputations`, `petitions`, `public_questions`,
+  `appointments`, `committee_reports`, `delegated_decisions`, `building_permits`,
+  `other_items` — supporting entity tables, several with an `is_confidential` flag.
+- `extraction_evidence` (~71,000) — **your provenance layer.** One row per source
+  quote per extracted entity (`entity_table`, `entity_id`, `quote_text`,
+  `char_offset`). Every fact traces back to verbatim minute text. Use this to
+  spot-check any finding before you ship it (see 0.6).
+
+**Dynamic layer** (emergent patterns):
+- `relationships` (~158) — typed edges (`ALLY`/`OPPONENT`/…) computed from voting
+  alignment by `council build-relationships`. Cambridge votes near-unanimously,
+  so almost all edges are ALLY; OPPONENT pairs are rare.
+
+### 0.3 How to query it
+
+Two routes. Prefer the second for anything non-trivial.
+
+1. **Direct SQL** — `sqlite3 data/council.db "SELECT …"`. Fastest for counts and
+   ad-hoc shape-checking.
+2. **The analysis layer** — `council analyse cambridge <query>` (CLI), backed by
+   `src/analysis/queries.py` and `src/analysis/divergence.py`. These functions
+   already handle the joins, the year filtering, and (importantly) the dedup and
+   minutes-only filtering correctly. Available queries: `councillors`,
+   `alignment`, `contested`, `planning`, `councillor --name X`, `motions --tag X`,
+   `activity`, `trends`, `co-movers`, `interests`, `engagement`, `budget`,
+   `divergence`. All accept `--from-year` / `--to-year`. For novel hypotheses,
+   call the library functions from Python directly or write SQL, then fold a
+   reusable version back into `queries.py`.
+
+Other relevant commands: `council build-relationships`, `council geocode`,
+`council audit` (Level 6 human-audit report), `council publish` (exports panel
+JSON snapshots to `frontend/public/data/` for the React frontend).
+
+### 0.4 DATA CAVEATS — carry these through *every* query
+
+These have already produced wrong answers. They are not optional reading.
+
+- **Enums are stored UPPERCASE.** `outcome='CARRIED'`, `choice='FOR'`,
+  `status='APPROVED'`. Lowercase comparisons silently return nothing.
+- **There is no ABSTAIN.** `votes.choice` is only `FOR` / `AGAINST` / `ABSENT`.
+  Recusal (stepping out) shows up as `ABSENT`, *not* abstain. ~197 ABSENT vs
+  ~11,900 FOR / ~4,100 AGAINST.
+- **`outcome` has blanks and a long tail.** ~12,300 CARRIED, but ~827 motions
+  have an empty outcome, plus LOST/DEFERRED/WITHDRAWN/LAPSED. Filter explicitly;
+  don't assume non-CARRIED = LOST.
+- **Mix document types deliberately.** 66 agenda docs leak into the corpus.
+  Agendas have officer recommendations but *no* vote outcomes. **Year-trend and
+  voting queries should filter to `document_type='minutes'`** or they will be
+  contaminated. (The `council analyse` functions already do this; raw SQL won't.)
+- **Vote coverage is uneven by year.** Sparse 1995–2003 (tens–hundreds/yr), dense
+  2016–2026 (1,000+/yr). The 2022–2023 dip is the *corpus gap* (0.1), not reduced
+  council activity. Never read a raw count trend as behaviour without
+  normalising or flagging coverage.
+- **`declared_interest=1` is rare (~600 votes)** and splits by legal type — a
+  declared *impartiality* interest legally permits voting; a *financial* one does
+  not. Always split by `interest_type` before drawing a recusal conclusion.
+- **Councillor identity is good but not perfect.** Dedup merged ~84 split
+  identities, but a few same-surname / nickname cases remain (e.g. Kate vs
+  Catherine Barlow; ambiguous Everett/McKerracher/Steele family-only stubs).
+  When a per-person stat looks split or impossibly low, check for sibling records
+  by surname before trusting it. A DB backup predating the last dedup exists at
+  `data/council.db.bak-*`.
+- **Some fields are structurally empty.** `planning_applications.application_date`
+  / `decision_date` (100% NULL), `councillor_terms` (sparse), and pre-Phase-2
+  `minutes_text`/`extracted_at` on older meetings. Confirm a column is populated
+  before building on it.
+
+### 0.5 The investigations workflow
+
+`INVESTIGATIONS.md` is the detective's notebook — the running tracker of every
+hypothesis tested, with status keys (`[ ]` queued, `[→]` in progress, `[✓]`
+finding, `[✗]` null). **Read it before starting** so you don't re-run a
+hypothesis that's already a documented null or a built panel.
+
+- ~22 hypotheses logged across five sessions. **Built flagship findings:**
+  Conflict/Recusal ([1]), Tender concentration ([2]), Objection dose–response
+  ([12]), Transparency-went-dark-during-the-Inquiry ([9]), Tenure/incumbency
+  ([8]), Mayoral-gavel-is-a-lightning-rod ([11], inverted finding),
+  Voting-power/dissent-effectiveness ([18]), Recusal-collapse-after-the-Inquiry
+  ([19]).
+- **Honest nulls are valuable and are logged too** — deputation→dissent,
+  December tender dumping, freshman effect, big-dollar DA leniency,
+  election-cycle positioning, "deferred = soft no". Don't silently re-test them;
+  if you revisit, say why the prior null might be wrong.
+- A recurring real-world anchor: the **state-appointed Authorised Inquiry into the
+  City of Cambridge (~2018–2021)**. Several findings track behaviour tightening
+  under that scrutiny and relaxing after. This is the Part 2.1 "inquiry" frame
+  made concrete and datable in your own corpus — lean on it.
+- **The bar for a panel:** a finding must be *novel*, *resident-relevant*, and
+  *surprising* (it fails if a resident would already expect it), and it must
+  survive the Part 4 defensibility tests. Built panels are published as JSON via
+  `council publish` and rendered as React panels in `frontend/`.
+
+### 0.6 Verifying a finding before you ship it
+
+This is where Part 0 meets Part 4. Before any finding leaves your hands:
+1. **State its n, base rate, and era.** A finding that can't state its own n
+   doesn't ship.
+2. **Spot-check the provenance.** Pull a few `extraction_evidence` quotes behind
+   the entities driving the finding and confirm the underlying minute text
+   actually says what the aggregate implies. Extraction is ~95%+ accurate but not
+   perfect; one mis-tagged motion can fabricate a pattern.
+3. **Check the caveats in 0.4 didn't manufacture it** — wrong-case enum, agenda
+   contamination, a coverage gap, or a split councillor identity.
+4. **Then apply Parts 3–4** — name the failure genre, map to a principle, write
+   the Briginshaw sentence, and grade severity. Most data findings top out at
+   "Integrity flag / warrants explanation," never "wrongdoing occurred."
+
+---
+
+## PART 1 — THE CRITERIA FRAMEWORKS (what "good" is measured against)
+
+These are the rulers. Map every finding to one of them; it converts a pattern
+into an alleged failure against a named standard, which is what gives a finding
+external legitimacy.
+
+### 1.1 The Seven Principles of Public Life (the Nolan Principles, UK 1995)
+The canonical integrity test for any public office-holder, elected or
+appointed. Enshrined in codes of conduct across the Anglosphere, including WA
+council member codes.
+
+- **Selflessness** — decisions solely in the public interest, not for self,
+  family, or friends.
+- **Integrity** — no obligations to outsiders who might influence you.
+- **Objectivity** — decisions on merit, without bias.
+- **Accountability** — submit to whatever scrutiny is appropriate.
+- **Openness** — act and decide transparently; restrict information only with
+  good reason.
+- **Honesty** — truthful.
+- **Leadership** — model these principles and challenge breaches in others.
+
+Key point from the literature: Nolan is deliberately about *behaviour and
+culture*, not process. Lord Evans (former CSPL chair) stressed that good conduct
+is "as much about organisational culture as formal rules." For a data project
+this matters — culture leaves a paper trail (recurrence, who-protects-whom,
+selective enforcement) even when no single rule is broken.
+
+### 1.2 CIPFA / SOLACE — *Delivering Good Governance in Local Government* (2016)
+The operational governance standard. Seven principles, A–G. A and B are said to
+"permeate" C–G:
+
+- **A. Integrity, ethical values, rule of law** — codes of conduct, interest
+  declarations, whistleblowing arrangements.
+- **B. Openness and comprehensive stakeholder engagement.**
+- **C. Defining outcomes** in terms of sustainable economic/social/environmental
+  benefits.
+- **D. Determining the interventions** to achieve those outcomes (incl. value
+  for money).
+- **E. Developing capacity** — of the entity and of its leadership.
+- **F. Managing risks and performance** through robust internal control and
+  strong public financial management.
+- **G. Transparency, reporting and audit** to deliver accountability.
+
+Each council is expected to publish an **Annual Governance Statement (AGS)**
+concluding whether its governance is "fit for purpose" and naming significant
+gaps. When this conclusion is dishonest or absent, that itself is a finding.
+
+### 1.3 The "Best Value Duty" (UK, Local Government Act 1999)
+The legal hook for intervention. Authorities must secure continuous improvement
+in how functions are exercised, having regard to economy, efficiency and
+effectiveness. When a minister is "satisfied an authority is failing to comply
+with its Best Value Duty," intervention follows. The Australian analogue is the
+**"failure to provide good government"** standard under the WA *Local Government
+Act 1995* — the exact test every WA authorised inquiry reports against.
+
+### 1.4 The statutory-officer "Golden Triangle" and three lines of defence
+Governance failures almost always involve the breakdown of three roles:
+- **Head of Paid Service** (the CEO),
+- **Chief Finance Officer** (the s.151 / s.6.5 officer),
+- **Monitoring Officer** (legal/propriety guardian).
+
+The "three lines of defence" assurance model (management → risk & compliance →
+internal/external audit) is the standard frame for asking *where the control
+should have caught this and didn't.*
+
+### 1.5 Financial-health indicators (the early-warning instruments)
+- **CIPFA Financial Resilience Index (2018)** — benchmarks reserves, debt,
+  reliance on commercial income, etc., to flag at-risk councils *before* they
+  fail.
+- **The section 114 notice** (UK, Local Government Finance Act 1988) — the
+  chief finance officer's formal declaration that the council is about to incur
+  unlawful (usually unbalanced) expenditure. Functionally "council bankruptcy."
+  Rare until 2018, then a wave: Northamptonshire, Croydon (×3), Slough,
+  Thurrock, Woking, Birmingham, Nottingham.
+
+WA has no s.114 equivalent, but the *signals that precede one* are fully
+data-detectable in budget/tender records: collapsing reserves, rising debt,
+over-reliance on one income stream, and large speculative investments.
+
+---
+
+## PART 2 — HOW COUNCILS IN CRISIS ARE INVESTIGATED (the methodologies)
+
+A graduated ladder runs from light-touch peer review to Royal-Commission-grade
+inquiry. Each rung has a method worth stealing.
+
+### 2.1 WA authorised / independent inquiry — the gold standard (City of Perth)
+The **City of Perth Inquiry** (suspension March 2018; hearings to Oct 2019;
+2,000-page, four-volume report tabled Aug 2020) is the most extensive local-
+government inquiry ever run in WA. Methodology worth internalising:
+
+- **Powers of a Royal Commission**, but it is an *administrative*, not judicial,
+  body — its findings have no binding legal effect, and (except where its terms
+  of reference allow) it does **not** decide whether conduct broke the law. It
+  reports on the *failure of good government*, its causes, and remedies.
+- **Scale of evidence**: ~4 million documents examined, 104 witnesses, 125
+  hearing days, 250+ findings, 300+ recommendations, ~135 matters referred to
+  17 state/Commonwealth agencies regarding ~23 individuals.
+- **The findings were cultural, not just transactional**: "dysfunctional
+  culture," factionalism, self-interest, and lack of accountability were named
+  as the *root cause*; poor financial management, planning, and
+  procurement/contracting were the symptoms.
+- **Standard of proof — Briginshaw** (see Part 4). The inquiry applied the
+  principle that the strength of evidence required scales with the seriousness
+  of what is alleged. This is the single most important methodological import
+  for a civic-data project.
+
+Lesson for the project: the most damning inquiry findings were about *culture
+and the administration* — where the decision is really made — not about any one
+vote. That mirrors the existing prompt's "visible contest may be theatre" prior.
+
+### 2.2 WA Local Government Inspector + Monitors (operational from 1 Jan 2026)
+The new standing-oversight regime (Tony Brown, first Inspector, Aug 2025).
+Built on **early intervention** with an explicit escalation ladder:
+
+1. **Compliance reviews / system analysis** — proactive, desk-based.
+2. **Statement of information** — compel the council to compile data.
+3. **Monitor appointment** — an expert embedded in the council (governance,
+   financial management, or conflict-resolution), with power to inspect
+   documents and attend closed meetings.
+4. **Inspector's Inquiry** — can recommend suspension/dismissal of a member or
+   the whole council.
+5. **Independent Inquiry** (Minister-established, renamed panel of inquiry) —
+   retains full Royal Commission powers.
+
+Breach taxonomy the Inspector triages complaints into: **behavioural**,
+**conduct**, and **specified** breaches. Penalties escalate to suspension (up
+to 3 months) and disqualification (suspended 3× → disqualified). The whole
+design is *graduated proportionality* — match the response to the severity, and
+prefer the earliest rung that works. A data investigator should likewise grade
+findings by what rung of response they'd warrant.
+
+### 2.3 UK intervention pipeline (the most developed in the world)
+For a council failing Best Value:
+1. **LGA Corporate Peer Challenge** — voluntary peer review by sector experts;
+   the lightest diagnostic.
+2. **Best Value Inspection** — formal external inspection on referral.
+3. **Improvement & Assurance Panel** — *advises*, then can be put on a
+   *statutory footing* to *direct* (Croydon, 2023).
+4. **Commissioners** — government appointees who take over named functions
+   (hiring/firing officers, redesigning services, audit oversight). Used at
+   Northamptonshire, Slough, Thurrock, Liverpool, Woking.
+
+The recurring *forensic finding* across these: failure was years in the making
+and visible in the financials long before the crisis. The **Caller report**
+into Northamptonshire (2018) found the council had failed to exercise proper
+budgetary control since 2013–14, with earmarked reserves collapsing from £57.7m
+to £8.8m over four years. The pattern repeats — Croydon, Thurrock, and Woking
+all gambled on commercial property/bonds (hotels, retail parks, solar farms,
+skyscrapers) to plug structural gaps. **A speculative commercial-investment
+binge funded from borrowing is the single most reliable precursor of municipal
+financial collapse** — and it is fully visible in a tender/budget record.
+
+### 2.4 Integrity-body forensic investigations (ICAC NSW / IBAC Vic / CCC WA)
+Where inquiries ask "was there good government," integrity bodies ask "was there
+corrupt conduct." Their methods are the most directly portable to *transactional
+data*. The model case:
+
+- **IBAC Operation Royston** (City of Ballarat). An officer kept procurement
+  values *just under* the threshold that would have triggered competitive
+  quotes — taking the single verbal quote his policy allowed — then directed the
+  work to his wife's and associates' companies. He was exposed partly because
+  *the supplier's phone number on file matched his wife's emergency-contact
+  number already in his personnel file.* The lesson IBAC drew: **routine data
+  analytics would have caught this** — cross-referencing records the council
+  already held.
+
+This gives a concrete, data-detectable corruption grammar (Part 3.3).
+
+### 2.5 The "public interest report" and the limits of inquiry
+Note the Thurrock counter-example: the government *refused* a further public
+inquiry because a Best Value Inspection and commissioners had already surfaced
+the facts — "no additionality." A finding is only worth escalating if it adds
+something the existing record doesn't. Translate to the project: don't rebuild a
+panel that an existing report already establishes; add the thing no one has
+computed.
+
+---
+
+## PART 3 — THE FAILURE TAXONOMY (what detectives actually hunt for)
+
+Councils fail in recognisable genres. Hunt these specifically rather than
+fishing. Each is paired with a real example and a data signature.
+
+### 3.1 Financial failure
+| Failure mode | Real example | Data signature in your schema |
+|---|---|---|
+| Reserve depletion / loss of budgetary control | Northamptonshire (reserves £57.7m→£8.8m) | `budget_items` trend; reserves line falling across years |
+| Speculative commercial investment funded by debt | Croydon hotels, Thurrock solar bonds, Woking skyscraper | `tenders`/`budget_items` for large atypical capital outlays; `motions` tagged investment/acquisition |
+| Confidential spend hiding the problem | recurring across s.114 councils | `budget_items.is_confidential` rate and $ share over time |
+| End-of-year "use it or lose it" spending spikes | ICAC-flagged generic risk | `tenders`/`budget_items` clustered in final budget weeks |
+
+### 3.2 Governance / cultural dysfunction
+| Failure mode | Real example | Data signature |
+|---|---|---|
+| Factionalism / bloc voting | City of Perth | `votes` co-movement clusters (you have this); persistence across terms |
+| Officer–member relationship breakdown | City of Perth | divergence of `officer_recommendation` from `outcome`, concentrated by member/era |
+| Decision actually made upstream (officer capture) | "visible contest is theatre" | ~97% officer-rec ratification rate; where it breaks is the story |
+| Soft-kill by process | generic procedural abuse | `motion_text` language: "refer back", "defer", "lay on table", "reconsideration" predicting death independent of merits |
+
+### 3.3 Integrity / corruption (handle with the most caution — Part 4)
+| Red flag | Source | Data signature |
+|---|---|---|
+| Threshold-gaming (values kept just under quote/tender limits) | IBAC Op. Royston; ICAC "order splitting" | `tenders.amount`/`budget_items.amount` bunching just below known thresholds |
+| Incumbent / repeat-winner capture | ICAC supplier-panel risk | `tenders.awarded_to` concentration; win-rate of repeat vs one-shot suppliers |
+| Undeclared conflict between decider and supplier | ICAC/IBAC core finding | join `interest_declarations` × `tenders.awarded_to` × `votes`; *absence* of a declaration where a relationship existed |
+| Declared-but-not-recused voting | SA ICAC "identify, disclose, **manage**" | `votes.declared_interest` = true AND `choice` cast (not abstained) — and did it swing the result? |
+| Local-preference policy masking COI | NSW ICAC submission | motions adopting local-supplier weighting + subsequent award concentration |
+| Single-source / direct negotiation | ICAC direct-negotiation guidance | `tenders` with no competitive field; share over time |
+| Missing-record opacity | VAGO/IBAC: poor record-keeping is itself an indicator | data *gaps* — items with award but no value, decisions with no rationale |
+
+### 3.4 Process / transparency abuse
+- **Confidentiality overuse** — closing meetings or items beyond genuine need.
+  WA reforms explicitly tightened the grounds for closing meetings, signalling
+  this was a known abuse. Signature: rising share of confidential items /
+  closed sessions, especially clustered around contentious topics.
+- **Vexatious-complaint and information suppression** — harder to see in
+  minutes, but petitions/deputations that vanish without resolution are a trace.
+
+---
+
+## PART 4 — THE DEFENSIBILITY LAYER (the standard of proof)
+
+This is what separates a competent investigator from a conspiracy board. Three
+disciplines, all drawn from how real bodies operate.
+
+### 4.1 The Briginshaw standard (gravity-proportionate proof)
+From *Briginshaw v Briginshaw* (1938), applied by the City of Perth Inquiry:
+the strength of evidence required rises with (a) the seriousness of the
+allegation, (b) the inherent unlikelihood of the alleged conduct, and (c) the
+gravity of the consequences of the finding. **Practical rule for the project:**
+a benign finding ("objection counts rose") needs ordinary evidence; a finding
+that implies *wrongdoing by a named person* needs evidence strong enough that a
+hostile, numerate reader who likes that person still concedes it. Most data
+findings cannot clear that bar for *intent* — so they must be framed at the
+level the evidence supports.
+
+### 4.2 Red flags are risk indicators, not proof
+Every integrity body says this explicitly. A threshold-bunching pattern, a
+repeat-winner, an undeclared-looking relationship — these establish that a
+situation *warrants scrutiny*, not that corruption occurred. Data shows
+*pattern and opportunity*; it almost never shows *intent*. Frame accordingly:
+"this pattern is consistent with X and warrants explanation," never "X
+happened."
+
+### 4.3 Framing discipline (legal and reputational self-defence)
+Naming councils and individuals in published findings carries defamation risk.
+The safe register, borrowed from inquiry language:
+- Report *conduct and patterns*, attribute to *roles/eras* before *named
+  individuals*, and only name where the public record already does.
+- State findings as **questions the data raises** and **failures against a named
+  principle**, not as accusations of motive.
+- Always pair the conditional rate with the base rate, the n, and the era — a
+  finding that can't state its own n shouldn't ship (already in your hygiene
+  rules; this is the integrity-domain reason *why*).
+- For any serious finding, write the Briginshaw sentence: *"This implies
+  [seriousness]; the evidence clears that bar because ___ / does not clear it,
+  so it is reported as a risk-flag only."*
+
+### 4.4 Severity grading (borrowed from the Inspector's ladder)
+Grade each surviving finding by the response it would warrant, so the site
+communicates proportion:
+1. **Observation** — notable pattern, no impropriety implied.
+2. **Governance concern** — a Best Value / CIPFA-principle weakness.
+3. **Integrity flag** — a pattern consistent with a Nolan breach, warranting
+   explanation (the ceiling for most data findings).
+4. **Referable** — a pattern that, if explained the worst way, is the kind of
+   thing an integrity body investigates. Reserve this; require the strongest
+   evidence; never assert the worst interpretation as fact.
+
+---
+
+## PART 5 — SOURCES (for verification / defence)
+- *Report of the Inquiry into the City of Perth* (2020), DLGSC.
+- WA Local Government Inspector — Office overview; Local Government Amendment
+  Act 2024 (commenced 1 Jan 2026).
+- The Seven Principles of Public Life — GOV.UK / Committee on Standards in
+  Public Life.
+- CIPFA/SOLACE *Delivering Good Governance in Local Government* (2016) + 2025
+  addendum.
+- Institute for Government / UK Parliament briefings on s.114 notices and Best
+  Value intervention (Croydon, Thurrock, Slough, Northamptonshire, Woking).
+- NSW ICAC procurement & conflict-of-interest guidance; IBAC *Corruption risks
+  in local-government procurement* (Operation Royston); SA ICAC *Buying Trust*.
+- *Briginshaw v Briginshaw* (1938) 60 CLR 336.
+
+> Treat every figure above as a research note to re-verify before publishing,
+> not as established fact in your corpus.
