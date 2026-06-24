@@ -1708,6 +1708,7 @@ def cmd_publish(args) -> None:
         conflict_recusal_stats, tender_concentration,
         objection_dose_response, transparency_by_year, councillor_tenure,
         mayoral_agenda_setting, voting_power, recusal_compliance_trend,
+        sponsorship_network,
     )
     from src.analysis.divergence import officer_divergence
 
@@ -2009,13 +2010,45 @@ def cmd_publish(args) -> None:
         ],
     })
 
+    # sponsorship network: who BACKED whose motions in a near-unanimous chamber —
+    # validated alliances, the 2000s old-guard network, and the structural arc.
+    spon = sponsorship_network(session, council_id)
+
+    def _edge(e):
+        return {
+            "era_label": e.era_label, "name_a": e.name_a, "name_b": e.name_b,
+            "sponsorships": e.sponsorships, "lift": e.lift,
+            "agree_pct": e.agree_pct, "agree_n": e.agree_n, "kind": e.kind,
+        }
+
+    _write("sponsorship", {
+        "alliances": [_edge(e) for e in spon.alliances],
+        "procedural": [_edge(e) for e in spon.procedural],
+        "convergence_high_agree": spon.convergence_high_agree,
+        "convergence_low_agree": spon.convergence_low_agree,
+        "oldguard_label": spon.oldguard_label,
+        "oldguard_unanimous_pct": spon.oldguard_unanimous_pct,
+        "oldguard_nodes": [
+            {"name": n.name, "moved": n.moved, "seconded": n.seconded, "in_core": n.in_core}
+            for n in spon.oldguard_nodes
+        ],
+        "oldguard_edges": [_edge(e) for e in spon.oldguard_edges],
+        "eras": [
+            {"label": r.label, "year_from": r.year_from, "year_to": r.year_to,
+             "n_events": r.n_events, "n_active": r.n_active,
+             "cluster_size": r.cluster_size, "core_names": r.core_names,
+             "structure": r.structure}
+            for r in spon.eras
+        ],
+    })
+
     session.close()
 
     # Manifest records what was published and when
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal"],
+        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship"],
     }, indent=2))
 
     console.print(Panel(

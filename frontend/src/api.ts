@@ -320,6 +320,47 @@ export interface RecusalData {
   drivers: RecusalDriver[];
 }
 
+export interface SponsorEdge {
+  era_label: string;
+  name_a: string;
+  name_b: string;
+  sponsorships: number;
+  lift: number;
+  agree_pct: number | null;
+  agree_n: number;
+  kind: "alliance" | "procedural" | "mixed";
+}
+
+export interface SponsorNode {
+  name: string;
+  moved: number;
+  seconded: number;
+  in_core: boolean;
+}
+
+export interface SponsorEra {
+  label: string;
+  year_from: number;
+  year_to: number;
+  n_events: number;
+  n_active: number;
+  cluster_size: number;
+  core_names: string[];
+  structure: string;
+}
+
+export interface SponsorshipData {
+  alliances: SponsorEdge[];
+  procedural: SponsorEdge[];
+  convergence_high_agree: number;
+  convergence_low_agree: number;
+  oldguard_label: string;
+  oldguard_unanimous_pct: number;
+  oldguard_nodes: SponsorNode[];
+  oldguard_edges: SponsorEdge[];
+  eras: SponsorEra[];
+}
+
 export const api = {
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
   divergence: () => getSnapshot<DivergenceData>("divergence"),
@@ -337,4 +378,5 @@ export const api = {
   mayoral:    () => getSnapshot<MayoralData>("mayoral"),
   power:      () => getSnapshot<PowerData>("power"),
   recusal:    () => getSnapshot<RecusalData>("recusal"),
+  sponsorship: () => getSnapshot<SponsorshipData>("sponsorship"),
 };

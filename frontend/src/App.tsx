@@ -16,6 +16,7 @@ import { TransparencyTrendPanel } from "./components/TransparencyTrendPanel";
 import { TenurePanel } from "./components/TenurePanel";
 import { MayoralAgendaPanel } from "./components/MayoralAgendaPanel";
 import { PowerPanel } from "./components/PowerPanel";
+import { SponsorshipNetworkPanel } from "./components/SponsorshipNetworkPanel";
 
 export default function App() {
   return (
@@ -44,6 +45,11 @@ export default function App() {
         {/* Voting power — who wins on contested decisions (second flagship) */}
         <section className="grid-full">
           <PowerPanel />
+        </section>
+
+        {/* Sponsorship network — who backed whom; the blocs the vote hides */}
+        <section className="grid-full">
+          <SponsorshipNetworkPanel />
         </section>
 
         {/* Tenders — where the money went */}

@@ -2289,3 +2289,324 @@ def recusal_compliance_trend(
         by_year=by_year,
         drivers=drivers,
     )
+
+
+# ---------------------------------------------------------------------------
+# Sponsorship network — who BACKED whose motions in a near-unanimous chamber?
+#
+# In a chamber that votes ~90%+ unanimously, the recorded VOTE cannot separate
+# allies — everyone votes FOR. The mover->seconder ("sponsorship") record can:
+# seconding a motion is a low-cost public sponsorship signal. This query mines
+# that signal, controlling for activity volume via a lift statistic
+# (observed sponsorships / expected-under-independence), and VALIDATES each
+# strong tie against how the pair actually voted on contested motions —
+# distinguishing real alliances (sponsor AND vote together) from procedural
+# "courtesy" seconding (sponsor, but vote oppositely on divisive items).
+#
+# Severity: Observation. No impropriety is implied — sponsoring an ally's
+# motions is ordinary politics. The point is descriptive: surfacing working
+# structure the unanimous vote hides. Maps to CIPFA principle B (how the
+# chamber actually conducts business) / Nolan Openness.
+# ---------------------------------------------------------------------------
+
+# ~4-year WA electoral blocks (biennial Oct odd-year elections, 4-yr terms).
+_SPON_ERAS = [
+    ("1996–99", 1996, 1999),
+    ("2000–03", 2000, 2003),
+    ("2004–07", 2004, 2007),
+    ("2008–11", 2008, 2011),
+    ("2012–15", 2012, 2015),
+    ("2016–19", 2016, 2019),
+    ("2020–23", 2020, 2023),
+]
+_OLDGUARD = ("2000–07", 2000, 2007)
+
+
+@dataclass
+class SponsorEdge:
+    era_label: str
+    name_a: str
+    name_b: str
+    sponsorships: int          # mutual mover<->seconder count in the window
+    lift: float                # observed / expected-under-independence
+    agree_pct: float | None    # contested-vote agreement (None if too few shared)
+    agree_n: int               # shared contested votes
+    kind: str                  # "alliance" | "procedural" | "mixed"
+
+
+@dataclass
+class SponsorNode:
+    name: str
+    moved: int
+    seconded: int
+    in_core: bool
+
+
+@dataclass
+class SponsorEra:
+    label: str
+    year_from: int
+    year_to: int
+    n_events: int
+    n_active: int
+    cluster_size: int          # largest high-lift connected component
+    core_names: list[str]
+    structure: str             # short descriptive label
+
+
+@dataclass
+class SponsorshipNetworkStats:
+    # Part 1 — validated alliances across all eras
+    alliances: list[SponsorEdge]
+    procedural: list[SponsorEdge]
+    convergence_high_agree: float   # mean contested agreement of high-lift pairs
+    convergence_low_agree: float    # ... of low-lift pairs (the base rate)
+    # Part 2 — the 2000s old-guard network
+    oldguard_label: str
+    oldguard_unanimous_pct: float
+    oldguard_nodes: list[SponsorNode]
+    oldguard_edges: list[SponsorEdge]
+    # Part 3 — structural history across electoral terms
+    eras: list[SponsorEra]
+
+
+def _spon_load(session, council_id, from_year, to_year):
+    """Return (moves, seconds, pair, name, N) for a window (minutes only)."""
+    rows = (
+        session.query(Motion.moved_by_id, Motion.seconded_by_id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.moved_by_id.isnot(None),
+            Motion.seconded_by_id.isnot(None),
+            Motion.moved_by_id != Motion.seconded_by_id,
+        )
+    )
+    rows = _year_filter_query(rows, Meeting, from_year, to_year).all()
+    moves: dict[int, int] = defaultdict(int)
+    seconds: dict[int, int] = defaultdict(int)
+    pair: dict[tuple[int, int], int] = defaultdict(int)
+    N = 0
+    for mv, sc in rows:
+        moves[mv] += 1
+        seconds[sc] += 1
+        pair[(mv, sc)] += 1
+        N += 1
+    return moves, seconds, pair, N
+
+
+def _spon_agreement(session, council_id, from_year, to_year):
+    """Per-pair contested-vote agreement: {(min,max): [same, total]} (minutes only)."""
+    rows = (
+        session.query(Vote.motion_id, Vote.councillor_id, Vote.choice)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.votes_against > 0,
+            Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]),
+        )
+    )
+    rows = _year_filter_query(rows, Meeting, from_year, to_year).all()
+    bymot: dict[int, dict[int, object]] = defaultdict(dict)
+    for mid, cid, ch in rows:
+        bymot[mid][cid] = ch
+    agree: dict[tuple[int, int], list[int]] = defaultdict(lambda: [0, 0])
+    for d in bymot.values():
+        ids = sorted(d)
+        for i, a in enumerate(ids):
+            for b in ids[i + 1:]:
+                key = (a, b)
+                agree[key][1] += 1
+                if d[a] == d[b]:
+                    agree[key][0] += 1
+    return agree
+
+
+def _spon_edges(moves, seconds, pair, N, names, agree,
+                min_moved=15, min_sec=15, min_obs=8):
+    """Volume-controlled mutual-sponsorship edges among active members, with
+    contested-vote agreement attached. Returns list of dicts."""
+    active = [p for p in set(list(moves) + list(seconds))
+              if moves[p] >= min_moved and seconds[p] >= min_sec]
+    out = []
+    for i, a in enumerate(sorted(active)):
+        for b in sorted(active)[i + 1:]:
+            obs = pair.get((a, b), 0) + pair.get((b, a), 0)
+            if obs < min_obs:
+                continue
+            exp = moves[a] * seconds[b] / N + moves[b] * seconds[a] / N
+            lift = obs / exp if exp > 0 else 0.0
+            sa, ta = agree.get((min(a, b), max(a, b)), [0, 0])
+            agp = round(sa / ta * 100, 1) if ta >= 1 else None
+            out.append({
+                "a": a, "b": b, "obs": obs, "lift": round(lift, 2),
+                "agree_pct": agp, "agree_n": ta,
+                "na": names.get(a, ""), "nb": names.get(b, ""),
+            })
+    return out, set(active)
+
+
+def _spon_clusters(edges, active, thr=1.8):
+    """Largest connected component among high-lift edges."""
+    adj: dict[int, set] = defaultdict(set)
+    for e in edges:
+        if e["lift"] >= thr:
+            adj[e["a"]].add(e["b"])
+            adj[e["b"]].add(e["a"])
+    seen, comps = set(), []
+    for n in list(adj):
+        if n in seen:
+            continue
+        stack, comp = [n], set()
+        while stack:
+            x = stack.pop()
+            if x in seen:
+                continue
+            seen.add(x)
+            comp.add(x)
+            stack += [y for y in adj[x] if y not in seen]
+        if len(comp) >= 3:
+            comps.append(comp)
+    comps.sort(key=len, reverse=True)
+    return comps
+
+
+def _classify(agree_pct):
+    if agree_pct is None:
+        return "mixed"
+    if agree_pct >= 70:
+        return "alliance"
+    if agree_pct <= 50:
+        return "procedural"
+    return "mixed"
+
+
+def sponsorship_network(session: Session, council_id: int) -> SponsorshipNetworkStats:
+    names = {
+        cid: f"{gn or ''} {fn or ''}".strip()
+        for cid, gn, fn in session.query(
+            Councillor.id, Councillor.given_name, Councillor.family_name
+        ).all()
+    }
+
+    def _named(cid):
+        n = names.get(cid, "")
+        return n and "unknown" not in n.lower()
+
+    # ---- Part 1: validated alliances across all electoral eras -------------
+    best: dict[tuple[int, int], dict] = {}   # pair -> strongest-lift instance
+    hi_agree, lo_agree = [], []
+    for label, f, t in _SPON_ERAS:
+        moves, seconds, pair, N = _spon_load(session, council_id, f, t)
+        if N < 200:
+            continue
+        agree = _spon_agreement(session, council_id, f, t)
+        edges, _ = _spon_edges(moves, seconds, pair, N, names, agree)
+        for e in edges:
+            if not (_named(e["a"]) and _named(e["b"])):
+                continue
+            if e["agree_pct"] is not None and e["agree_n"] >= 25:
+                (hi_agree if e["lift"] >= 2.0 else
+                 lo_agree if e["lift"] < 1.0 else []).append(e["agree_pct"])
+            key = (min(e["a"], e["b"]), max(e["a"], e["b"]))
+            cur = best.get(key)
+            if cur is None or e["lift"] > cur["lift"]:
+                best[key] = {**e, "era": label}
+
+    def _edge(e):
+        return SponsorEdge(
+            era_label=e["era"], name_a=e["na"], name_b=e["nb"],
+            sponsorships=e["obs"], lift=e["lift"],
+            agree_pct=e["agree_pct"], agree_n=e["agree_n"],
+            kind=_classify(e["agree_pct"]),
+        )
+
+    strong = [e for e in best.values() if e["lift"] >= 2.0 and e["agree_n"] >= 30]
+    alliances = sorted(
+        [_edge(e) for e in strong if (e["agree_pct"] or 0) >= 70],
+        key=lambda x: -x.lift,
+    )[:12]
+    procedural = sorted(
+        [_edge(e) for e in strong if (e["agree_pct"] or 100) <= 55],
+        key=lambda x: -x.lift,
+    )[:6]
+
+    conv_hi = round(sum(hi_agree) / len(hi_agree), 1) if hi_agree else 0.0
+    conv_lo = round(sum(lo_agree) / len(lo_agree), 1) if lo_agree else 0.0
+
+    # ---- Part 2: the 2000s old-guard network -------------------------------
+    label, f, t = _OLDGUARD
+    moves, seconds, pair, N = _spon_load(session, council_id, f, t)
+    agree = _spon_agreement(session, council_id, f, t)
+    og_edges_raw, og_active = _spon_edges(moves, seconds, pair, N, names, agree, min_obs=10)
+    og_edges_raw = [e for e in og_edges_raw if _named(e["a"]) and _named(e["b"])]
+    # unanimity rate of the era
+    carried = (
+        session.query(func.count(Motion.id))
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                Motion.outcome == MotionOutcome.CARRIED)
+    )
+    carried = _year_filter_query(carried, Meeting, f, t).scalar() or 0
+    contested = (
+        session.query(func.count(Motion.id))
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                Motion.outcome == MotionOutcome.CARRIED, Motion.votes_against > 0)
+    )
+    contested = _year_filter_query(contested, Meeting, f, t).scalar() or 0
+    unanimous_pct = round((carried - contested) / carried * 100, 1) if carried else 0.0
+    # keep the meaningful edges (lift >= 1.5) for the diagram; cap for readability
+    og_edges = sorted(og_edges_raw, key=lambda e: -e["lift"])
+    og_edges = [e for e in og_edges if e["lift"] >= 1.5][:18]
+    core_ids = {e["a"] for e in og_edges} | {e["b"] for e in og_edges}
+    og_nodes = sorted(
+        [SponsorNode(name=names.get(c, ""), moved=moves[c], seconded=seconds[c],
+                     in_core=c in core_ids)
+         for c in og_active if _named(c)],
+        key=lambda n: -(n.moved + n.seconded),
+    )
+    oldguard_edges = [_edge({**e, "era": label}) for e in og_edges]
+
+    # ---- Part 3: structural history across electoral terms -----------------
+    _STRUCT = {
+        "1996–99": "forming",
+        "2000–03": "old guard consolidates",
+        "2004–07": "old guard at its peak",
+        "2008–11": "fragmented",
+        "2012–15": "small nucleus",
+        "2016–19": "broad / hyperactive",
+        "2020–23": "reshuffled, no durable bloc",
+    }
+    eras: list[SponsorEra] = []
+    for lab, ff, tt in _SPON_ERAS:
+        mv, sc, pr, NN = _spon_load(session, council_id, ff, tt)
+        if NN < 50:
+            continue
+        ag = _spon_agreement(session, council_id, ff, tt)
+        eds, act = _spon_edges(mv, sc, pr, NN, names, ag)
+        eds = [e for e in eds if _named(e["a"]) and _named(e["b"])]
+        comps = _spon_clusters(eds, act)
+        big = comps[0] if comps else set()
+        core = sorted((names.get(c, "") for c in big), key=lambda s: s)
+        eras.append(SponsorEra(
+            label=lab, year_from=ff, year_to=tt, n_events=NN,
+            n_active=len([a for a in act if _named(a)]),
+            cluster_size=len(big), core_names=core[:8],
+            structure=_STRUCT.get(lab, ""),
+        ))
+
+    return SponsorshipNetworkStats(
+        alliances=alliances,
+        procedural=procedural,
+        convergence_high_agree=conv_hi,
+        convergence_low_agree=conv_lo,
+        oldguard_label=label,
+        oldguard_unanimous_pct=unanimous_pct,
+        oldguard_nodes=og_nodes,
+        oldguard_edges=oldguard_edges,
+        eras=eras,
+    )

@@ -500,3 +500,28 @@ a:hover { text-decoration: underline; }
   color: #cbd5e1;
   line-height: 1.5;
 }
+
+/* ── Sponsorship network panel ────────────────────────────────────────── */
+.spon-edge-list { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 2px; }
+.spon-edge-row { display: grid; grid-template-columns: 200px 1fr 84px 120px; align-items: center; gap: 10px; font-size: 12.5px; }
+.spon-edge-names { color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spon-amp { color: #64748b; }
+.spon-edge-era { color: #64748b; font-size: 11px; }
+.spon-edge-bar-track { background: #1e293b; border-radius: 4px; height: 12px; overflow: hidden; }
+.spon-edge-bar { height: 100%; border-radius: 4px; }
+.spon-edge-stat { color: #94a3b8; text-align: right; font-variant-numeric: tabular-nums; }
+.spon-edge-agree { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.spon-edge-n { color: #64748b; font-size: 11px; }
+
+.spon-legend { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; font-size: 12px; color: #94a3b8; margin: 2px 0 4px; }
+.spon-legend i { display: inline-block; width: 18px; height: 4px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
+.spon-legend i.dashed { background-image: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px); }
+.spon-legend-note { color: #64748b; font-style: italic; }
+
+.spon-era-strip { display: flex; gap: 8px; align-items: flex-end; justify-content: space-between; padding: 8px 0 0; }
+.spon-era { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+.spon-era-bar-wrap { display: flex; align-items: flex-end; height: 120px; }
+.spon-era-bar { width: 38px; border-radius: 4px 4px 0 0; display: flex; align-items: flex-start; justify-content: center; }
+.spon-era-size { color: #0f172a; font-weight: 700; font-size: 13px; padding-top: 2px; }
+.spon-era-label { font-size: 11.5px; color: #cbd5e1; font-variant-numeric: tabular-nums; }
+.spon-era-struct { font-size: 10.5px; color: #64748b; text-align: center; line-height: 1.25; }
