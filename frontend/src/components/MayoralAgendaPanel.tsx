@@ -37,6 +37,8 @@ export function MayoralAgendaPanel() {
     <Card
       title="Does the Council Fall in Line Behind the Mayor?"
       subtitle="Dissent on motions moved by the sitting Mayor vs everyone else · 1999–2026"
+      valence="supportive"
+      backTo="sc-mayoral"
     >
       <div className="planning-hero-row">
         <div className="planning-stat">
@@ -90,6 +92,13 @@ export function MayoralAgendaPanel() {
         the turbulent 2015–2023 era), while Simon Withers's motions passed almost as quietly as the
         backbench. Only mayors with dated terms (1999 onward) and ≥10 carried motions are shown;
         earlier mayors fall into the backbench comparison.
+      </p>
+      <p className="chart-note">
+        <strong>Read as a strength:</strong> a chamber that votes against its own Mayor <em>more</em>
+        than against a backbencher is the opposite of chair capture — dissent is recorded freely and
+        the most powerful member earns no deference at the gavel. That is Accountability and
+        Objectivity demonstrably upheld. Severity: a good-governance strength (no chair capture) ·
+        Nolan Accountability, Objectivity.
       </p>
     </Card>
   );

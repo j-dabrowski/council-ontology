@@ -1,13 +1,5 @@
-import { InterestsChart } from "./components/InterestsChart";
 import { DivergencePanel } from "./components/DivergencePanel";
-import { CoMoverGraph } from "./components/CoMoverGraph";
-import { ContestationChart } from "./components/TrendsChart";
 import { EngagementChart } from "./components/EngagementChart";
-import { AlignmentHeatmap } from "./components/AlignmentHeatmap";
-import { PlanningTrendChart } from "./components/PlanningTrendChart";
-import { PlanningObjectionsPanel } from "./components/PlanningObjectionsPanel";
-import { DissentProfilesChart } from "./components/DissentProfilesChart";
-import { DissentCoalitionsPanel } from "./components/DissentCoalitionsPanel";
 import { ConflictRecusalPanel } from "./components/ConflictRecusalPanel";
 import { RecusalTrendPanel } from "./components/RecusalTrendPanel";
 import { TenderConcentrationPanel } from "./components/TenderConcentrationPanel";
@@ -18,8 +10,21 @@ import { MayoralAgendaPanel } from "./components/MayoralAgendaPanel";
 import { PowerPanel } from "./components/PowerPanel";
 import { SponsorshipNetworkPanel } from "./components/SponsorshipNetworkPanel";
 import { OverviewPanel } from "./components/OverviewPanel";
+import { ScorecardPanel } from "./components/ScorecardPanel";
+import { BatteryTestPanel } from "./components/BatteryTestPanel";
 
+// The page is the battery: every panel below is a test, rendered in the SAME
+// ORDER as the scorecard rows. Bespoke components for the rich tests; the generic
+// BatteryTestPanel (by test_id) for the rest. Section id = panel-<slug> so the
+// scorecard "jump to panel" links land here. (Eight descriptive non-test panels
+// were retired — not tests — but their components remain in the repo for reuse.)
 export default function App() {
+  const Test = (slug: string, testId: string) => (
+    <section className="grid-full" id={`panel-${slug}`}>
+      <BatteryTestPanel testId={testId} />
+    </section>
+  );
+
   return (
     <div className="app">
       <header className="site-header">
@@ -33,97 +38,43 @@ export default function App() {
       </header>
 
       <main className="main-grid">
-        {/* Overview — cross-cutting synthesis of every panel below */}
         <section className="grid-full">
           <OverviewPanel />
         </section>
-
-        {/* Conflict of interest — flagship */}
         <section className="grid-full">
-          <ConflictRecusalPanel />
+          <ScorecardPanel />
         </section>
 
-        {/* Recusal compliance over time — the Inquiry conduct shock */}
-        <section className="grid-full">
-          <RecusalTrendPanel />
-        </section>
+        {/* ── Integrity & procurement ── */}
+        <section className="grid-full" id="panel-declared"><ConflictRecusalPanel /></section>
+        <section className="grid-full" id="panel-recusal"><RecusalTrendPanel /></section>
+        {Test("single-source", "procurement.single_source")}
+        <section className="grid-full" id="panel-tenders"><TenderConcentrationPanel /></section>
+        {Test("threshold-gaming", "procurement.threshold_gaming")}
+        {Test("incumbency", "procurement.incumbency")}
+        {Test("repeat-applicant", "planning.repeat_applicant")}
 
-        {/* Voting power — who wins on contested decisions (second flagship) */}
-        <section className="grid-full">
-          <PowerPanel />
-        </section>
+        {/* ── Governance & culture ── */}
+        <section className="grid-full" id="panel-divergence"><DivergencePanel /></section>
+        <section className="grid-full" id="panel-power"><PowerPanel /></section>
+        {Test("unanimity", "governance.unanimity_trend")}
+        <section className="grid-full" id="panel-sponsorship"><SponsorshipNetworkPanel /></section>
+        <section className="grid-full" id="panel-tenure"><TenurePanel /></section>
+        {Test("freshman", "governance.freshman_effect")}
+        {Test("election-cycle", "governance.election_cycle")}
+        {Test("attendance", "governance.attendance")}
+        {Test("big-dollar", "planning.big_dollar_leniency")}
+        <section className="grid-full" id="panel-mayoral"><MayoralAgendaPanel /></section>
 
-        {/* Sponsorship network — who backed whom; the blocs the vote hides */}
-        <section className="grid-full">
-          <SponsorshipNetworkPanel />
-        </section>
+        {/* ── Transparency & engagement ── */}
+        <section className="grid-full" id="panel-transparency"><TransparencyTrendPanel /></section>
+        <section className="grid-full" id="panel-engagement"><EngagementChart /></section>
+        {Test("deputations", "engagement.deputation_dissent")}
+        <section className="grid-full" id="panel-dose"><ObjectionDosePanel /></section>
 
-        {/* Tenders — where the money went */}
-        <section className="grid-full">
-          <TenderConcentrationPanel />
-        </section>
-
-        {/* Transparency — confidential business over time */}
-        <section className="grid-full">
-          <TransparencyTrendPanel />
-        </section>
-
-        {/* Planning analysis */}
-        <section className="grid-full">
-          <PlanningTrendChart />
-        </section>
-
-        <section className="grid-half">
-          <PlanningObjectionsPanel />
-        </section>
-
-        <section className="grid-half">
-          <ObjectionDosePanel />
-        </section>
-
-        <section className="grid-full">
-          <DissentCoalitionsPanel />
-        </section>
-
-        {/* Dissent analysis */}
-        <section className="grid-full">
-          <DissentProfilesChart />
-        </section>
-
-        {/* Mayoral agenda-setting */}
-        <section className="grid-full">
-          <MayoralAgendaPanel />
-        </section>
-
-        {/* Council composition — tenure */}
-        <section className="grid-full">
-          <TenurePanel />
-        </section>
-
-        {/* Existing panels */}
-        <section className="grid-full">
-          <DivergencePanel />
-        </section>
-
-        <section className="grid-full">
-          <InterestsChart />
-        </section>
-
-        <section className="grid-full">
-          <AlignmentHeatmap />
-        </section>
-
-        <section className="grid-full">
-          <ContestationChart />
-        </section>
-
-        <section className="grid-full">
-          <CoMoverGraph />
-        </section>
-
-        <section className="grid-full">
-          <EngagementChart />
-        </section>
+        {/* ── Financial ── */}
+        {Test("eoy", "finance.eoy_spending")}
+        {Test("reserve", "finance.reserve_trajectory")}
       </main>
 
       <footer className="site-footer">

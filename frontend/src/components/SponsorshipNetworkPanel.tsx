@@ -92,6 +92,8 @@ export function SponsorshipNetworkPanel() {
     <Card
       title="Who Backed Whom — the Sponsorship Network a Unanimous Vote Hides"
       subtitle="Cambridge votes together ~90% of the time. Who SECONDS whose motions reveals the working blocs the vote record can't · 1996–2023"
+      valence="neutral"
+      backTo="sc-sponsorship"
     >
       {/* convergence hero */}
       <div className="planning-hero-row">

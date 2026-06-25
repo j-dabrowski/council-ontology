@@ -1876,6 +1876,8 @@ def cmd_publish(args) -> None:
                 "recused": p.recused,
                 "recusal_rate": p.recusal_rate,
                 "is_active": p.is_active,
+                # inline drill-down detail — each declared-interest vote expanded
+                "declarations": [_dc(d) for d in p.declarations],
             }
             for p in recusal.profiles
         ],
@@ -2088,6 +2090,23 @@ def cmd_publish(args) -> None:
         "tender_total_m": round(tenders.total_amount / 1e6, 1),
         "tender_redacted_m": round(tenders.redacted_amount / 1e6, 1),
         "tender_top10_share_pct": round(tenders.top10_share * 100),
+        # 8 — the record that earns credit (the promoter-lens balance)
+        "mayor_contest_pct": mayoral.mayor_contest_pct,
+        "other_contest_pct": mayoral.other_contest_pct,
+    })
+
+    # scorecard: the standard, repeatable Test Battery — every test the corpus can
+    # run, each flagged supportive / neutral / critical, including the ones the
+    # council passes. Comparable across councils. Reuses the objects above.
+    from src.analysis.tests import run_test_battery, battery_summary
+    battery = run_test_battery(session, council_id, precomputed={
+        "power": power, "recusal_trend": rct, "conflict": recusal,
+        "tenders": tenders, "transparency": trans, "tenure": tenure,
+        "mayoral": mayoral, "sponsorship": spon, "dose": dose, "divergence": pairs,
+    })
+    _write("scorecard", {
+        "summary": battery_summary(battery),
+        "tests": [_dc(t) for t in battery],
     })
 
     session.close()
@@ -2096,7 +2115,7 @@ def cmd_publish(args) -> None:
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["overview", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship"],
+        "snapshots": ["overview", "scorecard", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship"],
     }, indent=2))
 
     console.print(Panel(

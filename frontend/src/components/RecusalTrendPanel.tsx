@@ -106,6 +106,8 @@ export function RecusalTrendPanel() {
     <Card
       title="Declared, Then Stayed — the Quiet Collapse of Recusal"
       subtitle="Did declaring a conflict still mean leaving the room? · serious (financial/proximity) interests, 1995–2026"
+      valence="critical"
+      backTo="sc-recusal"
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

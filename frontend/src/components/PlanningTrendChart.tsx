@@ -47,6 +47,7 @@ export function PlanningTrendChart() {
     <Card
       title="Planning Approval Rate, 1995–2026"
       subtitle="Cambridge's shift from permissive to restrictive planning"
+      valence="neutral"
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

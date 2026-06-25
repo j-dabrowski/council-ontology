@@ -17,7 +17,7 @@ export function DivergencePanel() {
     : "years unknown";
 
   return (
-    <Card title="Officer Recommendation Compliance" subtitle={yearRange}>
+    <Card title="Officer Recommendation Compliance" subtitle={yearRange} valence="critical" backTo="sc-divergence">
       <div className="divergence-hero">
         <span className="hero-number">{pct}</span>
         <span className="hero-label">

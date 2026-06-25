@@ -1,6 +1,6 @@
 # council-ontology
 
-A research tool for modelling local council politics in Perth, WA. It scrapes public meeting minutes PDFs, uses Claude to extract structured data, and stores the results in a SQLite database for analysis.
+A research tool for modelling local council politics in Perth, WA. It scrapes public meeting minutes PDFs, uses Claude to extract structured data into a SQLite database, and runs a **standard battery of governance tests** over it — each result flagged supportive, neutral, or critical and anchored to a recognised criterion — surfaced through an interactive dashboard.
 
 **Current target:** City of Cambridge (Town Council), 537 PDFs covering 1995–2026.
 
@@ -36,6 +36,10 @@ council minutes site
         │
         ▼
    council analyse          ← query helpers for cross-meeting analysis
+        │
+        ▼
+   council publish          ← export analysis + the test battery as static JSON
+                              snapshots for the frontend
 ```
 
 ---
@@ -87,16 +91,41 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ## Dashboard
 
-A React/Vite frontend with a FastAPI backend visualises the extracted data. Six panels: officer recommendation compliance, interest declarations by councillor, contestation rate by year, co-mover network, public engagement by year, and voting alignment heatmap.
+A React/Vite frontend visualises the analysis. It reads **static JSON snapshots**
+(no live API needed) that `council publish` exports to `frontend/public/data/`.
+
+The page is organised as a **standard test battery**:
+
+- **Overview** — a cross-cutting synthesis of the whole corpus.
+- **Scorecard** — every standard governance test, each flagged **supportive /
+  neutral / critical** (and "not computable" where the corpus can't support it).
+  The same battery runs on any council, so results are comparable.
+- **23 test panels**, one per battery test, in the same order as the scorecard.
+  Rich findings get a bespoke panel; the rest are rendered by a generic
+  `BatteryTestPanel` from the test's chart payload.
+
+Every panel exists *because it is a test* — there are no orphan charts. Panels are
+interactive where the data supports it (e.g. click a councillor in the conflict
+panel to reveal their actual declared interests, each with the verbatim minute
+quote), and the scorecard rows ↕ panels are linked both ways.
 
 ```bash
-# Start the API (from project root)
-uvicorn api.main:app --reload --port 8000
+# 1. Export the snapshots from the database (re-run after any data change)
+council publish cambridge          # → frontend/public/data/*.json
 
-# Start the frontend (separate terminal)
-cd frontend && npm run dev
-# → http://localhost:5173
+# 2. Run the frontend
+cd frontend && npm run dev         # → http://localhost:5173
+# or: npm run build && npm run preview
 ```
+
+> The methodology behind the battery — the criteria findings are judged against,
+> the standard of proof, the supportive/neutral/critical valences — lives in
+> `Investigator_prompt.txt`. The hypothesis-by-hypothesis record (findings and
+> nulls) is in `INVESTIGATIONS.md`; the prose synthesis in `FINDINGS_SUMMARY.md`;
+> the interactivity backlog in `INTERACTIVITY.md`.
+>
+> (`api/main.py` is a legacy FastAPI backend that served the same queries as REST;
+> the live site uses the static snapshots above and does not need it.)
 
 ---
 
@@ -301,6 +330,24 @@ All queries accept `--from-year` and `--to-year` to filter by meeting date.
 
 ---
 
+#### `council publish cambridge`
+Exports the analysis and the **standard test battery** as static JSON snapshots to
+`frontend/public/data/` for the dashboard. Re-run after any data change (extraction,
+dedup, relationship build) so the site reflects the current database.
+
+```bash
+council publish cambridge
+# → overview.json, scorecard.json, and one snapshot per panel (+ manifest.json)
+```
+
+The `scorecard` snapshot is produced by the council-agnostic battery in
+`src/analysis/tests.py` (`run_test_battery`): each test carries a stable `test_id`,
+a recognised-criterion mapping, a supportive/neutral/critical valence, and a chart
+payload. Adding a test there makes it run on every council and appear as a panel
+automatically.
+
+---
+
 #### `council merge-pdfs <input_dir> <output>`
 Concatenates all PDFs in a directory into a single file. Useful for bundling image-based PDFs (e.g. Elections WA reports) into one upload for Google Drive OCR.
 
@@ -409,22 +456,39 @@ src/
   storage/
     database.py           — SQLite init, session factory, schema creation
   analysis/
-    queries.py            — reusable query helpers (13 query functions)
+    queries.py            — reusable query helpers (per-panel analysis functions)
+    tests.py              — the Standard Test Battery: run_test_battery() returns a
+                            valenced TestResult per standard governance test
+    divergence.py         — officer-recommendation vs outcome matching
   validation/
     core.py               — shared validation logic (five metrics, three-tier quote matching)
 
 api/
-  main.py                 — FastAPI backend exposing analysis queries as REST endpoints
-                            (run: uvicorn api.main:app --reload --port 8000)
+  main.py                 — legacy FastAPI backend (REST view of the queries); not
+                            used by the live site, which reads the static snapshots
+                            written by `council publish`
 
 frontend/
   src/
-    App.tsx               — six-panel dashboard layout
-    api.ts                — typed fetch wrappers for the API
-    components/           — AlignmentHeatmap, CoMoverGraph, DivergencePanel,
-                            EngagementChart, InterestsChart, TrendsChart
+    App.tsx               — page layout: Overview + Scorecard + the 23 test panels,
+                            in scorecard order (every panel is a battery test)
+    api.ts                — typed loaders for the static JSON snapshots (/data/*.json)
+    components/
+      OverviewPanel        — cross-cutting synthesis (landing panel)
+      ScorecardPanel       — the test battery, each row flagged supportive/neutral/critical
+      BatteryTestPanel     — generic panel for any test without a bespoke one
+      DrillDown            — reusable drill-down drawer + SourceQuote ("the receipt")
+      ValenceChip          — the supportive/neutral/critical flag
+      <flagship panels>    — ConflictRecusal, RecusalTrend, Power, Sponsorship,
+                             TenderConcentration, Transparency, Tenure, Mayoral,
+                             ObjectionDose, Divergence, Engagement
+      <retired, kept for reuse> — AlignmentHeatmap, CoMoverGraph, TrendsChart,
+                             InterestsChart, PlanningTrendChart, PlanningObjections,
+                             DissentProfiles, DissentCoalitions (not rendered; each
+                             would need promoting to a battery test to return)
     hooks/useData.ts      — shared data-fetching hook
-  (run: cd frontend && npm run dev)
+  public/data/*.json      — published snapshots (generated by `council publish`)
+  (run: council publish cambridge, then cd frontend && npm run dev)
 
 scripts/
   census.py               — Level 0: keyword scan and census across all PDFs
@@ -484,4 +548,21 @@ See `PIPELINE.md` for the detailed plan and `IMPLEMENTATION_ANALYSIS.md` for bui
 1. Create `src/scraper/<council>.py` subclassing `BaseScraper`
 2. Add one entry to the `COUNCILS` dict in `src/cli.py`
 
-All CLI commands work immediately for the new council.
+All CLI commands work immediately for the new council — including `council publish`,
+which runs the identical test battery and produces a comparable scorecard. Because
+every test uses a stable `test_id`, two councils' results line up test-for-test
+(and "not computable" rows show which tests a given corpus supports).
+
+---
+
+## Documentation
+
+| Doc | What it covers |
+|-----|----------------|
+| `README.md` | This file — pipeline, schema, CLI, dashboard, layout |
+| `Investigator_prompt.txt` | The investigation methodology: criteria findings are judged against (Nolan / CIPFA / Best Value), the standard of proof, the supportive/neutral/critical valences, and the two-tier bar (battery vs flagship). The page = the battery |
+| `INVESTIGATIONS.md` | The detective's notebook — every hypothesis tested, with findings and honest nulls |
+| `FINDINGS_SUMMARY.md` | Prose synthesis of what the corpus says, in the round |
+| `INTERACTIVITY.md` | The panel-interactivity recipe and per-panel drill-down backlog |
+| `PIPELINE.md` / `IMPLEMENTATION_ANALYSIS.md` | Extraction pipeline plan and build order |
+| `DATA_ENRICHMENT.md` | Forward-looking re-extraction / external-join backlog |

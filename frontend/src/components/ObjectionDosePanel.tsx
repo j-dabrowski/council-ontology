@@ -52,6 +52,8 @@ export function ObjectionDosePanel() {
     <Card
       title="How Many Objectors Does It Take to Sink a Development?"
       subtitle="Refusal rate by number of community objections · decided applications, 1995–2026"
+      valence="supportive"
+      backTo="sc-dose"
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

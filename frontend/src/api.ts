@@ -149,12 +149,24 @@ export interface DissentData {
   by_tag: TagContestationStat[];
 }
 
+export interface DeclarationDetail {
+  date: string;
+  item: string | null;
+  title: string | null;
+  interest_type: string | null;   // financial / proximity / impartiality / other
+  what: string | null;            // the actual interest description
+  action: string;                 // "Stepped out" / "Stayed — voted for" / ...
+  must_leave: boolean;
+  quote: string | null;           // verbatim minute text
+}
+
 export interface RecusalProfile {
   name: string;
   declared_votes: number;
   recused: number;
   recusal_rate: number;
   is_active: boolean;
+  declarations: DeclarationDetail[];
 }
 
 export interface ConflictRecusalData {
@@ -353,6 +365,8 @@ export interface OverviewData {
   tender_total_m: number;
   tender_redacted_m: number;
   tender_top10_share_pct: number;
+  mayor_contest_pct: number;
+  other_contest_pct: number;
 }
 
 export interface SponsorEdge {
@@ -396,7 +410,50 @@ export interface SponsorshipData {
   eras: SponsorEra[];
 }
 
+export type Valence = "supportive" | "neutral" | "critical";
+
+export interface TestChartBar { label: string; value: number; highlight?: boolean; }
+export interface TestChartRefline { label: string; value?: number; after?: string; }
+export interface TestChart {
+  kind: "bars" | "line";
+  unit?: string;
+  refline?: TestChartRefline | null;
+  bars?: TestChartBar[];
+  points?: { x: number; y: number }[];
+}
+
+export interface ScorecardTest {
+  test_id: string;
+  title: string;
+  genre: string;
+  principle: string;
+  question: string;
+  valence: Valence;
+  grade: string;
+  headline: string;
+  verdict: string;
+  data_ok: boolean;
+  n: number | null;
+  base_rate: string | null;
+  era: string | null;
+  detail_panel: string | null;
+  series: { x: number; y: number }[];
+  chart: TestChart | null;
+}
+
+export interface ScorecardData {
+  summary: {
+    n_tests: number;
+    n_supportive: number;
+    n_neutral: number;
+    n_critical: number;
+    n_not_computable: number;
+  };
+  tests: ScorecardTest[];
+}
+
 export const api = {
+  scorecard:  () => getSnapshot<ScorecardData>("scorecard"),
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
   divergence: () => getSnapshot<DivergenceData>("divergence"),
   coMovers:   () => getSnapshot<CoMoverData>("co-movers"),

@@ -3,6 +3,7 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api } from "../api";
+import { ValenceChip } from "./ValenceChip";
 
 const COLORS = {
   financial: "#ef4444",
@@ -32,7 +33,7 @@ export function InterestsChart() {
   const chartHeight = Math.max(300, chartData.length * 28);
 
   return (
-    <Card title="Interest Declarations by Councillor" subtitle="1995–2026">
+    <Card title="Interest Declarations by Councillor" subtitle="1995–2026" valence="neutral">
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart
           data={chartData}
@@ -83,17 +84,33 @@ export function InterestsChart() {
 export function Card({
   title,
   subtitle,
+  valence,
+  valenceLabel,
+  backTo,
   children,
 }: {
   title: string;
   subtitle?: string;
+  valence?: "supportive" | "neutral" | "critical";
+  valenceLabel?: string;
+  backTo?: string; // scorecard row anchor id (e.g. "sc-declared") to link back up
   children: React.ReactNode;
 }) {
   return (
     <div className="card">
       <div className="card-header">
-        <h2 className="card-title">{title}</h2>
-        {subtitle && <span className="card-subtitle">{subtitle}</span>}
+        <div className="card-header-titles">
+          <h2 className="card-title">{title}</h2>
+          {subtitle && <span className="card-subtitle">{subtitle}</span>}
+        </div>
+        <div className="card-header-meta">
+          {backTo && (
+            <a className="card-back" href={`#${backTo}`} title="Back to this test on the scorecard">
+              ↑ Scorecard
+            </a>
+          )}
+          {valence && <ValenceChip valence={valence} label={valenceLabel} />}
+        </div>
       </div>
       {children}
     </div>

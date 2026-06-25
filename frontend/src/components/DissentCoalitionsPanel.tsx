@@ -31,6 +31,7 @@ export function DissentCoalitionsPanel() {
     <Card
       title="Opposition Coalitions & Contested Topics"
       subtitle="Who voted against the same carried motions · what topics split the chamber"
+      valence="neutral"
     >
       {topCoalition && (
         <div className="coalition-hero">

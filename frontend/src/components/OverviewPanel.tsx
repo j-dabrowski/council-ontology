@@ -120,6 +120,25 @@ export function OverviewPanel() {
       ),
       principle: "CIPFA · principles F, G",
     },
+    {
+      n: 8,
+      title: "And the record that earns the council credit",
+      stat: `${d.confidential_pre_pct}%`,
+      statLabel: "confidential business across two decades (1995–2017) — a genuinely open baseline",
+      body: (
+        <>Read the same data through the council's defender and a real
+        good-governance record stands up. For two decades barely{" "}
+        {d.confidential_pre_pct}% of business was closed. The tender record passes{" "}
+        <strong>every</strong> integrity test thrown at it — no threshold-gaming,
+        no entrenched incumbent, no repeat-player edge. The chamber does <em>not</em>{" "}
+        rubber-stamp its own Mayor — mayoral motions drew dissent{" "}
+        {d.mayor_contest_pct}% of the time vs {d.other_contest_pct}% for backbench
+        motions — and contested-vote power turns over at elections rather than
+        sticking. The faults above are real, but they are exceptions in an
+        otherwise sound record — which is exactly why they stand out.</>
+      ),
+      principle: "Nolan · Openness, Accountability · CIPFA · F, G",
+    },
   ];
 
   return (
@@ -129,17 +148,20 @@ export function OverviewPanel() {
     >
       <div className="overview-thesis">
         <p>
-          Cambridge is <strong>not</strong> a council with a money-corruption problem —
-          every integrity test on the dollars comes back null. Its story is one of{" "}
-          <strong>governance and culture</strong>: a consensus chamber that conceals real
-          power inequality, an accountability safeguard that decayed into a formality, and
-          conduct that visibly tightened under scrutiny then relaxed the moment scrutiny
-          lifted.
+          On the evidence, Cambridge is a <strong>broadly sound council with specific,
+          nameable weaknesses</strong> — not a failing one. Every integrity test on the
+          dollars comes back null, the tender record is clean, the chamber does not
+          rubber-stamp its Mayor, and for two decades its business was overwhelmingly
+          open. Against that baseline the genuine concerns stand out: a consensus chamber
+          that conceals real power inequality, and an accountability safeguard
+          (conflict-of-interest recusal) that decayed into a formality once external
+          scrutiny lifted.
         </p>
         <p className="overview-oneliner">
-          Cambridge governs by consensus and ratifies its officers, conceals a durable power
-          structure behind near-unanimous votes, lets conflict-declaration decay into
-          formality — and behaved best only while someone was watching.
+          A council that governs by consensus and runs a clean-tested money record, but
+          conceals a durable power structure behind near-unanimous votes, lets
+          conflict-declaration decay into formality — and behaved best only while someone
+          was watching.
         </p>
       </div>
 
@@ -161,10 +183,13 @@ export function OverviewPanel() {
       <p className="chart-note overview-honesty">
         <strong>The honesty layer.</strong> The nulls are load-bearing: the <em>absence</em> of
         financial-corruption signatures is itself a finding — on three independent integrity tests
-        the tender record comes back clean. Every insight above sits at <strong>Observation</strong>{" "}
-        or <strong>Governance-concern</strong> altitude — a pattern that warrants explanation against
-        a named principle, never an assertion of wrongdoing or intent. Each links to a panel below
-        where the figure, its sample size, and its caveats are laid out in full.
+        the tender record comes back clean. The reading is deliberately <strong>balanced</strong>:
+        strengths (insight 8) are graded where earned on a positive ladder (sound practice →
+        good-governance strength), concerns sit at <strong>Observation</strong> or{" "}
+        <strong>Governance-concern</strong> altitude — a pattern that warrants explanation against a
+        named principle, never an assertion of wrongdoing or intent — and each is weighted to the
+        strength of its evidence, not amplified by default. Each links to a panel below where the
+        figure, its sample size, and its caveats are laid out in full.
       </p>
     </Card>
   );

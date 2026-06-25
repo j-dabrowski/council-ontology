@@ -35,6 +35,8 @@ export function TransparencyTrendPanel() {
     <Card
       title="Did the Council Go Dark?"
       subtitle="Share of decided items recorded as confidential, 1995–2026"
+      valence="critical"
+      backTo="sc-transparency"
     >
       <div className="planning-hero-row">
         <div className="planning-stat">
@@ -87,6 +89,16 @@ export function TransparencyTrendPanel() {
         the confidential share quadrupled to a {data.peak_pct}% peak in {data.peak_year}, coinciding
         with the state-appointed Authorised Inquiry into the City of Cambridge. Years with fewer than
         50 recorded items excluded as too small to read.
+      </p>
+      <p className="chart-note">
+        <strong>In the council's defence:</strong> the {data.pre_era_pct}% two-decade baseline is a
+        genuinely <em>open</em> record, and an Authorised Inquiry legitimately generates confidential
+        business — legal advice and personnel matters under active investigation — so a spike in those
+        exact years is partly expected, and it <em>reverted</em> afterward. The data concedes that; what
+        it still raises is the <em>scale</em> (one in six decisions closed at the peak, 62% of that year's
+        tenders) and the timing. Read in the round: a transparent council that went unusually quiet during
+        its own inquiry, not a habitually secretive one. Severity: Governance-concern against a strong
+        baseline · Nolan Openness, CIPFA principle B.
       </p>
     </Card>
   );

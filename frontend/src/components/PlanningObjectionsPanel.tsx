@@ -24,6 +24,7 @@ export function PlanningObjectionsPanel() {
     <Card
       title="Does Public Objection Change Outcomes?"
       subtitle="Community submissions vs planning decisions, 1995–2026"
+      valence="neutral"
     >
       <div className="objection-grid">
         <div className="objection-box objection-box--opposed">

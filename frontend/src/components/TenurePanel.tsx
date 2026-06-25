@@ -44,6 +44,8 @@ export function TenurePanel() {
     <Card
       title="Lifers and Blow-ins — How Long Do Councillors Last?"
       subtitle="Length of service from first to last recorded vote · councillors with ≥20 votes"
+      valence="neutral"
+      backTo="sc-tenure"
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

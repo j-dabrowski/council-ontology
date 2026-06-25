@@ -24,6 +24,7 @@ from src.models import (
     Council,
     CommunitySubmission,
     Deputation,
+    ExtractionEvidence,
     InterestDeclaration,
     InterestDeclarationType,
     Meeting,
@@ -1444,6 +1445,19 @@ def contestation_by_tag(
 
 
 @dataclass
+class DeclarationDetail:
+    """One declared-interest vote, expanded for the drill-down drawer."""
+    date: str                  # YYYY-MM-DD
+    item: str | None           # agenda item number / reference
+    title: str | None          # the motion title
+    interest_type: str | None  # financial / proximity / impartiality / other (best-effort)
+    what: str | None           # the actual interest description — "what it is"
+    action: str                # "Stepped out" / "Stayed — voted for" / "Stayed — voted against"
+    must_leave: bool           # financial/proximity legally require leaving
+    quote: str | None          # verbatim minute text (extraction_evidence)
+
+
+@dataclass
 class RecusalProfile:
     councillor_id: int
     name: str
@@ -1451,6 +1465,7 @@ class RecusalProfile:
     recused: int          # ABSENT on a declared-interest vote = stepped out
     recusal_rate: float
     is_active: bool
+    declarations: list[DeclarationDetail] = field(default_factory=list)
 
 
 @dataclass
@@ -1464,6 +1479,107 @@ class ConflictRecusalStats:
     baseline_recusal_pct: float
     baseline_against_pct: float
     profiles: list[RecusalProfile] = field(default_factory=list)
+
+
+_MUST_LEAVE_TYPES = {InterestDeclarationType.FINANCIAL, InterestDeclarationType.PROXIMITY}
+
+
+def _enum_str(v) -> str | None:
+    """Render an enum/str interest_type as a plain lowercase word."""
+    if v is None:
+        return None
+    return getattr(v, "value", str(v))
+
+
+def _populate_declaration_details(session, council_id, profiles, from_year, to_year) -> None:
+    """Attach the per-vote drill-down list to each RecusalProfile.
+
+    Drives off the councillor's declared-interest VOTES (so the drawer matches the
+    bar), then enriches each with the interest TYPE, the DESCRIPTION ("what it is")
+    and a verbatim minute QUOTE by a meeting-scoped link to interest_declarations
+    (item_reference == motion.item_number within the same meeting — the [19] join).
+    Falls back to the vote's own interest_description where no declaration matches.
+    """
+    if not profiles:
+        return
+    ids = [p.councillor_id for p in profiles]
+
+    # 1. declared-interest votes for the profiled councillors
+    vq = (
+        session.query(
+            Vote.councillor_id, Vote.choice, Vote.interest_description,
+            Motion.item_number, Motion.title, Meeting.id, Meeting.meeting_date,
+        )
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Vote.declared_interest == True,  # noqa: E712
+            Vote.councillor_id.in_(ids),
+        )
+    )
+    vq = _year_filter_query(vq, Meeting, from_year, to_year)
+
+    # 2. declarations for those councillors, keyed for a meeting-scoped item match
+    decls = (
+        session.query(
+            InterestDeclaration.id, InterestDeclaration.councillor_id,
+            InterestDeclaration.meeting_id, InterestDeclaration.item_reference,
+            InterestDeclaration.interest_type, InterestDeclaration.description,
+        )
+        .filter(InterestDeclaration.councillor_id.in_(ids))
+        .all()
+    )
+    decl_by_key: dict[tuple, tuple] = {}
+    decl_ids: list[int] = []
+    for did, cid, mid, iref, itype, desc in decls:
+        decl_ids.append(did)
+        if iref:
+            decl_by_key[(cid, mid, iref)] = (did, itype, desc)
+
+    # 3. one representative minute quote per declaration
+    quote_by_decl: dict[int, str] = {}
+    if decl_ids:
+        for did, q in (
+            session.query(ExtractionEvidence.entity_id, ExtractionEvidence.quote_text)
+            .filter(
+                ExtractionEvidence.entity_table == "interest_declarations",
+                ExtractionEvidence.entity_id.in_(decl_ids),
+                ExtractionEvidence.quote_text.isnot(None),
+            )
+        ):
+            quote_by_decl.setdefault(did, q)
+
+    by_councillor: dict[int, list[DeclarationDetail]] = {cid: [] for cid in ids}
+    for cid, choice, vote_desc, item_no, title, mid, mdate in vq:
+        matched = decl_by_key.get((cid, mid, item_no)) if item_no else None
+        itype = _enum_str(matched[1]) if matched else None
+        what = (matched[2] if matched and matched[2] else None) or vote_desc
+        quote = quote_by_decl.get(matched[0]) if matched else None
+        must_leave = bool(matched and matched[1] in _MUST_LEAVE_TYPES)
+        if choice == VoteChoice.ABSENT:
+            action = "Stepped out"
+        elif choice == VoteChoice.AGAINST:
+            action = "Stayed — voted against"
+        elif choice == VoteChoice.FOR:
+            action = "Stayed — voted for"
+        else:
+            action = "Stayed"
+        by_councillor.setdefault(cid, []).append(DeclarationDetail(
+            date=mdate.isoformat() if mdate else "",
+            item=item_no,
+            title=title,
+            interest_type=itype,
+            what=what,
+            action=action,
+            must_leave=must_leave,
+            quote=quote,
+        ))
+
+    for p in profiles:
+        rows = by_councillor.get(p.councillor_id, [])
+        rows.sort(key=lambda d: d.date, reverse=True)
+        p.declarations = rows
 
 
 def conflict_recusal_stats(
@@ -1546,6 +1662,8 @@ def conflict_recusal_stats(
         ))
     # Sort by recusal rate desc, then by declared count desc
     profiles.sort(key=lambda r: (r.recusal_rate, r.declared_votes), reverse=True)
+
+    _populate_declaration_details(session, council_id, profiles, from_year, to_year)
 
     return ConflictRecusalStats(
         declared_total=d_total,

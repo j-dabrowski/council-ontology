@@ -15,16 +15,20 @@ limit.
 
 ## Headline thesis
 
-Cambridge is **not** a council with a money-corruption problem — every integrity
-test on the dollars comes back null. Its story is one of **governance and
-culture**: a consensus chamber that conceals real power inequality, an
-accountability safeguard that decayed into a formality, and conduct that visibly
-tightened under scrutiny then relaxed the moment scrutiny lifted.
+On the evidence, Cambridge is a **broadly sound council with specific, nameable
+weaknesses** — not a failing one. Every integrity test on the dollars comes back
+null; the tender record is clean; the chamber does not rubber-stamp its Mayor;
+and for two decades its business was overwhelmingly open. Against *that* baseline,
+the genuine concerns are what stand out — a consensus chamber that conceals real
+power inequality, and a conflict-of-interest safeguard that decayed into a
+formality the moment external scrutiny lifted. Crediting the strengths is what
+makes those two criticisms land: they are the exceptions in an otherwise sound
+record, not the verdict on a rotten one.
 
-> In one sentence: *Cambridge governs by consensus and ratifies its officers,
-> conceals a durable power structure behind near-unanimous votes, lets
-> conflict-declaration decay into formality — and behaved best only while
-> someone was watching.*
+> In one sentence: *Cambridge governs by consensus, runs a clean-tested money
+> record and a largely open chamber — but conceals a durable power structure
+> behind near-unanimous votes, lets conflict-declaration decay into formality,
+> and behaved best only while someone was watching.*
 
 ---
 
@@ -112,16 +116,47 @@ The identify–disclose–**manage** chain is breaking at the *manage* limb.
 So the finding is **concentration + redaction (a transparency issue), not
 detectable procurement capture.** *(CIPFA principles F/G.)*
 
+## 8. The record that earns the council credit (the promoter lens)
+
+The same panels, read through the council's defender rather than its critic,
+yield a genuine good-governance record — graded as a **strength**, held to the
+same evidence bar as every concern above:
+
+- **Clean procurement** [2]: not just "not captured" but *positively clean* — the
+  tender record passes **three independent integrity tests** (no threshold-gaming
+  [26], no entrenched incumbent [15], no repeat-player advantage [20]), with
+  $100M spread across **227 named contractors**.
+- **No chair capture** [11]: the Mayor's own motions draw *more* dissent than
+  backbench motions (≈22% vs 8%), not less — the chamber freely votes against its
+  most powerful member. That is Accountability and Objectivity *upheld*.
+- **An electorally accountable hierarchy** [18]: the power spread is real, but it
+  *turns over at elections* (Carr 91%→65% after 2023; Bradley 37%→60%+) rather
+  than ossifying — a functioning democratic body, not a captured one.
+- **A two-decade transparency baseline** [9]: confidentiality ran **1–4% from
+  1995 to 2017** — among the most open records you will find; the 2018–21 spike is
+  a single, partly Inquiry-driven episode against an otherwise strong norm.
+- **No durable modern faction** [27/28]: the cross-era persistence test *failed
+  to find* an entrenched bloc in the modern council (cluster overlap ≈0); the
+  structure reshuffles each election — democratic renewal, not a closed shop.
+
+*(Nolan: Openness, Accountability; CIPFA principles F, G. Severity: a
+good-governance strength, not merely the absence of a fault.)*
+
 ---
 
 ## What the data deliberately does *not* claim — the honesty layer
 
 The nulls are load-bearing. The **absence** of financial-corruption signatures is
 itself a finding: on three independent integrity tests, Cambridge's tender record
-comes back clean. Everything above sits at **Observation / Governance-concern**
-altitude — patterns that *warrant explanation*, anchored to named principles,
-never an assertion of motive. The one genuinely red-flag-adjacent thread (the
-post-Inquiry collapse of recusal) is real, but lawful on its face.
+comes back clean. The reading is deliberately **balanced** — strengths (§8) are
+graded where the evidence earns them, concerns sit at **Observation /
+Governance-concern** altitude (patterns that *warrant explanation*, anchored to
+named principles, never an assertion of motive), and each is weighted to the
+strength of its evidence rather than amplified by default. Tested through the
+council's defender as well as its critic, only one thread survives as genuinely
+red-flag-adjacent — the post-Inquiry collapse of recusal — and even that is
+lawful on its face. It survives precisely *because* it is the exception in an
+otherwise sound record.
 
 Documented honest nulls include: deputations → dissent, December tender
 "dumping", a freshman effect, big-dollar DA leniency, election-cycle

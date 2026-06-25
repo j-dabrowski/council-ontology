@@ -71,6 +71,7 @@ export function DissentProfilesChart() {
     <Card
       title="Councillor Independence: Dissent on Carried Motions"
       subtitle="% of votes cast against motions that still passed · ≥50 qualifying votes · ● = currently serving"
+      valence="neutral"
     >
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart

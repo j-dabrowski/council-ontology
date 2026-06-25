@@ -18,7 +18,7 @@ export function ContestationChart() {
   }));
 
   return (
-    <Card title="Contestation Rate by Year" subtitle="% of carried motions with ≥1 dissenting vote">
+    <Card title="Contestation Rate by Year" subtitle="% of carried motions with ≥1 dissenting vote" valence="neutral">
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />

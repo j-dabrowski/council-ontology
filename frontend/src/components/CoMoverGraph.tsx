@@ -29,7 +29,7 @@ export function CoMoverGraph() {
 
   if (!data.nodes.length) {
     return (
-      <Card title="Co-Mover Network" subtitle="1995–2026">
+      <Card title="Co-Mover Network" subtitle="1995–2026" valence="neutral">
         <p className="chart-note">No co-mover pairs found with current filters.</p>
       </Card>
     );
@@ -57,7 +57,7 @@ export function CoMoverGraph() {
   };
 
   return (
-    <Card title="Co-Mover Network" subtitle="Active councillors, 1995–2026">
+    <Card title="Co-Mover Network" subtitle="Active councillors, 1995–2026" valence="neutral">
       <div ref={containerRef} style={{ width: "100%", height: 420, borderRadius: 8, overflow: "hidden", background: "#0f172a" }}>
         <ForceGraph2D
           ref={fgRef}

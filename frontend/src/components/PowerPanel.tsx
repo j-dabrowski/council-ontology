@@ -94,6 +94,8 @@ export function PowerPanel() {
     <Card
       title="Who Wins — Power on a Split Council"
       subtitle={`Every motion that drew a dissenting vote and carried or was lost · ${data.n_contested.toLocaleString()} contested decisions, 1995–2026`}
+      valence="critical"
+      backTo="sc-power"
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

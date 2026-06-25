@@ -19,7 +19,7 @@ export function EngagementChart() {
   }));
 
   return (
-    <Card title="Public Engagement by Year" subtitle="Questions, deputations and petitions at meetings">
+    <Card title="Public Engagement by Year" subtitle="Questions, deputations and petitions at meetings" valence="neutral" backTo="sc-engagement">
       <ResponsiveContainer width="100%" height={340}>
         <BarChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
