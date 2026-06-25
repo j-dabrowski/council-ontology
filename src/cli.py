@@ -2042,13 +2042,61 @@ def cmd_publish(args) -> None:
         ],
     })
 
+    # overview: cross-cutting synthesis numbers for the landing panel, assembled
+    # from the already-computed query objects so the figures stay authoritative.
+    win_rates = [p.win_rate for p in power.profiles]
+    tenure_15plus = sum(1 for p in tenure.profiles if p.years >= 15)
+    top_servant = max(tenure.profiles, key=lambda p: p.years) if tenure.profiles else None
+    dose_by = {b.label: b.refusal_pct for b in dose.buckets}
+    _write("overview", {
+        "span": "1995–2026",
+        "n_minutes": 506,
+        "n_documents": 580,
+        # 1 — the Inquiry hinge
+        "confidential_pre_pct": trans.pre_era_pct,
+        "confidential_peak_pct": trans.peak_pct,
+        "confidential_peak_year": trans.peak_year,
+        "recusal_inquiry_pct": rct.must_leave_inquiry_pct,
+        "recusal_post_pct": rct.must_leave_post_pct,
+        "financial_inquiry_pct": rct.financial_inquiry_pct,
+        "financial_post_pct": rct.financial_post_pct,
+        # 2 — consensus hides power
+        "base_carry_pct": round(power.base_carry_rate * 100, 1),
+        "n_contested": power.n_contested,
+        "win_min_pct": round(min(win_rates) * 100) if win_rates else None,
+        "win_max_pct": round(max(win_rates) * 100) if win_rates else None,
+        "sponsor_conv_high": spon.convergence_high_agree,
+        "sponsor_conv_low": spon.convergence_low_agree,
+        "oldguard_unanimous_pct": spon.oldguard_unanimous_pct,
+        # 3 — declaration as ritual
+        "declared_stay_pct": round(100 - recusal.declared_recusal_pct, 1),
+        "impartiality_post_declared": rct.impartiality_post_declared,
+        "impartiality_post_recusal_pct": rct.impartiality_post_recusal_pct,
+        # 4 — entrenchment
+        "tenure_median_years": tenure.median_years,
+        "tenure_15plus": tenure_15plus,
+        "tenure_top_name": top_servant.name if top_servant else None,
+        "tenure_top_years": top_servant.years if top_servant else None,
+        # 5 — officer ratification
+        "officer_matched": total,
+        "officer_diverged": len(diverged),
+        "officer_compliance_pct": round((total - len(diverged)) / total * 100, 1) if total else None,
+        # 6 — residents move in numbers
+        "dose_0_refusal_pct": dose_by.get("0"),
+        "dose_5plus_refusal_pct": dose_by.get("5+"),
+        # 7 — money concentrated, not captured
+        "tender_total_m": round(tenders.total_amount / 1e6, 1),
+        "tender_redacted_m": round(tenders.redacted_amount / 1e6, 1),
+        "tender_top10_share_pct": round(tenders.top10_share * 100),
+    })
+
     session.close()
 
     # Manifest records what was published and when
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship"],
+        "snapshots": ["overview", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship"],
     }, indent=2))
 
     console.print(Panel(

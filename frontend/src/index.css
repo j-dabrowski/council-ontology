@@ -525,3 +525,26 @@ a:hover { text-decoration: underline; }
 .spon-era-size { color: #0f172a; font-weight: 700; font-size: 13px; padding-top: 2px; }
 .spon-era-label { font-size: 11.5px; color: #cbd5e1; font-variant-numeric: tabular-nums; }
 .spon-era-struct { font-size: 10.5px; color: #64748b; text-align: center; line-height: 1.25; }
+
+/* ── Overview / landing synthesis panel ───────────────────────────────── */
+.overview-thesis { margin: 2px 0 18px; }
+.overview-thesis p { color: #cbd5e1; font-size: 14.5px; line-height: 1.6; margin: 0 0 10px; }
+.overview-oneliner { border-left: 3px solid #f59e0b; padding-left: 14px; color: #e2e8f0 !important;
+  font-style: italic; font-size: 15px !important; }
+.overview-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+@media (max-width: 720px) { .overview-grid { grid-template-columns: 1fr; } }
+.overview-insight { background: #0f172a; border: 1px solid #1e293b; border-radius: 10px;
+  padding: 16px 16px 12px; display: flex; flex-direction: column; }
+.overview-insight-head { display: flex; align-items: center; gap: 9px; margin-bottom: 8px; }
+.overview-insight-num { display: inline-flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; border-radius: 50%; background: #1e293b; color: #94a3b8;
+  font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.overview-insight-title { color: #f1f5f9; font-weight: 600; font-size: 14px; }
+.overview-insight-stat { color: #38bdf8; font-size: 26px; font-weight: 700;
+  font-variant-numeric: tabular-nums; line-height: 1.1; }
+.overview-insight-statlabel { color: #94a3b8; font-size: 11.5px; margin: 3px 0 9px; line-height: 1.35; }
+.overview-insight-body { color: #cbd5e1; font-size: 12.8px; line-height: 1.55; margin: 0 0 11px; flex: 1; }
+.overview-insight-principle { color: #64748b; font-size: 11px; font-weight: 600;
+  letter-spacing: 0.02em; text-transform: uppercase; align-self: flex-start;
+  border-top: 1px solid #1e293b; padding-top: 8px; width: 100%; }
+.overview-honesty { margin-top: 16px; border-top: 1px solid #1e293b; padding-top: 12px; }

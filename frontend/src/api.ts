@@ -320,6 +320,41 @@ export interface RecusalData {
   drivers: RecusalDriver[];
 }
 
+export interface OverviewData {
+  span: string;
+  n_minutes: number;
+  n_documents: number;
+  confidential_pre_pct: number;
+  confidential_peak_pct: number;
+  confidential_peak_year: number;
+  recusal_inquiry_pct: number;
+  recusal_post_pct: number;
+  financial_inquiry_pct: number;
+  financial_post_pct: number;
+  base_carry_pct: number;
+  n_contested: number;
+  win_min_pct: number;
+  win_max_pct: number;
+  sponsor_conv_high: number;
+  sponsor_conv_low: number;
+  oldguard_unanimous_pct: number;
+  declared_stay_pct: number;
+  impartiality_post_declared: number;
+  impartiality_post_recusal_pct: number;
+  tenure_median_years: number;
+  tenure_15plus: number;
+  tenure_top_name: string;
+  tenure_top_years: number;
+  officer_matched: number;
+  officer_diverged: number;
+  officer_compliance_pct: number;
+  dose_0_refusal_pct: number;
+  dose_5plus_refusal_pct: number;
+  tender_total_m: number;
+  tender_redacted_m: number;
+  tender_top10_share_pct: number;
+}
+
 export interface SponsorEdge {
   era_label: string;
   name_a: string;
@@ -379,4 +414,5 @@ export const api = {
   power:      () => getSnapshot<PowerData>("power"),
   recusal:    () => getSnapshot<RecusalData>("recusal"),
   sponsorship: () => getSnapshot<SponsorshipData>("sponsorship"),
+  overview:   () => getSnapshot<OverviewData>("overview"),
 };

@@ -17,6 +17,7 @@ import { TenurePanel } from "./components/TenurePanel";
 import { MayoralAgendaPanel } from "./components/MayoralAgendaPanel";
 import { PowerPanel } from "./components/PowerPanel";
 import { SponsorshipNetworkPanel } from "./components/SponsorshipNetworkPanel";
+import { OverviewPanel } from "./components/OverviewPanel";
 
 export default function App() {
   return (
@@ -32,6 +33,11 @@ export default function App() {
       </header>
 
       <main className="main-grid">
+        {/* Overview — cross-cutting synthesis of every panel below */}
+        <section className="grid-full">
+          <OverviewPanel />
+        </section>
+
         {/* Conflict of interest — flagship */}
         <section className="grid-full">
           <ConflictRecusalPanel />
