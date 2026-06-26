@@ -1896,7 +1896,13 @@ def cmd_publish(args) -> None:
         "top10_amount": tenders.top10_amount,
         "top10_share": tenders.top10_share,
         "contractors": [
-            {"name": c.name, "n_awards": c.n_awards, "total_amount": c.total_amount}
+            {
+                "name": c.name,
+                "n_awards": c.n_awards,
+                "total_amount": c.total_amount,
+                # inline drill-down detail — each award to this firm
+                "awards": [_dc(a) for a in c.awards],
+            }
             for c in tenders.contractors
         ],
     })
@@ -1967,7 +1973,10 @@ def cmd_publish(args) -> None:
             {"name": p.name, "n": p.n, "win_rate": p.win_rate,
              "dissent_rate": p.dissent_rate, "dissent_n": p.dissent_n,
              "dissent_effectiveness": p.dissent_effectiveness,
-             "is_active": p.is_active}
+             "is_active": p.is_active,
+             # inline drill-down detail — their contested votes (capped most-recent)
+             "n_shown": p.n_shown,
+             "votes": [_dc(v) for v in p.votes]}
             for p in power.profiles
         ],
         "over_time": [
@@ -1997,7 +2006,10 @@ def cmd_publish(args) -> None:
         "impartiality_post_recusal_pct": rct.impartiality_post_recusal_pct,
         "by_type_era": [
             {"interest_type": t.interest_type, "era": t.era,
-             "declared": t.declared, "recused": t.recused, "recusal_pct": t.recusal_pct}
+             "declared": t.declared, "recused": t.recused, "recusal_pct": t.recusal_pct,
+             # inline drill-down detail — the declarations behind this cell (capped)
+             "n_shown": t.n_shown,
+             "declarations": [_dc(d) for d in t.declarations]}
             for t in rct.by_type_era
         ],
         "by_year": [

@@ -1,12 +1,32 @@
+import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ContractorTotal } from "../api";
+import { api, ContractorTotal, TenderAward } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { DrillDown, SourceQuote } from "./DrillDown";
 
 const fmtM = (n: number) => `$${(n / 1e6).toFixed(1)}M`;
+const fmt$ = (n: number) =>
+  n >= 1e6 ? fmtM(n) : `$${Math.round(n).toLocaleString()}`;
+
+function AwardRow({ a }: { a: TenderAward }) {
+  return (
+    <div className="decl-row">
+      <div className="decl-row-head">
+        <span className="decl-type decl-type-financial">{fmt$(a.amount)}</span>
+        <span className="decl-date">
+          {a.date}{a.reference ? ` · ${a.reference}` : ""}
+        </span>
+        {a.is_confidential && <span className="decl-action">confidential report</span>}
+      </div>
+      <div className="decl-what">{a.description || <em>no description recorded</em>}</div>
+      <SourceQuote quote={a.quote} />
+    </div>
+  );
+}
 
 // Strip company suffixes for a cleaner axis label.
 function shortName(name: string): string {
@@ -35,6 +55,7 @@ const CustomTooltip = ({ active, payload }: {
 
 export function TenderConcentrationPanel() {
   const { data, loading, error } = useData(() => api.tenders());
+  const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -43,6 +64,10 @@ export function TenderConcentrationPanel() {
     ...c,
     label: shortName(c.name),
   }));
+
+  const selectedContractor = selected
+    ? data.contractors.find((c) => c.name === selected) ?? null
+    : null;
 
   const chartHeight = Math.max(320, chartData.length * 30);
   const top = chartData[0];
@@ -83,7 +108,10 @@ export function TenderConcentrationPanel() {
         </span>
       </div>
 
-      <p className="section-heading">Top {chartData.length} named contractors by total awarded value</p>
+      <p className="section-heading">
+        Top {chartData.length} named contractors by total awarded value
+        <span className="section-hint"> · click a bar to see that firm's individual awards</span>
+      </p>
       <ResponsiveContainer width="100%" height={chartHeight}>
         <BarChart
           data={chartData}
@@ -98,13 +126,34 @@ export function TenderConcentrationPanel() {
           />
           <YAxis type="category" dataKey="label" tick={{ fontSize: 10.5 }} width={128} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1e293b55" }} />
-          <Bar dataKey="total_amount" name="Awarded" radius={[0, 3, 3, 0]}>
+          <Bar
+            dataKey="total_amount"
+            name="Awarded"
+            radius={[0, 3, 3, 0]}
+            cursor="pointer"
+            onClick={(entry: { name?: string }) => entry?.name && setSelected(entry.name)}
+          >
             {chartData.map((_, i) => (
               <Cell key={i} fill={i === 0 ? "#f59e0b" : i < 5 ? "#fbbf24" : "#60a5fa"} />
             ))}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+
+      {selectedContractor && (
+        <DrillDown
+          title={`${selectedContractor.name} — awards`}
+          subtitle={`${selectedContractor.n_awards} award${selectedContractor.n_awards === 1 ? "" : "s"} · ${fmtM(selectedContractor.total_amount)} total`}
+          onClose={() => setSelected(null)}
+        >
+          {selectedContractor.awards.length === 0 && (
+            <p className="chart-note">No itemised awards extracted for this contractor.</p>
+          )}
+          {selectedContractor.awards.map((a, i) => (
+            <AwardRow key={i} a={a} />
+          ))}
+        </DrillDown>
+      )}
 
       <p className="chart-note">
         Spelling and punctuation variants of the same firm are merged (e.g. "R J Vincent" and

@@ -1,11 +1,13 @@
+import { useState } from "react";
 import {
   ComposedChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, ReferenceArea,
   BarChart, Bar, Legend, Cell,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, RecusalData, RecusalYearPoint } from "../api";
+import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { DrillDown, SourceQuote } from "./DrillDown";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
 const ERA_LABEL: Record<string, string> = {
@@ -23,6 +25,30 @@ const TYPE_LABEL: Record<string, string> = {
   proximity: "Proximity (must leave)",
   impartiality: "Impartiality (may stay)",
 };
+const ERA_FULL: Record<string, string> = {
+  pre: "before the Inquiry (pre-2018)",
+  inquiry: "during the Inquiry (2018–21)",
+  post: "after the Inquiry (2022+)",
+};
+
+function RecusalDeclRow({ d }: { d: RecusalDeclarationDetail }) {
+  const left = d.action.startsWith("Stepped");
+  return (
+    <div className="decl-row">
+      <div className="decl-row-head">
+        <span className={`decl-type decl-type-${left ? "impartiality" : "financial"}`}>
+          {d.action}
+        </span>
+        <span className="decl-date">
+          {d.date}{d.item ? ` · item ${d.item}` : ""}
+        </span>
+        <span className="decl-action">{d.councillor}</span>
+      </div>
+      <div className="decl-what">{d.what || <em>no description recorded</em>}</div>
+      <SourceQuote quote={d.quote} />
+    </div>
+  );
+}
 
 const YearTooltip = ({ active, payload, label }: {
   active?: boolean;
@@ -72,9 +98,22 @@ const TypeEraTooltip = ({ active, payload, label }: {
 
 export function RecusalTrendPanel() {
   const { data, loading, error } = useData<RecusalData>(() => api.recusal());
+  const [selected, setSelected] = useState<{ era: string; type: string } | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const selectedCell = selected
+    ? data.by_type_era.find(
+        (r) => r.era === selected.era && r.interest_type === selected.type
+      ) ?? null
+    : null;
+
+  // recharts types the Bar onClick arg without our data fields; read era off it.
+  const pickCell = (e: unknown, type: string) => {
+    const era = (e as { era?: string })?.era;
+    if (era) setSelected({ era, type });
+  };
 
   // Year arc: data densifies from ~2005; plot from 2008 so early single-meeting
   // years don't dominate the axis.
@@ -173,6 +212,7 @@ export function RecusalTrendPanel() {
 
       <p className="section-heading">
         Beating the obvious objection: recusal fell <em>within</em> every interest type
+        <span className="section-hint"> · click a bar to see the declarations behind it</span>
       </p>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={typeEraData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
@@ -181,15 +221,34 @@ export function RecusalTrendPanel() {
           <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} width={40} />
           <Tooltip content={<TypeEraTooltip />} cursor={{ fill: "#1e293b55" }} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Bar dataKey="financial" name="financial" fill={TYPE_COLOR.financial} radius={[3, 3, 0, 0]}>
+          <Bar dataKey="financial" name="financial" fill={TYPE_COLOR.financial} radius={[3, 3, 0, 0]}
+            cursor="pointer" onClick={(e) => pickCell(e, "financial")}>
             {typeEraData.map((e, i) => <Cell key={i} fillOpacity={e.financial_n < 20 ? 0.45 : 1} />)}
           </Bar>
-          <Bar dataKey="proximity" name="proximity" fill={TYPE_COLOR.proximity} radius={[3, 3, 0, 0]}>
+          <Bar dataKey="proximity" name="proximity" fill={TYPE_COLOR.proximity} radius={[3, 3, 0, 0]}
+            cursor="pointer" onClick={(e) => pickCell(e, "proximity")}>
             {typeEraData.map((e, i) => <Cell key={i} fillOpacity={e.proximity_n < 20 ? 0.45 : 1} />)}
           </Bar>
-          <Bar dataKey="impartiality" name="impartiality" fill={TYPE_COLOR.impartiality} radius={[3, 3, 0, 0]} />
+          <Bar dataKey="impartiality" name="impartiality" fill={TYPE_COLOR.impartiality} radius={[3, 3, 0, 0]}
+            cursor="pointer" onClick={(e) => pickCell(e, "impartiality")} />
         </BarChart>
       </ResponsiveContainer>
+
+      {selectedCell && (
+        <DrillDown
+          title={`${TYPE_LABEL[selectedCell.interest_type] ?? selectedCell.interest_type} — ${ERA_FULL[selectedCell.era] ?? selectedCell.era}`}
+          subtitle={`stepped out on ${selectedCell.recused}/${selectedCell.declared} (${selectedCell.recusal_pct}%)${selectedCell.n_shown < selectedCell.declared ? ` · showing ${selectedCell.n_shown} most recent` : ""}`}
+          onClose={() => setSelected(null)}
+        >
+          {selectedCell.declarations.length === 0 && (
+            <p className="chart-note">No itemised declarations behind this cell.</p>
+          )}
+          {selectedCell.declarations.map((d, i) => (
+            <RecusalDeclRow key={i} d={d} />
+          ))}
+        </DrillDown>
+      )}
+
       <p className="chart-note">
         A hostile reader would say: "recusal fell only because declarations shifted to <em>impartiality</em>
         interests, where the law lets you stay and vote." True in part — impartiality declarations did

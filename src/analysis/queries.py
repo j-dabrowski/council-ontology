@@ -1206,6 +1206,19 @@ def dissent_coalition_pairs(
 # ---------------------------------------------------------------------------
 
 @dataclass
+class ContestedVoteDetail:
+    """One contested vote a councillor cast, expanded for the drill-down drawer."""
+    date: str                  # YYYY-MM-DD
+    item: str | None           # agenda item number
+    title: str | None          # the motion title
+    choice: str                # "For" / "Against"
+    outcome: str               # "Carried" / "Lost"
+    won: bool                  # voted on the winning side
+    margin: int | None         # votes_for − votes_against
+    quote: str | None          # verbatim minute text (extraction_evidence, motions)
+
+
+@dataclass
 class PowerProfile:
     councillor_id: int
     name: str
@@ -1215,6 +1228,8 @@ class PowerProfile:
     dissent_n: int                      # number of AGAINST votes
     dissent_effectiveness: float | None  # of AGAINST votes, share where motion LOST
     is_active: bool
+    n_shown: int = 0                    # contested votes inlined for the drill-down
+    votes: list[ContestedVoteDetail] = field(default_factory=list)
 
 
 @dataclass
@@ -1248,6 +1263,81 @@ _POWER_TERMS = [
     ("2019-23", date(2019, 10, 1), date(2023, 10, 1)),
     ("2023-27", date(2023, 10, 1), date(2027, 10, 1)),
 ]
+
+
+def _populate_contested_votes(session, council_id, profiles, cap: int = 50) -> None:
+    """Attach each profiled councillor's most-recent contested votes for the drawer.
+
+    Drives off the same contested motions the spectrum bar is built from (motion
+    drew an AGAINST vote and CARRIED/LOST; the councillor cast FOR/AGAINST), so the
+    drawer matches the bar. Capped to ``cap`` most recent per councillor (the full
+    count stays on PowerProfile.n). Receipt: a verbatim minute quote on the motion.
+    """
+    if not profiles:
+        return
+    ids = [p.councillor_id for p in profiles]
+
+    rows = (
+        session.query(
+            Vote.councillor_id, Vote.choice,
+            Motion.id, Motion.item_number, Motion.title, Motion.outcome,
+            Motion.votes_for, Motion.votes_against, Meeting.meeting_date,
+        )
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Motion.votes_against > 0,
+            Motion.outcome.in_([MotionOutcome.CARRIED, MotionOutcome.LOST]),
+            Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]),
+            Vote.councillor_id.in_(ids),
+        )
+        .all()
+    )
+
+    by_councillor: dict[int, list[tuple]] = defaultdict(list)
+    for cid, choice, mid, item, title, outcome, vf, va, mdate in rows:
+        by_councillor[cid].append((cid, choice, mid, item, title, outcome, vf, va, mdate))
+
+    # Most recent `cap` per councillor; collect their motion ids for the receipts.
+    capped: dict[int, list[tuple]] = {}
+    motion_ids: list[int] = []
+    for cid in ids:
+        rs = sorted(by_councillor.get(cid, []),
+                    key=lambda r: r[8] or date.min, reverse=True)[:cap]
+        capped[cid] = rs
+        motion_ids.extend(r[2] for r in rs)
+
+    quote_by_motion: dict[int, str] = {}
+    if motion_ids:
+        for mid, q in (
+            session.query(ExtractionEvidence.entity_id, ExtractionEvidence.quote_text)
+            .filter(
+                ExtractionEvidence.entity_table == "motions",
+                ExtractionEvidence.entity_id.in_(motion_ids),
+                ExtractionEvidence.quote_text.isnot(None),
+            )
+        ):
+            quote_by_motion.setdefault(mid, q)
+
+    for p in profiles:
+        details = []
+        for _cid, choice, mid, item, title, outcome, vf, va, mdate in capped.get(p.councillor_id, []):
+            won = (choice == VoteChoice.FOR and outcome == MotionOutcome.CARRIED) or \
+                  (choice == VoteChoice.AGAINST and outcome == MotionOutcome.LOST)
+            margin = (vf - va) if vf is not None and va is not None else None
+            details.append(ContestedVoteDetail(
+                date=mdate.isoformat() if mdate else "",
+                item=item,
+                title=title,
+                choice="For" if choice == VoteChoice.FOR else "Against",
+                outcome="Carried" if outcome == MotionOutcome.CARRIED else "Lost",
+                won=won,
+                margin=margin,
+                quote=quote_by_motion.get(mid),
+            ))
+        p.votes = details
+        p.n_shown = len(details)
 
 
 def voting_power(
@@ -1360,6 +1450,7 @@ def voting_power(
         over_raw.append((cid, a))
 
     profiles.sort(key=lambda p: p.win_rate)
+    _populate_contested_votes(session, council_id, profiles, cap=50)
 
     # Power over time: long-servers active across >=3 terms, top by total votes.
     over_time: list[PowerOverTime] = []
@@ -1693,10 +1784,22 @@ def _normalise_contractor(name: str) -> str:
 
 
 @dataclass
+class TenderAward:
+    """One award to a contractor, expanded for the drill-down drawer."""
+    date: str                   # YYYY-MM-DD
+    description: str | None
+    amount: float
+    reference: str | None
+    is_confidential: bool
+    quote: str | None           # verbatim minute text (extraction_evidence)
+
+
+@dataclass
 class ContractorTotal:
     name: str
     n_awards: int
     total_amount: float
+    awards: list[TenderAward] = field(default_factory=list)
 
 
 @dataclass
@@ -1728,7 +1831,11 @@ def tender_concentration(
     named contractors by total awarded dollars (spelling variants merged).
     """
     q = (
-        session.query(Tender.awarded_to, Tender.amount)
+        session.query(
+            Tender.id, Tender.awarded_to, Tender.amount,
+            Tender.description, Tender.reference_number, Tender.is_confidential,
+            Meeting.meeting_date,
+        )
         .join(Meeting, Tender.meeting_id == Meeting.id)
         .filter(
             Meeting.council_id == council_id,
@@ -1745,8 +1852,10 @@ def tender_concentration(
     agg_amount: dict[str, float] = defaultdict(float)
     agg_count: dict[str, int] = defaultdict(int)
     display_name: dict[str, str] = {}
+    # raw award rows per contractor key, for the drill-down on the top contractors
+    awards_by_key: dict[str, list[tuple]] = defaultdict(list)
 
-    for awarded_to, amount in rows:
+    for tid, awarded_to, amount, desc, ref, conf, mdate in rows:
         amount = float(amount or 0)
         total_amount += amount
         total_awards += 1
@@ -1758,6 +1867,7 @@ def tender_concentration(
             continue
         agg_amount[key] += amount
         agg_count[key] += 1
+        awards_by_key[key].append((tid, amount, desc, ref, bool(conf), mdate))
         # Keep the longest spelling seen as the display label
         if awarded_to.strip() and len(awarded_to.strip()) > len(display_name.get(key, "")):
             display_name[key] = awarded_to.strip()
@@ -1767,15 +1877,43 @@ def tender_concentration(
 
     ranked = sorted(agg_amount.items(), key=lambda kv: -kv[1])
     top10_amount = sum(amt for _, amt in ranked[:10])
+    top_keys = [key for key, _ in ranked[:limit]]
 
-    contractors = [
-        ContractorTotal(
+    # one representative minute quote per tender, for the drill-down receipts
+    quote_by_tender: dict[int, str] = {}
+    top_tender_ids = [a[0] for key in top_keys for a in awards_by_key[key]]
+    if top_tender_ids:
+        for tid, qt in (
+            session.query(ExtractionEvidence.entity_id, ExtractionEvidence.quote_text)
+            .filter(
+                ExtractionEvidence.entity_table == "tenders",
+                ExtractionEvidence.entity_id.in_(top_tender_ids),
+                ExtractionEvidence.quote_text.isnot(None),
+            )
+        ):
+            quote_by_tender.setdefault(tid, qt)
+
+    contractors = []
+    for key in top_keys:
+        awards = sorted(
+            awards_by_key[key], key=lambda a: a[5] or date.min, reverse=True
+        )
+        contractors.append(ContractorTotal(
             name=display_name.get(key, key),
             n_awards=agg_count[key],
-            total_amount=round(amt),
-        )
-        for key, amt in ranked[:limit]
-    ]
+            total_amount=round(agg_amount[key]),
+            awards=[
+                TenderAward(
+                    date=mdate.isoformat() if mdate else "",
+                    description=desc,
+                    amount=round(amt),
+                    reference=ref,
+                    is_confidential=conf,
+                    quote=quote_by_tender.get(tid),
+                )
+                for tid, amt, desc, ref, conf, mdate in awards
+            ],
+        ))
 
     return TenderConcentration(
         total_awards=total_awards,
@@ -2236,12 +2374,25 @@ def _recusal_era(year: int) -> str:
 
 
 @dataclass
+class RecusalDeclarationDetail:
+    """One item-linked declaration behind an era×type cell, for the drill-down."""
+    date: str             # YYYY-MM-DD
+    item: str | None      # agenda item reference
+    councillor: str
+    action: str           # "Stepped out" / "Stayed — voted"
+    what: str | None      # the interest description
+    quote: str | None     # verbatim minute text (extraction_evidence)
+
+
+@dataclass
 class RecusalTypeEra:
     interest_type: str    # financial / proximity / impartiality / other
     era: str              # pre / inquiry / post
     declared: int
     recused: int
     recusal_pct: float
+    n_shown: int = 0      # declarations inlined for the drill-down (capped)
+    declarations: list[RecusalDeclarationDetail] = field(default_factory=list)
 
 
 @dataclass
@@ -2296,7 +2447,11 @@ def recusal_compliance_trend(
         SELECT i.interest_type AS itype,
                CAST(strftime('%Y', mt.meeting_date) AS INTEGER) AS yr,
                v.choice AS choice,
-               (c.given_name || ' ' || c.family_name) AS name
+               (c.given_name || ' ' || c.family_name) AS name,
+               i.id AS did,
+               i.item_reference AS item,
+               i.description AS descr,
+               mt.meeting_date AS mdate
         FROM interest_declarations i
         JOIN meetings mt ON i.meeting_id = mt.id
         JOIN motions m ON m.meeting_id = i.meeting_id
@@ -2323,14 +2478,17 @@ def recusal_compliance_trend(
     ml_year: dict[int, list[int]] = defaultdict(lambda: [0, 0])
     # post-2022 must-leave drivers (stayed and voted)
     drv: dict[str, list[int]] = defaultdict(lambda: [0, 0])  # [stayed, total]
+    # raw declaration rows behind each (type, era) cell, for the drill-down
+    te_rows: dict[tuple[str, str], list[tuple]] = defaultdict(list)
 
-    for itype, yr, choice, name in linked:
+    for itype, yr, choice, name, did, item, descr, mdate in linked:
         t = _norm_type(itype)
         era = _recusal_era(yr)
         rec = _recused(choice)
         te[(t, era)][0] += 1
         if rec:
             te[(t, era)][1] += 1
+        te_rows[(t, era)].append((did, item, name, rec, descr, mdate))
         if (itype or "").upper() in _MUST_LEAVE:
             ml_year[yr][0] += 1
             if rec:
@@ -2340,10 +2498,42 @@ def recusal_compliance_trend(
                 if not rec:
                     drv[name][0] += 1
 
+    # one representative minute quote per declaration behind a cell
+    _CELL_CAP = 60
+    all_dids = [r[0] for rows in te_rows.values() for r in sorted(
+        rows, key=lambda x: x[5] or "", reverse=True)[:_CELL_CAP]]
+    quote_by_decl: dict[int, str] = {}
+    if all_dids:
+        for did, q in (
+            session.query(ExtractionEvidence.entity_id, ExtractionEvidence.quote_text)
+            .filter(
+                ExtractionEvidence.entity_table == "interest_declarations",
+                ExtractionEvidence.entity_id.in_(all_dids),
+                ExtractionEvidence.quote_text.isnot(None),
+            )
+        ):
+            quote_by_decl.setdefault(did, q)
+
+    def _cell_details(rows) -> list[RecusalDeclarationDetail]:
+        rows = sorted(rows, key=lambda x: x[5] or "", reverse=True)[:_CELL_CAP]
+        out = []
+        for did, item, name, rec, descr, mdate in rows:
+            out.append(RecusalDeclarationDetail(
+                date=str(mdate)[:10] if mdate else "",
+                item=item,
+                councillor=name,
+                action="Stepped out" if rec else "Stayed — voted",
+                what=descr,
+                quote=quote_by_decl.get(did),
+            ))
+        return out
+
     by_type_era = [
         RecusalTypeEra(
             interest_type=t, era=era, declared=d, recused=r,
             recusal_pct=round(100 * r / d, 1) if d else 0.0,
+            n_shown=min(d, _CELL_CAP),
+            declarations=_cell_details(te_rows[(t, era)]),
         )
         for (t, era), (d, r) in sorted(te.items())
         if d > 0

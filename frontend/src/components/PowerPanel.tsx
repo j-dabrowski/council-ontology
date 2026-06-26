@@ -1,13 +1,36 @@
+import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
   Cell, LabelList, ReferenceLine, ScatterChart, Scatter, ZAxis,
   LineChart, Line, Legend,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, PowerProfile } from "../api";
+import { api, PowerProfile, ContestedVoteDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { DrillDown, SourceQuote } from "./DrillDown";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
+
+function ContestedVoteRow({ v }: { v: ContestedVoteDetail }) {
+  return (
+    <div className="decl-row">
+      <div className="decl-row-head">
+        <span className={`decl-type decl-type-${v.won ? "impartiality" : "financial"}`}>
+          Voted {v.choice} · {v.outcome}
+        </span>
+        <span className="decl-date">
+          {v.date}{v.item ? ` · item ${v.item}` : ""}
+        </span>
+        <span className="decl-action">
+          {v.won ? "on the winning side" : "outvoted"}
+          {v.margin !== null ? ` · ${v.margin > 0 ? "+" : ""}${v.margin}` : ""}
+        </span>
+      </div>
+      <div className="decl-title">{v.title || <em>untitled motion</em>}</div>
+      <SourceQuote quote={v.quote} />
+    </div>
+  );
+}
 
 // Councillors worth labelling directly on the scatter (the rest get a tooltip).
 const HIGHLIGHT = new Set([
@@ -52,9 +75,14 @@ const ScatterTooltip = ({ active, payload }: {
 
 export function PowerPanel() {
   const { data, loading, error } = useData(() => api.power());
+  const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const selectedProfile = selected
+    ? data.profiles.find((p) => p.name === selected) ?? null
+    : null;
 
   const carry = data.base_carry_rate;     // ~0.76 — pure-FOR baseline
   const fail = data.base_fail_rate;       // ~0.24 — dissent chance baseline
@@ -125,7 +153,10 @@ export function PowerPanel() {
         </span>
       </div>
 
-      <p className="section-heading">The permanent majority — and minority</p>
+      <p className="section-heading">
+        The permanent majority — and minority
+        <span className="section-hint"> · click a bar to see that councillor's contested votes</span>
+      </p>
       <ResponsiveContainer width="100%" height={spectrumHeight}>
         <BarChart data={spectrum} layout="vertical" margin={{ top: 4, right: 44, bottom: 4, left: 96 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
@@ -135,13 +166,31 @@ export function PowerPanel() {
           <ReferenceLine x={carry} stroke="#64748b" strokeDasharray="4 4"
             label={{ value: "vote-yes baseline", fill: "#94a3b8", fontSize: 10, position: "top" }} />
           <ReferenceLine x={0.5} stroke="#475569" strokeDasharray="2 2" />
-          <Bar dataKey="win_rate" name="Win rate" radius={[0, 3, 3, 0]}>
+          <Bar dataKey="win_rate" name="Win rate" radius={[0, 3, 3, 0]}
+            cursor="pointer"
+            onClick={(entry: { name?: string }) => entry?.name && setSelected(entry.name)}>
             {spectrum.map((e, i) => <Cell key={i} fill={winColor(e.win_rate)} />)}
             <LabelList dataKey="win_rate" position="right" formatter={(v) => pct(Number(v))}
               style={{ fill: "#94a3b8", fontSize: 10 }} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+
+      {selectedProfile && (
+        <DrillDown
+          title={`${selectedProfile.name} — contested votes`}
+          subtitle={`on the winning side ${pct(selectedProfile.win_rate)} of ${selectedProfile.n} contested votes${selectedProfile.n_shown < selectedProfile.n ? ` · showing ${selectedProfile.n_shown} most recent` : ""}`}
+          onClose={() => setSelected(null)}
+        >
+          {selectedProfile.votes.length === 0 && (
+            <p className="chart-note">No itemised contested votes extracted for this councillor.</p>
+          )}
+          {selectedProfile.votes.map((v, i) => (
+            <ContestedVoteRow key={i} v={v} />
+          ))}
+        </DrillDown>
+      )}
+
       <p className="chart-note">
         Share of a councillor's contested votes cast on the winning side (FOR a motion that carried,
         or AGAINST one that was lost). The dashed line at {pct(carry)} is what a councillor who simply

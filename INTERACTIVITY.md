@@ -58,21 +58,26 @@ Status: `[x]` done · `[ ]` queued. Each lists the **click target → reveal**, 
 - [x] **declared** (ConflictRecusalPanel) — click councillor bar → their declared
   interests (type, "what it is", stayed/left), each with the minute quote.
   *Template implementation. `declared.json` profiles[].declarations inlined.*
-- [ ] **tenders** (TenderConcentrationPanel) — click a contractor bar → that firm's
+- [x] **tenders** (TenderConcentrationPanel) — click a contractor bar → that firm's
   individual awards (date, description, $, reference, confidential?). Also click the
   redacted slice → the confidential awards.
+  *Done. `tenders.json` contractors[].awards inlined; receipt entity_table='tenders'.*
   *Source: `tenders` (awarded_to normalised, amount, description, reference_number,
   meeting date). Export: per-contractor award lists onto `tenders.json` (already
   has top-15 contractors; add their awards). Receipt: `extraction_evidence`
   entity_table='tenders'.*
-- [ ] **power** (PowerPanel) — click a councillor (spectrum bar or scatter point) →
+- [x] **power** (PowerPanel) — click a councillor (spectrum bar or scatter point) →
   their contested votes (motion title, date, their choice, outcome, margin); click a
   term point → motions that flipped that term.
+  *Done (spectrum bar). `power.json` profiles[].votes inlined, capped 50 most recent
+  (n_shown labels the cap); receipt entity_table='motions'.*
   *Source: `votes`×`motions` over contested motions. Export: per-councillor
   contested-vote list onto `power.json` (cap to ~50 most recent or paginate — can be
   large). Receipt: entity_table='motions'.*
-- [ ] **recusal** (RecusalTrendPanel) — click an era×type bar → the declarations
+- [x] **recusal** (RecusalTrendPanel) — click an era×type bar → the declarations
   behind that cell (councillor, item, type, description, stayed/left).
+  *Done. recusal.json by_type_era[].declarations inlined, capped 60 most recent
+  (n_shown labels the cap); receipt entity_table='interest_declarations'.*
   *Source: `recusal_compliance_trend` already does item-level linkage; extend it to
   emit the underlying declaration rows grouped by era×type. Receipt:
   entity_table='interest_declarations'.*

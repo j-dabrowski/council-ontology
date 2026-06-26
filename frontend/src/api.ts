@@ -180,10 +180,20 @@ export interface ConflictRecusalData {
   profiles: RecusalProfile[];
 }
 
+export interface TenderAward {
+  date: string;
+  description: string | null;
+  amount: number;
+  reference: string | null;
+  is_confidential: boolean;
+  quote: string | null;            // verbatim minute text
+}
+
 export interface ContractorTotal {
   name: string;
   n_awards: number;
   total_amount: number;
+  awards: TenderAward[];
 }
 
 export interface TenderData {
@@ -262,6 +272,17 @@ export interface MayoralData {
   per_mayor: MayorContest[];
 }
 
+export interface ContestedVoteDetail {
+  date: string;
+  item: string | null;
+  title: string | null;
+  choice: string;                  // "For" / "Against"
+  outcome: string;                 // "Carried" / "Lost"
+  won: boolean;
+  margin: number | null;           // votes_for − votes_against
+  quote: string | null;            // verbatim minute text
+}
+
 export interface PowerProfile {
   name: string;
   n: number;
@@ -270,6 +291,8 @@ export interface PowerProfile {
   dissent_n: number;
   dissent_effectiveness: number | null;
   is_active: boolean;
+  n_shown: number;
+  votes: ContestedVoteDetail[];
 }
 
 export interface PowerTermPoint {
@@ -291,12 +314,23 @@ export interface PowerData {
   over_time: PowerOverTime[];
 }
 
+export interface RecusalDeclarationDetail {
+  date: string;
+  item: string | null;
+  councillor: string;
+  action: string;          // "Stepped out" / "Stayed — voted"
+  what: string | null;
+  quote: string | null;    // verbatim minute text
+}
+
 export interface RecusalTypeEra {
   interest_type: string;   // financial | proximity | impartiality | other
   era: string;             // pre | inquiry | post
   declared: number;
   recused: number;
   recusal_pct: number;
+  n_shown: number;
+  declarations: RecusalDeclarationDetail[];
 }
 
 export interface RecusalYearPoint {
