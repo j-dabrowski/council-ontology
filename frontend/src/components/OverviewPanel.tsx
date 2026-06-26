@@ -20,7 +20,7 @@ export function OverviewPanel() {
   const insights: Insight[] = [
     {
       n: 1,
-      title: "The Inquiry is the hinge",
+      title: "Conduct improved only while watched",
       stat: `${d.recusal_inquiry_pct}% → ${d.recusal_post_pct}%`,
       statLabel: "recusal on serious conflicts, during vs after the Inquiry",
       body: (

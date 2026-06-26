@@ -81,6 +81,12 @@
   --red-shadow: rgba(248,113,113,0.53); /* must-leave row left accent */
   --heatmap-gap:#e2e8f0;             /* gap colour between heatmap cells */
 
+  /* Intelcrier brand (adapts below in dark-mode block) */
+  --logo-globe: #1B2438;
+  --logo-dot:   #1B2438;
+  --logo-text:  #1B2438;
+  --logo-tag:   #C2974A;
+
   color-scheme: light;
 }
 
@@ -132,6 +138,10 @@
     --stat-s: #38bdf8;
     --genre:  #818cf8;
     --heatmap-gap: #0f172a;
+    --logo-globe: #C2974A;
+    --logo-dot:   #C2974A;
+    --logo-text:  #F4EEE2;
+    --logo-tag:   #DBB572;
     color-scheme: dark;
   }
 }
@@ -185,6 +195,62 @@ a:hover { text-decoration: underline; }
   padding: 40px 0 32px;
   border-bottom: 1px solid var(--border-muted);
   margin-bottom: 32px;
+  text-align: center;
+}
+
+/* ── Intelcrier logo ────────────────────────────────────────────────────── */
+.intelcrier-logo {
+  display: block;
+  margin: 0 auto 18px;
+  flex-shrink: 0;
+}
+.logo-globe     { stroke: var(--logo-globe); }
+.logo-globe-dot { fill: var(--logo-dot); }
+.logo-wordmark  { fill: var(--logo-text); font-weight: 400; }
+.logo-tagline   { fill: var(--logo-tag); }
+
+/* ── Council selector (inline in site-title) ────────────────────────────── */
+.council-select-wrap {
+  position: relative;
+  display: inline-block;
+}
+
+.council-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: none;
+  border: none;
+  border-bottom: 2px solid var(--link);
+  font: inherit;
+  color: var(--link);
+  cursor: pointer;
+  padding: 0 18px 0 3px;
+  outline: none;
+}
+
+.council-select:hover,
+.council-select:focus {
+  color: var(--text-hi);
+  border-bottom-color: var(--text-hi);
+}
+
+.council-select-wrap::after {
+  content: "▾";
+  position: absolute;
+  right: 1px;
+  top: 50%;
+  transform: translateY(-54%);
+  pointer-events: none;
+  color: var(--link);
+  font-size: 0.65em;
+  line-height: 1;
+}
+
+.council-select:hover ~ * ,
+.council-select:focus ~ * ,
+.council-select-wrap:has(.council-select:hover)::after,
+.council-select-wrap:has(.council-select:focus)::after {
+  color: var(--text-hi);
 }
 
 .site-title {
@@ -945,13 +1011,13 @@ a:hover { text-decoration: underline; }
 .cllr-overlay {
   position: fixed; inset: 0; z-index: 1000;
   background: rgba(0, 0, 0, 0.38);
-  display: flex; justify-content: flex-end;
+  display: flex; justify-content: center; align-items: center;
 }
 .cllr-drawer {
-  width: min(480px, 100vw); height: 100%;
-  background: var(--bg); border-left: 1px solid var(--border);
+  width: min(520px, 90vw); max-height: 82vh;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
   display: flex; flex-direction: column; overflow: hidden;
-  box-shadow: -8px 0 32px rgba(0,0,0,0.18);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.28);
 }
 .cllr-head {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;

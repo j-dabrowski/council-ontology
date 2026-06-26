@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { CouncillorProvider } from "./components/CouncillorModal";
+import { Logo } from "./components/Logo";
 import { DivergencePanel } from "./components/DivergencePanel";
 import { EngagementChart } from "./components/EngagementChart";
 import { ConflictRecusalPanel } from "./components/ConflictRecusalPanel";
@@ -20,6 +22,8 @@ import { BatteryTestPanel } from "./components/BatteryTestPanel";
 // scorecard "jump to panel" links land here. (Eight descriptive non-test panels
 // were retired — not tests — but their components remain in the repo for reuse.)
 export default function App() {
+  const [council, setCouncil] = useState("cambridge");
+
   const Test = (slug: string, testId: string) => (
     <section className="grid-full" id={`panel-${slug}`}>
       <BatteryTestPanel testId={testId} />
@@ -31,7 +35,20 @@ export default function App() {
     <div className="app">
       <header className="site-header">
         <div className="header-inner">
-          <h1 className="site-title">City of Cambridge Council</h1>
+          <Logo />
+          <h1 className="site-title">
+            City of{" "}
+            <span className="council-select-wrap">
+              <select
+                className="council-select"
+                value={council}
+                onChange={e => setCouncil(e.target.value)}
+              >
+                <option value="cambridge">Cambridge</option>
+              </select>
+            </span>
+            {" "}Council
+          </h1>
           <p className="site-subtitle">
             Analysis of meeting minutes · 1995–2026 ·{" "}
             <span className="data-note">Full 30-year corpus</span>
