@@ -7,6 +7,7 @@ import { useData } from "../hooks/useData";
 import { api, MayorContest, MayoralMotion } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 
 const MayorTooltip = ({ active, payload }: {
   active?: boolean;
@@ -100,7 +101,10 @@ export function MayoralAgendaPanel() {
         <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 92 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" unit="%" domain={[0, 30]} tick={{ fontSize: 11 }} />
-          <YAxis type="category" dataKey="shortName" tick={{ fontSize: 11 }} width={120} />
+          <YAxis type="category" dataKey="name" width={120}
+            tick={({ x, y, payload }: { x: number | string; y: number | string; payload: { value: string } }) => (
+              <CouncillorTick x={x} y={y} payload={payload} />
+            )} />
           <ReferenceLine x={data.other_contest_pct} stroke="#475569" strokeDasharray="4 4"
             label={{ value: "backbench avg", position: "top", fontSize: 10, fill: "#64748b" }} />
           <Tooltip content={<MayorTooltip />} cursor={{ fill: "var(--cursor)" }} />
@@ -118,7 +122,7 @@ export function MayoralAgendaPanel() {
 
       {selMayor && (
         <DrillDown
-          title={`${selMayor.name} — contested carried motions`}
+          title={<><CouncillorLink name={selMayor.name} /> — contested carried motions</>}
           subtitle={`${selMayor.contested} contested of ${selMayor.carried} carried${selMayor.n_shown < selMayor.contested ? ` · showing ${selMayor.n_shown} most recent` : ""}`}
           onClose={() => setSelected(null)}
         >

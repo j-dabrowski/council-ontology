@@ -2349,13 +2349,117 @@ def cmd_publish(args) -> None:
         "tests": [_dc(t) for t in battery],
     })
 
+    # councillors.json — unified cross-link profile keyed by full name; used by
+    # CouncillorModal (opens whenever a councillor name is clicked in the UI).
+    from src.models import (
+        Councillor as _CllrX, CouncillorTerm as _CTX,
+        Motion as _MotX, Meeting as _MeetX,
+    )
+    from sqlalchemy import func as _func_x
+
+    _tenure_map   = {p.name: p for p in tenure.profiles}
+    _power_map    = {p.name: p for p in power.profiles}
+    _conflict_map = {p.name: p for p in recusal.profiles}
+
+    # moved / seconded counts per councillor name
+    _moved_x: dict[str, int] = {}
+    for _gn, _fn, _cnt in (
+        session.query(_CllrX.given_name, _CllrX.family_name, _func_x.count(_MotX.id))
+        .join(_MotX, _CllrX.id == _MotX.moved_by_id)
+        .join(_MeetX, _MotX.meeting_id == _MeetX.id)
+        .filter(_MeetX.council_id == council_id)
+        .group_by(_CllrX.id).all()
+    ):
+        _moved_x[f"{_gn or ''} {_fn or ''}".strip()] = _cnt
+    _seconded_x: dict[str, int] = {}
+    for _gn, _fn, _cnt in (
+        session.query(_CllrX.given_name, _CllrX.family_name, _func_x.count(_MotX.id))
+        .join(_MotX, _CllrX.id == _MotX.seconded_by_id)
+        .join(_MeetX, _MotX.meeting_id == _MeetX.id)
+        .filter(_MeetX.council_id == council_id)
+        .group_by(_CllrX.id).all()
+    ):
+        _seconded_x[f"{_gn or ''} {_fn or ''}".strip()] = _cnt
+
+    # top co-sponsorship partners per councillor (across all alliances + procedural edges)
+    _partner_sums: dict[str, dict[str, int]] = {}
+    for _e in (spon.alliances + spon.procedural):
+        _partner_sums.setdefault(_e.name_a, {})
+        _partner_sums[_e.name_a][_e.name_b] = _partner_sums[_e.name_a].get(_e.name_b, 0) + _e.sponsorships
+        _partner_sums.setdefault(_e.name_b, {})
+        _partner_sums[_e.name_b][_e.name_a] = _partner_sums[_e.name_b].get(_e.name_a, 0) + _e.sponsorships
+
+    # roles (Mayor, Deputy Mayor, Councillor) per name
+    _roles_x: dict[str, list[str]] = {}
+    for _gn, _fn, _role in (
+        session.query(_CllrX.given_name, _CllrX.family_name, _CTX.role)
+        .join(_CTX, _CllrX.id == _CTX.councillor_id)
+        .filter(_CTX.council_id == council_id, _CTX.role.isnot(None))
+        .distinct().all()
+    ):
+        _n = f"{_gn or ''} {_fn or ''}".strip()
+        _roles_x.setdefault(_n, [])
+        if _role not in _roles_x[_n]:
+            _roles_x[_n].append(_role)
+
+    _cllr_profiles: dict[str, dict] = {}
+    for _gn, _fn, _slug in (
+        session.query(_CllrX.given_name, _CllrX.family_name, _CllrX.slug)
+        .join(_CTX, _CllrX.id == _CTX.councillor_id)
+        .filter(_CTX.council_id == council_id)
+        .distinct().all()
+    ):
+        _name = f"{_gn or ''} {_fn or ''}".strip()
+        _tp = _tenure_map.get(_name)
+        _pp = _power_map.get(_name)
+        _cp = _conflict_map.get(_name)
+        # declarations newest-first, capped at 15
+        _decls = sorted(
+            _cp.declarations if _cp else [],
+            key=lambda d: d.date or "", reverse=True,
+        )[:15]
+        # dissent examples: AGAINST votes from the power drill-down list, capped at 8
+        _diss = [_dc(v) for v in (_pp.votes if _pp else []) if getattr(v, "choice", "") == "Against"][:8]
+        # top co-sponsors by total count, capped at 3
+        _top_p = sorted(
+            [{"name": _pn, "count": _c} for _pn, _c in _partner_sums.get(_name, {}).items()],
+            key=lambda x: -x["count"],
+        )[:3]
+        _cllr_profiles[_name] = {
+            "name": _name,
+            "slug": _slug,
+            "is_active": _tp.is_active if _tp else (_pp.is_active if _pp else False),
+            "tenure_years": _tp.years if _tp else None,
+            "first_vote": _tp.first if _tp else None,
+            "last_vote": _tp.last if _tp else None,
+            "n_votes": _tp.n_votes if _tp else None,
+            "roles": _roles_x.get(_name, []),
+            "n_contested": _pp.n if _pp else None,
+            "win_rate": round(_pp.win_rate, 3) if _pp else None,
+            "dissent_rate": round(_pp.dissent_rate, 3) if _pp else None,
+            "dissent_n": _pp.dissent_n if _pp else None,
+            "dissent_effectiveness": (
+                round(_pp.dissent_effectiveness, 3)
+                if (_pp and _pp.dissent_effectiveness is not None) else None
+            ),
+            "n_declarations": _cp.declared_votes if _cp else 0,
+            "n_recused": _cp.recused if _cp else 0,
+            "recusal_rate": round(_cp.recusal_rate, 3) if _cp else None,
+            "declarations": [_dc(d) for d in _decls],
+            "dissent_votes": _diss,
+            "moved": _moved_x.get(_name, 0),
+            "seconded": _seconded_x.get(_name, 0),
+            "top_partners": _top_p,
+        }
+    _write("councillors", {"by_name": _cllr_profiles})
+
     session.close()
 
     # Manifest records what was published and when
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["overview", "scorecard", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship"],
+        "snapshots": ["overview", "scorecard", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship", "councillors"],
     }, indent=2))
 
     console.print(Panel(

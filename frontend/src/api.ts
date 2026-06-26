@@ -477,6 +477,34 @@ export interface SponsorshipData {
   eras: SponsorEra[];
 }
 
+export interface CouncillorProfile {
+  name: string;
+  slug: string;
+  is_active: boolean;
+  tenure_years: number | null;
+  first_vote: string | null;
+  last_vote: string | null;
+  n_votes: number | null;
+  roles: string[];
+  n_contested: number | null;
+  win_rate: number | null;
+  dissent_rate: number | null;
+  dissent_n: number | null;
+  dissent_effectiveness: number | null;
+  n_declarations: number;
+  n_recused: number;
+  recusal_rate: number | null;
+  declarations: DeclarationDetail[];
+  dissent_votes: ContestedVoteDetail[];
+  moved: number;
+  seconded: number;
+  top_partners: { name: string; count: number }[];
+}
+
+export interface CouncillorsData {
+  by_name: Record<string, CouncillorProfile>;
+}
+
 export type Valence = "supportive" | "neutral" | "critical";
 
 export interface TestChartBar { label: string; value: number; highlight?: boolean; }
@@ -537,6 +565,7 @@ export const api = {
   mayoral:    () => getSnapshot<MayoralData>("mayoral"),
   power:      () => getSnapshot<PowerData>("power"),
   recusal:    () => getSnapshot<RecusalData>("recusal"),
-  sponsorship: () => getSnapshot<SponsorshipData>("sponsorship"),
-  overview:   () => getSnapshot<OverviewData>("overview"),
+  sponsorship:  () => getSnapshot<SponsorshipData>("sponsorship"),
+  overview:     () => getSnapshot<OverviewData>("overview"),
+  councillors:  () => getSnapshot<CouncillorsData>("councillors"),
 };

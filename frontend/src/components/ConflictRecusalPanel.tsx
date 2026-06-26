@@ -7,6 +7,7 @@ import { useData } from "../hooks/useData";
 import { api, RecusalProfile, DeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 
 const TYPE_LABEL: Record<string, string> = {
   financial: "Financial", proximity: "Proximity",
@@ -133,7 +134,10 @@ export function ConflictRecusalPanel() {
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
-          <YAxis type="category" dataKey="shortName" tick={{ fontSize: 11 }} width={88} />
+          <YAxis type="category" dataKey="name" width={88}
+            tick={({ x, y, payload }: { x: number | string; y: number | string; payload: { value: string } }) => (
+              <CouncillorTick x={x} y={y} payload={payload} />
+            )} />
           <ReferenceLine
             x={data.declared_recusal_pct}
             stroke="#475569"
@@ -157,7 +161,7 @@ export function ConflictRecusalPanel() {
 
       {selectedProfile && (
         <DrillDown
-          title={`${selectedProfile.name} — declared interests`}
+          title={<><CouncillorLink name={selectedProfile.name} /> — declared interests</>}
           subtitle={`${selectedProfile.declarations.length} on record · stepped out of ${selectedProfile.recused} of ${selectedProfile.declared_votes} (${Math.round(selectedProfile.recusal_rate * 100)}%)`}
           onClose={() => setSelected(null)}
         >

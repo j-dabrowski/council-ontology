@@ -8,6 +8,7 @@ import { useData } from "../hooks/useData";
 import { api, PowerProfile, ContestedVoteDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -128,12 +129,12 @@ export function PowerPanel() {
       <div className="planning-hero-row">
         <div className="planning-stat">
           <span className="planning-stat-num planning-stat-peak">{pct(topWinner.win_rate)}</span>
-          <span className="planning-stat-label">top win rate ({topWinner.name})</span>
+          <span className="planning-stat-label">top win rate (<CouncillorLink name={topWinner.name} />)</span>
         </div>
         <div className="planning-stat-divider" />
         <div className="planning-stat">
           <span className="planning-stat-num planning-stat-recent">{pct(bottom.win_rate)}</span>
-          <span className="planning-stat-label">most outvoted ({bottom.name})</span>
+          <span className="planning-stat-label">most outvoted (<CouncillorLink name={bottom.name} />)</span>
         </div>
         <div className="planning-stat-divider" />
         <div className="planning-stat">
@@ -145,9 +146,9 @@ export function PowerPanel() {
       <div className="objection-callout">
         <span className="objection-callout-diff">4 in 5</span>
         <span className="objection-callout-text">
-          of <strong>Rod Bradley's</strong> objections failed. Cambridge's most prolific dissenter
+          of <strong><CouncillorLink name="Rod Bradley" /></strong>'s objections failed. Cambridge's most prolific dissenter
           (20 years, more contested votes than anyone) saw just <strong>{pct(0.206)}</strong> of his
-          AGAINST votes actually sink a motion. <strong>Pauline O'Connor</strong> dissented just as
+          AGAINST votes actually sink a motion. <strong><CouncillorLink name="Pauline O'Connor" /></strong> dissented just as
           often — but <strong>57%</strong> of her objections prevailed. Same rebelliousness, opposite
           power. When the two sat opposite each other, O'Connor's side won 83% of the time.
         </span>
@@ -161,7 +162,10 @@ export function PowerPanel() {
         <BarChart data={spectrum} layout="vertical" margin={{ top: 4, right: 44, bottom: 4, left: 96 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" domain={[0, 1]} tickFormatter={pct} tick={{ fontSize: 11 }} />
-          <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} interval={0} />
+          <YAxis type="category" dataKey="name" width={120} interval={0}
+            tick={({ x, y, payload }: { x: number | string; y: number | string; payload: { value: string } }) => (
+              <CouncillorTick x={x} y={y} payload={payload} />
+            )} />
           <Tooltip content={<WinTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <ReferenceLine x={carry} stroke="#64748b" strokeDasharray="4 4"
             label={{ value: "vote-yes baseline", fill: "#94a3b8", fontSize: 10, position: "top" }} />
@@ -178,7 +182,7 @@ export function PowerPanel() {
 
       {selectedProfile && (
         <DrillDown
-          title={`${selectedProfile.name} — contested votes`}
+          title={<><CouncillorLink name={selectedProfile.name} /> — contested votes</>}
           subtitle={`on the winning side ${pct(selectedProfile.win_rate)} of ${selectedProfile.n} contested votes${selectedProfile.n_shown < selectedProfile.n ? ` · showing ${selectedProfile.n_shown} most recent` : ""}`}
           onClose={() => setSelected(null)}
         >

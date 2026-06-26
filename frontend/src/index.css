@@ -931,3 +931,62 @@ a:hover { text-decoration: underline; }
 .dose-outcome-refused  { font-size: 0.75rem; font-weight: 700; color: var(--stat-r); }
 .dose-app-desc { font-size: 0.84rem; color: var(--text-lo); line-height: 1.4; }
 .dose-app-addr { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ── Councillor cross-link ──────────────────────────────────────────────────── */
+.cllr-link {
+  background: none; border: none; padding: 0; cursor: pointer;
+  color: var(--link); font: inherit; text-decoration: underline;
+  text-decoration-style: dotted; text-underline-offset: 2px;
+  display: inline;
+}
+.cllr-link:hover { text-decoration-style: solid; }
+
+/* ── Councillor profile modal (right-side drawer) ───────────────────────────── */
+.cllr-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0, 0, 0, 0.38);
+  display: flex; justify-content: flex-end;
+}
+.cllr-drawer {
+  width: min(480px, 100vw); height: 100%;
+  background: var(--bg); border-left: 1px solid var(--border);
+  display: flex; flex-direction: column; overflow: hidden;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.18);
+}
+.cllr-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 16px 18px; border-bottom: 1px solid var(--border-muted);
+  background: var(--deep); flex: none;
+}
+.cllr-head-left { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.cllr-name { font-size: 1.1rem; font-weight: 700; color: var(--text-hi); }
+.cllr-badge {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 2px 8px; border-radius: 999px; border: 1px solid transparent;
+}
+.cllr-active  { color: var(--sc-ok-n);  background: var(--sc-ok-bg,  #f0fdf4); border-color: var(--sc-ok-bd,  #86efac); }
+.cllr-retired { color: var(--text-dim); background: var(--sunken);              border-color: var(--border); }
+.cllr-body { flex: 1; overflow-y: auto; padding: 4px 0 24px; }
+.cllr-section {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid var(--border-muted);
+}
+.cllr-section:last-child { border-bottom: none; }
+.cllr-section-title {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--text-dim); margin-bottom: 10px;
+}
+.cllr-section-meta { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+.cllr-facts { display: flex; flex-wrap: wrap; gap: 10px 20px; margin-bottom: 10px; }
+.cllr-fact { display: flex; flex-direction: column; gap: 2px; }
+.cllr-fact-num { font-size: 1.3rem; font-weight: 700; color: var(--text-hi); line-height: 1.1; font-variant-numeric: tabular-nums; }
+.cllr-fact-label { font-size: 0.72rem; color: var(--text-muted); }
+.cllr-meta { font-size: 0.84rem; color: var(--text-lo); margin: 4px 0; line-height: 1.5; }
+.cllr-sub-heading {
+  font-size: 0.72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.04em; color: var(--text-dim); margin: 12px 0 4px;
+}
+.cllr-vote-row { padding: 8px 0; border-bottom: 1px solid var(--border-muted); }
+.cllr-vote-row:last-child { border-bottom: none; }
+.cllr-partner-count { font-size: 0.8rem; color: var(--text-dim); }
+.cllr-truncated { font-size: 0.78rem; color: var(--text-dim); font-style: italic; margin-top: 8px; }

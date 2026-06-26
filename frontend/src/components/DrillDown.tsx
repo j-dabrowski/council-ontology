@@ -12,7 +12,7 @@ export function DrillDown({
   onClose,
   children,
 }: {
-  title: string;
+  title: React.ReactNode;
   subtitle?: string;
   onClose: () => void;
   children: React.ReactNode;
@@ -23,7 +23,7 @@ export function DrillDown({
     ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   }, [title]);
   return (
-    <div className="drill" role="region" aria-label={title} ref={ref}>
+    <div className="drill" role="region" aria-label={typeof title === "string" ? title : undefined} ref={ref}>
       <div className="drill-head">
         <div className="drill-head-titles">
           <span className="drill-title">{title}</span>

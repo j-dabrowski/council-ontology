@@ -1,3 +1,4 @@
+import { CouncillorProvider } from "./components/CouncillorModal";
 import { DivergencePanel } from "./components/DivergencePanel";
 import { EngagementChart } from "./components/EngagementChart";
 import { ConflictRecusalPanel } from "./components/ConflictRecusalPanel";
@@ -26,6 +27,7 @@ export default function App() {
   );
 
   return (
+    <CouncillorProvider>
     <div className="app">
       <header className="site-header">
         <div className="header-inner">
@@ -91,5 +93,6 @@ export default function App() {
         </p>
       </footer>
     </div>
+    </CouncillorProvider>
   );
 }

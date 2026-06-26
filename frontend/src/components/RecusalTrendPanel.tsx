@@ -8,6 +8,7 @@ import { useData } from "../hooks/useData";
 import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { CouncillorLink } from "./CouncillorModal";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
 const ERA_LABEL: Record<string, string> = {
@@ -258,7 +259,7 @@ export function RecusalTrendPanel() {
         pre {data.must_leave_pre_n}, Inquiry {data.must_leave_inquiry_n}, post {data.must_leave_post_n}.
         {topDriver && (
           <> Post-2022, the most frequent stay-and-vote on a serious conflict is{" "}
-          <strong>{topDriver.name}</strong> ({topDriver.stayed}/{topDriver.total}).</>
+          <CouncillorLink name={topDriver.name} /> ({topDriver.stayed}/{topDriver.total}).</>
         )}
         {" "}Declaration→vote matched at item level (item reference ↔ agenda item).
       </p>
