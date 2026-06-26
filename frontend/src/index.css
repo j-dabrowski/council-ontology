@@ -234,6 +234,14 @@ a:hover { text-decoration: underline; }
   gap: 4px;
 }
 
+.nav-sep {
+  width: 1px;
+  height: 16px;
+  background: var(--border);
+  margin: 0 4px;
+  flex-shrink: 0;
+}
+
 .nav-link {
   font-size: calc(var(--header-h) * 0.286);
   font-weight: 500;
@@ -280,6 +288,38 @@ a:hover { text-decoration: underline; }
   border-bottom: 1px solid var(--border-muted);
   margin-bottom: 32px;
   text-align: center;
+}
+
+/* ── Analysis page ───────────────────────────────────────────────────────── */
+
+.analysis-page-header {
+  padding: 28px 0 20px;
+  border-bottom: 1px solid var(--border-muted);
+  margin-bottom: 32px;
+}
+
+.analysis-page-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 4px;
+}
+
+.analysis-page-subtitle {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.analysis-group-heading {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0;
+  padding: 6px 0 10px;
+  border-bottom: 1px solid var(--border-muted);
 }
 
 /* ── Map page ────────────────────────────────────────────────────────────── */
@@ -632,6 +672,48 @@ a:hover { text-decoration: underline; }
 .council-select-wrap:has(.council-select:hover)::after,
 .council-select-wrap:has(.council-select:focus)::after {
   color: var(--text-hi);
+}
+
+/* ── Council sub-nav (Overview / Analysis / Evidence) ────────────────────── */
+
+.council-subnav {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  margin-top: 14px;
+}
+
+.council-subnav-link {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  padding: 4px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: color 0.12s, background 0.12s;
+}
+
+.council-subnav-link:hover {
+  color: var(--text-hi);
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.council-subnav-link-active {
+  color: var(--link);
+  background: var(--link-bg);
+}
+
+.council-subnav-link-active:hover {
+  color: var(--link);
+  background: var(--link-bg-h);
+}
+
+/* ── Evidence page prose area ─────────────────────────────────────────────── */
+
+.evidence-prose {
+  max-width: 720px;
+  margin: 32px auto 0;
 }
 
 .site-title {
