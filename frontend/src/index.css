@@ -87,6 +87,9 @@
   --logo-text:  #1B2438;
   --logo-tag:   #C2974A;
 
+  /* Layout */
+  --header-h: 52px;
+
   color-scheme: light;
 }
 
@@ -161,7 +164,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-h) + 16px);
+}
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -181,6 +187,82 @@ a:hover { text-decoration: underline; }
 
 /* ── Layout ──────────────────────────────────────────────────────────────── */
 
+/* ── Site layout ─────────────────────────────────────────────────────────── */
+
+.site-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Sticky top nav bar */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 900;
+  height: var(--header-h);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-muted);
+  flex-shrink: 0;
+}
+
+.header-inner {
+  max-width: 1296px;
+  margin: 0 auto;
+  padding: 0 48px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Logo scaled for the nav bar */
+.site-header .intelcrier-logo {
+  height: 64px;
+  overflow: visible;
+  width: auto;
+  margin: 0;
+  display: block;
+  transform: translateY(0px);
+}
+
+/* ── Site nav ────────────────────────────────────────────────────────────── */
+
+.site-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.nav-link {
+  font-size: calc(var(--header-h) * 0.286);
+  font-weight: 500;
+  color: var(--text-lo);
+  padding: calc(var(--header-h) * 0.125) calc(var(--header-h) * 0.25);
+  border-radius: calc(var(--header-h) * 0.125);
+  text-decoration: none;
+  transition: color 0.13s, background 0.13s;
+  white-space: nowrap;
+}
+
+.nav-link:hover {
+  color: var(--text-hi);
+  background: var(--sunken);
+  text-decoration: none;
+}
+
+.nav-link-active {
+  color: var(--link);
+  background: var(--link-bg);
+}
+
+.nav-link-active:hover {
+  color: var(--link);
+  background: var(--link-bg-h);
+}
+
+/* ── Home page ───────────────────────────────────────────────────────────── */
+
 .app {
   max-width: 1200px;
   margin: 0 auto;
@@ -189,13 +271,310 @@ a:hover { text-decoration: underline; }
 
 @media (max-width: 700px) {
   .app { padding: 0 20px 48px; }
+  .header-inner { padding: 0 20px; }
 }
 
-.site-header {
-  padding: 40px 0 32px;
+/* Council sub-header inside the Home page */
+.home-council-header {
+  padding: 32px 0 28px;
   border-bottom: 1px solid var(--border-muted);
   margin-bottom: 32px;
   text-align: center;
+}
+
+/* ── Map page ────────────────────────────────────────────────────────────── */
+
+.map-page {
+  position: relative;
+  height: calc(100vh - var(--header-h));
+  overflow: hidden;
+  flex: 1;
+}
+
+/* Leaflet z-index guard — keep our overlays above map controls */
+.leaflet-pane        { z-index: 400 !important; }
+.leaflet-tile-pane   { z-index: 200 !important; }
+.leaflet-overlay-pane{ z-index: 400 !important; }
+.leaflet-shadow-pane { z-index: 500 !important; }
+.leaflet-marker-pane { z-index: 600 !important; }
+.leaflet-tooltip-pane{ z-index: 650 !important; }
+.leaflet-popup-pane  { z-index: 700 !important; }
+.leaflet-control     { z-index: 800 !important; }
+
+.map-legend {
+  position: absolute;
+  bottom: 32px;
+  right: 16px;
+  z-index: 820;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+  min-width: 180px;
+  pointer-events: none;
+}
+
+.map-legend-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.map-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--text-lo);
+  margin-bottom: 6px;
+}
+
+.map-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.map-legend-count {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-muted);
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+/* Hover card — top-left */
+.map-hover-card {
+  position: absolute;
+  top: 16px;
+  left: 60px;
+  z-index: 820;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.14);
+  min-width: 200px;
+  max-width: 280px;
+  pointer-events: none;
+}
+
+.map-hover-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-hi);
+  margin-bottom: 4px;
+}
+
+.map-hover-score {
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.map-hover-counts {
+  font-size: 0.82rem;
+  margin-bottom: 8px;
+}
+
+.map-hover-cta {
+  font-size: 0.82rem;
+  color: var(--link);
+}
+
+.map-hover-nodata {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-style: italic;
+}
+
+/* Setup overlay */
+.map-setup-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 850;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15,23,42,0.45);
+  backdrop-filter: blur(3px);
+}
+
+.map-setup-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 40px 48px;
+  max-width: 480px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+.map-setup-icon {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+}
+
+.map-setup-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 12px;
+}
+
+.map-setup-body {
+  font-size: 0.92rem;
+  color: var(--text-lo);
+  margin: 0 0 12px;
+  line-height: 1.55;
+}
+
+.map-setup-cmd {
+  background: var(--sunken);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  color: var(--text-hi);
+  text-align: left;
+  margin: 8px 0;
+  overflow-x: auto;
+}
+
+/* ── Static pages (About, Contact) ──────────────────────────────────────── */
+
+.static-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 48px 48px 80px;
+}
+
+@media (max-width: 700px) {
+  .static-page { padding: 32px 20px 64px; }
+}
+
+.static-hero {
+  margin-bottom: 48px;
+  padding-bottom: 40px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.static-h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 16px;
+  line-height: 1.25;
+}
+
+.static-lead {
+  font-size: 1.1rem;
+  color: var(--text-lo);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.static-section {
+  margin-bottom: 40px;
+}
+
+.static-h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.static-section p {
+  color: var(--text-lo);
+  line-height: 1.7;
+  margin: 0 0 14px;
+}
+
+/* About page — domains grid */
+.about-domains {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 16px 0 20px;
+}
+
+.about-domain {
+  background: var(--sunken);
+  border: 1px solid var(--border-muted);
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+
+.about-domain-title {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-hi);
+  margin-bottom: 6px;
+}
+
+.about-domain-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Contact page */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 48px;
+}
+
+.contact-card {
+  background: var(--sunken);
+  border: 1px solid var(--border-muted);
+  border-radius: 10px;
+  padding: 24px 20px;
+}
+
+.contact-card-icon {
+  font-size: 1.5rem;
+  margin-bottom: 10px;
+}
+
+.contact-card-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 8px;
+}
+
+.contact-card-desc {
+  font-size: 0.85rem;
+  color: var(--text-lo);
+  line-height: 1.55;
+  margin: 0 0 14px;
+}
+
+.contact-card-link {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--link);
+}
+
+.contact-list {
+  color: var(--text-lo);
+  line-height: 1.7;
+  padding-left: 1.4em;
+  margin: 0 0 14px;
+}
+
+.contact-list li {
+  margin-bottom: 6px;
 }
 
 /* ── Intelcrier logo ────────────────────────────────────────────────────── */
@@ -208,6 +587,8 @@ a:hover { text-decoration: underline; }
 .logo-globe-dot { fill: var(--logo-dot); }
 .logo-wordmark  { fill: var(--logo-text); font-weight: 400; }
 .logo-tagline   { fill: var(--logo-tag); }
+.logo-sep       { stroke: var(--logo-tag); opacity: 0.5; }
+
 
 /* ── Council selector (inline in site-title) ────────────────────────────── */
 .council-select-wrap {
