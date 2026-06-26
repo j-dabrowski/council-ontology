@@ -1721,6 +1721,17 @@ def cmd_publish(args) -> None:
     diverged = [p for p in pairs if p.diverged]
     total = len(pairs)
     years = [p.meeting_date.year for p in pairs if p.meeting_date]
+    # fetch extraction_evidence quotes for the matched minutes motions
+    div_motion_ids = [p.minutes_motion_id for p in diverged if p.minutes_motion_id]
+    div_quote: dict[int, str] = {}
+    if div_motion_ids:
+        from src.models import ExtractionEvidence as _EE
+        for mid, qt in session.query(_EE.entity_id, _EE.quote_text).filter(
+            _EE.entity_table == "motions",
+            _EE.entity_id.in_(div_motion_ids),
+            _EE.quote_text.isnot(None),
+        ):
+            div_quote.setdefault(mid, qt)
     _write("divergence", {
         "total_matched": total,
         "diverged_count": len(diverged),
@@ -1736,6 +1747,8 @@ def cmd_publish(args) -> None:
                 "officer_recommendation": p.officer_recommendation,
                 "council_outcome": p.council_outcome,
                 "match_confidence": round(p.match_confidence, 2),
+                "motion_text": p.motion_text,
+                "quote": div_quote.get(p.minutes_motion_id) if p.minutes_motion_id else None,
             }
             for p in diverged
         ],
@@ -1909,26 +1922,165 @@ def cmd_publish(args) -> None:
 
     # objection dose-response: does the NUMBER of objectors change the outcome?
     dose = objection_dose_response(session, council_id)
+    # drill-down: per-bucket application lists (capped at 30 each, sorted by n_obj desc)
+    from src.models import PlanningApplication as _PA, CommunitySubmission as _CS, Site as _Site, ApplicationStatus as _AS, ExtractionEvidence as _EE4, Motion as _Motion3, Meeting as _Meeting3
+    from sqlalchemy import func as _func2
+    _dose_rows = (
+        session.query(
+            _PA.id,
+            _PA.reference_number,
+            _PA.description,
+            _PA.status,
+            _func2.count(_CS.id).label("n_obj"),
+            _Site.address,
+        )
+        .join(_Motion3, _PA.motion_id == _Motion3.id)
+        .join(_Meeting3, _Motion3.meeting_id == _Meeting3.id)
+        .outerjoin(_Site, _PA.site_id == _Site.id)
+        .outerjoin(
+            _CS,
+            (_CS.application_id == _PA.id) & (_func2.lower(_CS.position) == "object"),
+        )
+        .filter(
+            _Meeting3.council_id == council_id,
+            _PA.status.in_([_AS.APPROVED, _AS.REFUSED]),
+        )
+        .group_by(_PA.id)
+        .order_by(_func2.count(_CS.id).desc())
+        .all()
+    )
+    def _dose_bucket(n: int) -> str:
+        if n == 0: return "0"
+        if n == 1: return "1"
+        if n <= 4: return "2-4"
+        return "5+"
+    _apps_by_bucket: dict[str, list] = {"0": [], "1": [], "2-4": [], "5+": []}
+    _app_ids_needed: list[int] = []
+    for pid, ref, desc, status, n_obj, addr in _dose_rows:
+        n_obj = int(n_obj or 0)
+        bk = _dose_bucket(n_obj)
+        if len(_apps_by_bucket[bk]) < 30:
+            _apps_by_bucket[bk].append({
+                "id": pid,
+                "reference": ref,
+                "description": (desc or "")[:200] or None,
+                "address": addr,
+                "n_objectors": n_obj,
+                "outcome": status.value if status else None,
+            })
+            _app_ids_needed.append(pid)
+    # fetch quotes
+    _dose_quote: dict[int, str] = {}
+    if _app_ids_needed:
+        for pid, qt in session.query(_EE4.entity_id, _EE4.quote_text).filter(
+            _EE4.entity_table == "planning_applications",
+            _EE4.entity_id.in_(_app_ids_needed),
+            _EE4.quote_text.isnot(None),
+        ):
+            _dose_quote.setdefault(pid, qt)
+    for bk, apps in _apps_by_bucket.items():
+        for app in apps:
+            app["quote"] = _dose_quote.get(app.pop("id"))
     _write("dose", {
         "total_decided": dose.total_decided,
         "max_objections": dose.max_objections,
         "headline_examples": dose.headline_examples,
         "buckets": [
-            {"label": b.label, "n": b.n, "refused": b.refused, "refusal_pct": b.refusal_pct}
+            {
+                "label": b.label, "n": b.n, "refused": b.refused, "refusal_pct": b.refusal_pct,
+                "n_shown": len(_apps_by_bucket.get(b.label, [])),
+                "apps": _apps_by_bucket.get(b.label, []),
+            }
             for b in dose.buckets
         ],
     })
 
     # transparency: share of council business decided behind closed doors over time
     trans = transparency_by_year(session, council_id)
+    # drill-down detail: per-year confidential item lists (capped at 30)
+    from sqlalchemy import text as sql_text
+    _CONF_ITEMS_SQL = sql_text("""
+        SELECT year, kind, entity_id, description, amount, meeting_date
+        FROM (
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER) year,
+                   'tender' kind, t.id entity_id,
+                   t.description, t.amount, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM tenders t JOIN meetings m ON t.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND t.is_confidential = 1
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'other_item', o.id,
+                   o.description, NULL, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM other_items o JOIN meetings m ON o.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND o.is_confidential = 1
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'delegated_decision', dd.id,
+                   dd.description, NULL, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM delegated_decisions dd JOIN meetings m ON dd.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND dd.is_confidential = 1
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'budget_item', b.id,
+                   b.description, b.amount, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM budget_items b JOIN meetings m ON b.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND b.is_confidential = 1
+        ) WHERE rn <= 30
+        ORDER BY year, kind, meeting_date DESC
+    """)
+    conf_rows = session.execute(_CONF_ITEMS_SQL, {"cid": council_id}).fetchall()
+    # fetch quotes for all entity ids
+    from collections import defaultdict as _dd
+    _entity_ids_by_table: dict[str, list[int]] = _dd(list)
+    for _, kind, eid, *_ in conf_rows:
+        table_name = {"tender": "tenders", "other_item": "other_items",
+                      "delegated_decision": "delegated_decisions", "budget_item": "budget_items"}[kind]
+        _entity_ids_by_table[table_name].append(eid)
+    from src.models import ExtractionEvidence as _EE2
+    _conf_quote: dict[tuple[str, int], str] = {}
+    for table_name, ids in _entity_ids_by_table.items():
+        for eid, qt in session.query(_EE2.entity_id, _EE2.quote_text).filter(
+            _EE2.entity_table == table_name,
+            _EE2.entity_id.in_(ids),
+            _EE2.quote_text.isnot(None),
+        ):
+            _conf_quote.setdefault((table_name, eid), qt)
+    _items_by_year: dict[int, list[dict]] = _dd(list)
+    _year_item_counts: dict[int, int] = {}
+    for year, kind, eid, desc, amount, mdate in conf_rows:
+        table_name = {"tender": "tenders", "other_item": "other_items",
+                      "delegated_decision": "delegated_decisions", "budget_item": "budget_items"}[kind]
+        _items_by_year[year].append({
+            "kind": kind,
+            "description": (desc or "")[:200] or None,
+            "amount": round(amount) if amount else None,
+            "date": mdate if isinstance(mdate, str) else mdate.isoformat() if mdate else None,
+            "quote": _conf_quote.get((table_name, eid)),
+        })
+    for yr, items in _items_by_year.items():
+        _year_item_counts[yr] = len(items)
     _write("transparency", {
         "pre_era_pct": trans.pre_era_pct,
         "peak_year": trans.peak_year,
         "peak_pct": trans.peak_pct,
         "category_totals": trans.category_totals,
         "years": [
-            {"year": y.year, "total": y.total, "confidential": y.confidential,
-             "confidential_pct": y.confidential_pct}
+            {
+                "year": y.year,
+                "total": y.total,
+                "confidential": y.confidential,
+                "confidential_pct": y.confidential_pct,
+                "n_shown": _year_item_counts.get(y.year, 0),
+                "items": _items_by_year.get(y.year, []),
+            }
             for y in trans.years
         ],
     })
@@ -1948,6 +2100,78 @@ def cmd_publish(args) -> None:
 
     # mayoral agenda-setting: do motions moved by the Mayor draw more dissent?
     mayoral = mayoral_agenda_setting(session, council_id)
+    # drill-down: per-mayor contested carried motion lists (capped at 30)
+    from src.models import CouncillorTerm, Motion as _Motion2, Meeting as _Meeting2, Councillor as _Cllr2, MotionOutcome as _MO2, ExtractionEvidence as _EE3
+    from datetime import date as _date
+    _mayor_terms = session.query(
+        CouncillorTerm.councillor_id,
+        CouncillorTerm.term_start,
+        CouncillorTerm.term_end,
+        _Cllr2.given_name,
+        _Cllr2.family_name,
+    ).join(_Cllr2, CouncillorTerm.councillor_id == _Cllr2.id).filter(
+        CouncillorTerm.role == "Mayor"
+    ).all()
+    # build: mayor_cid → name
+    _mayor_name: dict[int, str] = {}
+    for mc, ts, te, gn, fn in _mayor_terms:
+        _mayor_name[mc] = f"{gn or ''} {fn or ''}".strip()
+    # fetch all contested-carried motions by any mayor
+    _contested_rows = (
+        session.query(
+            _Motion2.id,
+            _Motion2.moved_by_id,
+            _Motion2.title,
+            _Meeting2.meeting_date,
+            _Motion2.votes_for,
+            _Motion2.votes_against,
+        )
+        .join(_Meeting2, _Motion2.meeting_id == _Meeting2.id)
+        .filter(
+            _Meeting2.council_id == council_id,
+            _Motion2.moved_by_id.in_(list(_mayor_name.keys())),
+            _Motion2.outcome == _MO2.CARRIED,
+            _Motion2.votes_against > 0,
+            _Meeting2.meeting_date.isnot(None),
+        )
+        .order_by(_Meeting2.meeting_date.desc())
+        .all()
+    )
+    # filter to when they were actually serving as Mayor
+    def _was_mayor(cid2: int, d: _date) -> bool:
+        for mc, ts, te, *_ in _mayor_terms:
+            if mc == cid2 and (ts is None or ts <= d) and (te is None or d <= te):
+                return True
+        return False
+    _motions_by_mayor: dict[str, list] = {}
+    _motion_ids_needed: list[int] = []
+    for mid, mcid, title, mdate, vf, va in _contested_rows:
+        md = mdate if isinstance(mdate, _date) else _date.fromisoformat(str(mdate))
+        if not _was_mayor(mcid, md):
+            continue
+        name = _mayor_name[mcid]
+        if name not in _motions_by_mayor:
+            _motions_by_mayor[name] = []
+        if len(_motions_by_mayor[name]) < 30:
+            _motions_by_mayor[name].append({
+                "id": mid, "title": title,
+                "date": str(md),
+                "votes_for": vf, "votes_against": va,
+            })
+            _motion_ids_needed.append(mid)
+    # fetch quotes
+    _mayoral_quote: dict[int, str] = {}
+    if _motion_ids_needed:
+        for mid, qt in session.query(_EE3.entity_id, _EE3.quote_text).filter(
+            _EE3.entity_table == "motions",
+            _EE3.entity_id.in_(_motion_ids_needed),
+            _EE3.quote_text.isnot(None),
+        ):
+            _mayoral_quote.setdefault(mid, qt)
+    # attach quotes and strip internal id
+    for name, motions in _motions_by_mayor.items():
+        for m in motions:
+            m["quote"] = _mayoral_quote.get(m.pop("id"))
     _write("mayoral", {
         "mayor_moved": mayoral.mayor_moved,
         "mayor_carried_pct": mayoral.mayor_carried_pct,
@@ -1957,8 +2181,12 @@ def cmd_publish(args) -> None:
         "other_contest_pct": mayoral.other_contest_pct,
         "contest_factor": mayoral.contest_factor,
         "per_mayor": [
-            {"name": p.name, "carried": p.carried, "contested": p.contested,
-             "contest_pct": p.contest_pct}
+            {
+                "name": p.name, "carried": p.carried, "contested": p.contested,
+                "contest_pct": p.contest_pct,
+                "n_shown": len(_motions_by_mayor.get(p.name, [])),
+                "motions": _motions_by_mayor.get(p.name, []),
+            }
             for p in mayoral.per_mayor
         ],
     })

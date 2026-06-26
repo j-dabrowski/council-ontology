@@ -78,11 +78,11 @@ export function DissentCoalitionsPanel() {
           layout="vertical"
           margin={{ top: 0, right: 48, bottom: 0, left: 100 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" domain={[0, 45]} unit="%" tick={{ fontSize: 10 }} />
           <YAxis type="category" dataKey="tag" tick={{ fontSize: 10 }} width={96} />
           <Tooltip
-            contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 6, fontSize: 12 }}
+            contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }}
             formatter={(v, _name, entry) => [
               `${v}% (${(entry?.payload as { total?: number })?.total ?? "?"} motions)`,
               "Contestation rate",

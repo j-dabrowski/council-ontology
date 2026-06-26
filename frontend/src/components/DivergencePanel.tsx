@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { SourceQuote } from "./DrillDown";
 
 export function DivergencePanel() {
   const { data, loading, error } = useData(() => api.divergence());
+  const [expanded, setExpanded] = useState<number | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -15,6 +18,10 @@ export function DivergencePanel() {
   const yearRange = data.year_min && data.year_max
     ? `${data.year_min}–${data.year_max}`
     : "years unknown";
+
+  function toggle(i: number) {
+    setExpanded(expanded === i ? null : i);
+  }
 
   return (
     <Card title="Officer Recommendation Compliance" subtitle={yearRange} valence="critical" backTo="sc-divergence">
@@ -31,24 +38,57 @@ export function DivergencePanel() {
 
       {data.exceptions.length > 0 && (
         <>
-          <h3 className="section-heading">Exceptions ({data.exceptions.length})</h3>
+          <h3 className="section-heading">
+            Exceptions ({data.exceptions.length})
+            <span className="section-hint"> — click a row to expand</span>
+          </h3>
           <table className="exception-table">
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Motion</th>
                 <th>Outcome</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {data.exceptions.map((ex, i) => (
-                <tr key={i}>
-                  <td className="date-cell">{ex.meeting_date}</td>
-                  <td>{ex.title}</td>
-                  <td>
-                    <span className="badge badge-red">{ex.council_outcome ?? "—"}</span>
-                  </td>
-                </tr>
+                <>
+                  <tr key={`row-${i}`}
+                    style={{ cursor: "pointer" }}
+                    onClick={() => toggle(i)}
+                  >
+                    <td className="date-cell">{ex.meeting_date}</td>
+                    <td>{ex.title}</td>
+                    <td>
+                      <span className="badge badge-red">{ex.council_outcome ?? "—"}</span>
+                    </td>
+                    <td>
+                      <button className="exception-row-expand" onClick={(e) => { e.stopPropagation(); toggle(i); }}>
+                        {expanded === i ? "▾" : "▸"}
+                      </button>
+                    </td>
+                  </tr>
+                  {expanded === i && (
+                    <tr key={`detail-${i}`}>
+                      <td colSpan={4} className="exception-detail">
+                        {ex.officer_recommendation && (
+                          <>
+                            <p className="exception-detail-label">Officer recommendation</p>
+                            <p className="exception-detail-text">{ex.officer_recommendation}</p>
+                          </>
+                        )}
+                        {ex.motion_text && (
+                          <>
+                            <p className="exception-detail-label">Motion text (council outcome)</p>
+                            <p className="exception-detail-text">{ex.motion_text}</p>
+                          </>
+                        )}
+                        <SourceQuote quote={ex.quote ?? null} />
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>

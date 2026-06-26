@@ -34,8 +34,8 @@ export function PlanningObjectionsPanel() {
           <div className="objection-box-outcome">approved</div>
           <CompareBar pct={w.approval_pct} color="#f59e0b" />
           <div className="objection-bar-labels">
-            <span style={{ color: "#f59e0b" }}>{w.approved} approved</span>
-            <span style={{ color: "#64748b" }}>{w.refused} refused</span>
+            <span style={{ color: "var(--note)" }}>{w.approved} approved</span>
+            <span style={{ color: "var(--text-dim)" }}>{w.refused} refused</span>
           </div>
         </div>
 
@@ -46,8 +46,8 @@ export function PlanningObjectionsPanel() {
           <div className="objection-box-outcome">approved</div>
           <CompareBar pct={n.approval_pct} color="#22c55e" />
           <div className="objection-bar-labels">
-            <span style={{ color: "#22c55e" }}>{n.approved} approved</span>
-            <span style={{ color: "#64748b" }}>{n.refused} refused</span>
+            <span style={{ color: "var(--stat-g)" }}>{n.approved} approved</span>
+            <span style={{ color: "var(--text-dim)" }}>{n.refused} refused</span>
           </div>
         </div>
       </div>

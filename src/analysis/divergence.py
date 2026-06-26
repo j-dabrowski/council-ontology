@@ -40,6 +40,8 @@ class DivergencePair:
     council_outcome: str | None
     diverged: bool
     match_confidence: float
+    minutes_motion_id: int | None = None   # row id of the matched minutes motion
+    motion_text: str | None = None         # full text of the council motion
 
 
 def officer_divergence(
@@ -168,6 +170,8 @@ def officer_divergence(
                     council_outcome=outcome.value if outcome else None,
                     diverged=diverged,
                     match_confidence=confidence,
+                    minutes_motion_id=matched_mm.id,
+                    motion_text=matched_mm.motion_text,
                 )
             )
 

@@ -22,11 +22,11 @@ export function EngagementChart() {
     <Card title="Public Engagement by Year" subtitle="Questions, deputations and petitions at meetings" valence="neutral" backTo="sc-engagement">
       <ResponsiveContainer width="100%" height={340}>
         <BarChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip
-            contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 6 }}
+            contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
             labelStyle={{ color: "#f1f5f9" }}
           />
           <Legend />

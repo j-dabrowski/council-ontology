@@ -21,12 +21,12 @@ export function ContestationChart() {
     <Card title="Contestation Rate by Year" subtitle="% of carried motions with ≥1 dissenting vote" valence="neutral">
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis dataKey="year" tick={{ fontSize: 12 }} />
           <YAxis yAxisId="left" unit="%" tick={{ fontSize: 12 }} domain={[0, 20]} />
           <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
           <Tooltip
-            contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 6 }}
+            contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
             labelStyle={{ color: "#f1f5f9" }}
           />
           <Legend />

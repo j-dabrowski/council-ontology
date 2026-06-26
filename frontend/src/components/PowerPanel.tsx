@@ -48,8 +48,8 @@ const WinTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}{d.is_active ? " ●" : ""}</p>
-      <p style={{ color: "#60a5fa" }}>on the winning side <strong>{pct(d.win_rate)}</strong> of {d.n} contested votes</p>
-      <p style={{ color: "#94a3b8" }}>
+      <p style={{ color: "var(--link)" }}>on the winning side <strong>{pct(d.win_rate)}</strong> of {d.n} contested votes</p>
+      <p style={{ color: "var(--text-muted)" }}>
         votes AGAINST {pct(d.dissent_rate)} of the time
         {d.dissent_effectiveness !== null && <> · those objections prevail <strong>{pct(d.dissent_effectiveness)}</strong></>}
       </p>
@@ -65,7 +65,7 @@ const ScatterTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}</p>
-      <p style={{ color: "#94a3b8" }}>dissents on <strong>{pct(d.dissent_rate)}</strong> of contested votes ({d.dissent_n})</p>
+      <p style={{ color: "var(--text-muted)" }}>dissents on <strong>{pct(d.dissent_rate)}</strong> of contested votes ({d.dissent_n})</p>
       <p style={{ color: (d.dissent_effectiveness ?? 0) >= 0.241 ? "#22c55e" : "#f87171" }}>
         of those, <strong>{pct(d.dissent_effectiveness ?? 0)}</strong> succeed (motion lost)
       </p>
@@ -159,10 +159,10 @@ export function PowerPanel() {
       </p>
       <ResponsiveContainer width="100%" height={spectrumHeight}>
         <BarChart data={spectrum} layout="vertical" margin={{ top: 4, right: 44, bottom: 4, left: 96 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" domain={[0, 1]} tickFormatter={pct} tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={120} interval={0} />
-          <Tooltip content={<WinTooltip />} cursor={{ fill: "#1e293b55" }} />
+          <Tooltip content={<WinTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <ReferenceLine x={carry} stroke="#64748b" strokeDasharray="4 4"
             label={{ value: "vote-yes baseline", fill: "#94a3b8", fontSize: 10, position: "top" }} />
           <ReferenceLine x={0.5} stroke="#475569" strokeDasharray="2 2" />
@@ -202,7 +202,7 @@ export function PowerPanel() {
       <p className="section-heading">When they break ranks, does the council follow?</p>
       <ResponsiveContainer width="100%" height={380}>
         <ScatterChart margin={{ top: 16, right: 24, bottom: 36, left: 8 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
           <XAxis type="number" dataKey="x" name="Dissent rate" unit="%" domain={[0, "dataMax + 5"]}
             tick={{ fontSize: 11 }}
             label={{ value: "how often they vote AGAINST →", position: "bottom", offset: 16, fill: "#94a3b8", fontSize: 11 }} />
@@ -233,11 +233,11 @@ export function PowerPanel() {
       <p className="section-heading">Power shifts with every election</p>
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={otRows} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
           <XAxis dataKey="term" tick={{ fontSize: 11 }} />
           <YAxis domain={[20, 100]} unit="%" tick={{ fontSize: 11 }} width={36} />
           <Tooltip cursor={{ stroke: "#334155" }}
-            contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 6, fontSize: 12 }} />
+            contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6, fontSize: 12 }} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <ReferenceLine y={Math.round(carry * 100)} stroke="#64748b" strokeDasharray="4 4" />
           {otNames.map((n, i) => (

@@ -60,13 +60,13 @@ const YearTooltip = ({ active, payload, label }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{label}</p>
-      <p style={{ color: "#22c55e" }}>
+      <p style={{ color: "var(--stat-g)" }}>
         Stepped out: <strong>{d.must_leave_pct === null ? "—" : `${d.must_leave_pct}%`}</strong>
         {d.must_leave_declared > 0 && (
-          <span style={{ color: "#94a3b8" }}> ({d.must_leave_recused}/{d.must_leave_declared} serious conflicts)</span>
+          <span style={{ color: "var(--text-muted)" }}> ({d.must_leave_recused}/{d.must_leave_declared} serious conflicts)</span>
         )}
       </p>
-      <p style={{ color: "#f59e0b" }}>
+      <p style={{ color: "var(--note)" }}>
         Votes with a declared interest: <strong>{d.declared_share_pct}%</strong>
       </p>
     </div>
@@ -88,7 +88,7 @@ const TypeEraTooltip = ({ active, payload, label }: {
         return (
           <p key={key} style={{ color: p.color }}>
             {TYPE_LABEL[key] ?? key}: <strong>{p.value}%</strong>
-            <span style={{ color: "#94a3b8" }}> (n={n})</span>
+            <span style={{ color: "var(--text-muted)" }}> (n={n})</span>
           </p>
         );
       })}
@@ -186,7 +186,7 @@ export function RecusalTrendPanel() {
       </p>
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={yearData} margin={{ top: 8, right: 36, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="year" tick={{ fontSize: 11 }} interval={1} />
           <YAxis yAxisId="L" unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} width={40} />
           <YAxis yAxisId="R" orientation="right" unit="%" domain={[0, 14]}
@@ -216,10 +216,10 @@ export function RecusalTrendPanel() {
       </p>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={typeEraData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="eraLabel" tick={{ fontSize: 10 }} interval={0} />
           <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} width={40} />
-          <Tooltip content={<TypeEraTooltip />} cursor={{ fill: "#1e293b55" }} />
+          <Tooltip content={<TypeEraTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Bar dataKey="financial" name="financial" fill={TYPE_COLOR.financial} radius={[3, 3, 0, 0]}
             cursor="pointer" onClick={(e) => pickCell(e, "financial")}>

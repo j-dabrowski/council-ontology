@@ -45,8 +45,8 @@ const CustomTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}</p>
-      <p style={{ color: "#f59e0b" }}>{fmtM(d.total_amount)} awarded</p>
-      <p style={{ color: "#94a3b8" }}>
+      <p style={{ color: "var(--note)" }}>{fmtM(d.total_amount)} awarded</p>
+      <p style={{ color: "var(--text-muted)" }}>
         across {d.n_awards} tender{d.n_awards === 1 ? "" : "s"}
       </p>
     </div>
@@ -118,14 +118,14 @@ export function TenderConcentrationPanel() {
           layout="vertical"
           margin={{ top: 4, right: 64, bottom: 4, left: 132 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis
             type="number"
             tick={{ fontSize: 11 }}
             tickFormatter={(v) => `$${(v / 1e6).toFixed(0)}M`}
           />
           <YAxis type="category" dataKey="label" tick={{ fontSize: 10.5 }} width={128} />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1e293b55" }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <Bar
             dataKey="total_amount"
             name="Awarded"

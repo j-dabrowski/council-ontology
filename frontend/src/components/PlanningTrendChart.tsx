@@ -17,8 +17,8 @@ const CustomTooltip = ({ active, payload, label }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{label}</p>
-      {vol && <p style={{ color: "#475569" }}>Applications before council: {vol.value}</p>}
-      {rate && <p style={{ color: "#f59e0b" }}>Approval rate: {rate.value}%</p>}
+      {vol && <p style={{ color: "var(--text-faint)" }}>Applications before council: {vol.value}</p>}
+      {rate && <p style={{ color: "var(--note)" }}>Approval rate: {rate.value}%</p>}
     </div>
   );
 };
@@ -68,7 +68,7 @@ export function PlanningTrendChart() {
 
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart data={chartData} margin={{ top: 8, right: 48, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e3a5f" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="year" tick={{ fontSize: 11 }} interval={4} />
           <YAxis
             yAxisId="rate"
@@ -86,13 +86,13 @@ export function PlanningTrendChart() {
           <ReferenceLine
             yAxisId="rate"
             y={80}
-            stroke="#334155"
+            stroke="var(--border)"
             strokeDasharray="4 4"
             label={{ value: "80%", position: "insideRight", fontSize: 10, fill: "#475569" }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
-            formatter={(value) => <span style={{ fontSize: 12, color: "#94a3b8" }}>{value}</span>}
+            formatter={(value) => <span style={{ fontSize: 12, color: "var(--text-muted)" }}>{value}</span>}
           />
           <Bar
             yAxisId="vol"

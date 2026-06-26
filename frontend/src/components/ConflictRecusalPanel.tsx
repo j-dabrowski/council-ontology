@@ -51,10 +51,10 @@ const CustomTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}{d.is_active ? " ●" : ""}</p>
-      <p style={{ color: "#f1f5f9" }}>
+      <p style={{ color: "var(--text-hi)" }}>
         Stepped out on <strong>{d.pct}%</strong> of declared items
       </p>
-      <p style={{ color: "#94a3b8" }}>
+      <p style={{ color: "var(--text-muted)" }}>
         Recused {d.recused} · stayed and voted {stayed} · {d.declared_votes} declared in total
       </p>
     </div>
@@ -131,7 +131,7 @@ export function ConflictRecusalPanel() {
           layout="vertical"
           margin={{ top: 4, right: 48, bottom: 4, left: 92 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" domain={[0, 100]} unit="%" tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="shortName" tick={{ fontSize: 11 }} width={88} />
           <ReferenceLine
@@ -140,7 +140,7 @@ export function ConflictRecusalPanel() {
             strokeDasharray="4 4"
             label={{ value: "chamber avg", position: "top", fontSize: 10, fill: "#64748b" }}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1e293b55" }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <Bar
             dataKey="pct"
             name="Recusal %"

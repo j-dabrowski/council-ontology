@@ -1,10 +1,12 @@
+import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell, LabelList, ReferenceLine,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, MayorContest } from "../api";
+import { api, MayorContest, MayoralMotion } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { DrillDown, SourceQuote } from "./DrillDown";
 
 const MayorTooltip = ({ active, payload }: {
   active?: boolean;
@@ -15,23 +17,46 @@ const MayorTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}</p>
-      <p style={{ color: "#f87171" }}><strong>{d.contest_pct}%</strong> of their motions drew dissent</p>
-      <p style={{ color: "#94a3b8" }}>{d.contested} contested of {d.carried} carried</p>
+      <p style={{ color: "var(--stat-r)" }}><strong>{d.contest_pct}%</strong> of their motions drew dissent</p>
+      <p style={{ color: "var(--text-muted)" }}>{d.contested} contested of {d.carried} carried</p>
+      {d.n_shown > 0 && <p style={{ color: "var(--link)", fontSize: "0.75rem" }}>Click to inspect</p>}
     </div>
   );
 };
 
+function MotionRow({ m }: { m: MayoralMotion }) {
+  return (
+    <div className="mayor-motion">
+      <div className="mayor-motion-head">
+        <span className="mayor-motion-date">{m.date}</span>
+        <span className="mayor-motion-votes">
+          {m.votes_for != null ? `${m.votes_for}–${m.votes_against ?? 0}` : ""}
+        </span>
+      </div>
+      {m.title && <p className="mayor-motion-title">{m.title}</p>}
+      <SourceQuote quote={m.quote ?? null} />
+    </div>
+  );
+}
+
 export function MayoralAgendaPanel() {
   const { data, loading, error } = useData(() => api.mayoral());
+  const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
-  const chartData = data.per_mayor.map((m) => ({
-    ...m,
-    shortName: m.name,
-  }));
+  const chartData = data.per_mayor.map((m) => ({ ...m, shortName: m.name }));
   const height = Math.max(220, chartData.length * 42);
+
+  function handleBarClick(entry: MayorContest) {
+    if (!entry.n_shown) return;
+    setSelected(selected === entry.name ? null : entry.name);
+  }
+
+  const selMayor = selected != null
+    ? data.per_mayor.find((m) => m.name === selected)
+    : null;
 
   return (
     <Card
@@ -67,16 +92,21 @@ export function MayoralAgendaPanel() {
         </span>
       </div>
 
-      <p className="section-heading">Share of each Mayor's carried motions that drew dissent</p>
+      <p className="section-heading">
+        Share of each Mayor's carried motions that drew dissent
+        <span className="section-hint"> — click a bar to inspect motions</span>
+      </p>
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={chartData} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 92 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" unit="%" domain={[0, 30]} tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="shortName" tick={{ fontSize: 11 }} width={120} />
           <ReferenceLine x={data.other_contest_pct} stroke="#475569" strokeDasharray="4 4"
             label={{ value: "backbench avg", position: "top", fontSize: 10, fill: "#64748b" }} />
-          <Tooltip content={<MayorTooltip />} cursor={{ fill: "#1e293b55" }} />
-          <Bar dataKey="contest_pct" name="Contested %" radius={[0, 3, 3, 0]}>
+          <Tooltip content={<MayorTooltip />} cursor={{ fill: "var(--cursor)" }} />
+          <Bar dataKey="contest_pct" name="Contested %" radius={[0, 3, 3, 0]}
+            style={{ cursor: "pointer" }}
+            onClick={(entry) => handleBarClick(entry as MayorContest)}>
             {chartData.map((entry, i) => (
               <Cell key={i} fill={entry.contest_pct >= data.mayor_contest_pct ? "#f87171" : "#fb923c"} />
             ))}
@@ -85,6 +115,19 @@ export function MayoralAgendaPanel() {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+
+      {selMayor && (
+        <DrillDown
+          title={`${selMayor.name} — contested carried motions`}
+          subtitle={`${selMayor.contested} contested of ${selMayor.carried} carried${selMayor.n_shown < selMayor.contested ? ` · showing ${selMayor.n_shown} most recent` : ""}`}
+          onClose={() => setSelected(null)}
+        >
+          {selMayor.motions.length === 0
+            ? <p className="chart-note">No motion details available.</p>
+            : selMayor.motions.map((m, i) => <MotionRow key={i} m={m} />)
+          }
+        </DrillDown>
+      )}
 
       <p className="chart-note">
         "Contested" = a carried motion that drew at least one AGAINST vote. The mayoral effect is far

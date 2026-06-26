@@ -45,6 +45,8 @@ export interface DivergenceData {
     officer_recommendation: string | null;
     council_outcome: string | null;
     match_confidence: number;
+    motion_text: string | null;
+    quote: string | null;
   }[];
 }
 
@@ -209,11 +211,22 @@ export interface TenderData {
   contractors: ContractorTotal[];
 }
 
+export interface DoseApp {
+  reference: string | null;
+  description: string | null;
+  address: string | null;
+  n_objectors: number;
+  outcome: string | null;   // "approved" | "refused"
+  quote: string | null;
+}
+
 export interface ObjectionDoseBucket {
   label: string;
   n: number;
   refused: number;
   refusal_pct: number;
+  n_shown: number;
+  apps: DoseApp[];
 }
 
 export interface ObjectionDoseData {
@@ -223,11 +236,21 @@ export interface ObjectionDoseData {
   buckets: ObjectionDoseBucket[];
 }
 
+export interface ConfidentialItem {
+  kind: string;           // "tender" | "other_item" | "delegated_decision" | "budget_item"
+  description: string | null;
+  amount: number | null;
+  date: string | null;
+  quote: string | null;
+}
+
 export interface TransparencyYear {
   year: number;
   total: number;
   confidential: number;
   confidential_pct: number;
+  n_shown: number;
+  items: ConfidentialItem[];
 }
 
 export interface TransparencyData {
@@ -254,11 +277,21 @@ export interface TenureData {
   profiles: TenureProfile[];
 }
 
+export interface MayoralMotion {
+  title: string | null;
+  date: string;
+  votes_for: number | null;
+  votes_against: number | null;
+  quote: string | null;
+}
+
 export interface MayorContest {
   name: string;
   carried: number;
   contested: number;
   contest_pct: number;
+  n_shown: number;
+  motions: MayoralMotion[];
 }
 
 export interface MayoralData {

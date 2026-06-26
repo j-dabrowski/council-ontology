@@ -20,11 +20,11 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
     return (
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={pts} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="x" tick={{ fontSize: 12 }} />
           <YAxis unit={unit} tick={{ fontSize: 12 }} width={44} />
           <Tooltip
-            contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 6 }}
+            contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
             formatter={(v: number) => [`${v}${unit}`, ""]}
           />
           <Line type="monotone" dataKey="y" stroke={base} strokeWidth={2.5}
@@ -40,12 +40,12 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={bars} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
         <XAxis type="number" unit={unit} tick={{ fontSize: 12 }} />
         <YAxis type="category" dataKey="label" tick={{ fontSize: 12 }} width={130} />
         <Tooltip
-          cursor={{ fill: "#1e293b55" }}
-          contentStyle={{ background: "#1e293b", border: "1px solid #334155", borderRadius: 6 }}
+          cursor={{ fill: "var(--cursor)" }}
+          contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
           formatter={(v: number) => [`${v}${unit}`, ""]}
         />
         {refAfter && (

@@ -34,6 +34,12 @@ The recipe, end to end (see `[INTERACT]` in `INVESTIGATIONS.md` Phase H):
   prop → "↑ Scorecard" link; scorecard rows carry `id="sc-<panel>"` and flash on
   `:target`. Wired on all 10 scorecard-linked panels.
 - [x] **Scorecard → panel jump links** — each scorecard row links to `#panel-<snapshot>`.
+- [x] **Light/dark mode** — all panels must respect system appearance preference.
+  Use CSS custom properties as the single source of truth for colours. Default
+  `:root` defines the light theme; `@media (prefers-color-scheme: dark) { :root { ... } }`
+  overrides to a dark theme. Cover: background, card surfaces, text, borders, chart
+  colours (ensure contrast in both modes). Do not add a manual toggle — follow the
+  system setting only.
 - [ ] **Councillor cross-link (stretch)** — clicking a councillor name *anywhere*
   opens a unified profile (tenure + win rate + dissent + every declared interest +
   sponsorship ties). The natural endpoint; bigger build.
@@ -50,6 +56,12 @@ deputations 1 553 · delegated_decisions 1 342 · tenders 1 326 · committee_rep
 ---
 
 ## Per-panel TODO
+
+**Requirement (2026-06-26):** Every panel must have interactivity that leads the
+reader to the underlying records and their verbatim `extraction_evidence` minute
+quotes. Nothing in the UI should be unsourced — any aggregate must be inspectable
+down to the original minute text. The Tier-1 pattern is the template for all Tier-2
+and Tier-3 work.
 
 Status: `[x]` done · `[ ]` queued. Each lists the **click target → reveal**, the
 **data source**, the **export work**, and the **receipt** entity.
@@ -83,19 +95,19 @@ Status: `[x]` done · `[ ]` queued. Each lists the **click target → reveal**, 
   entity_table='interest_declarations'.*
 
 ### Tier 2
-- [ ] **transparency** (TransparencyTrendPanel) — click a year point → the
+- [x] **transparency** (TransparencyTrendPanel) — click a year point → the
   confidential items that year (kind, description where present, $).
   *Source: the four is_confidential tables (tenders, other_items, delegated_decisions,
   budget_items) by year. Export: per-year confidential-item lists onto
   `transparency.json`. Receipt: per source entity.*
-- [ ] **mayoral** (MayoralAgendaPanel) — click a mayor bar → their contested carried
+- [x] **mayoral** (MayoralAgendaPanel) — click a mayor bar → their contested carried
   motions (title, date, votes for/against).
   *Source: `motions.moved_by_id` + term. Export onto `mayoral.json`. Receipt: motions.*
-- [ ] **dose** (ObjectionDosePanel) — click a bucket → the applications in it
+- [x] **dose** (ObjectionDosePanel) — click a bucket → the applications in it
   (reference, site address, #objectors, outcome) — incl. the 22-objector case.
   *Source: `planning_applications` + `community_submissions` counts. Export per-bucket
-  app lists onto `planning.json` (`dose`). Receipt: planning_applications.*
-- [ ] **divergence** (DivergencePanel) — make the existing exceptions table rows
+  app lists onto `dose.json`. Receipt: planning_applications.*
+- [x] **divergence** (DivergencePanel) — make the existing exceptions table rows
   expandable → full motion text, officer rec vs outcome, quote.
   *Source: `officer_divergence` already returns the pairs; add `motion_text` + quote.
   Receipt: motions.*

@@ -17,8 +17,8 @@ const LeaderTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}{d.is_active ? " ●" : ""}</p>
-      <p style={{ color: "#60a5fa" }}><strong>{d.years}</strong> years on record</p>
-      <p style={{ color: "#94a3b8" }}>{d.first} → {d.last} · {d.n_votes} votes cast</p>
+      <p style={{ color: "var(--link)" }}><strong>{d.years}</strong> years on record</p>
+      <p style={{ color: "var(--text-muted)" }}>{d.first} → {d.last} · {d.n_votes} votes cast</p>
     </div>
   );
 };
@@ -76,10 +76,10 @@ export function TenurePanel() {
       <p className="section-heading">Longest-serving councillors</p>
       <ResponsiveContainer width="100%" height={leaderHeight}>
         <BarChart data={leaders} layout="vertical" margin={{ top: 4, right: 48, bottom: 4, left: 92 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" unit="y" tick={{ fontSize: 11 }} />
           <YAxis type="category" dataKey="shortName" tick={{ fontSize: 11 }} width={120} />
-          <Tooltip content={<LeaderTooltip />} cursor={{ fill: "#1e293b55" }} />
+          <Tooltip content={<LeaderTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <Bar dataKey="years" name="Years" radius={[0, 3, 3, 0]}>
             {leaders.map((entry, i) => (
               <Cell key={i} fill={entry.is_active ? "#60a5fa" : "#475569"} />
@@ -93,11 +93,11 @@ export function TenurePanel() {
       <p className="section-heading">Distribution of service length</p>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={hist} margin={{ top: 16, right: 24, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="bucket" tick={{ fontSize: 11 }} />
           <YAxis tick={{ fontSize: 11 }} width={28} allowDecimals={false} />
-          <Tooltip cursor={{ fill: "#1e293b55" }}
-            contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 6 }} />
+          <Tooltip cursor={{ fill: "var(--cursor)" }}
+            contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }} />
           <Bar dataKey="count" name="Councillors" fill="#8b5cf6" radius={[3, 3, 0, 0]}>
             <LabelList dataKey="count" position="top" style={{ fill: "#cbd5e1", fontSize: 11 }} />
           </Bar>

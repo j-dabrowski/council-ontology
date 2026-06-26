@@ -126,6 +126,16 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
 
 ### Longer term
 
+- **Prompt generalisation review (prerequisite for second council)**: before
+  running the pipeline on any new council, conduct a read-through of all LLM-facing
+  prompts — `src/extraction/system_prompt.txt`, `src/extraction/agenda_system_prompt.txt`,
+  `Investigator_prompt.txt`, and `src/extraction/inventory_prompt.txt` — and remove or
+  generalise any Cambridge-specific references (place names, thresholds, heuristics,
+  examples). Prompts should refer to "the council", "this jurisdiction", "the documents"
+  rather than naming Cambridge. Also verify that `src/analysis/tests.py` battery test_ids
+  and valences make sense for a different council type (metro vs regional, WA vs other
+  state). Only after this review is complete should the pipeline be pointed at a new council.
+
 - **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0**
 
 ---

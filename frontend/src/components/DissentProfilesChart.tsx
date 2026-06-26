@@ -31,14 +31,14 @@ const CustomTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}{d.is_active ? " ●" : ""}</p>
-      <p style={{ color: "#f1f5f9" }}>
+      <p style={{ color: "var(--text-hi)" }}>
         Dissent rate: <strong>{d.pct}%</strong>
       </p>
-      <p style={{ color: "#94a3b8" }}>
+      <p style={{ color: "var(--text-muted)" }}>
         {d.against_count} against / {d.total_votes_on_carried} votes on carried motions
       </p>
       {d.top_dissent_tags.length > 0 && (
-        <p style={{ color: "#64748b", marginTop: 4 }}>
+        <p style={{ color: "var(--text-dim)", marginTop: 4 }}>
           Top topics: {d.top_dissent_tags.slice(0, 3).join(", ")}
         </p>
       )}
@@ -79,7 +79,7 @@ export function DissentProfilesChart() {
           layout="vertical"
           margin={{ top: 4, right: 48, bottom: 4, left: 88 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
           <XAxis type="number" domain={[0, 55]} unit="%" tick={{ fontSize: 11 }} />
           <YAxis
             type="category"
@@ -89,7 +89,7 @@ export function DissentProfilesChart() {
           />
           <ReferenceLine
             x={10}
-            stroke="#334155"
+            stroke="var(--border)"
             strokeDasharray="4 4"
             label={{ value: "10%", position: "top", fontSize: 10, fill: "#475569" }}
           />

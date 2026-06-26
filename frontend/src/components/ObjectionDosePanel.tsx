@@ -1,10 +1,12 @@
+import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell, LabelList,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ObjectionDoseBucket } from "../api";
+import { api, ObjectionDoseBucket, DoseApp } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { DrillDown, SourceQuote } from "./DrillDown";
 
 const LABELS: Record<string, string> = {
   "0": "No objectors",
@@ -13,7 +15,6 @@ const LABELS: Record<string, string> = {
   "5+": "5 or more",
 };
 
-// Deepening red as opposition mounts.
 function doseColor(label: string): string {
   return { "0": "#475569", "1": "#f59e0b", "2-4": "#fb923c", "5+": "#f87171" }[label] ?? "#475569";
 }
@@ -27,14 +28,33 @@ const CustomTooltip = ({ active, payload }: {
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}</p>
-      <p style={{ color: "#f87171" }}>Refused: <strong>{d.refusal_pct}%</strong></p>
-      <p style={{ color: "#94a3b8" }}>{d.refused} refused of {d.n} decided</p>
+      <p style={{ color: "var(--stat-r)" }}>Refused: <strong>{d.refusal_pct}%</strong></p>
+      <p style={{ color: "var(--text-muted)" }}>{d.refused} refused of {d.n} decided</p>
+      {d.n_shown > 0 && <p style={{ color: "var(--link)", fontSize: "0.75rem" }}>Click to inspect</p>}
     </div>
   );
 };
 
+function AppRow({ app }: { app: DoseApp }) {
+  return (
+    <div className="dose-app">
+      <div className="dose-app-head">
+        {app.reference && <span className="dose-app-ref">{app.reference}</span>}
+        <span className="dose-app-obj">{app.n_objectors} objector{app.n_objectors !== 1 ? "s" : ""}</span>
+        {app.outcome === "refused"
+          ? <span className="dose-outcome-refused">Refused</span>
+          : <span className="dose-outcome-approved">Approved</span>}
+      </div>
+      {app.address && <p className="dose-app-addr">{app.address}</p>}
+      {app.description && <p className="dose-app-desc">{app.description}</p>}
+      <SourceQuote quote={app.quote ?? null} />
+    </div>
+  );
+}
+
 export function ObjectionDosePanel() {
   const { data, loading, error } = useData(() => api.dose());
+  const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -47,6 +67,13 @@ export function ObjectionDosePanel() {
   const lone = data.buckets.find((b) => b.label === "1");
   const many = data.buckets.find((b) => b.label === "5+");
   const none = data.buckets.find((b) => b.label === "0");
+
+  function handleBarClick(entry: ObjectionDoseBucket) {
+    if (!entry.n_shown) return;
+    setSelected(selected === entry.label ? null : entry.label);
+  }
+
+  const selBucket = selected != null ? data.buckets.find((b) => b.label === selected) : null;
 
   return (
     <Card
@@ -85,13 +112,20 @@ export function ObjectionDosePanel() {
         </span>
       </div>
 
+      <p className="section-heading" style={{ marginTop: 0 }}>
+        Refusal rate by objection count
+        <span className="section-hint"> — click a bar to inspect applications</span>
+      </p>
+
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={chartData} margin={{ top: 24, right: 24, bottom: 4, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="name" tick={{ fontSize: 12 }} />
           <YAxis unit="%" domain={[0, 60]} tick={{ fontSize: 11 }} width={40} />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "#1e293b55" }} />
-          <Bar dataKey="refusal_pct" name="Refusal %" radius={[4, 4, 0, 0]}>
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--cursor)" }} />
+          <Bar dataKey="refusal_pct" name="Refusal %" radius={[4, 4, 0, 0]}
+            style={{ cursor: "pointer" }}
+            onClick={(entry) => handleBarClick(entry as ObjectionDoseBucket)}>
             {chartData.map((entry, i) => (
               <Cell key={i} fill={doseColor(entry.label)} />
             ))}
@@ -100,6 +134,19 @@ export function ObjectionDosePanel() {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+
+      {selBucket && (
+        <DrillDown
+          title={`${LABELS[selBucket.label] ?? selBucket.label} — applications`}
+          subtitle={`${selBucket.n} decided · ${selBucket.refusal_pct}% refused${selBucket.n_shown < selBucket.n ? ` · showing ${selBucket.n_shown}` : ""}`}
+          onClose={() => setSelected(null)}
+        >
+          {selBucket.apps.length === 0
+            ? <p className="chart-note">No application details available.</p>
+            : selBucket.apps.map((app, i) => <AppRow key={i} app={app} />)
+          }
+        </DrillDown>
+      )}
 
       <p className="chart-note">
         Objections = community submissions recorded with position "object". Decided applications only
