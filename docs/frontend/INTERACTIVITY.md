@@ -13,7 +13,7 @@ they read from the same snapshots/tables, so adding a council inherits them.
 
 ## The established pattern (proven on the conflict panel — reuse verbatim)
 
-The recipe, end to end (see `[INTERACT]` in `INVESTIGATIONS.md` Phase H):
+The recipe, end to end (see `[INTERACT]` in `../investigator/INVESTIGATIONS.md` Phase H):
 
 1. **Export the granular records onto the snapshot** in `src/cli.py` (inline).
    Drive the detail off the *same* entity the chart element represents, so the

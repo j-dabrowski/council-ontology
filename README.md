@@ -120,9 +120,10 @@ cd frontend && npm run dev         # → http://localhost:5173
 
 > The methodology behind the battery — the criteria findings are judged against,
 > the standard of proof, the supportive/neutral/critical valences — lives in
-> `Investigator_prompt.txt`. The hypothesis-by-hypothesis record (findings and
-> nulls) is in `INVESTIGATIONS.md`; the prose synthesis in `FINDINGS_SUMMARY.md`;
-> the interactivity backlog in `INTERACTIVITY.md`.
+> `docs/investigator/Investigator_prompt.txt`. The hypothesis-by-hypothesis record
+> (findings and nulls) is in `docs/investigator/INVESTIGATIONS.md`; the prose
+> synthesis in `docs/investigator/FINDINGS_SUMMARY.md`; the interactivity backlog
+> in `docs/frontend/INTERACTIVITY.md`. See `docs/MAP.md` for the full doc map.
 >
 > (`api/main.py` is a legacy FastAPI backend that served the same queries as REST;
 > the live site uses the static snapshots above and does not need it.)
@@ -539,7 +540,7 @@ data/
 | 5 | Full extraction (`council extract`) | $19.58 batch | **Done** (2024+; 244 docs; pre-2024 deferred) |
 | 6 | Human audit on random sample | Free | **Tooling done**; human review pending |
 
-See `PIPELINE.md` for the detailed plan and `IMPLEMENTATION_ANALYSIS.md` for build order and dependencies.
+See `docs/pipeline/PIPELINE.md` for the detailed plan, build log, and dependency graph.
 
 ---
 
@@ -557,12 +558,19 @@ every test uses a stable `test_id`, two councils' results line up test-for-test
 
 ## Documentation
 
-| Doc | What it covers |
-|-----|----------------|
-| `README.md` | This file — pipeline, schema, CLI, dashboard, layout |
-| `Investigator_prompt.txt` | The investigation methodology: criteria findings are judged against (Nolan / CIPFA / Best Value), the standard of proof, the supportive/neutral/critical valences, and the two-tier bar (battery vs flagship). The page = the battery |
-| `INVESTIGATIONS.md` | The detective's notebook — every hypothesis tested, with findings and honest nulls |
-| `FINDINGS_SUMMARY.md` | Prose synthesis of what the corpus says, in the round |
-| `INTERACTIVITY.md` | The panel-interactivity recipe and per-panel drill-down backlog |
-| `PIPELINE.md` / `IMPLEMENTATION_ANALYSIS.md` | Extraction pipeline plan and build order |
-| `DATA_ENRICHMENT.md` | Forward-looking re-extraction / external-join backlog |
+**`docs/MAP.md` is the index** — it maps every doc to its sub-project track and
+shows how the tracks connect. Point a fresh session at it first. The docs are
+organised into four tracks under `docs/`:
+
+| Track | Docs | What it covers |
+|-------|------|----------------|
+| **root** | `README.md`, `docs/MAP.md` | This file (pipeline, schema, CLI, dashboard, layout) + the doc map |
+| **pipeline** | `docs/pipeline/PIPELINE.md` | Extraction pipeline: plan, build log, dependency graph, analysis-query design (merged) |
+| | `docs/pipeline/DATA_ENRICHMENT.md` | Forward-looking re-extraction / external-join backlog (populated by the investigator) |
+| **investigator** | `docs/investigator/Investigator_prompt.txt` | The runtime investigation prompt: criteria (Nolan / CIPFA / Best Value), standard of proof, valences, two-tier bar |
+| | `docs/investigator/INVESTIGATION_PROTOCOL.md` | The benchmark-gated plan for iterating the prompt above |
+| | `docs/investigator/INVESTIGATIONS.md` | The detective's notebook — every hypothesis, findings and honest nulls |
+| | `docs/investigator/FINDINGS_SUMMARY.md` | Prose synthesis of what the corpus says, in the round |
+| **frontend** | `docs/frontend/INTERACTIVITY.md` | The panel-interactivity recipe and per-panel drill-down backlog |
+| | `docs/frontend/PRODUCT_ROADMAP.md` | Forward-looking product surfaces (council map, digest feed) |
+| **strategy** | `docs/strategy/PRIVATE_ASSESSMENT.md` | Private: defamation / grant-readiness / ambition assessment (gitignored) |

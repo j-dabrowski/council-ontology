@@ -9,7 +9,7 @@ same logic on any council's database and returns a `TestResult` carrying:
     good, neutral and bad at a glance,
   - a severity/strength `grade`, the n / base_rate / era, and `data_ok`.
 
-Design intent (see Investigator_prompt.txt v2.2): novelty governs *prominence*,
+Design intent (see docs/investigator/Investigator_prompt.txt v2.2): novelty governs *prominence*,
 not *inclusion*. A test that comes back clean ("no threshold-gaming found") is a
 shown, valenced result — not a hidden null. That is what makes the corpus
 balanced (good news is reported, not just bad) and comparable (you can only
