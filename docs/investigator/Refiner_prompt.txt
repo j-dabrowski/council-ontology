@@ -1,0 +1,50 @@
+# Council Investigator — Refiner Prompt (stub)
+
+**Mode:** Test refinement — take a validated finding from `INVESTIGATIONS.md`
+and codify it into a permanent, reproducible entry in `src/analysis/tests.py`.
+
+**Read `Investigator_prompt.txt` Part 0 first** for schema, caveats, and
+query tooling. The test you are codifying was discovered under the Explorer
+prompt; your job is to make it mechanical and council-agnostic.
+
+**Related docs:**
+- `Investigator_prompt.txt` — shared reference layer (Parts 0–5)
+- `REFINEMENT_PROTOCOL.md` — the benchmark and improvement loop for this prompt
+- `INVESTIGATIONS.md` — the source finding to codify (status `[✓]` Finding)
+
+═══════════════════════════════════════════════════════════════════════════════
+                         OPERATING LAYER (stub — TBD)
+═══════════════════════════════════════════════════════════════════════════════
+
+This prompt is a stub. Content to be developed once the refinement benchmark
+is defined in `REFINEMENT_PROTOCOL.md`. The operating layer will cover:
+
+**What a "fully refined" test looks like:**
+- A stable `test_id` (e.g. `conflict.recusal_management`) that will not change
+  across councils or re-runs
+- A function in `src/analysis/queries.py` that executes the test SQL without
+  ad-hoc querying — all joins, filters, and dedup handled inside the function
+- A corresponding entry in `src/analysis/tests.py` `run_test_battery()` with:
+  - `title`, `genre`, `principle`, `question`
+  - `valence`: supportive / neutral / critical
+  - `grade`, `headline`, `verdict`
+  - `data_ok` flag (False if the corpus can't support the test)
+  - `chart` payload (kind, bars/points, unit, refline)
+  - `detail_panel` slug linking to the frontend panel
+- Result verified against the hand-computed number from the original finding
+  in `INVESTIGATIONS.md`
+- `council publish cambridge` runs clean (tsc + vite build clean, no console
+  errors)
+
+**What the refinement loop looks like:**
+1. Read the confirmed finding in `INVESTIGATIONS.md`
+2. Write or update the query function in `queries.py`
+3. Write the `TestResult` entry in `tests.py`
+4. Run `council publish cambridge` and verify the number matches
+5. Score against the refinement benchmark (TBD in `REFINEMENT_PROTOCOL.md`)
+6. If the test is council-agnostic and parametric, confirm it runs on a
+   second council's DB with no code changes (only the `council_id` changes)
+
+**Changelog:**
+- v0.1 (stub) — created 2026-06-29 as part of the three-prompt architecture
+  split. Content TBD pending `REFINEMENT_PROTOCOL.md` benchmark definition.

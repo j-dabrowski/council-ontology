@@ -758,7 +758,8 @@ Level 3 is split into three substages with dedicated CLI commands.
      Character span is recovered via a position-mapping array so these quotes
      contribute correctly to coverage. Only attempted for quotes ≥15 stripped chars.
   3. **Paraphrase** — content genuinely differs; collected for the paraphrase report.
-- Four metrics per document:
+- Five metrics per document:
+  - **Quote completeness**: fraction of extracted entities with ≥1 source quote.
   - **Paraphrase rate**: quotes unmatched after all three tiers / total quotes.
   - **Coverage ratio**: fraction of the extraction window covered by matched quotes.
     Denominator is `min(max_chars, total_chars)` so large documents are not penalised
@@ -802,14 +803,18 @@ Level 3 is split into three substages with dedicated CLI commands.
 
 `council validate cambridge [--limit N] [--files ...] [--from-year YYYY] [--force]`
 
-Seven metrics per document — five inherited from Level 3c, two new:
+Seven metrics per document — five inherited from Level 3c, two new.
+
+**Level 3c metrics (quote-level accuracy — right to test on a small sample before batch):**
 - **Quote completeness** — fraction of entities with ≥1 source quote
 - **Paraphrase rate** — quotes not matchable in normalised source text
 - **Coverage ratio** — fraction of extraction window covered by matched quotes
 - **Inventory agreement** — extracted counts vs Level 1 inventory counts
 - **Keyword gap rate** — MOVED/CARRIED/DA etc. not covered by any quote span
-- **Entity density** *(new)* — motions per 10k chars; flags large Ordinary meetings with suspiciously few motions
-- **Schema completeness** *(new)* — Ordinary meetings must have ≥1 motion; all motions must have a non-null outcome
+
+**Level 4 metrics (corpus-level sanity — only meaningful at scale):**
+- **Entity density** — motions per 10k chars; flags large Ordinary meetings with suspiciously few motions. On a small sample a low-density doc might just be a Special Meeting; you need volume to know what normal looks like.
+- **Schema completeness** — Ordinary meetings must have ≥1 motion; all motions must have a non-null outcome. A DB integrity check that only becomes meaningful once extractions are being saved at scale.
 
 Composite status: PASS / REVIEW / FAIL per document.
 

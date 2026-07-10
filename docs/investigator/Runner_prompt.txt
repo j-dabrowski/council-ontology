@@ -1,0 +1,42 @@
+# Council Investigator — Runner Prompt (stub)
+
+**Mode:** Production run — execute the frozen standard battery against a
+council DB, export JSON snapshots, verify the frontend renders.
+
+**Read `Investigator_prompt.txt` Part 0 first** for schema, caveats, and
+the `council publish` pipeline. This prompt is used only after both the
+exploration benchmark (via `Explorer_prompt.txt`) and the refinement benchmark
+(via `Refiner_prompt.txt`) have been cleared — the battery is frozen and
+no hypothesis generation or codification is needed.
+
+**Related docs:**
+- `Investigator_prompt.txt` — shared reference layer (Parts 0–5)
+- `src/analysis/tests.py` — the frozen battery (`run_test_battery()`)
+- `INVESTIGATIONS.md` — the record; append the run summary to the session log
+
+═══════════════════════════════════════════════════════════════════════════════
+                         OPERATING LAYER (stub — TBD)
+═══════════════════════════════════════════════════════════════════════════════
+
+This prompt is a stub. Content to be developed once the battery is frozen
+(both benchmarks cleared). The operating layer will be short — this is an
+execution prompt, not a research or engineering one. It will cover:
+
+**The production run sequence:**
+1. Confirm the DB is up to date (`council publish` prereqs met)
+2. Run `run_test_battery(session, council_id)` from `tests.py`
+3. Run `council publish <council>` to export all JSON snapshots
+4. Verify `tsc --noEmit` clean and `vite build` clean
+5. Spot-check 2–3 scorecard numbers against the hand-verified values in
+   `INVESTIGATIONS.md` (regression guard)
+6. Append a one-line run summary to the relevant session in `INVESTIGATIONS.md`:
+   date, council, prompt version, any scorecard value changes vs. last run
+
+**No improvement loop.** This prompt has no self-scoring or proposal step —
+the battery is frozen and changes to it go through the Refiner, not here.
+A regression (scorecard value changes unexpectedly) should be flagged to the
+human and investigated via the Refiner before re-running.
+
+**Changelog:**
+- v0.1 (stub) — created 2026-06-29 as part of the three-prompt architecture
+  split. Content TBD pending battery freeze.

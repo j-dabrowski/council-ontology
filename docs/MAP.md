@@ -6,9 +6,11 @@ This file maps every doc to its track and — more importantly — shows **how t
 feed each other**. Read this first in a fresh session, then open the track you're working in.
 
 > The public/dev entry point is the root `README.md` (schema, CLI, dashboard, layout).
-> `docs/MAP.md` (this file) is the internal index. The two prompts that run on the LLM
+> `docs/MAP.md` (this file) is the internal index. The prompts that run on the LLM
 > are **runtime artifacts**, not docs: `src/extraction/*.txt` (extraction) and
-> `docs/investigator/Investigator_prompt.txt` (investigation).
+> `docs/investigator/Investigator_prompt.txt` + `Explorer_prompt.txt` /
+> `Refiner_prompt.txt` / `Runner_prompt.txt` (investigation — three modes, one
+> shared reference layer).
 
 ---
 
@@ -25,18 +27,38 @@ Turns council-minutes PDFs into a structured, auditable SQLite database.
   (from `DATA_ENRICHMENT.md`) or a second council is started.
 
 ### 🔍 Investigator — *actively iterating*
-Interrogates the database and produces graded, sourced findings.
-- `investigator/Investigator_prompt.txt` — **the runtime prompt** used each investigation
-  (role, criteria, standard of proof, valences, two-tier bar). This is operational, not
-  documentation; it is iterated, never freely edited mid-run.
-- `investigator/INVESTIGATION_PROTOCOL.md` — the **benchmark-gated plan for improving** that
-  prompt: the staged protocol, the stopping condition, the version discipline.
-- `investigator/INVESTIGATIONS.md` — the detective's notebook; every hypothesis, finding, and
-  honest null, by session/phase.
+Interrogates the database and produces graded, sourced findings. Three prompt modes,
+one shared reference layer, two protocol documents.
+
+**Prompt files (runtime artefacts — not docs; iterated, never freely edited mid-run):**
+- `investigator/Investigator_prompt.txt` — **shared reference layer** (Parts 0–5):
+  schema, data caveats, query tooling, criteria frameworks, failure taxonomy,
+  defensibility. Read by all three modes before doing anything.
+- `investigator/Explorer_prompt.txt` — **exploration mode** (v2.3): generate and test
+  novel hypotheses; Stage 9 self-scores the session and proposes the next prompt edit.
+- `investigator/Refiner_prompt.txt` — **refinement mode** (stub): codify a validated
+  finding into a permanent, council-agnostic entry in `tests.py` / `queries.py`.
+- `investigator/Runner_prompt.txt` — **production run mode** (stub): execute the frozen
+  battery, export JSON snapshots, verify the frontend. No hypothesis generation.
+
+**Protocol documents:**
+- `investigator/EXPLORATION_PROTOCOL.md` — benchmark-gated improvement loop for
+  `Explorer_prompt.txt`: seven dimensions, Cambridge calibration scores, improvement
+  loop. Explorer prompt is improved until benchmark is cleared, then frozen.
+- `investigator/REFINEMENT_PROTOCOL.md` — benchmark-gated improvement loop for
+  `Refiner_prompt.txt` and the test harness. Benchmark TBD after first refinement run.
+
+**Investigation records:**
+- `investigator/INVESTIGATIONS.md` — the detective's notebook; every hypothesis,
+  finding, and honest null, by session/phase. Session headers record benchmark scores.
 - `investigator/FINDINGS_SUMMARY.md` — the prose synthesis across all findings.
-- **Loop:** run protocol → append to INVESTIGATIONS → score against the benchmark → if below
-  threshold, improve `Investigator_prompt.txt` and bump its version; if at threshold, freeze
-  and run. INVESTIGATION_PROTOCOL.md owns this loop.
+
+**Loop (Exploration):** run Explorer prompt → append to INVESTIGATIONS → Stage 9
+self-score → if below threshold, propose edit to `Explorer_prompt.txt` and bump
+version; if at threshold, freeze Explorer and hand off to Refiner.
+**Loop (Refinement):** run Refiner prompt → verify test against hand-computed number
+→ score against refinement benchmark → if below threshold, improve `Refiner_prompt.txt`;
+if at threshold, freeze and use Runner for production.
 
 ### 🖥 Frontend — *active*
 The React/Vite dashboard that renders findings with drill-down to source quotes.
@@ -79,7 +101,8 @@ The non-obvious edges, spelled out:
 |------|-----------|-----------|
 | **Pipeline → Investigator** | substrate | The extracted DB + schema is what the investigator queries. Extraction **caveats** (UPPERCASE enums, minutes-only vs agenda contamination, `item_reference` not meeting-unique) are documented in `Investigator_prompt.txt` Part 0 — change the pipeline and that section must follow. |
 | **Investigator → Pipeline** (`DATA_ENRICHMENT.md`) | backlog | When an investigation is **scored against the protocol benchmark**, the gaps it hits (fields that would unlock deeper analysis) are written into `pipeline/DATA_ENRICHMENT.md`. That file lives in the pipeline track but is *populated by the investigator* — it's the bridge that turns "we couldn't test X" into a planned re-extraction. |
-| **INVESTIGATION_PROTOCOL.md → Investigator_prompt.txt** | governance | The protocol is the benchmark-gated **plan for iterating** the runtime prompt. The prompt is the artifact; the protocol decides when to improve it, how to score it, and when to freeze it. Each INVESTIGATIONS session header notes the prompt version used. |
+| **EXPLORATION_PROTOCOL.md → Explorer_prompt.txt** | governance | The exploration protocol is the benchmark-gated plan for iterating the explorer prompt. Stage 9 of each session self-scores against the benchmark and proposes the next edit; a human approves before the version is bumped. |
+| **REFINEMENT_PROTOCOL.md → Refiner_prompt.txt** | governance | The refinement protocol governs how validated findings are codified into permanent battery tests. Benchmark TBD after first refinement run. |
 | **Investigator → Frontend** | findings | Findings in `INVESTIGATIONS.md` become panels via the `INTERACTIVITY.md` recipe; the standard test battery (`src/analysis/tests.py`) feeds the Scorecard; `FINDINGS_SUMMARY.md` feeds the Overview panel. |
 | **Pipeline → Frontend** | data | `council publish` (a pipeline CLI command) exports the static JSON snapshots the panels read; drill-down "receipts" come from the `extraction_evidence` table the pipeline populates. |
 | **Strategy → all** | priorities | `PRIVATE_ASSESSMENT.md` consumes every track's output to rank what matters next (second council, defamation mitigation on named individuals, About/methodology pages). |
@@ -93,8 +116,11 @@ The non-obvious edges, spelled out:
 |------------|-------|
 | changing extraction/scraping/validation/schema | `pipeline/PIPELINE.md` |
 | noting a field that would unlock a new analysis | `pipeline/DATA_ENRICHMENT.md` (then it becomes a pipeline re-extraction) |
-| running or recording an investigation | `investigator/Investigator_prompt.txt` (run) → `investigator/INVESTIGATIONS.md` (record) |
-| improving how investigations are run | `investigator/INVESTIGATION_PROTOCOL.md` → then bump `Investigator_prompt.txt` |
+| running an exploration session (new hypotheses) | `investigator/Explorer_prompt.txt` (run) → `investigator/INVESTIGATIONS.md` (record) |
+| codifying a finding into the test battery | `investigator/Refiner_prompt.txt` (run) → `src/analysis/tests.py` + `queries.py` |
+| running the frozen battery in production | `investigator/Runner_prompt.txt` |
+| improving the exploration prompt | `investigator/EXPLORATION_PROTOCOL.md` (benchmark) → bump `Explorer_prompt.txt` |
+| improving the refinement prompt / harness | `investigator/REFINEMENT_PROTOCOL.md` (benchmark) → bump `Refiner_prompt.txt` |
 | writing up cross-cutting conclusions | `investigator/FINDINGS_SUMMARY.md` |
 | building a panel or a drill-down | `frontend/INTERACTIVITY.md` |
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |

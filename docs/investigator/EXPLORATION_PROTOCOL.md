@@ -52,33 +52,55 @@ after seeing results introduces post-hoc goalpost-moving. The benchmark should s
 - How to score a completed run against those criteria
 - What score constitutes "good enough to freeze"
 
-**Benchmark candidates (to be decided before the first improvement run):**
+**The benchmark (agreed 2026-06-27, derived from Cambridge Phase A–K calibration):**
 
-The benchmark needs to be agreed before iterative improvement starts. Some dimensions to
-consider:
+Seven dimensions, each with a declared threshold. A session passes the benchmark only
+when ALL seven clear their threshold. A failing dimension (not the passing ones) drives
+the next improvement to `Investigator_prompt.txt`.
 
-| Dimension | Example threshold | How to measure |
-|-----------|------------------|----------------|
-| Hypothesis coverage | ≥ N hypotheses generated per governance domain | Count hypothesis list entries by Nolan/CIPFA domain |
-| Test efficiency | ≤ X% of tested hypotheses are structurally unsupportable | Count infeasible results that a data survey would have killed |
-| Finding rate | ≥ Y% of tested hypotheses produce a publishable result (Finding or Banked) | INVESTIGATIONS.md entry classification |
-| Evidence completeness | ≥ Z% of confirmed findings have drill-down data with source quotes | Check snapshot JSON for inlined evidence |
-| Protocol adherence | All 8 stages produced their defined output | Audit checklist per session |
-| Framing balance | Final output passes the CRITIC / PROMOTER / NEUTRAL review | Subjective pass/fail against v2.1 criteria |
+| # | Dimension | Threshold | How to measure |
+|---|-----------|-----------|----------------|
+| 1 | **Domain breadth** | ≥ 4 of the 5 Phase-1 genre domains (A Financial, B Governance, C Integrity, D Transparency) must each have ≥ 1 bespoke hypothesis before testing; domain E Strength expected | Count bespoke hypothesis entries by Phase-1 genre in Stage 2 output |
+| 2 | **Stage 1 data survey** | Binary PASS: a structured data profile — table row counts, investigation-critical NULL rates, known corpus gaps, date-span coverage by key table — must exist in scratchpad before the Stage 2 hypothesis list | Check scratchpad for a named profile artifact dated before Stage 2 |
+| 3 | **Structural kill rate** | ≤ 10% of bespoke hypotheses tested in Stage 4 die to structurally missing data (columns that the test requires are absent or 100% NULL) | Count hypotheses classified INFEASIBLE or died to schema/NULL gaps; divide by total bespoke tested; Stage 1 should surface these before Stage 4 |
+| 4 | **Finding rate** | ≥ 25% of bespoke hypotheses tested produce a Finding (built) or an actionable Banked result | Count `INVESTIGATIONS.md` entries classified `[✓]` Finding or `[◐]` Banked with a clear build path; exclude structural kills (those belong to Dim 3); divide by total bespoke tested |
+| 5 | **Evidence completeness** | ≥ 75% of confirmed flagship findings have drill-down data inlined in their snapshot JSON, with ≥ 1 verbatim source quote from `extraction_evidence` per inlined record | Check `frontend/public/data/*.json` for populated drill-down arrays (`declarations`, `awards`, `votes`, `items`, etc.) with a non-empty `quote` field |
+| 6 | **Stage completion** | ≥ 6 of 7 Stages 1–7 produce their defined output (Stage 8 is explicitly permitted to defer) | Binary checklist: Stage 1 profile in scratchpad; Stage 2 numbered hypothesis list; Stage 3 `scorecard.json` updated; Stage 4 `INVESTIGATIONS.md` updated; Stage 5 snapshot JSONs carry drill-down; Stage 6 `tsc + vite build` clean and frontend verified; Stage 7 `overview.json` + `FINDINGS_SUMMARY.md` updated |
+| 7 | **Framing balance** | 100% of confirmed flagship findings carry both the hostile-reader sentence and the promoter sentence, and are published in the NEUTRAL register | Review each flagship panel's text for the mandatory two-sentence pair (Investigator_prompt.txt Phase 4); verify register is NEUTRAL, not pure-CRITIC |
 
-The exact thresholds are TBD. They should be set by reviewing the existing Cambridge
-investigation sessions (Phases A–K in INVESTIGATIONS.md) and asking: what would a
-"perfect" session look like, and what score would the actual sessions have received?
-Working backwards from known good output to define the benchmark is the right approach.
+**Cambridge calibration — Phase A–K sessions scored against the benchmark:**
 
-Once a benchmark is agreed and written into this document, the improvement loop is:
-1. Run a full investigation session following the staged protocol
-2. Score the session against the benchmark
-3. If score ≥ threshold: freeze the protocol, record the version, begin production use
-4. If score < threshold: identify the lowest-scoring dimension, update `Investigator_prompt.txt`,
-   increment the version number, and repeat from step 1
+These sessions were exploratory, run without the staged protocol, and spread across
+multiple sessions rather than a single end-to-end run. They are the calibration
+reference — the corpus from which the benchmark was derived — not a passing target.
 
-**Do not begin iterative improvement until the benchmark is written here.**
+Counts used: 27 bespoke hypotheses tested (hypotheses [1]–[28] excluding [7] which was
+already built before Phase A, and excluding synthesis/battery/interactivity build entries
+which are not hypotheses). Flagship panels built: 9 ([1], [2], [8], [9], [11], [12],
+[18], [19], [27/28]).
+
+| # | Dimension | Cambridge score | Pass? | Root cause of any gap |
+|---|-----------|-----------------|-------|-----------------------|
+| 1 | Domain breadth (≥ 4/5) | 5/5 genres covered across corpus | ✓ | — |
+| 2 | Stage 1 data survey (binary) | No structured profile produced; organic exploration only | ✗ | Stage 1 not yet in prompt; target for v2.3 |
+| 3 | Structural kill rate (≤ 10%) | 3 structural failures / 27 tested = 11% | ✗ | [latency] (100% NULL dates), [6] (placeholder `submitter_name`), [25] (confidential = missingness) — all catchable by a NULL-rate check in Stage 1 |
+| 4 | Finding rate (≥ 25%) | 11 publishable / 27 tested = 41% | ✓ | — |
+| 5 | Evidence completeness (≥ 75%) | 7/9 flagships have drill-down + quotes = 78% | ✓ | [8] Tenure and [27/28] Sponsorship are Tier-2 backlog in INTERACTIVITY.md |
+| 6 | Stage completion (≥ 6/7) | 6/7 Stages 1–7 produced output | ✓ | Stage 1 data profile absent (same root as Dim 2) |
+| 7 | Framing balance (100%) | 9/9 flagships calibrated post-session 8 | ✓ | — |
+
+**Cambridge benchmark score: 5/7 dimensions pass.** Both failures (Dim 2, Dim 3) share
+one root cause: Stage 1 was never formally executed, so three structurally unsupportable
+hypotheses burned test budget rather than being caught before testing. Adding a
+structured Stage 1 checklist to `Investigator_prompt.txt` (v2.3 target) is expected to
+fix both dimensions in a single improvement.
+
+**The improvement loop (now unblocked):**
+
+1. Run a full investigation session following Stages 1–8
+2. Score against the seven dimensions above; record scores in the session header in `INVESTIGATIONS.md`
+3. If all seven ≥ threshold → freeze the protocol version and begin production use on that version
+4. If any dimension < threshold → identify the lowest-scoring dimension, update `Investigator_prompt.txt` to address it, increment the version number, and repeat from step 1
 
 ### Proposed stages
 
