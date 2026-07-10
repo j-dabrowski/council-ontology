@@ -537,7 +537,7 @@ data/
 | 3b | Sample extraction | ~$0.50 | **Done** |
 | 3c | Sample validation — all metrics within target | Free | **Done** |
 | 4 | Per-document confidence scoring (`council validate`) | Free | **Done** |
-| 5 | Full extraction (`council extract`) | $19.58 batch | **Done** (2024+; 244 docs; pre-2024 deferred) |
+| 5 | Full extraction (`council extract`) | ~$70 actual | **Done** (580 docs; full corpus complete 2026-06-22) |
 | 6 | Human audit on random sample | Free | **Tooling done**; human review pending |
 
 See `docs/pipeline/PIPELINE.md` for the detailed plan, build log, and dependency graph.
