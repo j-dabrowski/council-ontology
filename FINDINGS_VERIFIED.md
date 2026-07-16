@@ -65,6 +65,44 @@ Dedup method: grouped validation JSON files by `meeting_id`, kept the one with t
 
 Per-file JSON structure (example fields, from `936cc360.json`): `filename`, `meeting_id`, `meeting_date`, `meeting_type`, `document_type`, `total_chars`, `quotes.{total,paraphrased,stripped_matched,paraphrase_rate,paraphrase_examples}`, `coverage_ratio`, `entity_counts.*`, `inventory_agreement.*` (per-entity-type L1-inventory-vs-extracted ratio + flag), `keyword_gap.*`, `quote_completeness.{total_entities,entities_with_quotes,completeness_rate,missing_by_table}`, `status` (PASS/REVIEW/FAIL), `entity_density.*`, `schema_completeness.*`.
 
+### 3a. The 141 FAILs — do they skew old and large?
+
+**Only partially confirmed — do not state "FAILs skew old and large" as a clean finding.**
+
+Method: same 580 deduped validation records as above. `document_type` pulled from the live `meetings` table via `meeting_id` join (153 of the older validation JSON files predate the `document_type` field and don't carry it themselves). Decade = `(year // 10) * 10` on `meeting_date`. Size = each file's own `total_chars`.
+
+**By decade** — a step change around 2020, not a smooth "older is worse" gradient. The 2010s (29.4%) actually fails slightly more often than the 1990s (28.1%):
+
+| decade | FAILs | total | rate |
+|---|---|---|---|
+| 1990s | 27 | 96 | 28.1% |
+| 2000s | 41 | 149 | 27.5% |
+| 2010s | 47 | 160 | 29.4% |
+| 2020s | 26 | 175 | 14.9% |
+
+Pre-2020 fails at roughly double the rate of 2020s (≈28% vs 14.9%). That's real and worth stating, but frame it as a step change (consistent with a recent prompt/pipeline improvement), not a monotonic decade-by-decade climb.
+
+**By document_type** — minutes fail more than agendas: 130/506 (25.7%) vs 11/66 (16.7%). Addendum (0/4) and unknown (0/4) have no fails but are too small a sample to mean anything.
+
+**By size (total_chars) — does NOT cleanly support "large."** FAIL is bigger than PASS, but REVIEW is the largest bucket of all three, bigger than FAIL:
+
+| status | n | avg_chars | median_chars |
+|---|---|---|---|
+| PASS | 256 | 180,112 | 19,856 |
+| REVIEW | 183 | 429,323 | 439,749 |
+| FAIL | 141 | 301,074 | 353,285 |
+
+So "large" predicts "not a clean PASS" (i.e., REVIEW or FAIL), not FAIL specifically. Controlling for decade makes this weaker still — FAIL vs non-FAIL average size within the same decade is close and sometimes reversed:
+
+| decade | FAIL avg_chars (n) | non-FAIL avg_chars (n) |
+|---|---|---|
+| 1990s | 232,224 (27) | 236,552 (69) |
+| 2000s | 417,047 (41) | 409,241 (108) |
+| 2010s | 276,435 (47) | 318,058 (113) — non-FAIL is *larger* |
+| 2020s | 234,233 (26) | 189,357 (149) |
+
+**Bottom line for the article**: "FAILs are concentrated in pre-2020 documents (roughly double the fail rate of 2024+ material)" is defensible. "FAILs skew large" is not — that's actually a REVIEW-status effect, and within any given decade, document size doesn't reliably distinguish FAIL from non-FAIL.
+
 ## 4. Officer divergence (reasoning-layer teaser number)
 
 Source: ran `src.analysis.divergence.officer_divergence(session, council_id=1)` live against `data/council.db` (function in `src/analysis/divergence.py`).
