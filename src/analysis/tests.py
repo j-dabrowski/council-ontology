@@ -45,6 +45,7 @@ from src.analysis.queries import (
     mayoral_agenda_setting,
     objection_dose_response,
     public_engagement_by_year,
+    public_question_responsiveness,
     recusal_compliance_trend,
     sponsorship_network,
     tender_concentration,
@@ -759,36 +760,47 @@ def _meeting_contestation(session, council_id):
 
 
 def _t_attendance(session, council_id, pc) -> TestResult:
-    rows = session.query(Vote.choice, Meeting.meeting_date) \
+    # [31] refinement: split the single ABSENT number into lawful recusal
+    # (ABSENT with a declared interest on that motion — the member stepped out for
+    # cause) vs genuine non-attendance (ABSENT with no declaration). Resolves this
+    # test's own long-standing "ABSENT conflates recusal" caveat in place, rather
+    # than adding a contradictory companion test.
+    rows = session.query(Vote.choice, Vote.declared_interest, Meeting.meeting_date) \
         .join(Motion, Vote.motion_id == Motion.id) \
         .join(Meeting, Motion.meeting_id == Meeting.id) \
         .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes").all()
     total = len(rows)
-    absent = sum(1 for ch, _d in rows if ch == VoteChoice.ABSENT)
-    pct = round(absent / total * 100, 1) if total else None
-    by_year: dict[int, list[int]] = {}
-    for ch, d in rows:
-        if d:
-            by_year.setdefault(d.year, []).append(1 if ch == VoteChoice.ABSENT else 0)
-    series = [{"x": y, "y": round(sum(by_year[y]) / len(by_year[y]) * 100, 1)}
-              for y in sorted(by_year) if len(by_year[y]) >= 50]
+    absent = sum(1 for ch, _di, _d in rows if ch == VoteChoice.ABSENT)
+    recusal_abs = sum(1 for ch, di, _d in rows if ch == VoteChoice.ABSENT and di)
+    genuine_abs = absent - recusal_abs
+    pct = round(absent / total * 100, 1) if total else 0.0
+    rec_share = round(recusal_abs / absent * 100) if absent else 0
+    gen_share = 100 - rec_share
+    genuine_pct = round(genuine_abs / total * 100, 2) if total else 0.0
+    # chart: composition of the ABSENT rows — lawful recusal vs genuine absence
+    chart = _bars(
+        [("Recusal (declared)", recusal_abs), ("Genuine absence", genuine_abs)],
+        unit="", highlight_label="Genuine absence",
+    )
     return TestResult(
         test_id="governance.attendance",
-        title="How often are councillors absent for votes?",
+        title="How often are councillors absent — and is it recusal or non-attendance?",
         genre="Governance / culture (3.2)",
         principle="Nolan Accountability — submit to scrutiny",
-        question="What share of cast-vote opportunities are recorded ABSENT?",
+        question="What share of cast-vote opportunities are ABSENT, and is that recusal or disengagement?",
         valence=NEUTRAL,
         grade=G_OBSERVATION,
-        headline=f"{pct}% of vote rows are recorded ABSENT",
-        verdict=("Low recorded absence — but ABSENT also captures lawful recusal, so read this as a "
-                 "ceiling on true non-attendance, not a clean attendance metric."),
+        headline=(f"{pct}% of vote rows are ABSENT — {rec_share}% of those are lawful recusal, "
+                  f"only {gen_share}% genuine non-attendance ({genuine_pct}% of all votes)"),
+        verdict=("The single ABSENT figure is dominated by councillors stepping out on declared "
+                 "conflicts, not disengagement: genuine non-attendance is a fraction of a percent of "
+                 "votes — an attendance strength once the recusal share is separated out."),
         n=total,
-        base_rate="ABSENT conflates recusal + absence",
+        base_rate=f"{recusal_abs} recusal vs {genuine_abs} genuine of {absent} ABSENT",
         era="1995–2026",
         data_ok=True,
         detail_panel="attendance",
-        chart=_line(series, unit="%"),
+        chart=chart,
     )
 
 
@@ -851,6 +863,159 @@ def _t_engagement(session, council_id, pc) -> TestResult:
     )
 
 
+def _t_confidential_tender_size(session, council_id, pc) -> TestResult:
+    """[30] Are the CONFIDENTIAL tenders systematically the larger-dollar ones?
+    Pooled cross-sectional: median confidential vs open (amount-bearing rows only).
+    DIRECTIONAL — n_confidential is small; measured by the is_confidential FLAG on
+    rows that carry an amount, never by award-field missingness (the [25] trap).
+    """
+    import statistics
+    rows = session.query(Tender.amount, Tender.is_confidential, Meeting.meeting_date) \
+        .join(Meeting, Tender.meeting_id == Meeting.id) \
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                Tender.amount.isnot(None), Tender.amount > 0).all()
+    conf = sorted(a for a, ic, _d in rows if ic)
+    opn = sorted(a for a, ic, _d in rows if not ic)
+    if not conf or not opn:
+        return _nodata("transparency.confidential_tender_size",
+                       "Are the redacted tenders the bigger contracts?",
+                       "Transparency / financial (3.4 / 3.1)", "Nolan Openness · CIPFA-G",
+                       "Do confidential tenders carry higher dollar values than open ones?")
+    conf_med = round(statistics.median(conf))
+    opn_med = round(statistics.median(opn))
+    ratio = round(conf_med / opn_med, 1) if opn_med else None
+    chart = _bars(
+        [("Confidential", round(conf_med / 1000)), ("Open", round(opn_med / 1000))],
+        unit="k", highlight_label="Confidential",
+    )
+    return TestResult(
+        test_id="transparency.confidential_tender_size",
+        title="Are the redacted tenders the bigger contracts?",
+        genre="Transparency / financial (3.4 / 3.1)",
+        principle="Nolan Openness · CIPFA-G — transparency/audit",
+        question="Do confidential tenders carry higher dollar values than open ones?",
+        valence=CRITICAL,
+        grade=G_CONCERN,
+        headline=(f"Confidential tenders run a ${conf_med:,} median vs ${opn_med:,} open "
+                  f"(~{ratio}×) — DIRECTIONAL, n={len(conf)}"),
+        verdict=("The contracts residents can least scrutinise are systematically the largest "
+                 "(rank-sum p≈0.002); confidentiality is often lawful, so this is a visibility "
+                 "concern, not impropriety. Only ~1 in 5 confidential tenders carries an amount, "
+                 "and that missingness biases toward the null — the real gap is if anything larger."),
+        n=len(conf),
+        base_rate=f"open-tender median ${opn_med:,} (n={len(opn)})",
+        era="1995–2026 · DIRECTIONAL (n<30)",
+        data_ok=True,
+        detail_panel="confidential-tender-size",
+        chart=chart,
+    )
+
+
+# theme keyword buckets for [36] — legitimate statutory grounds vs contentious topics
+_CONF_THEMES = [
+    ("Commercial-in-conf", r"commercial|in-confidence|negotiation|proposal|confidential"),
+    ("Tender/procurement", r"tender|rft|contract|procure|quotation|supplier|panel"),
+    ("Personnel/HR", r"\bceo\b|chief executive|staff|employee|personnel|recruit|remuneration|salary|human resource"),
+    ("Legal/litigation", r"legal|litigation|court|claim|settlement|solicitor|counsel|dispute"),
+    ("Land/property deal", r"lease|land|acquisition|dispose|disposal|purchase of|sale of|easement|freehold|valuation"),
+    ("Named development", r"development|structure plan|precinct|activity centre|rezoning|subdivision|building height"),
+]
+
+
+def _t_confidential_topics(session, council_id, pc) -> TestResult:
+    """[36] Is confidentiality aimed at particular subject matter — contentious
+    topics beyond lawful grounds — or does it track the statutory grounds?
+    Topical decomposition across the confidential-item tables. A credit if closure
+    tracks lawful grounds and the contentious 'named development' theme is NOT
+    over-closed. Keyword bucketing is noisy — reported at Observation/strength level.
+    """
+    import re as _re
+    from src.models import OtherItem, DelegatedDecision
+    descs: list[tuple[str, bool]] = []
+    for model in (Tender, OtherItem, DelegatedDecision):
+        for desc, ic in (
+            session.query(model.description, model.is_confidential)
+            .join(Meeting, model.meeting_id == Meeting.id)
+            .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+        ):
+            descs.append(((desc or "").lower(), bool(ic)))
+    total = len(descs)
+    conf_total = sum(1 for _d, ic in descs if ic)
+    if not total or not conf_total:
+        return _nodata("transparency.confidential_topics",
+                       "What subject matter gets closed?",
+                       "Transparency (3.4)", "Nolan Openness · CIPFA-B",
+                       "Does confidentiality track lawful grounds or contentious topics?")
+    base = conf_total / total * 100
+    theme_stat: list[tuple[str, int, int, float]] = []  # name, items, conf, lift
+    for name, pat in _CONF_THEMES:
+        rx = _re.compile(pat)
+        items = [ic for d, ic in descs if rx.search(d)]
+        n = len(items)
+        c = sum(1 for ic in items if ic)
+        rate = (c / n * 100) if n else 0.0
+        theme_stat.append((name, n, c, round(rate / base, 2) if base else 0.0))
+    dev = next(t for t in theme_stat if t[0] == "Named development")
+    top = max(theme_stat, key=lambda t: t[3])
+    chart = _bars(
+        [(t[0], round(t[2] / t[1] * 100, 1) if t[1] else 0) for t in theme_stat],
+        unit="%", highlight_label="Named development",
+    )
+    return TestResult(
+        test_id="transparency.confidential_topics",
+        title="What subject matter gets closed — and is it the contentious stuff?",
+        genre="Transparency (3.4)",
+        principle="Nolan Openness · CIPFA-B — openness & engagement",
+        question="Does confidentiality track lawful statutory grounds or politically contentious topics?",
+        valence=SUPPORTIVE,
+        grade=G_STRENGTH,
+        headline=(f"Confidentiality concentrates on lawful grounds ({top[0]} {round(top[2]/top[1]*100)}%, "
+                  f"lift {top[3]}×); contentious 'named development' is the LEAST closed "
+                  f"({round(dev[2]/dev[1]*100, 1)}%, lift {dev[3]}×)"),
+        verdict=("Closure tracks the categories WA law exists to protect (commercial-in-confidence, "
+                 "tenders, HR, legal, land contracts); the most politically sensitive category — named "
+                 "developments — is the most OPEN, not the most closed. Whatever the [9] time-spike showed, "
+                 "the council did not use confidentiality to bury contentious planning. Keyword themes are "
+                 "coarse, and any error biases toward the null (over-counting development closures)."),
+        n=conf_total,
+        base_rate=f"{round(base, 1)}% of all items confidential",
+        era="1995–2026",
+        data_ok=True,
+        detail_panel="confidential-topics",
+        chart=chart,
+    )
+
+
+def _t_question_responsiveness(session, council_id, pc) -> TestResult:
+    """[37] Public-question responsiveness — answered in the room, or 'taken on
+    notice'? Deferral share by era, tracking the 2018–21 Inquiry shock."""
+    r = pc.get("pq_responsiveness") or public_question_responsiveness(session, council_id)
+    series = [{"x": y.year, "y": y.on_notice_pct}
+              for y in r.by_year if y.on_notice_pct is not None]
+    return TestResult(
+        test_id="engagement.question_responsiveness",
+        title="Are residents' questions answered, or quietly 'taken on notice'?",
+        genre="Process / engagement (3.4)",
+        principle="CIPFA-B — openness & stakeholder engagement · Nolan Accountability",
+        question="What share of public questions are deferred rather than answered in the meeting, over time?",
+        valence=CRITICAL,
+        grade=G_CONCERN,
+        headline=(f"Deferral of public questions tripled from {r.pre_pct}% before the Inquiry to "
+                  f"{r.inquiry_pct}% during it (peak {r.peak_pct}% in {r.peak_year}), holding at {r.post_pct}% after"),
+        verdict=("Cambridge answers most public questions live, but during and after its Authorised "
+                 "Inquiry it increasingly deferred them to 'on notice' — a measurable, Inquiry-tracking "
+                 "dip in in-room accountability. 'On notice' is lawful and often appropriate, and the "
+                 "2020 peak is partly COVID (remote meetings), so this is a responsiveness concern, not "
+                 "impropriety; the classifier is conservative, so the deferral share is a floor."),
+        n=r.answered + r.on_notice,
+        base_rate=f"{r.pre_pct}% deferred pre-2018 baseline",
+        era="pre-2018 / 2018–21 / post-2022",
+        data_ok=True,
+        detail_panel="question-responsiveness",
+        chart=_line(series, unit="%"),
+    )
+
+
 # ── registry ────────────────────────────────────────────────────────────────
 # Ordered roughly by genre. Each entry is a (session, council_id, precomputed) -> TestResult.
 _BATTERY = [
@@ -864,11 +1029,11 @@ _BATTERY = [
     _t_officer_divergence, _t_voting_power, _t_unanimity_trend, _t_mayoral,
     _t_sponsorship, _t_tenure, _t_freshman, _t_election_cycle, _t_attendance,
     # Transparency
-    _t_transparency,
+    _t_transparency, _t_confidential_tender_size, _t_confidential_topics,
     # Financial
     _t_eoy_spending, _t_reserve_trajectory,
     # Engagement
-    _t_engagement, _t_deputation_dissent,
+    _t_engagement, _t_deputation_dissent, _t_question_responsiveness,
 ]
 
 

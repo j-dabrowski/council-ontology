@@ -20,17 +20,22 @@ export function OverviewPanel() {
   const insights: Insight[] = [
     {
       n: 1,
-      title: "Conduct improved only while watched",
+      title: "The Inquiry is the hinge — and no improvement outlasted it",
       stat: `${d.recusal_inquiry_pct}% → ${d.recusal_post_pct}%`,
-      statLabel: "recusal on serious conflicts, during vs after the Inquiry",
+      statLabel: "recusal on serious conflicts, during vs after the Inquiry — the clearest reversion",
       body: (
-        <>Three unrelated panels spike at the 2018–21 Authorised Inquiry.
-        Confidential business jumped from {d.confidential_pre_pct}% to a{" "}
-        {d.confidential_peak_pct}% peak in {d.confidential_peak_year}; stepping out
+        <>Four independent panels pivot on the 2018–21 Authorised Inquiry. Stepping out
         of serious conflicts rose to {d.recusal_inquiry_pct}% under scrutiny then
-        collapsed to {d.recusal_post_pct}% (financial conflicts:{" "}
-        {d.financial_inquiry_pct}% → {d.financial_post_pct}%). Conduct improved only
-        while someone was watching.</>
+        collapsed to {d.recusal_post_pct}% afterwards (financial conflicts:{" "}
+        {d.financial_inquiry_pct}% → {d.financial_post_pct}%); confidential business
+        spiked from {d.confidential_pre_pct}% to {d.confidential_peak_pct}% in{" "}
+        {d.confidential_peak_year} then receded; and public questions "taken on notice"
+        rather than answered live tripled from {d.pq_pre_pct}% to {d.pq_inquiry_pct}%,
+        only partly easing to {d.pq_post_pct}% — still well above baseline. A systematic
+        durable-improvement sweep found <strong>no</strong> domain that tightened under
+        scrutiny and held: the one clear improvement (recusal) fully reverted, while the
+        defensive habits the Inquiry provoked partly stuck. Conduct changed while someone
+        was watching; nothing changed for keeps.</>
       ),
       principle: "Nolan · Accountability, Openness",
     },
@@ -128,9 +133,13 @@ export function OverviewPanel() {
       body: (
         <>Read the same data through the council's defender and a real
         good-governance record stands up. For two decades barely{" "}
-        {d.confidential_pre_pct}% of business was closed. The tender record passes{" "}
-        <strong>every</strong> integrity test thrown at it — no threshold-gaming,
-        no entrenched incumbent, no repeat-player edge. The chamber does <em>not</em>{" "}
+        {d.confidential_pre_pct}% of business was closed — and even where
+        confidentiality <em>is</em> used it tracks lawful grounds, not controversy:
+        the most contentious category, named developments, is the <em>least</em> closed
+        ({d.conf_dev_pct}% vs a {d.conf_base_pct}% base), so closure is not used to bury
+        difficult planning. The tender record passes <strong>every</strong> integrity
+        test thrown at it — no threshold-gaming, no entrenched incumbent, no
+        repeat-player edge, no decider-tied supplier. The chamber does <em>not</em>{" "}
         rubber-stamp its own Mayor — mayoral motions drew dissent{" "}
         {d.mayor_contest_pct}% of the time vs {d.other_contest_pct}% for backbench
         motions — and contested-vote power turns over at elections rather than

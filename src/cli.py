@@ -1708,7 +1708,7 @@ def cmd_publish(args) -> None:
         conflict_recusal_stats, tender_concentration,
         objection_dose_response, transparency_by_year, councillor_tenure,
         mayoral_agenda_setting, voting_power, recusal_compliance_trend,
-        sponsorship_network,
+        sponsorship_network, public_question_responsiveness,
     )
     from src.analysis.divergence import officer_divergence
 
@@ -2252,6 +2252,35 @@ def cmd_publish(args) -> None:
         ],
     })
 
+    # public-question responsiveness: are residents' questions answered in the
+    # meeting, or increasingly "taken on notice"? Tracks the 2018–21 Inquiry shock.
+    pqr = public_question_responsiveness(session, council_id)
+    _write("question-responsiveness", {
+        "inquiry_window": pqr.inquiry_window,
+        "total": pqr.total,
+        "answered": pqr.answered,
+        "on_notice": pqr.on_notice,
+        "blank": pqr.blank,
+        "answered_pct": pqr.answered_pct,
+        "on_notice_pct": pqr.on_notice_pct,
+        "pre_pct": pqr.pre_pct, "pre_n": pqr.pre_n,
+        "inquiry_pct": pqr.inquiry_pct, "inquiry_n": pqr.inquiry_n,
+        "post_pct": pqr.post_pct, "post_n": pqr.post_n,
+        "peak_year": pqr.peak_year, "peak_pct": pqr.peak_pct,
+        "by_era": [
+            {"era": e.era, "answered": e.answered, "on_notice": e.on_notice,
+             "blank": e.blank, "on_notice_pct": e.on_notice_pct,
+             "n_shown": e.n_shown,
+             "questions": [_dc(q) for q in e.questions]}
+            for e in pqr.by_era
+        ],
+        "by_year": [
+            {"year": y.year, "answered": y.answered, "on_notice": y.on_notice,
+             "n_nonblank": y.n_nonblank, "on_notice_pct": y.on_notice_pct}
+            for y in pqr.by_year
+        ],
+    })
+
     # sponsorship network: who BACKED whose motions in a near-unanimous chamber —
     # validated alliances, the 2000s old-guard network, and the structural arc.
     spon = sponsorship_network(session, council_id)
@@ -2283,6 +2312,26 @@ def cmd_publish(args) -> None:
             for r in spon.eras
         ],
     })
+
+    # [36] confidentiality-by-topic credit numbers for the overview: the confidential
+    # rate of the contentious "named development" theme vs the overall base rate.
+    from src.analysis.tests import _CONF_THEMES as _CT
+    from src.models import OtherItem as _OI36, DelegatedDecision as _DD36, Tender as _T36
+    import re as _re36
+    _descs36: list[tuple[str, bool]] = []
+    for _model36 in (_T36, _OI36, _DD36):
+        for _d36, _ic36 in (
+            session.query(_model36.description, _model36.is_confidential)
+            .join(_Meeting3, _model36.meeting_id == _Meeting3.id)
+            .filter(_Meeting3.council_id == council_id, _Meeting3.document_type == "minutes")
+        ):
+            _descs36.append(((_d36 or "").lower(), bool(_ic36)))
+    _tot36 = len(_descs36)
+    _conf36 = sum(1 for _d, _ic in _descs36 if _ic)
+    _conf_base_pct = round(_conf36 / _tot36 * 100, 1) if _tot36 else 0.0
+    _dev_pat = _re36.compile(dict(_CT)["Named development"])
+    _dev_items = [_ic for _d, _ic in _descs36 if _dev_pat.search(_d)]
+    _conf_dev_pct = round(sum(1 for _ic in _dev_items if _ic) / len(_dev_items) * 100, 1) if _dev_items else 0.0
 
     # overview: cross-cutting synthesis numbers for the landing panel, assembled
     # from the already-computed query objects so the figures stay authoritative.
@@ -2333,6 +2382,16 @@ def cmd_publish(args) -> None:
         # 8 — the record that earns credit (the promoter-lens balance)
         "mayor_contest_pct": mayoral.mayor_contest_pct,
         "other_contest_pct": mayoral.other_contest_pct,
+        # [36] confidentiality tracks lawful grounds, not contentious topics (credit)
+        "conf_dev_pct": _conf_dev_pct,
+        "conf_base_pct": _conf_base_pct,
+        # [37] public-question responsiveness — the 4th Inquiry-hinge panel;
+        #      partially reverted (still above baseline), unlike recusal's full collapse
+        "pq_pre_pct": pqr.pre_pct,
+        "pq_inquiry_pct": pqr.inquiry_pct,
+        "pq_post_pct": pqr.post_pct,
+        "pq_peak_pct": pqr.peak_pct,
+        "pq_peak_year": pqr.peak_year,
     })
 
     # scorecard: the standard, repeatable Test Battery — every test the corpus can
@@ -2343,6 +2402,7 @@ def cmd_publish(args) -> None:
         "power": power, "recusal_trend": rct, "conflict": recusal,
         "tenders": tenders, "transparency": trans, "tenure": tenure,
         "mayoral": mayoral, "sponsorship": spon, "dose": dose, "divergence": pairs,
+        "pq_responsiveness": pqr,
     })
     _write("scorecard", {
         "summary": battery_summary(battery),
@@ -2459,7 +2519,7 @@ def cmd_publish(args) -> None:
     (output_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
         "council": key,
-        "snapshots": ["overview", "scorecard", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "sponsorship", "councillors"],
+        "snapshots": ["overview", "scorecard", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "question-responsiveness", "sponsorship", "councillors"],
     }, indent=2))
 
     console.print(Panel(

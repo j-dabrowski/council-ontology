@@ -32,23 +32,33 @@ record, not the verdict on a rotten one.
 
 ---
 
-## 1. The 2018–21 Authorised Inquiry is the hinge the whole corpus turns on
+## 1. The 2018–21 Authorised Inquiry is the hinge — and no improvement outlasted it
 
-Three unrelated panels independently spike at the same event:
+Four independent panels pivot on the same event:
 
 - **Transparency** [9]: confidential share of business ran ~2.4% for two decades,
   then jumped to a **17.2% peak in 2020** — one in six decisions taken behind
-  closed doors during the Inquiry.
+  closed doors during the Inquiry — before receding.
 - **Recusal over time** [19]: stepping out of *serious* (must-leave) conflicts
   rose to **93% during the Inquiry, then collapsed to 44% afterwards**. Even on
   financial conflicts, where leaving the room is legally mandatory, it went
   **96% → 24%**.
+- **Public-question responsiveness** [37] *(new this session)*: questions "taken
+  on notice" rather than answered in the room **tripled from 4.3% before the
+  Inquiry to 15.7% during it** (peak 26.8% in 2020), then only **partially**
+  eased to **11.2%** — still well above the pre-2018 baseline. Unlike recusal's
+  full reversion, this worsening partly *stuck*.
 - **Mayoral turbulence** [11]: the contested-mayoralty era (2015–23) overlaps the
   Inquiry window.
 
-This is the City-of-Perth lesson made concrete and datable in Cambridge's own
-record: **external scrutiny improves conduct; the improvement does not outlast
-the scrutiny.** *(Nolan: Accountability, Openness.)*
+**The durable-improvement hunt [39]** asked the balancing question directly — did
+*any* behaviour tighten under scrutiny and *hold*? The honest answer is **no**:
+the one clear improvement (recusal) fully reverted; the defensive habits the
+Inquiry provoked (more closed sessions, more deferred questions) only partly
+receded. Nothing durably improved — which sharpens the [19] concern rather than
+crediting the council. This is the City-of-Perth lesson made concrete and datable
+in Cambridge's own record: **external scrutiny changes conduct; the change does
+not outlast the scrutiny.** *(Nolan: Accountability, Openness.)*
 
 ## 2. A consensus chamber that hides a real power hierarchy
 
@@ -123,9 +133,17 @@ yield a genuine good-governance record — graded as a **strength**, held to the
 same evidence bar as every concern above:
 
 - **Clean procurement** [2]: not just "not captured" but *positively clean* — the
-  tender record passes **three independent integrity tests** (no threshold-gaming
-  [26], no entrenched incumbent [15], no repeat-player advantage [20]), with
+  tender record passes **four independent integrity tests** (no threshold-gaming
+  [26], no entrenched incumbent [15], no repeat-player advantage [20], and no
+  decider-tied supplier [35] — the decider×supplier join comes back empty), with
   $100M spread across **227 named contractors**.
+- **Confidentiality tracks lawful grounds, not controversy** [36] *(new this
+  session)*: where business *is* closed, it concentrates on the categories WA law
+  exists to protect (commercial-in-confidence, tenders, HR, legal, land contracts);
+  the most politically contentious category — **named developments — is the *least*
+  closed at 1.6%** (against a 4.6% base). Closure is not used to bury difficult
+  planning decisions from residents. *(Nolan Openness upheld on the subject-matter
+  axis — the complement to [9]'s time-axis concern.)*
 - **No chair capture** [11]: the Mayor's own motions draw *more* dissent than
   backbench motions (≈22% vs 8%), not less — the chamber freely votes against its
   most powerful member. That is Accountability and Objectivity *upheld*.
@@ -158,11 +176,14 @@ red-flag-adjacent — the post-Inquiry collapse of recusal — and even that is
 lawful on its face. It survives precisely *because* it is the exception in an
 otherwise sound record.
 
-Documented honest nulls include: deputations → dissent, December tender
-"dumping", a freshman effect, big-dollar DA leniency, election-cycle
-positioning, "deferred = soft no", repeat-submitter and repeat-applicant
-advantage, dollar-weighted confidential spend, and procurement threshold-gaming.
-See `INVESTIGATIONS.md` for the full notebook.
+Documented honest nulls include: deputations → dissent, December *and*
+fiscal-year-end (30 June) tender "dumping" [29], a freshman effect, big-dollar DA
+leniency, election-cycle positioning, "deferred = soft no", repeat-submitter and
+repeat-applicant advantage, dollar-weighted confidential spend, procurement
+threshold-gaming, decider×supplier conflict [35], delegation creep [33],
+declaration-consistency and petition-efficacy (both data-linkage nulls, [34]/[38]),
+and spoken deputations flipping outcomes [40] (the [3] contentiousness confound
+explains the raw effect). See `INVESTIGATIONS.md` for the full notebook.
 
 ---
 

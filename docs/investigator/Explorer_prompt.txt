@@ -419,6 +419,29 @@ LOGGED CYCLES:
   test is now a primary strength filter, not just a courtesy. Up-weight: running
   every built finding through PROMOTER retroactively surfaced strengths AND made
   the surviving criticisms land harder, exactly as Principle 1 predicts.
+- Session 9 (2026-07-19/20) — first END-TO-END run under the staged protocol
+  (Stages 1–7), 12 hypotheses [29]–[40] (INVESTIGATIONS.md Phases L/M + Stage-7
+  synthesis). **EXPLORATION BENCHMARK CLEARED — all seven dimensions pass**
+  (breadth 5/5; Stage-1 survey PASS; structural-kill 1/12=8.3%; finding rate
+  5/12=41.7%; evidence completeness 8/10=80%; stage completion 7/7; framing balance
+  100%). Per EXPLORATION_PROTOCOL.md's terminal condition, this version (v2.3) is
+  ready to FREEZE and move to production use. What made it pass where Phase A–K
+  failed (2/7): the Stage-1 data-profile artefact (added to the protocol as v2.3)
+  caught every structurally-unsupportable hypothesis BEFORE Stage 4 — the two
+  pre-flagged kill candidates ([32] committee linkage, [37] public_question schema)
+  were schema-checked first, so [32] died in minutes and [37] SURVIVED to become the
+  session's one built flagship, keeping the kill rate at 8.3% (Phase A–K was 11%).
+  Which genre produced the most defensible finding: D-transparency — [37] question
+  responsiveness (the built flagship) and [30]/[36] (both battery-shipped), all on
+  previously-unmined tables. Which hypothesis looked hot and died: none to a NEW
+  confound — but [34]/[38] both died to the SAME free-text/linkage-key problem the
+  [23]/[17] caveats already name (item_reference not meeting-unique; no petition
+  outcome field), confirming those checklist items earn their place. Balance held:
+  the session added a critical flagship ([37]) AND a genuine Openness credit ([36]),
+  and [39]'s honest "nothing durably held" was NOT dressed up as a council credit —
+  it correctly sharpened [19]. New standing-checklist candidate surfaced: when a
+  raw effect looks strong (e.g. [40] deputations 11% vs 6.3%), control for item
+  contentiousness BEFORE claiming engagement efficacy — the [3] confound recurs.
 
 STANDING CONFOUND CHECKLIST (grow this):
 - Selection in planning: bigger/uglier proposals attract *both* more objectors
@@ -430,6 +453,25 @@ STANDING CONFOUND CHECKLIST (grow this):
   institutions. Stratify before concluding.
 - Survivorship in repeat-player analysis: frequent suppliers may win more
   because they only bid where they're strong — control for what's asked.
+- `community_submissions.position` is stored **lowercase**
+  (`object`/`support`/`neutral`) — the lone exception to the "enums are
+  UPPERCASE" rule (Reference 0.4). A query using `position='OBJECT'` silently
+  returns nothing. (Surfaced by the 2026-07-19 Stage 1 re-survey.)
+- **197 zero-vote placeholder councillor records** exist (junk `given_name`
+  values like "Not specified", "Moved", "Seconded", "CEO"; 91 of them appear as
+  a motion mover/seconder). Any *new* mover/seconder or agenda-setting
+  hypothesis must filter to real, voting councillors (join on `votes`, or use
+  the volume-controlled lift method from `second_net.py`) or these artefacts
+  contaminate the result. A naive `COUNT(*) GROUP BY moved_by_id` is not safe.
+- `planning_applications.estimated_value` is **90.8% NULL** (286/3,116; only
+  241 decided applications carry a value) — any DA-value hypothesis is capped
+  at n≈241 and must ship DIRECTIONAL-ONLY.
+- `tenders.awarded_to` is **45.6% NULL/blank** (383/840) — never treat a NULL
+  winner as "redacted"; it conflates genuine confidentiality with plain
+  extraction gaps. This is the exact trap that killed [25] (inflated 2020
+  confidential-tender share to 100% vs the defensible 62% on the
+  `is_confidential` flag alone). Measure confidentiality by the flag, not by
+  award-field missingness.
 
 ═══════════════════════════════════════════════════
 CHANGELOG

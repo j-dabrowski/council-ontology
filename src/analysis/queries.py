@@ -2600,6 +2600,218 @@ def recusal_compliance_trend(
 
 
 # ---------------------------------------------------------------------------
+# Public-question responsiveness — answered in the room, or "taken on notice"?
+#
+# Public question time is a statutory engagement channel (CIPFA-B). A question
+# ANSWERED in the meeting is live accountability; one "taken on notice" / deferred
+# is engagement without in-room response. This query classifies every public
+# question by whether its recorded response is an in-meeting answer vs a deferral,
+# and tracks the deferral share across the pre / Inquiry (2018–21) / post eras —
+# the same before/during/after shock lens as recusal [19] and transparency [9].
+# The classifier is conservative (a deferral phrased as an answer is counted
+# answered), so the on-notice share is a FLOOR. Severity: Governance concern —
+# "engagement without response is theatre" (Part 3.4), but "on notice" is lawful
+# and often appropriate, so it is a responsiveness signal, not impropriety.
+# ---------------------------------------------------------------------------
+import re as _re_pqr
+
+# phrases that mark a response as deferred rather than answered in the meeting
+_ON_NOTICE_RE = _re_pqr.compile(
+    r"taken on notice|on notice|no response|not answered|deferred|will be provided|"
+    r"to be provided|provided later|will respond|responded to in writing|"
+    r"respond(?:ed)?\s+in\s+writing|provide[d]?.{0,20}writing|answer(?:ed)?.{0,20}writing",
+    _re_pqr.IGNORECASE,
+)
+# best-effort "who fielded it" — a leading role/name in the recorded response
+_FIELDED_RE = _re_pqr.compile(
+    r"^\s*(Mayor|Deputy Mayor|Acting Mayor|CEO|Chief Executive[^,.;]*|"
+    r"(?:Acting\s+)?Director[^,.;]*|Manager[^,.;]*|Cr\.?\s+[A-Z][a-zA-Z'-]+|"
+    r"Presiding Member)",
+    _re_pqr.IGNORECASE,
+)
+
+
+def _pqr_classify(resp: str | None) -> str:
+    r = (resp or "").strip()
+    if not r:
+        return "blank"
+    if _ON_NOTICE_RE.search(r):
+        return "on_notice"
+    return "answered"
+
+
+@dataclass
+class PQResponseDetail:
+    """One public question behind an era cell, for the drill-down."""
+    date: str                 # YYYY-MM-DD
+    questioner: str | None
+    question: str | None      # the question summary (truncated)
+    status: str               # "Answered in meeting" / "Taken on notice"
+    fielded_by: str | None    # best-effort role/name that responded
+    quote: str | None         # verbatim minute text (extraction_evidence)
+
+
+@dataclass
+class PQEraStat:
+    era: str                  # pre / inquiry / post
+    answered: int
+    on_notice: int
+    blank: int
+    on_notice_pct: float      # of non-blank
+    n_shown: int = 0
+    questions: list[PQResponseDetail] = field(default_factory=list)
+
+
+@dataclass
+class PQYearPoint:
+    year: int
+    answered: int
+    on_notice: int
+    n_nonblank: int
+    on_notice_pct: float | None   # None when n too small to plot a rate
+
+
+@dataclass
+class PQResponsivenessStats:
+    inquiry_window: list[int]
+    total: int
+    answered: int
+    on_notice: int
+    blank: int
+    answered_pct: float
+    on_notice_pct: float          # of non-blank, overall
+    pre_pct: float
+    pre_n: int
+    inquiry_pct: float
+    inquiry_n: int
+    post_pct: float
+    post_n: int
+    peak_year: int | None
+    peak_pct: float | None
+    by_era: list[PQEraStat]
+    by_year: list[PQYearPoint]
+
+
+def public_question_responsiveness(
+    session: Session,
+    council_id: int,
+    min_year_n: int = 15,
+    cell_cap: int = 60,
+) -> PQResponsivenessStats:
+    """Are public questions answered in the meeting, or 'taken on notice'?"""
+    from sqlalchemy import text
+
+    rows = session.execute(text("""
+        SELECT pq.id AS pid,
+               CAST(strftime('%Y', mt.meeting_date) AS INTEGER) AS yr,
+               mt.meeting_date AS mdate,
+               pq.questioner_name AS questioner,
+               pq.question_summary AS question,
+               pq.response_summary AS response
+        FROM public_questions pq
+        JOIN meetings mt ON pq.meeting_id = mt.id
+        WHERE mt.council_id = :cid AND mt.document_type = 'minutes'
+    """), {"cid": council_id}).all()
+
+    # overall + era + year tallies
+    era_ct: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0])  # [answered, on_notice, blank]
+    yr_ct: dict[int, list[int]] = defaultdict(lambda: [0, 0])      # [answered, on_notice] (non-blank)
+    era_rows: dict[str, list[tuple]] = defaultdict(list)
+    tot = [0, 0, 0]
+
+    for pid, yr, mdate, questioner, question, response in rows:
+        cls = _pqr_classify(response)
+        era = _recusal_era(yr) if yr is not None else "pre"
+        if cls == "answered":
+            era_ct[era][0] += 1; tot[0] += 1; yr_ct[yr][0] += 1
+        elif cls == "on_notice":
+            era_ct[era][1] += 1; tot[1] += 1; yr_ct[yr][1] += 1
+        else:
+            era_ct[era][2] += 1; tot[2] += 1
+        # keep on-notice + a sample of answered rows for the drill-down
+        era_rows[era].append((pid, mdate, questioner, question, response, cls))
+
+    # representative minute quote per question shown in a drill-down
+    def _era_details(era: str) -> tuple[list[tuple], list[int]]:
+        # prioritise on-notice (the finding), newest first; then a few answered
+        on = [r for r in era_rows[era] if r[5] == "on_notice"]
+        ans = [r for r in era_rows[era] if r[5] == "answered"]
+        on.sort(key=lambda x: str(x[1] or ""), reverse=True)
+        ans.sort(key=lambda x: str(x[1] or ""), reverse=True)
+        chosen = (on + ans)[:cell_cap]
+        return chosen, [r[0] for r in chosen]
+
+    chosen_by_era = {e: _era_details(e) for e in ("pre", "inquiry", "post")}
+    all_pids = [pid for _era, (rows_, pids) in chosen_by_era.items() for pid in pids]
+    quote_by_q: dict[int, str] = {}
+    if all_pids:
+        for pid, q in (
+            session.query(ExtractionEvidence.entity_id, ExtractionEvidence.quote_text)
+            .filter(
+                ExtractionEvidence.entity_table == "public_questions",
+                ExtractionEvidence.entity_id.in_(all_pids),
+                ExtractionEvidence.quote_text.isnot(None),
+            )
+        ):
+            quote_by_q.setdefault(pid, q)
+
+    def _fielded(resp: str | None) -> str | None:
+        m = _FIELDED_RE.search((resp or "").strip())
+        return m.group(1).strip() if m else None
+
+    def _details(era: str) -> list[PQResponseDetail]:
+        chosen, _ = chosen_by_era[era]
+        out = []
+        for pid, mdate, questioner, question, response, cls in chosen:
+            out.append(PQResponseDetail(
+                date=str(mdate)[:10] if mdate else "",
+                questioner=(questioner or None),
+                question=((question or "")[:220] or None),
+                status="Taken on notice" if cls == "on_notice" else "Answered in meeting",
+                fielded_by=_fielded(response),
+                quote=quote_by_q.get(pid),
+            ))
+        return out
+
+    def _pct(a: int, o: int) -> float:
+        nb = a + o
+        return round(100 * o / nb, 1) if nb else 0.0
+
+    by_era = [
+        PQEraStat(
+            era=e, answered=era_ct[e][0], on_notice=era_ct[e][1], blank=era_ct[e][2],
+            on_notice_pct=_pct(era_ct[e][0], era_ct[e][1]),
+            n_shown=len(chosen_by_era[e][0]),
+            questions=_details(e),
+        )
+        for e in ("pre", "inquiry", "post")
+    ]
+
+    by_year = []
+    peak_year, peak_pct = None, None
+    for yr in sorted(yr_ct):
+        a, o = yr_ct[yr]
+        nb = a + o
+        pct = round(100 * o / nb, 1) if nb >= min_year_n else None
+        by_year.append(PQYearPoint(year=yr, answered=a, on_notice=o, n_nonblank=nb, on_notice_pct=pct))
+        if pct is not None and (peak_pct is None or pct > peak_pct):
+            peak_pct, peak_year = pct, yr
+
+    ev = {e.era: e for e in by_era}
+    return PQResponsivenessStats(
+        inquiry_window=[2018, 2021],
+        total=len(rows), answered=tot[0], on_notice=tot[1], blank=tot[2],
+        answered_pct=round(100 * tot[0] / len(rows), 1) if rows else 0.0,
+        on_notice_pct=_pct(tot[0], tot[1]),
+        pre_pct=ev["pre"].on_notice_pct, pre_n=ev["pre"].answered + ev["pre"].on_notice,
+        inquiry_pct=ev["inquiry"].on_notice_pct, inquiry_n=ev["inquiry"].answered + ev["inquiry"].on_notice,
+        post_pct=ev["post"].on_notice_pct, post_n=ev["post"].answered + ev["post"].on_notice,
+        peak_year=peak_year, peak_pct=peak_pct,
+        by_era=by_era, by_year=by_year,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Sponsorship network — who BACKED whose motions in a near-unanimous chamber?
 #
 # In a chamber that votes ~90%+ unanimously, the recorded VOTE cannot separate

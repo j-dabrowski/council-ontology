@@ -9,6 +9,7 @@ import { TransparencyTrendPanel } from "../components/TransparencyTrendPanel";
 import { TenurePanel } from "../components/TenurePanel";
 import { MayoralAgendaPanel } from "../components/MayoralAgendaPanel";
 import { PowerPanel } from "../components/PowerPanel";
+import { QuestionResponsivenessPanel } from "../components/QuestionResponsivenessPanel";
 import { SponsorshipNetworkPanel } from "../components/SponsorshipNetworkPanel";
 import { BatteryTestPanel } from "../components/BatteryTestPanel";
 
@@ -54,6 +55,9 @@ export function AnalysisPage() {
           <h3 className="analysis-group-heading">Transparency &amp; Engagement</h3>
         </section>
         <section className="grid-full" id="panel-transparency"><TransparencyTrendPanel /></section>
+        {Test("confidential-tender-size", "transparency.confidential_tender_size")}
+        {Test("confidential-topics", "transparency.confidential_topics")}
+        <section className="grid-full" id="panel-question-responsiveness"><QuestionResponsivenessPanel /></section>
         <section className="grid-full" id="panel-engagement"><EngagementChart /></section>
         {Test("deputations", "engagement.deputation_dissent")}
         <section className="grid-full" id="panel-dose"><ObjectionDosePanel /></section>

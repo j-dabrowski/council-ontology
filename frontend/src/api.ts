@@ -399,6 +399,53 @@ export interface RecusalData {
   drivers: RecusalDriver[];
 }
 
+export interface PQResponseDetail {
+  date: string;
+  questioner: string | null;
+  question: string | null;
+  status: string;           // "Answered in meeting" / "Taken on notice"
+  fielded_by: string | null;
+  quote: string | null;
+}
+
+export interface PQEraStat {
+  era: string;              // pre | inquiry | post
+  answered: number;
+  on_notice: number;
+  blank: number;
+  on_notice_pct: number;
+  n_shown: number;
+  questions: PQResponseDetail[];
+}
+
+export interface PQYearPoint {
+  year: number;
+  answered: number;
+  on_notice: number;
+  n_nonblank: number;
+  on_notice_pct: number | null;
+}
+
+export interface QuestionResponsivenessData {
+  inquiry_window: number[];
+  total: number;
+  answered: number;
+  on_notice: number;
+  blank: number;
+  answered_pct: number;
+  on_notice_pct: number;
+  pre_pct: number;
+  pre_n: number;
+  inquiry_pct: number;
+  inquiry_n: number;
+  post_pct: number;
+  post_n: number;
+  peak_year: number | null;
+  peak_pct: number | null;
+  by_era: PQEraStat[];
+  by_year: PQYearPoint[];
+}
+
 export interface OverviewData {
   span: string;
   n_minutes: number;
@@ -434,6 +481,13 @@ export interface OverviewData {
   tender_top10_share_pct: number;
   mayor_contest_pct: number;
   other_contest_pct: number;
+  conf_dev_pct: number;
+  conf_base_pct: number;
+  pq_pre_pct: number;
+  pq_inquiry_pct: number;
+  pq_post_pct: number;
+  pq_peak_pct: number | null;
+  pq_peak_year: number | null;
 }
 
 export interface SponsorEdge {
@@ -565,6 +619,7 @@ export const api = {
   mayoral:    () => getSnapshot<MayoralData>("mayoral"),
   power:      () => getSnapshot<PowerData>("power"),
   recusal:    () => getSnapshot<RecusalData>("recusal"),
+  questionResponsiveness: () => getSnapshot<QuestionResponsivenessData>("question-responsiveness"),
   sponsorship:  () => getSnapshot<SponsorshipData>("sponsorship"),
   overview:     () => getSnapshot<OverviewData>("overview"),
   councillors:  () => getSnapshot<CouncillorsData>("councillors"),
