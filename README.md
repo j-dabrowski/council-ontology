@@ -2,7 +2,7 @@
 
 A research tool for modelling local council politics in Perth, WA. It scrapes public meeting minutes PDFs, uses Claude to extract structured data into a SQLite database, and runs a **standard battery of governance tests** over it — each result flagged supportive, neutral, or critical and anchored to a recognised criterion — surfaced through an interactive dashboard.
 
-**Current target:** City of Cambridge (Town Council), 537 PDFs covering 1995–2026.
+**Current target:** City of Cambridge (Town Council), 580 documents covering 1995–2026.
 
 ---
 
@@ -14,25 +14,43 @@ The pipeline follows a recursive refinement strategy: cheap broad passes feed ex
 council minutes site
         │
         ▼
-   council scrape           ← discovers meeting pages, downloads PDFs
+   council scrape           ← Discovery: discovers meeting pages, downloads PDFs
+   council scraper-audit    ← cadence audit: flags any year short of the council's
+                              expected meeting rhythm (Cambridge: 2022–2023)
+   council wayback-fill     ← recovers flagged gaps from Wayback Machine CDX before
+                              declaring them unrecoverable
         │
         ▼
-   council census           ← Level 0: text extraction + keyword scan (free, no LLM)
+   council census           ← Census (Level 0): text extraction + keyword scan
+                              (free, no LLM — these counts are never shown to the
+                              model, so they stay an independent check)
         │
         ▼
-   council inventory        ← Level 1: one cheap Haiku call per doc — what is this document?
+   council inventory        ← Inventory (Level 1): one cheap Haiku call per doc —
+                              what is this document, and what does it contain?
         │
         ▼
-   council typology         ← Level 1→2: corpus typology for schema review
+   council typology         ← Schema prep (Level 1→2): corpus typology review;
+                              other_content_rate is the "what did the schema miss"
+                              signal that drives the Inventory convergence loop
         │
         ▼
    council sample           ← Level 3a: stratified sample selection
    council extract-sample   ← Level 3b: extract sample with Claude
-   council validate-sample  ← Level 3c: validate quotes, coverage, keyword gaps
+   council validate-sample  ← Validation, sampled: quote completeness, paraphrase
+                              rate, coverage, inventory agreement, keyword gaps —
+                              the gate the Extraction convergence loop runs against
+                              before the full corpus is trusted at scale
         │
         ▼
-   council extract          ← Level 5: full extraction across all PDFs
-   council validate         ← Level 4: per-doc confidence scoring
+   council extract          ← Extraction (Level 5): full extraction across all
+                              PDFs; every fact forced to carry a source quote
+   council validate         ← Validation, full corpus (Level 4): per-doc confidence
+                              scoring, plus entity density and schema completeness
+        │
+        ▼
+   council audit            ← Audit (Level 6): human marks a random sample against
+                              the source PDFs — ground-truths the metrics above
         │
         ▼
    council analyse          ← query helpers for cross-meeting analysis
@@ -144,6 +162,24 @@ Download PDFs only — no Claude calls. Writes `data/raw/cambridge/manifest.json
 ```bash
 council scrape cambridge
 council scrape cambridge --since-year 2024
+```
+
+#### `council scraper-audit cambridge`
+Cadence audit for the scraped corpus. A missing PDF is invisible from inside the corpus, so the expectation has to come from outside it: Cambridge is required to hold at least one ordinary meeting a month (January excepted), and this checks each scraped year against that floor — printing a per-year completeness table and flagging any year with too few meeting dates or too long a gap between them. It currently flags 2022 and 2023 (four to five consecutive months missing), traced to a council website migration in mid-2022 that neither the new site nor the Wayback Machine cover. `clean` mode re-classifies or drops non-meeting noise from the manifest.
+
+```bash
+council scraper-audit cambridge              # report: per-year completeness + gap guidance
+council scraper-audit cambridge clean         # dry run: what would be reclassified/removed
+council scraper-audit cambridge clean --apply
+```
+
+#### `council wayback-fill cambridge <years...>`
+Queries the Wayback Machine's CDX API for archived copies of minutes in years/months the live site no longer serves — the second thing to try once `scraper-audit` flags a gap, before declaring it unrecoverable.
+
+```bash
+council wayback-fill cambridge 2022 2023
+council wayback-fill cambridge 2022 --months 1-4
+council wayback-fill cambridge 2022 --months 1-4 --download   # fetch + update manifest
 ```
 
 ---
@@ -528,17 +564,17 @@ data/
 
 ## Multi-level extraction pipeline
 
-| Level | What | Cost | Status |
-|-------|------|------|--------|
-| 0 | Census: text extraction + keyword scan across all PDFs | Free | **Done** |
-| 1 | Cheap LLM inventory: one small Haiku call per document | $4.83 actual | **Done** |
-| 2 | Schema and prompt revision from inventory typology | Free | **Done** |
-| 3a | Stratified sample selection (18 docs) | Free | **Done** |
-| 3b | Sample extraction | ~$0.50 | **Done** |
-| 3c | Sample validation — all metrics within target | Free | **Done** |
-| 4 | Per-document confidence scoring (`council validate`) | Free | **Done** |
-| 5 | Full extraction (`council extract`) | ~$70 actual | **Done** (580 docs; full corpus complete 2026-06-22) |
-| 6 | Human audit on random sample | Free | **Tooling done**; human review pending |
+| Level | Stage | What | Cost | Status |
+|-------|-------|------|------|--------|
+| 0 | Census | Text extraction + keyword scan across all PDFs | Free | **Done** |
+| 1 | Inventory | Cheap LLM inventory: one small Haiku call per document | $4.83 actual | **Done** |
+| 2 | Schema | Schema and prompt revision from inventory typology | Free | **Done** |
+| 3a | Extraction (sample) | Stratified sample selection (18 docs) | Free | **Done** |
+| 3b | Extraction (sample) | Sample extraction | ~$0.50 | **Done** |
+| 3c | Validation (sample) | Sample validation — all metrics within target; gates the extraction convergence loop | Free | **Done** |
+| 4 | Validation (full corpus) | Per-document confidence scoring (`council validate`) | Free | **Done** |
+| 5 | Extraction (full corpus) | Full extraction (`council extract`) | ~$70 actual | **Done** (580 docs; full corpus complete 2026-06-22) |
+| 6 | Audit | Human audit on random sample, ground-truthing the validation metrics | Free | **Tooling done**; human review pending |
 
 See `docs/pipeline/PIPELINE.md` for the detailed plan, build log, and dependency graph.
 

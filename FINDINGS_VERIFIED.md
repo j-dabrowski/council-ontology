@@ -121,6 +121,39 @@ Method (from the code, for accurate framing in prose): finds all meeting dates t
 
 **The finding**: the ~97%/~3% split is robust across every matching strictness tried. **The claimed n=133 does not reproduce under any threshold** — real count today is 187 (strict exact match) to 203 (function default). This is very likely just corpus growth since 133 was last computed (more agenda/minutes pairs have been extracted since). Use **203** (the function's own default behavior) as the reported n, or 187 if described as "exact item-number matches only" — either is defensible and both are verified live; 133 is not.
 
+## 4a. The two "98%" figures, and the real in-sample/out-of-sample story
+
+Checked 2026-07-19, prompted by a hiring-post draft using "98% in-sample / 84% out-of-sample" language.
+
+**They are different aggregations, both full-corpus by default:**
+
+| Figure | What it is | Method |
+|---|---|---|
+| **98.15%** | Entity-level pooled aggregate: of all 44,929 extracted entities across the entire 30-year corpus, 44,099 have ≥1 quote. Counts every entity once. | `SELECT COUNT(DISTINCT entity_id) FROM extraction_evidence WHERE entity_table=<t>` summed across all 13 tables ÷ total row count. Same number as section 2. |
+| **83.66%** (~84%) | Per-document average of the validation script's `quote_completeness.completeness_rate`, averaged across all 580 documents equally (every doc weighted the same regardless of size). This is a **blend** of tuned and untuned documents — see below. | Deduped `data/validation/*.json`, mean of `quote_completeness.completeness_rate`, n=580. Same as section 3. |
+| **98.07%** | Same per-document metric, restricted to the 87 documents dated 2024-01-01+. | Same field, filtered `meeting_date >= '2024-01-01'`, n=87. |
+
+**Verified extraction chronology (from `meetings.extracted_at`), confirming a real train/apply split:**
+
+| Batch | extracted_at | n | What it was |
+|---|---|---|---|
+| Calibration sample | 2026-05-31 | 12 of 18 | The Level 3a stratified sample (`data/cambridge_sample.json`) — cross-era, includes 3 docs from 1995/1997 — used to confirm the prompt's metrics were broadly acceptable before scaling. Not an iterative tuning loop. |
+| **2024+ full extraction** | 2026-06-09 to 06-19 | 87 | Exactly the 2024+ subset. This is where the extraction pipeline was actually iterated and refined. |
+| **Pre-2024 bulk pass** | 2026-06-22 | 340 | The 1990s–2023 corpus, extracted in a single day, after the 2024+ work concluded, with no further per-era tuning. |
+| (untimestamped) | NULL | 141 | Older rows without an `extracted_at` value (92 of these do have motions — likely an early/experimental extraction pass that predates timestamp tracking, not a sign of missing extraction). Not otherwise investigated. |
+
+**Recomputed with the actual tuned/untuned split** (not the calibration-sample framing I used in an earlier pass at this file, which understated the effect):
+
+- **Pre-2024, the true held-out set (n=493):** avg completeness **81.12%**
+- **2024+, the set the pipeline was iterated against (n=87):** avg completeness **98.07%**
+- **Full corpus blended (n=580):** **83.66%** — note this blends the two groups; it is *not* a clean "out-of-sample" number, since it includes the 87 well-performing tuned documents mixed in with the 493 untuned ones.
+
+**Verdict: an in-sample/out-of-sample framing is legitimate and verifiable** — "98% on the set the pipeline was iterated against, 81% on the corpus extracted afterward with the frozen prompt and no further tuning" is a defensible, checked claim. An earlier pass at this file wrongly rejected this framing based on the 18-doc calibration sample alone, without checking `extracted_at`; that was an error, corrected here.
+
+**One remaining caveat to keep the claim airtight**: the 18-doc calibration sample does include three 1990s/1997 documents (used for a pre-scaling sanity check, not iterative tuning). So say "iteratively refined against the 2024+ corpus, then applied unmodified to the remaining 493 documents" rather than "formatting it never saw" — the prompt did see a handful of 1990s documents during calibration, just not during the actual improvement loop.
+
+**Recommended article/post language**: "98 percent on the 2024+ documents the pipeline was iteratively tuned against; 81 percent on the 493 older documents extracted afterward with that same frozen prompt and no further per-era tuning. The blended full-corpus figure, weighting every document equally, is 84 percent. Separately, counting every extracted entity once across the whole 30-year corpus rather than averaging per document, 98 percent of all ~45,000 entities carry a quote — a different statistic from either of the above, not a third contradiction."
+
 ## 5. Things NOT independently verifiable / not checked
 
 - No claim in the original list was left unverifiable — every figure got either a confirmed match, a corrected value, or a clearly flagged subset mismatch.
