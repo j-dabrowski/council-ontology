@@ -62,6 +62,43 @@ council minutes site
 
 ---
 
+## Results
+
+Full corpus: **580 documents** (506 minutes / 66 agendas / 4 addenda / 4 unknown), City
+of Cambridge, 1995-04-18 to 2026-06-09 — **14,013 motions**, **16,249 votes**,
+**400 councillors**.
+
+**Provenance.** Of the 44,929 entities extracted across the corpus, **98.15%** carry
+at least one verbatim source quote pinned to a character offset in the original PDF
+(`extraction_evidence`, 71,486 quote rows). The weakest entity type is motions, at
+94.8% — every other entity type clears 98.8%.
+
+**Validation** (`council validate`, per-doc reports at `data/validation/*.json`,
+corpus summary at `data/validation/summary.json`):
+
+| | Full corpus (n=580) | 2024+ subset (n=87, tuned) |
+|---|---|---|
+| Quote completeness | 83.7% | 98.1% |
+| Paraphrase rate | ~4–5% | 6.2% |
+| PASS / REVIEW / FAIL | 256 / 183 / 141 | 57 / 30 / 0 |
+
+The extraction prompt was iteratively tuned against the 87 documents dated 2024
+onward (its convergence loop, see `council validate-sample` below), then frozen and
+run unmodified across the remaining 493 documents spanning 1995–2023 — quote
+completeness on that untuned set is **81.1%**. The 83.7% full-corpus figure blends
+both sets, weighting every document equally.
+
+**Officer divergence** (`council analyse cambridge divergence`,
+`src/analysis/divergence.py`): matching agenda recommendations to minutes outcomes
+across 203 paired motions, council followed the officer's recommendation **97.0%**
+of the time.
+
+Reproduce these: `council status` (corpus scale), `data/validation/summary.json`
+(validation metrics, or re-run `council validate cambridge`), `council analyse
+cambridge divergence` (officer agreement).
+
+---
+
 ## Three-layer ontology
 
 The database schema (`src/models/ontology.py`) is organised into three layers:
