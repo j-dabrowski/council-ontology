@@ -621,7 +621,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
             print(f"  [{c['id']}]  {_label(c)}  —  {reason}")
 
     if not apply:
-        print(f"\n[DRY RUN]  Pass --apply to write changes.\n")
+        print("\n[DRY RUN]  Pass --apply to write changes.\n")
         return
 
     # -------------------------------------------------------------------
@@ -637,7 +637,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
         for table, col in FK_COLUMNS:
             if table == "votes" and col == "councillor_id":
                 # Delete duplicate votes before remapping to avoid UNIQUE(motion_id, councillor_id)
-                conn.execute(f"""
+                conn.execute("""
                     DELETE FROM votes
                     WHERE councillor_id = ?
                       AND motion_id IN (
@@ -665,7 +665,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
             tgt_id = existing[0]
             for table, col in FK_COLUMNS:
                 if table == "votes" and col == "councillor_id":
-                    conn.execute(f"""
+                    conn.execute("""
                         DELETE FROM votes
                         WHERE councillor_id = ?
                           AND motion_id IN (SELECT motion_id FROM votes WHERE councillor_id = ?)

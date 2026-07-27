@@ -512,7 +512,7 @@ def main() -> None:
     parser.add_argument("--quiet", "-q", action="store_true",
                         help="Suppress per-document output and summary")
     parser.add_argument("--workers", type=int, default=None, metavar="N",
-                        help=f"Parallel worker processes (default: min(8, cpu_count))")
+                        help="Parallel worker processes (default: min(8, cpu_count))")
     args = parser.parse_args()
     run(args)
 

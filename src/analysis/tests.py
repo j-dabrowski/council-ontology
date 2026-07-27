@@ -29,7 +29,6 @@ from sqlalchemy.orm import Session
 
 from src.models import (
     ApplicationStatus,
-    BudgetItem,
     Deputation,
     Meeting,
     Motion,
@@ -657,7 +656,6 @@ def _t_freshman(session, council_id, pc) -> TestResult:
     lr = round(late_diss / late_n * 100, 1) if late_n else None
     # Pooled early-vs-late is confounded by cohort era (freshmen cluster in the
     # turbulent modern years); the rigorous per-councillor test was a clean null.
-    flat = er is not None and lr is not None and abs(er - lr) <= 7
     return TestResult(
         test_id="governance.freshman_effect",
         title="Are new councillors bolder or tamer than veterans?",

@@ -133,7 +133,6 @@ def run(council_slug: str, gap_years: int = 2) -> None:
                     ).fetchone()
 
                     period_num = idx // 2 + 1
-                    total_gap = splits[idx // 2][1] - splits[idx // 2][0] if idx // 2 < len(splits) else 0
                     if idx // 2 < len(splits):
                         gap_note = (
                             f"POSSIBLE GAP AFTER THIS PERIOD: {splits[idx // 2][0]}→"
@@ -161,7 +160,7 @@ def run(council_slug: str, gap_years: int = 2) -> None:
             "person (re-elected) or different people with the same surname."
         )
 
-    print(f"\nNext steps:")
+    print("\nNext steps:")
     print(f"  1. Edit {out_path} — fill in ward, role; correct dates to actual election dates")
     print(f"  2. council import-terms {council_slug} {out_path} --apply")
     print(f"  3. council dedup {council_slug} --use-terms")

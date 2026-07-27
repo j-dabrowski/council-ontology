@@ -125,7 +125,7 @@ export function ObjectionDosePanel() {
           <Tooltip content={<CustomTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <Bar dataKey="refusal_pct" name="Refusal %" radius={[4, 4, 0, 0]}
             style={{ cursor: "pointer" }}
-            onClick={(entry) => handleBarClick(entry as ObjectionDoseBucket)}>
+            onClick={(entry) => handleBarClick(entry as unknown as ObjectionDoseBucket)}>
             {chartData.map((entry, i) => (
               <Cell key={i} fill={doseColor(entry.label)} />
             ))}

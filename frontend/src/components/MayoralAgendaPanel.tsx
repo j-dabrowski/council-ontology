@@ -110,7 +110,7 @@ export function MayoralAgendaPanel() {
           <Tooltip content={<MayorTooltip />} cursor={{ fill: "var(--cursor)" }} />
           <Bar dataKey="contest_pct" name="Contested %" radius={[0, 3, 3, 0]}
             style={{ cursor: "pointer" }}
-            onClick={(entry) => handleBarClick(entry as MayorContest)}>
+            onClick={(entry) => handleBarClick(entry as unknown as MayorContest)}>
             {chartData.map((entry, i) => (
               <Cell key={i} fill={entry.contest_pct >= data.mayor_contest_pct ? "#f87171" : "#fb923c"} />
             ))}

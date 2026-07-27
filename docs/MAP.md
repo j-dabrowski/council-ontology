@@ -14,6 +14,12 @@ feed each other**. Read this first in a fresh session, then open the track you'r
 
 ---
 
+## Cross-cutting infra
+
+Not owned by one track — gates all of them:
+- `TESTING.md` — testing & CI: what's covered, ruff config rationale, why LLM
+  calls stay out of the required CI path. Companion to `.github/workflows/ci.yml`.
+
 ## The four tracks
 
 ### 🛠 Pipeline — *mostly frozen*
@@ -126,3 +132,4 @@ The non-obvious edges, spelled out:
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |
 | weighing risk, funding, or direction | `strategy/PRIVATE_ASSESSMENT.md` |
 | onboarding / public/dev reference | root `README.md` |
+| adding a test, changing ruff config, editing CI | `TESTING.md` |

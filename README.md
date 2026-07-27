@@ -144,6 +144,24 @@ ANTHROPIC_API_KEY=sk-ant-...
 
 ---
 
+## Testing & CI
+
+```bash
+pip install -e ".[dev]"
+ruff check src/ scripts/ api/ tests/
+pytest tests/ -q
+```
+
+`tests/` covers the extraction/storage layer and the eval framework's
+`PASS`/`REVIEW`/`FAIL` gate (`src/validation/core.py`) — all pure-function
+or in-memory-DB tests, no API key or network needed. `.github/workflows/ci.yml`
+runs this plus a frontend job (`npm ci && npm run lint && npm run build`) on
+every push to `main` and every PR. See `docs/TESTING.md` for what's covered,
+the ruff rule-selection rationale, and why LLM calls are deliberately kept
+out of the required CI path.
+
+---
+
 ## Dashboard
 
 A React/Vite frontend visualises the analysis. It reads **static JSON snapshots**
@@ -638,6 +656,7 @@ organised into four tracks under `docs/`:
 | Track | Docs | What it covers |
 |-------|------|----------------|
 | **root** | `README.md`, `docs/MAP.md` | This file (pipeline, schema, CLI, dashboard, layout) + the doc map |
+| | `docs/TESTING.md` | Testing & CI: what's covered, ruff config rationale, why LLM calls stay out of required CI |
 | **pipeline** | `docs/pipeline/PIPELINE.md` | Extraction pipeline: plan, build log, dependency graph, analysis-query design (merged) |
 | | `docs/pipeline/DATA_ENRICHMENT.md` | Forward-looking re-extraction / external-join backlog (populated by the investigator) |
 | **investigator** | `docs/investigator/Investigator_prompt.txt` | The runtime investigation prompt: criteria (Nolan / CIPFA / Best Value), standard of proof, valences, two-tier bar |

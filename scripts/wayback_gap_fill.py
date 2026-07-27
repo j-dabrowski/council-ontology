@@ -22,10 +22,8 @@ Usage:
 import argparse
 import json
 import logging
-import re
 import sys
 import time
-from collections import defaultdict
 from datetime import date
 from pathlib import Path
 
@@ -36,11 +34,9 @@ sys.path.insert(0, str(ROOT))
 
 from src.scraper.base import classify_document_type, is_meeting_document
 from src.scraper.cambridge import (
-    _MONTH_MAP, _parse_slug, _parse_pdf_url,
-    _extract_minutes_pdf_url, _infer_type_from_pdf_url,
-    BASE_URL, AGENDAS_PATH_PREFIX,
+    _parse_slug, _parse_pdf_url,
+    _extract_minutes_pdf_url, BASE_URL,
 )
-from src.scraper.base import BaseCouncilScraper
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
@@ -189,7 +185,6 @@ def search_pdfs(client: httpx.Client, year: int, months: list[int]) -> list[tupl
         )
         logger.info("CDX pdfs (%s): %d entries for %d", asset_pattern.split("/")[-3], len(pdfs), year)
         for url in pdfs:
-            fname = url.rstrip("/").rsplit("/", 1)[-1].lower()
             if not is_meeting_document(url):
                 continue
             parsed = _parse_pdf_url(url)

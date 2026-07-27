@@ -25,7 +25,7 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
           <YAxis unit={unit} tick={{ fontSize: 12 }} width={44} />
           <Tooltip
             contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
-            formatter={(v: number) => [`${v}${unit}`, ""]}
+            formatter={(v?: number | string | readonly (number | string)[]) => [`${v ?? 0}${unit}`, ""]}
           />
           <Line type="monotone" dataKey="y" stroke={base} strokeWidth={2.5}
             dot={{ r: 2.5, fill: base }} activeDot={{ r: 5 }} />
@@ -46,7 +46,7 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
         <Tooltip
           cursor={{ fill: "var(--cursor)" }}
           contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
-          formatter={(v: number) => [`${v}${unit}`, ""]}
+          formatter={(v?: number | string | readonly (number | string)[]) => [`${v ?? 0}${unit}`, ""]}
         />
         {refAfter && (
           <ReferenceLine
@@ -61,7 +61,7 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
             <Cell key={i} fill={b.highlight ? HIGHLIGHT_FILL : base} />
           ))}
           <LabelList dataKey="value" position="right"
-            formatter={(v: number) => `${v}${unit}`} style={{ fill: "#94a3b8", fontSize: 11 }} />
+            formatter={(v: string | number | boolean | null | undefined) => `${v ?? 0}${unit}`} style={{ fill: "#94a3b8", fontSize: 11 }} />
         </Bar>
       </BarChart>
     </ResponsiveContainer>

@@ -503,7 +503,11 @@ def run(
 
     if list_only:
         t = Table(title="Candidates")
-        t.add_column("Date"); t.add_column("Type"); t.add_column("Decade"); t.add_column("Size"); t.add_column("Motions")
+        t.add_column("Date")
+        t.add_column("Type")
+        t.add_column("Decade")
+        t.add_column("Size")
+        t.add_column("Motions")
         for d in candidates:
             t.add_row(d["meeting_date"], d.get("meeting_type", ""), d.get("decade", "?"), d.get("size_bucket", "?"), str(d["motion_count"]))
         console.print(t)

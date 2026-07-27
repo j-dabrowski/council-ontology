@@ -78,7 +78,7 @@ def run(
     console.print(
         f"[dim]{len(chunk_files)} chunk files → {len(by_stem)} documents"
         + (f" ({unreadable} unreadable)" if unreadable else "")
-        + f"[/dim]"
+        + "[/dim]"
     )
 
     from src.extraction.extractor import (

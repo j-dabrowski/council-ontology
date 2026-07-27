@@ -16,7 +16,7 @@ from datetime import date
 
 from rich.console import Console
 from rich.table import Table
-from sqlalchemy import select, distinct
+from sqlalchemy import select
 
 console = Console()
 

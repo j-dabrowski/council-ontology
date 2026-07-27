@@ -122,7 +122,6 @@ def councillor_activity_ranges(
 
     min_votes=10 suppresses AGM proxy voters (1-7 votes, single meeting).
     """
-    from sqlalchemy import extract as sql_extract
 
     # Base vote query
     base = (
@@ -271,7 +270,7 @@ def contestation_by_year(
     to_year: int | None = None,
 ) -> list[YearContestationStats]:
     """Contestation rate (carried motions with ≥1 against) per year, minutes only."""
-    from sqlalchemy import case, extract as sql_extract
+    from sqlalchemy import case
 
     q = (
         session.query(
@@ -688,7 +687,6 @@ def planning_outcomes(
     limit: int = 10,
 ) -> PlanningOutcomes:
     """Planning application outcome breakdown + top sites and applicants."""
-    from sqlalchemy import case
     from src.models.ontology import ApplicationStatus
 
     q = (
@@ -2723,11 +2721,16 @@ def public_question_responsiveness(
         cls = _pqr_classify(response)
         era = _recusal_era(yr) if yr is not None else "pre"
         if cls == "answered":
-            era_ct[era][0] += 1; tot[0] += 1; yr_ct[yr][0] += 1
+            era_ct[era][0] += 1
+            tot[0] += 1
+            yr_ct[yr][0] += 1
         elif cls == "on_notice":
-            era_ct[era][1] += 1; tot[1] += 1; yr_ct[yr][1] += 1
+            era_ct[era][1] += 1
+            tot[1] += 1
+            yr_ct[yr][1] += 1
         else:
-            era_ct[era][2] += 1; tot[2] += 1
+            era_ct[era][2] += 1
+            tot[2] += 1
         # keep on-notice + a sample of answered rows for the drill-down
         era_rows[era].append((pid, mdate, questioner, question, response, cls))
 

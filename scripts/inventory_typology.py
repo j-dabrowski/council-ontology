@@ -169,7 +169,7 @@ def _section_other_content(ok: list[dict], brief: bool = False) -> list[str]:
 
     sample_n = 2 if brief else None  # None = show all
     lines.append(
-        f"  Sample content by meeting type (2 per type — see full report for all):"
+        "  Sample content by meeting type (2 per type — see full report for all):"
         if brief else
         "  Content grouped by meeting type:"
     )
@@ -694,13 +694,13 @@ def run(args) -> None:
             print("     and Pydantic model. You don't need to do anything else until it notifies you.")
             print(f"  2. Test on a sample:  council inventory cambridge --force --limit {limit or 20}")
             print(f"  3. Check the sample:  council typology cambridge --limit {limit or 20}")
-            print(f"  4. If looking good, full re-run:  council inventory cambridge --force")
-            print(f"  5. Check full corpus: council typology cambridge")
+            print("  4. If looking good, full re-run:  council inventory cambridge --force")
+            print("  5. Check full corpus: council typology cambridge")
         elif limit:
             print("Your next steps:")
-            print(f"  1. Full re-run:        council inventory cambridge --force")
-            print(f"  2. Check full corpus:  council typology cambridge")
-            print(f"     (confirm rate holds across all docs before moving to Level 2)")
+            print("  1. Full re-run:        council inventory cambridge --force")
+            print("  2. Check full corpus:  council typology cambridge")
+            print("     (confirm rate holds across all docs before moving to Level 2)")
         else:
             print("Your next steps:")
             print("  1. Paste the prompt below into Claude Code — it will update the extraction schema")

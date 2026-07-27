@@ -22,7 +22,6 @@ Other commands:
 
 import argparse
 import logging
-import os
 import sys
 from pathlib import Path
 
@@ -239,7 +238,6 @@ def cmd_archive_import(args) -> None:
 def cmd_archive_download(args) -> None:
     """Download historical batch results from Anthropic API into local archive (no DB write)."""
     import json as _json
-    from datetime import datetime, timezone
 
     key = args.council
     if key not in COUNCILS:
@@ -667,7 +665,7 @@ def _cmd_batch_submit(args, key: str, pdfs: list, max_chars: "int | None", manif
     import json as _json
     from datetime import datetime, timezone
 
-    from src.extraction.extractor import MinutesExtractor, _MODEL as _EXTRACT_MODEL
+    from src.extraction.extractor import MinutesExtractor
     from src.models import Meeting as _Meeting
     from src.storage.database import init_db, make_session_factory
 
@@ -803,11 +801,11 @@ def _cmd_batch_submit(args, key: str, pdfs: list, max_chars: "int | None", manif
         "id_map": id_map,
     }, indent=2))
 
-    console.print(f"\n[bold green]Batch submitted![/bold green]")
+    console.print("\n[bold green]Batch submitted![/bold green]")
     console.print(f"  Batch ID:   [bold]{batch_id}[/bold]")
     console.print(f"  Requests:   {len(all_requests)} ({n_docs} documents)")
     console.print(f"  Job file:   {job_file}")
-    console.print(f"\nRun when ready (up to 24 h):")
+    console.print("\nRun when ready (up to 24 h):")
     console.print(f"  [bold]council batch-collect {key} {batch_id}[/bold]")
 
 
@@ -1289,7 +1287,7 @@ def cmd_extract_sample(args) -> None:
     files = data["files"]
     selected_at = data.get("selected_at", "unknown")
 
-    console.print(f"[yellow]Note: extract-sample always re-extracts all docs (--force is implicit).[/yellow]")
+    console.print("[yellow]Note: extract-sample always re-extracts all docs (--force is implicit).[/yellow]")
     console.print(f"[dim]Sample: {len(files)} files selected at {selected_at}[/dim]")
 
     args.files = files
@@ -1311,7 +1309,6 @@ def cmd_validate(args) -> None:
 
 
 def cmd_analyse(args) -> None:
-    from sqlalchemy import func
     from src.analysis.queries import (
         budget_by_year,
         co_mover_pairs,
@@ -1325,10 +1322,9 @@ def cmd_analyse(args) -> None:
         planning_outcomes,
         public_engagement_by_year,
         topic_distribution_by_year,
-        top_planning_sites,
         voting_alignment_matrix,
     )
-    from src.models import Councillor, Meeting, Motion, Vote
+    from src.models import Councillor, Meeting
     from src.storage.database import init_db, make_session_factory
 
     short_name = COUNCILS[args.council]["short_name"]
@@ -1950,9 +1946,12 @@ def cmd_publish(args) -> None:
         .all()
     )
     def _dose_bucket(n: int) -> str:
-        if n == 0: return "0"
-        if n == 1: return "1"
-        if n <= 4: return "2-4"
+        if n == 0:
+            return "0"
+        if n == 1:
+            return "1"
+        if n <= 4:
+            return "2-4"
         return "5+"
     _apps_by_bucket: dict[str, list] = {"0": [], "1": [], "2-4": [], "5+": []}
     _app_ids_needed: list[int] = []

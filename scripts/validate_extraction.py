@@ -43,7 +43,6 @@ from rich.table import Table
 
 from src.validation.core import (
     DATA_DIR,
-    INVENTORY_FIELDS,
     load_census,
     validate_doc,
 )

@@ -226,7 +226,7 @@ def run(council_slug: str, csv_path: Path, apply: bool = False) -> None:
         print(f"  [{r['councillor_id']}] {name:30s}  {ward_str:15s}  {role_str:15s}  {start_str} → {end_str}  [{src}]")
 
     if not apply:
-        print(f"\n[DRY RUN] Pass --apply to write changes to DB.\n")
+        print("\n[DRY RUN] Pass --apply to write changes to DB.\n")
         return
 
     _ensure_columns(conn)

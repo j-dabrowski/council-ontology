@@ -8,7 +8,7 @@ import pytest
 from datetime import date
 
 from sqlalchemy import create_engine, inspect
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 
 from src.extraction.extractor import _resolve_offset, save_extraction
 from src.extraction.schemas import (
