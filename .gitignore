@@ -12,6 +12,9 @@ src/__init__.pyc
 # macOS
 .DS_Store
 
+# Personal notes
+stack_overview.md
+
 # Claude Code (personal settings)                                                         
 .claude/
                                                                                             
