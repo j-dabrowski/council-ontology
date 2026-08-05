@@ -1,5 +1,5 @@
 {
-  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "published_at": "2026-08-05T17:08:54.672377+00:00",
   "data": {
     "alliances": [
       {
@@ -8,7 +8,7 @@
         "name_b": "Councillor Example B",
         "sponsorships": 15,
         "lift": 1.4,
-        "agree_pct": 0.88,
+        "agree_pct": 88,
         "agree_n": 60,
         "kind": "alliance"
       }
@@ -20,13 +20,13 @@
         "name_b": "Councillor Example D",
         "sponsorships": 15,
         "lift": 1.4,
-        "agree_pct": 0.88,
+        "agree_pct": 88,
         "agree_n": 60,
         "kind": "procedural"
       }
     ],
-    "convergence_high_agree": 0.9,
-    "convergence_low_agree": 0.4,
+    "convergence_high_agree": 90,
+    "convergence_low_agree": 40,
     "oldguard_label": "Placeholder Old Guard Era",
     "oldguard_unanimous_pct": 76.0,
     "oldguard_nodes": [
@@ -50,7 +50,7 @@
         "name_b": "Councillor Example B",
         "sponsorships": 15,
         "lift": 1.4,
-        "agree_pct": 0.88,
+        "agree_pct": 88,
         "agree_n": 60,
         "kind": "mixed"
       }
