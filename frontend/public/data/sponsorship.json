@@ -1,0 +1,74 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "alliances": [
+      {
+        "era_label": "Placeholder Era",
+        "name_a": "Councillor Example A",
+        "name_b": "Councillor Example B",
+        "sponsorships": 15,
+        "lift": 1.4,
+        "agree_pct": 0.88,
+        "agree_n": 60,
+        "kind": "alliance"
+      }
+    ],
+    "procedural": [
+      {
+        "era_label": "Placeholder Era",
+        "name_a": "Councillor Example C",
+        "name_b": "Councillor Example D",
+        "sponsorships": 15,
+        "lift": 1.4,
+        "agree_pct": 0.88,
+        "agree_n": 60,
+        "kind": "procedural"
+      }
+    ],
+    "convergence_high_agree": 0.9,
+    "convergence_low_agree": 0.4,
+    "oldguard_label": "Placeholder Old Guard Era",
+    "oldguard_unanimous_pct": 76.0,
+    "oldguard_nodes": [
+      {
+        "name": "Councillor Example A",
+        "moved": 20,
+        "seconded": 15,
+        "in_core": true
+      },
+      {
+        "name": "Councillor Example B",
+        "moved": 20,
+        "seconded": 15,
+        "in_core": true
+      }
+    ],
+    "oldguard_edges": [
+      {
+        "era_label": "Placeholder Era",
+        "name_a": "Councillor Example A",
+        "name_b": "Councillor Example B",
+        "sponsorships": 15,
+        "lift": 1.4,
+        "agree_pct": 0.88,
+        "agree_n": 60,
+        "kind": "mixed"
+      }
+    ],
+    "eras": [
+      {
+        "label": "Placeholder Era",
+        "year_from": 2018,
+        "year_to": 2022,
+        "n_events": 400,
+        "n_active": 10,
+        "cluster_size": 4,
+        "core_names": [
+          "Councillor Example A",
+          "Councillor Example B"
+        ],
+        "structure": "Placeholder structure description"
+      }
+    ]
+  }
+}

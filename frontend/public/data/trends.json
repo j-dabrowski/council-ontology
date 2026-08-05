@@ -1,0 +1,57 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "contestation": [
+      {
+        "year": 2020,
+        "total_carried": 2120,
+        "total_with_dissent": 10,
+        "contestation_rate": 0.1,
+        "most_contested": [
+          "Placeholder Topic A",
+          "Placeholder Topic B"
+        ]
+      },
+      {
+        "year": 2021,
+        "total_carried": 2121,
+        "total_with_dissent": 10,
+        "contestation_rate": 0.1,
+        "most_contested": [
+          "Placeholder Topic A",
+          "Placeholder Topic B"
+        ]
+      },
+      {
+        "year": 2022,
+        "total_carried": 2122,
+        "total_with_dissent": 10,
+        "contestation_rate": 0.1,
+        "most_contested": [
+          "Placeholder Topic A",
+          "Placeholder Topic B"
+        ]
+      },
+      {
+        "year": 2023,
+        "total_carried": 2123,
+        "total_with_dissent": 10,
+        "contestation_rate": 0.1,
+        "most_contested": [
+          "Placeholder Topic A",
+          "Placeholder Topic B"
+        ]
+      }
+    ],
+    "topics": {
+      "2020": {
+        "Placeholder Topic A": 5,
+        "Placeholder Topic B": 3
+      },
+      "2021": {
+        "Placeholder Topic A": 7,
+        "Placeholder Topic B": 4
+      }
+    }
+  }
+}

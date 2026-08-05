@@ -1,0 +1,84 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "pre_era_pct": 4.0,
+    "peak_year": 2022,
+    "peak_pct": 12.5,
+    "category_totals": {
+      "tender": {
+        "total": 200,
+        "confidential": 20
+      },
+      "other_item": {
+        "total": 150,
+        "confidential": 10
+      }
+    },
+    "years": [
+      {
+        "year": 2020,
+        "total": 100,
+        "confidential": 5,
+        "confidential_pct": 5.0,
+        "n_shown": 1,
+        "items": [
+          {
+            "kind": "tender",
+            "description": "Placeholder confidential item",
+            "amount": 100000,
+            "date": "2021-01-01",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "year": 2021,
+        "total": 100,
+        "confidential": 5,
+        "confidential_pct": 5.0,
+        "n_shown": 1,
+        "items": [
+          {
+            "kind": "tender",
+            "description": "Placeholder confidential item",
+            "amount": 100000,
+            "date": "2021-01-01",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "year": 2022,
+        "total": 100,
+        "confidential": 5,
+        "confidential_pct": 5.0,
+        "n_shown": 1,
+        "items": [
+          {
+            "kind": "tender",
+            "description": "Placeholder confidential item",
+            "amount": 100000,
+            "date": "2021-01-01",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "year": 2023,
+        "total": 100,
+        "confidential": 5,
+        "confidential_pct": 5.0,
+        "n_shown": 1,
+        "items": [
+          {
+            "kind": "tender",
+            "description": "Placeholder confidential item",
+            "amount": 100000,
+            "date": "2021-01-01",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      }
+    ]
+  }
+}

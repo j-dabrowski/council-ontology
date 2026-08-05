@@ -1,0 +1,90 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "declared_total": 60,
+    "declared_recused": 40,
+    "declared_recusal_pct": 66.7,
+    "declared_against_pct": 5.0,
+    "baseline_total": 5000,
+    "baseline_recusal_pct": 3.9,
+    "baseline_against_pct": 25.0,
+    "profiles": [
+      {
+        "name": "Councillor Example A",
+        "declared_votes": 15,
+        "recused": 10,
+        "recusal_rate": 0.66,
+        "is_active": true,
+        "declarations": [
+          {
+            "date": "2022-01-15",
+            "item": "1.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "name": "Councillor Example B",
+        "declared_votes": 14,
+        "recused": 9,
+        "recusal_rate": 0.66,
+        "is_active": true,
+        "declarations": [
+          {
+            "date": "2022-02-15",
+            "item": "2.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "name": "Councillor Example C",
+        "declared_votes": 13,
+        "recused": 8,
+        "recusal_rate": 0.66,
+        "is_active": true,
+        "declarations": [
+          {
+            "date": "2022-03-15",
+            "item": "3.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "name": "Councillor Example D",
+        "declared_votes": 12,
+        "recused": 7,
+        "recusal_rate": 0.66,
+        "is_active": true,
+        "declarations": [
+          {
+            "date": "2022-04-15",
+            "item": "4.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      }
+    ]
+  }
+}

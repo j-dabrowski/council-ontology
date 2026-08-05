@@ -1,0 +1,215 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "by_name": {
+      "Councillor Example A": {
+        "name": "Councillor Example A",
+        "slug": "councillor-example-a",
+        "is_active": true,
+        "tenure_years": 4,
+        "first_vote": "2018-01-01",
+        "last_vote": "2026-01-01",
+        "n_votes": 300,
+        "roles": [
+          "Mayor"
+        ],
+        "n_contested": 100,
+        "win_rate": 0.9,
+        "dissent_rate": 0.05,
+        "dissent_n": 5,
+        "dissent_effectiveness": 0.2,
+        "n_declarations": 15,
+        "n_recused": 10,
+        "recusal_rate": 0.66,
+        "declarations": [
+          {
+            "date": "2022-01-15",
+            "item": "1.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "dissent_votes": [
+          {
+            "date": "2021-01-01",
+            "item": "1.1",
+            "title": "Placeholder Contested Motion",
+            "choice": "Against",
+            "outcome": "Carried",
+            "won": false,
+            "margin": 2,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "moved": 20,
+        "seconded": 15,
+        "top_partners": [
+          {
+            "name": "Councillor Example B",
+            "count": 12
+          }
+        ]
+      },
+      "Councillor Example B": {
+        "name": "Councillor Example B",
+        "slug": "councillor-example-b",
+        "is_active": true,
+        "tenure_years": 6,
+        "first_vote": "2018-01-01",
+        "last_vote": "2026-01-01",
+        "n_votes": 280,
+        "roles": [
+          "Councillor"
+        ],
+        "n_contested": 95,
+        "win_rate": 0.88,
+        "dissent_rate": 0.060000000000000005,
+        "dissent_n": 6,
+        "dissent_effectiveness": 0.2,
+        "n_declarations": 14,
+        "n_recused": 9,
+        "recusal_rate": 0.66,
+        "declarations": [
+          {
+            "date": "2022-01-15",
+            "item": "1.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "dissent_votes": [
+          {
+            "date": "2021-01-01",
+            "item": "1.1",
+            "title": "Placeholder Contested Motion",
+            "choice": "Against",
+            "outcome": "Carried",
+            "won": false,
+            "margin": 2,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "moved": 19,
+        "seconded": 14,
+        "top_partners": [
+          {
+            "name": "Councillor Example C",
+            "count": 12
+          }
+        ]
+      },
+      "Councillor Example C": {
+        "name": "Councillor Example C",
+        "slug": "councillor-example-c",
+        "is_active": true,
+        "tenure_years": 8,
+        "first_vote": "2018-01-01",
+        "last_vote": "2026-01-01",
+        "n_votes": 260,
+        "roles": [
+          "Councillor"
+        ],
+        "n_contested": 90,
+        "win_rate": 0.86,
+        "dissent_rate": 0.07,
+        "dissent_n": 7,
+        "dissent_effectiveness": 0.2,
+        "n_declarations": 13,
+        "n_recused": 8,
+        "recusal_rate": 0.66,
+        "declarations": [
+          {
+            "date": "2022-01-15",
+            "item": "1.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "dissent_votes": [
+          {
+            "date": "2021-01-01",
+            "item": "1.1",
+            "title": "Placeholder Contested Motion",
+            "choice": "Against",
+            "outcome": "Carried",
+            "won": false,
+            "margin": 2,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "moved": 18,
+        "seconded": 13,
+        "top_partners": [
+          {
+            "name": "Councillor Example D",
+            "count": 12
+          }
+        ]
+      },
+      "Councillor Example D": {
+        "name": "Councillor Example D",
+        "slug": "councillor-example-d",
+        "is_active": true,
+        "tenure_years": 10,
+        "first_vote": "2018-01-01",
+        "last_vote": "2026-01-01",
+        "n_votes": 240,
+        "roles": [
+          "Councillor"
+        ],
+        "n_contested": 85,
+        "win_rate": 0.8400000000000001,
+        "dissent_rate": 0.08,
+        "dissent_n": 8,
+        "dissent_effectiveness": 0.2,
+        "n_declarations": 12,
+        "n_recused": 7,
+        "recusal_rate": 0.66,
+        "declarations": [
+          {
+            "date": "2022-01-15",
+            "item": "1.1",
+            "title": "Placeholder Agenda Item",
+            "interest_type": "financial",
+            "what": "Placeholder interest description.",
+            "action": "Stepped out",
+            "must_leave": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "dissent_votes": [
+          {
+            "date": "2021-01-01",
+            "item": "1.1",
+            "title": "Placeholder Contested Motion",
+            "choice": "Against",
+            "outcome": "Carried",
+            "won": false,
+            "margin": 2,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ],
+        "moved": 17,
+        "seconded": 12,
+        "top_partners": [
+          {
+            "name": "Councillor Example A",
+            "count": 12
+          }
+        ]
+      }
+    }
+  }
+}

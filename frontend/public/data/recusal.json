@@ -1,0 +1,83 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "inquiry_window": [
+      2022,
+      2023
+    ],
+    "must_leave_pre_pct": 92.0,
+    "must_leave_pre_n": 50,
+    "must_leave_inquiry_pct": 60.0,
+    "must_leave_inquiry_n": 20,
+    "must_leave_post_pct": 88.0,
+    "must_leave_post_n": 30,
+    "financial_inquiry_pct": 55.0,
+    "financial_inquiry_n": 15,
+    "financial_post_pct": 85.0,
+    "financial_post_n": 25,
+    "impartiality_post_declared": 40,
+    "impartiality_post_recusal_pct": 10.0,
+    "by_type_era": [
+      {
+        "interest_type": "financial",
+        "era": "post",
+        "declared": 25,
+        "recused": 21,
+        "recusal_pct": 84.0,
+        "n_shown": 1,
+        "declarations": [
+          {
+            "date": "2022-01-01",
+            "item": "1.1",
+            "councillor": "Councillor Example A",
+            "action": "Stepped out",
+            "what": "Placeholder interest description.",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      }
+    ],
+    "by_year": [
+      {
+        "year": 2020,
+        "must_leave_declared": 10,
+        "must_leave_recused": 8,
+        "must_leave_pct": 80.0,
+        "declared_share_pct": 15.0
+      },
+      {
+        "year": 2021,
+        "must_leave_declared": 10,
+        "must_leave_recused": 8,
+        "must_leave_pct": 80.0,
+        "declared_share_pct": 15.0
+      },
+      {
+        "year": 2022,
+        "must_leave_declared": 10,
+        "must_leave_recused": 8,
+        "must_leave_pct": 80.0,
+        "declared_share_pct": 15.0
+      },
+      {
+        "year": 2023,
+        "must_leave_declared": 10,
+        "must_leave_recused": 8,
+        "must_leave_pct": 80.0,
+        "declared_share_pct": 15.0
+      }
+    ],
+    "drivers": [
+      {
+        "name": "Councillor Example A",
+        "stayed": 3,
+        "total": 20
+      },
+      {
+        "name": "Councillor Example B",
+        "stayed": 4,
+        "total": 20
+      }
+    ]
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "mayor_moved": 40,
+    "mayor_carried_pct": 97.5,
+    "mayor_contest_pct": 12.0,
+    "other_moved": 300,
+    "other_carried_pct": 90.0,
+    "other_contest_pct": 22.0,
+    "contest_factor": 1.8,
+    "per_mayor": [
+      {
+        "name": "Councillor Example A",
+        "carried": 39,
+        "contested": 5,
+        "contest_pct": 12.8,
+        "n_shown": 1,
+        "motions": [
+          {
+            "title": "Placeholder Mayoral Motion",
+            "date": "2021-01-01",
+            "votes_for": 10,
+            "votes_against": 2,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": [
+    {
+      "year": 2020,
+      "public_questions": 10,
+      "deputations": 2,
+      "petitions": 1
+    },
+    {
+      "year": 2021,
+      "public_questions": 11,
+      "deputations": 2,
+      "petitions": 1
+    },
+    {
+      "year": 2022,
+      "public_questions": 12,
+      "deputations": 2,
+      "petitions": 1
+    },
+    {
+      "year": 2023,
+      "public_questions": 13,
+      "deputations": 2,
+      "petitions": 1
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "trend": [
+      {
+        "year": 2020,
+        "n_applications": 50,
+        "decided": 45,
+        "approved": 40,
+        "refused": 5,
+        "approval_pct": 88.9
+      },
+      {
+        "year": 2021,
+        "n_applications": 50,
+        "decided": 45,
+        "approved": 40,
+        "refused": 5,
+        "approval_pct": 88.9
+      },
+      {
+        "year": 2022,
+        "n_applications": 50,
+        "decided": 45,
+        "approved": 40,
+        "refused": 5,
+        "approval_pct": 88.9
+      },
+      {
+        "year": 2023,
+        "n_applications": 50,
+        "decided": 45,
+        "approved": 40,
+        "refused": 5,
+        "approval_pct": 88.9
+      }
+    ],
+    "objections": {
+      "with_objection": {
+        "n": 20,
+        "approved": 10,
+        "refused": 10,
+        "approval_pct": 50.0
+      },
+      "no_objection": {
+        "n": 80,
+        "approved": 76,
+        "refused": 4,
+        "approval_pct": 95.0
+      }
+    }
+  }
+}

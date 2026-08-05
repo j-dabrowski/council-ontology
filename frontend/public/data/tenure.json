@@ -1,0 +1,46 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "median_years": 6.5,
+    "n_councillors": 4,
+    "histogram": {
+      "0-4": 1,
+      "4-8": 2,
+      "8-12": 1
+    },
+    "profiles": [
+      {
+        "name": "Councillor Example A",
+        "years": 4,
+        "n_votes": 300,
+        "first": "2018-01-01",
+        "last": "2026-01-01",
+        "is_active": true
+      },
+      {
+        "name": "Councillor Example B",
+        "years": 6,
+        "n_votes": 280,
+        "first": "2018-01-01",
+        "last": "2026-01-01",
+        "is_active": true
+      },
+      {
+        "name": "Councillor Example C",
+        "years": 8,
+        "n_votes": 260,
+        "first": "2018-01-01",
+        "last": "2026-01-01",
+        "is_active": true
+      },
+      {
+        "name": "Councillor Example D",
+        "years": 10,
+        "n_votes": 240,
+        "first": "2018-01-01",
+        "last": "2026-01-01",
+        "is_active": true
+      }
+    ]
+  }
+}

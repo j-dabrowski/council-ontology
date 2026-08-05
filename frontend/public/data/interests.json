@@ -1,0 +1,61 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": [
+    {
+      "councillor_id": 1,
+      "councillor_name": "Councillor Example A",
+      "total": 5,
+      "by_type": {
+        "financial": 2,
+        "proximity": 1,
+        "impartiality": 1
+      },
+      "top_topics": [
+        "Placeholder Topic A",
+        "Placeholder Topic B"
+      ]
+    },
+    {
+      "councillor_id": 2,
+      "councillor_name": "Councillor Example B",
+      "total": 6,
+      "by_type": {
+        "financial": 2,
+        "proximity": 1,
+        "impartiality": 1
+      },
+      "top_topics": [
+        "Placeholder Topic A",
+        "Placeholder Topic B"
+      ]
+    },
+    {
+      "councillor_id": 3,
+      "councillor_name": "Councillor Example C",
+      "total": 7,
+      "by_type": {
+        "financial": 2,
+        "proximity": 1,
+        "impartiality": 1
+      },
+      "top_topics": [
+        "Placeholder Topic A",
+        "Placeholder Topic B"
+      ]
+    },
+    {
+      "councillor_id": 4,
+      "councillor_name": "Councillor Example D",
+      "total": 8,
+      "by_type": {
+        "financial": 2,
+        "proximity": 1,
+        "impartiality": 1
+      },
+      "top_topics": [
+        "Placeholder Topic A",
+        "Placeholder Topic B"
+      ]
+    }
+  ]
+}

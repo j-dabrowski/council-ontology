@@ -1,0 +1,46 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "total_awards": 50,
+    "total_amount": 15000000,
+    "named_awards": 40,
+    "named_amount": 10000000,
+    "redacted_awards": 10,
+    "redacted_amount": 5000000,
+    "distinct_named": 12,
+    "top10_amount": 8000000,
+    "top10_share": 53.3,
+    "contractors": [
+      {
+        "name": "Placeholder Contractor Ltd",
+        "n_awards": 3,
+        "total_amount": 750000,
+        "awards": [
+          {
+            "date": "2021-01-01",
+            "description": "Placeholder tender description",
+            "amount": 250000,
+            "reference": "T1000",
+            "is_confidential": true,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "name": "Example Constructions Pty",
+        "n_awards": 2,
+        "total_amount": 500000,
+        "awards": [
+          {
+            "date": "2021-02-01",
+            "description": "Placeholder tender description",
+            "amount": 500000,
+            "reference": "T1001",
+            "is_confidential": false,
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      }
+    ]
+  }
+}

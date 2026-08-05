@@ -1,0 +1,23 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "total_matched": 20,
+    "diverged_count": 2,
+    "followed_count": 18,
+    "compliance_rate": 0.9,
+    "year_min": 2020,
+    "year_max": 2024,
+    "exceptions": [
+      {
+        "meeting_date": "2022-03-01",
+        "item_number": "10.1",
+        "title": "Placeholder Agenda Item",
+        "officer_recommendation": "Placeholder officer recommendation text.",
+        "council_outcome": "CARRIED",
+        "match_confidence": 0.9,
+        "motion_text": "Placeholder motion text.",
+        "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+      }
+    ]
+  }
+}

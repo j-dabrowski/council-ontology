@@ -1,0 +1,80 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "total_decided": 165,
+    "max_objections": 8,
+    "headline_examples": [
+      "Placeholder headline example about objection dose-response."
+    ],
+    "buckets": [
+      {
+        "label": "0",
+        "n": 100,
+        "refused": 5,
+        "refusal_pct": 5.0,
+        "n_shown": 1,
+        "apps": [
+          {
+            "reference": "DA100",
+            "description": "Placeholder development application",
+            "address": "1 Placeholder Street, Example WA",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "label": "1",
+        "n": 40,
+        "refused": 4,
+        "refusal_pct": 10.0,
+        "n_shown": 1,
+        "apps": [
+          {
+            "reference": "DA101",
+            "description": "Placeholder development application",
+            "address": "1 Placeholder Street, Example WA",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "label": "2-4",
+        "n": 20,
+        "refused": 4,
+        "refusal_pct": 20.0,
+        "n_shown": 1,
+        "apps": [
+          {
+            "reference": "DA103",
+            "description": "Placeholder development application",
+            "address": "1 Placeholder Street, Example WA",
+            "n_objectors": 3,
+            "outcome": "refused",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      },
+      {
+        "label": "5+",
+        "n": 5,
+        "refused": 3,
+        "refusal_pct": 60.0,
+        "n_shown": 1,
+        "apps": [
+          {
+            "reference": "DA106",
+            "description": "Placeholder development application",
+            "address": "1 Placeholder Street, Example WA",
+            "n_objectors": 6,
+            "outcome": "refused",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      }
+    ]
+  }
+}

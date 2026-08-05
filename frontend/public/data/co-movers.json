@@ -1,0 +1,44 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "nodes": [
+      {
+        "id": "Councillor Example A"
+      },
+      {
+        "id": "Councillor Example B"
+      },
+      {
+        "id": "Councillor Example C"
+      }
+    ],
+    "links": [
+      {
+        "source": "Councillor Example A",
+        "target": "Councillor Example B",
+        "value": 12
+      },
+      {
+        "source": "Councillor Example B",
+        "target": "Councillor Example C",
+        "value": 7
+      }
+    ],
+    "pairs": [
+      {
+        "mover_id": 1,
+        "mover_name": "Councillor Example A",
+        "seconder_id": 2,
+        "seconder_name": "Councillor Example B",
+        "count": 12
+      },
+      {
+        "mover_id": 2,
+        "mover_name": "Councillor Example B",
+        "seconder_id": 3,
+        "seconder_name": "Councillor Example C",
+        "count": 7
+      }
+    ]
+  }
+}

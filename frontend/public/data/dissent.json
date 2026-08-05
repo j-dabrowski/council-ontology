@@ -1,0 +1,62 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "profiles": [
+      {
+        "name": "Councillor Example A",
+        "total_votes_on_carried": 200,
+        "against_count": 15,
+        "dissent_rate": 0.08,
+        "is_active": true,
+        "top_dissent_tags": [
+          "Placeholder Topic A"
+        ]
+      },
+      {
+        "name": "Councillor Example B",
+        "total_votes_on_carried": 190,
+        "against_count": 16,
+        "dissent_rate": 0.09,
+        "is_active": true,
+        "top_dissent_tags": [
+          "Placeholder Topic A"
+        ]
+      },
+      {
+        "name": "Councillor Example C",
+        "total_votes_on_carried": 180,
+        "against_count": 17,
+        "dissent_rate": 0.1,
+        "is_active": true,
+        "top_dissent_tags": [
+          "Placeholder Topic A"
+        ]
+      },
+      {
+        "name": "Councillor Example D",
+        "total_votes_on_carried": 170,
+        "against_count": 18,
+        "dissent_rate": 0.11,
+        "is_active": true,
+        "top_dissent_tags": [
+          "Placeholder Topic A"
+        ]
+      }
+    ],
+    "coalitions": [
+      {
+        "name_a": "Councillor Example A",
+        "name_b": "Councillor Example B",
+        "shared_dissent": 6
+      }
+    ],
+    "by_tag": [
+      {
+        "tag": "Placeholder Topic A",
+        "total_carried": 90,
+        "contested": 12,
+        "contestation_rate": 0.13
+      }
+    ]
+  }
+}

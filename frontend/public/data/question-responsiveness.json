@@ -1,0 +1,73 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "inquiry_window": [
+      2022,
+      2023
+    ],
+    "total": 300,
+    "answered": 220,
+    "on_notice": 60,
+    "blank": 20,
+    "answered_pct": 73.3,
+    "on_notice_pct": 20.0,
+    "pre_pct": 15.0,
+    "pre_n": 100,
+    "inquiry_pct": 35.0,
+    "inquiry_n": 80,
+    "post_pct": 18.0,
+    "post_n": 120,
+    "peak_year": 2022,
+    "peak_pct": 38.0,
+    "by_era": [
+      {
+        "era": "post",
+        "answered": 90,
+        "on_notice": 22,
+        "blank": 8,
+        "on_notice_pct": 18.3,
+        "n_shown": 1,
+        "questions": [
+          {
+            "date": "2021-01-01",
+            "questioner": "Placeholder Resident",
+            "question": "Placeholder public question text.",
+            "status": "Answered in meeting",
+            "fielded_by": "Councillor Example A",
+            "quote": "[placeholder quote \u2014 not a real minute, generated for bootstrap purposes]"
+          }
+        ]
+      }
+    ],
+    "by_year": [
+      {
+        "year": 2020,
+        "answered": 50,
+        "on_notice": 12,
+        "n_nonblank": 62,
+        "on_notice_pct": 19.4
+      },
+      {
+        "year": 2021,
+        "answered": 50,
+        "on_notice": 12,
+        "n_nonblank": 62,
+        "on_notice_pct": 19.4
+      },
+      {
+        "year": 2022,
+        "answered": 50,
+        "on_notice": 12,
+        "n_nonblank": 62,
+        "on_notice_pct": 19.4
+      },
+      {
+        "year": 2023,
+        "answered": 50,
+        "on_notice": 12,
+        "n_nonblank": 62,
+        "on_notice_pct": 19.4
+      }
+    ]
+  }
+}

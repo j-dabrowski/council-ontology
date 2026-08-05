@@ -1,0 +1,148 @@
+{
+  "published_at": "2026-08-05T12:16:15.377946+00:00",
+  "data": {
+    "summary": {
+      "n_tests": 4,
+      "n_supportive": 1,
+      "n_neutral": 1,
+      "n_critical": 1,
+      "n_not_computable": 1
+    },
+    "tests": [
+      {
+        "test_id": "placeholder_supportive_1",
+        "title": "Placeholder Test \u2014 Supportive Example",
+        "genre": "Placeholder Genre",
+        "principle": "Placeholder principle text describing a recognised good-governance criterion.",
+        "question": "Placeholder question this test answers?",
+        "valence": "supportive",
+        "grade": "A",
+        "headline": "Placeholder headline \u2014 sample supportive finding",
+        "verdict": "PLACEHOLDER DATA \u2014 not a real finding. Sample supportive verdict text.",
+        "data_ok": true,
+        "n": 42,
+        "base_rate": "50%",
+        "era": null,
+        "detail_panel": null,
+        "series": [
+          {
+            "x": 2020,
+            "y": 10
+          },
+          {
+            "x": 2021,
+            "y": 14
+          },
+          {
+            "x": 2022,
+            "y": 18
+          }
+        ],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": {
+            "label": "Placeholder baseline",
+            "value": 50
+          },
+          "bars": [
+            {
+              "label": "Placeholder Motion Example",
+              "value": 62,
+              "highlight": true
+            },
+            {
+              "label": "Placeholder Motion Example 2",
+              "value": 48
+            }
+          ]
+        }
+      },
+      {
+        "test_id": "placeholder_neutral_1",
+        "title": "Placeholder Test \u2014 Neutral Example",
+        "genre": "Placeholder Genre",
+        "principle": "Placeholder principle text.",
+        "question": "Placeholder question?",
+        "valence": "neutral",
+        "grade": "B",
+        "headline": "Placeholder headline \u2014 sample neutral finding",
+        "verdict": "PLACEHOLDER DATA \u2014 not a real finding. Sample neutral verdict text.",
+        "data_ok": true,
+        "n": 17,
+        "base_rate": null,
+        "era": "post",
+        "detail_panel": null,
+        "series": [
+          {
+            "x": 2020,
+            "y": 5
+          },
+          {
+            "x": 2021,
+            "y": 5
+          },
+          {
+            "x": 2022,
+            "y": 6
+          }
+        ],
+        "chart": {
+          "kind": "line",
+          "unit": null,
+          "refline": null,
+          "points": [
+            {
+              "x": 2020,
+              "y": 5
+            },
+            {
+              "x": 2021,
+              "y": 5
+            },
+            {
+              "x": 2022,
+              "y": 6
+            }
+          ]
+        }
+      },
+      {
+        "test_id": "placeholder_critical_1",
+        "title": "Placeholder Test \u2014 Critical Example",
+        "genre": "Placeholder Genre",
+        "principle": "Placeholder principle text.",
+        "question": "Placeholder question?",
+        "valence": "critical",
+        "grade": "D",
+        "headline": "Placeholder headline \u2014 sample critical finding",
+        "verdict": "PLACEHOLDER DATA \u2014 not a real finding. Sample critical verdict text.",
+        "data_ok": true,
+        "n": 8,
+        "base_rate": "20%",
+        "era": null,
+        "detail_panel": null,
+        "series": [],
+        "chart": null
+      },
+      {
+        "test_id": "placeholder_not_computable",
+        "title": "Placeholder Test \u2014 Not Computable Example",
+        "genre": "Placeholder Genre",
+        "principle": "Placeholder principle text.",
+        "question": "Placeholder question?",
+        "valence": "neutral",
+        "grade": "N/A",
+        "headline": "Not computable on this placeholder corpus",
+        "verdict": "PLACEHOLDER DATA \u2014 sample not-computable row.",
+        "data_ok": false,
+        "n": null,
+        "base_rate": null,
+        "era": null,
+        "detail_panel": null,
+        "series": [],
+        "chart": null
+      }
+    ]
+  }
+}
