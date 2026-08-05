@@ -41,6 +41,15 @@ data/batch_jobs/
 data/llm_archive/
 data/raw/terms/
 
+# Draft/publish gate (see docs/TESTING.md): `council draft` writes candidate
+# snapshots here for investigator + defamation-auditor review — never
+# committed, never served. `council publish` writes full-tier (private,
+# paywall-pending) snapshots here — also never committed; only the
+# public-tier subset it copies into frontend/public/data/ is meant to be
+# public.
+data/draft/
+data/published_full/
+
 .cache/
 
 # Generated outputs

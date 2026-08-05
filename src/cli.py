@@ -11,6 +11,8 @@ Pipeline commands:
   validate-sample <council> Level 3c: validate sample extractions
   extract <council>         Level 5: extract all/pending PDFs
   validate <council>        Level 4: per-doc confidence scoring
+  draft <council>           Generate candidate snapshots to data/draft/ for review
+  publish <council>         Gate: copy a reviewed draft into frontend/public/data/
 
 Other commands:
   status    DB summary across all councils
@@ -1643,31 +1645,34 @@ def cmd_analyse(args) -> None:
 # ---------------------------------------------------------------------------
 
 
-def cmd_publish(args) -> None:
-    """Export analysis query results as static JSON snapshots for the frontend.
+# Every snapshot _generate_snapshots can write, tagged public vs. full-tier.
+# Everything defaults to "full" (private) unless explicitly listed here as
+# "public" — fail-safe direction, so an unlisted or newly-added snapshot is
+# never accidentally exposed. No snapshot is marked "public" yet: the actual
+# free/paywalled split is a product decision that hasn't been made, so
+# `council publish` today still only ever writes to frontend/public/data/
+# because nothing is tagged to go there. See docs/TESTING.md.
+SNAPSHOT_TIER: dict[str, str] = {}
 
-    Writes frontend/public/data/{name}.json for each dashboard query.
-    The frontend reads these files; the site only reflects data from the
-    last time this command was run.
 
-    Run pipeline steps (dedup, build-relationships, geocode) separately
-    before publishing when you have new extraction data.
+def _tier_of(name: str) -> str:
+    return SNAPSHOT_TIER.get(name, "full")
+
+
+def _generate_snapshots(session, council_id: int, output_dir: Path, generated_at: str) -> list[str]:
+    """Run the full analysis + standard test battery and write one JSON file
+    per dashboard snapshot into output_dir. Returns the list of snapshot
+    names written (in write order).
+
+    Pure generation — no knowledge of where output_dir sits (draft staging
+    vs. a public directory) and no git/gate logic. Called by `council draft`;
+    `council publish` never calls this directly (see src/publish_gate.py) —
+    it only ever copies bytes a human has already reviewed.
     """
     import json as _json
     from dataclasses import asdict
-    from datetime import datetime, timezone
 
-    key = args.council
-    if key not in COUNCILS:
-        console.print(f"[red]Unknown council: {key}[/red]")
-        sys.exit(1)
-
-    short_name = COUNCILS[key]["short_name"]
-    output_dir = Path("frontend/public/data")
     output_dir.mkdir(parents=True, exist_ok=True)
-
-    console.print(Panel(f"Publishing [bold]{key}[/bold] → {output_dir}", style="blue"))
-    published_at = datetime.now(timezone.utc).isoformat()
 
     def _dc(obj) -> dict:
         d = asdict(obj)
@@ -1676,24 +1681,13 @@ def cmd_publish(args) -> None:
                 d[k] = v.isoformat()
         return d
 
-    from src.storage.database import init_db, make_session_factory
-    from src.analysis.queries import get_council_by_name
-    engine = init_db()
-    session = make_session_factory(engine)()
-    council_obj = get_council_by_name(session, short_name)
-    if not council_obj:
-        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
-        sys.exit(1)
-    council_id = council_obj.id
-
-    n_written = 0
+    written: list[str] = []
 
     def _write(name: str, data) -> None:
-        nonlocal n_written
         path = output_dir / f"{name}.json"
-        path.write_text(_json.dumps({"published_at": published_at, "data": data}, indent=2))
+        path.write_text(_json.dumps({"published_at": generated_at, "data": data}, indent=2))
         console.print(f"  [green]✓[/green] {name}.json")
-        n_written += 1
+        written.append(name)
 
     from src.analysis.queries import (
         interest_declarations_summary, co_mover_pairs,
@@ -2512,21 +2506,164 @@ def cmd_publish(args) -> None:
         }
     _write("councillors", {"by_name": _cllr_profiles})
 
+    return written
+
+
+def cmd_draft(args) -> None:
+    """Generate candidate snapshots for review — the stage before `council
+    publish`. Writes to data/draft/<council>/<run_id>/, never to
+    frontend/public/data/ and never committed to git. This is where the
+    investigator agent and the defamation-auditor pass (built separately)
+    review output before anything is eligible to be made public.
+    """
+    import hashlib
+    import json as _json
+    from datetime import datetime, timezone
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    short_name = COUNCILS[key]["short_name"]
+
+    run_id = f"draft_{datetime.now(timezone.utc):%Y%m%d_%H%M%S}"
+    output_dir = Path("data/draft") / key / run_id
+    generated_at = datetime.now(timezone.utc).isoformat()
+
+    console.print(Panel(f"Drafting [bold]{key}[/bold] → {output_dir}", style="blue"))
+
+    from src.storage.database import init_db, make_session_factory
+    from src.analysis.queries import get_council_by_name
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+    council_id = council_obj.id
+
+    written = _generate_snapshots(session, council_id, output_dir, generated_at)
     session.close()
 
-    # Manifest records what was published and when
+    file_hashes = {
+        name: hashlib.sha256((output_dir / f"{name}.json").read_bytes()).hexdigest()
+        for name in written
+    }
+    tiers = {name: _tier_of(name) for name in written}
+
     (output_dir / "manifest.json").write_text(_json.dumps({
-        "published_at": published_at,
+        "run_id": run_id,
         "council": key,
-        "snapshots": ["overview", "scorecard", "interests", "divergence", "co-movers", "alignment", "trends", "engagement", "planning", "dissent", "declared", "tenders", "dose", "transparency", "tenure", "mayoral", "power", "recusal", "question-responsiveness", "sponsorship", "councillors"],
+        "generated_at": generated_at,
+        "snapshots": written,
+        "file_hashes": file_hashes,
+        "tiers": tiers,
     }, indent=2))
 
+    n_public = sum(1 for t in tiers.values() if t == "public")
+    n_full = len(tiers) - n_public
     console.print(Panel(
-        f"[green]✓[/green] {n_written} snapshots → {output_dir}\n"
-        f"[dim]Published at: {published_at}[/dim]\n"
-        f"[dim]Site reflects this data until you run publish again.[/dim]",
+        f"[green]✓[/green] {len(written)} snapshots → {output_dir}\n"
+        f"[dim]{n_public} public-tier, {n_full} full-tier[/dim]\n\n"
+        f"Review this output (investigator + defamation-auditor), then run:\n"
+        f"[bold]council publish {key} --from-draft {output_dir} --confirm \"<reviewer note>\"[/bold]",
         style="green",
     ))
+
+
+def cmd_publish(args) -> None:
+    """The publish gate: copy a reviewed draft's snapshots into
+    frontend/public/data/ — the only command allowed to write there.
+
+    Requires --from-draft (a directory produced by `council draft`) and
+    --confirm (an explicit human review note). Both are required by argparse
+    itself — there is no code path that publishes without them. Copies bytes
+    verbatim from the draft; never recomputes from the database, so what was
+    reviewed is exactly what ships even if council.db has since changed.
+    Public-tier snapshots go to frontend/public/data/; full-tier snapshots
+    (paywall-pending — no serving layer exists yet) go to a private,
+    gitignored data/published_full/ instead. See src/publish_gate.py.
+    """
+    import json as _json
+    import shutil
+    from datetime import datetime, timezone
+
+    from src.publish_gate import load_draft_manifest, verify_draft_integrity, check_clearance
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+
+    draft_dir = Path(args.from_draft)
+    if not draft_dir.is_dir():
+        console.print(f"[red]--from-draft directory not found: {draft_dir}[/red]")
+        sys.exit(1)
+
+    try:
+        manifest = load_draft_manifest(draft_dir)
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        sys.exit(1)
+
+    if manifest.council != key:
+        console.print(
+            f"[red]--from-draft is a '{manifest.council}' draft, not '{key}'[/red]"
+        )
+        sys.exit(1)
+
+    drifted = verify_draft_integrity(draft_dir, manifest)
+    if drifted:
+        console.print(
+            "[red]Refusing to publish: draft file(s) changed since review "
+            f"(hash mismatch): {', '.join(drifted)}[/red]\n"
+            "[dim]Re-run `council draft` and get a fresh review — publishing "
+            "must reflect exactly what was reviewed.[/dim]"
+        )
+        sys.exit(1)
+
+    clearance = check_clearance(draft_dir, args.confirm)
+    if not clearance.cleared:
+        console.print(f"[red]Not cleared to publish: {clearance.reason}[/red]")
+        sys.exit(1)
+
+    public_names = [n for n in manifest.snapshots if manifest.tiers.get(n, "full") == "public"]
+    full_names = [n for n in manifest.snapshots if manifest.tiers.get(n, "full") != "public"]
+
+    public_dir = Path("frontend/public/data")
+    public_dir.mkdir(parents=True, exist_ok=True)
+    for name in public_names:
+        shutil.copyfile(draft_dir / f"{name}.json", public_dir / f"{name}.json")
+
+    full_dir = None
+    if full_names:
+        full_dir = Path("data/published_full") / key / manifest.run_id
+        full_dir.mkdir(parents=True, exist_ok=True)
+        for name in full_names:
+            shutil.copyfile(draft_dir / f"{name}.json", full_dir / f"{name}.json")
+
+    published_at = datetime.now(timezone.utc).isoformat()
+    (public_dir / "manifest.json").write_text(_json.dumps({
+        "published_at": published_at,
+        "council": key,
+        "draft_run_id": manifest.run_id,
+        "confirm_note": args.confirm,
+        "snapshots": public_names,
+    }, indent=2))
+
+    summary = (
+        f"[green]✓[/green] {len(public_names)} public snapshots → {public_dir}\n"
+    )
+    if full_dir:
+        summary += (
+            f"[dim]{len(full_names)} full-tier snapshots → {full_dir} "
+            f"(private — no public serving layer yet)[/dim]\n"
+        )
+    summary += (
+        f"[dim]Published at: {published_at}[/dim]\n"
+        f"[dim]Cleared by: {clearance.reason}[/dim]"
+    )
+    console.print(Panel(summary, style="green"))
 
 
 # ---------------------------------------------------------------------------
@@ -3033,12 +3170,32 @@ def main() -> None:
     )
     p_archive_dl.set_defaults(func=cmd_archive_download)
 
+    # draft
+    p_draft = sub.add_parser(
+        "draft",
+        help="Generate candidate dashboard snapshots to data/draft/ for review "
+             "(investigator + defamation-auditor gate before publish)",
+    )
+    p_draft.add_argument("council", choices=list(COUNCILS))
+    p_draft.set_defaults(func=cmd_draft)
+
     # publish
     p_publish = sub.add_parser(
         "publish",
-        help="Refresh derived data and export dashboard snapshots for the frontend",
+        help="Gate: copy a reviewed draft's snapshots into frontend/public/data/ "
+             "(requires --from-draft and --confirm; never recomputes)",
     )
     p_publish.add_argument("council", choices=list(COUNCILS))
+    p_publish.add_argument(
+        "--from-draft", required=True, metavar="PATH", dest="from_draft",
+        help="Path to a data/draft/<council>/<run_id>/ directory produced by `council draft`",
+    )
+    p_publish.add_argument(
+        "--confirm", required=True, metavar="NOTE",
+        help="Explicit human confirmation that this draft has been reviewed "
+             "(free-text note, e.g. reviewer name + date + summary). Required "
+             "every time — there is no default-approve.",
+    )
     p_publish.set_defaults(func=cmd_publish)
 
     args = parser.parse_args()

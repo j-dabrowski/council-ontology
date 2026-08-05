@@ -3,7 +3,9 @@
 Cross-cutting infrastructure doc — not owned by one track (see `docs/MAP.md`),
 since it covers the Python pipeline, the frontend, and the CI/automation
 workflows that connect them. Added 2026-07 alongside `.github/workflows/ci.yml`;
-`.github/workflows/publish.yml` added shortly after.
+`.github/workflows/publish.yml` added shortly after; `publish.yml` was later
+split into `draft.yml` + `publish.yml` (2026-08) once `council publish`
+became a review gate rather than a straight commit.
 
 ## What's tested, and why
 
@@ -156,45 +158,114 @@ npm run lint
 npm run build
 ```
 
-## Publish workflow
+## Draft & publish workflow
 
-`.github/workflows/publish.yml` — the last mile from a finished local
-extraction run to the live site: running `council publish` and committing
-the result, without needing a full local checkout with the 176MB
-`data/council.db` up to date. It's `workflow_dispatch`-triggered, not
-scheduled: publishing reflects a finished extraction/investigation pass,
-not the passage of time.
+The old shape of this section described a single `publish.yml` that ran
+`council publish` and committed straight to `main`, with a big warning not
+to actually trigger it — there was no review step between "generate JSON"
+and "commit it to a public repo," and this project's own private risk
+assessment (`docs/strategy/PRIVATE_ASSESSMENT.md` — gitignored, read it
+directly) rates defamation exposure MODERATE-to-HIGH from exactly that
+pattern: named-individual claims implying legal non-compliance, rendered at
+headline level. That gap is now closed **in the CLI itself**, not just
+documented — `council publish` structurally cannot run without an explicit
+review signal. The pipeline is now three stages:
 
-### ⚠ Known gap: no defamation-review gate yet — do not run this against real data
+```
+council draft <council>        council publish <council>
+   (data/draft/, private)    →     --from-draft <path>
+        │                          --confirm "<note>"
+        │                              │
+        ▼                              ▼
+  investigator +              frontend/public/data/
+  defamation-auditor           (public, git-tracked,
+  review happens here          Vercel-served)
+  (external to CI)
+```
 
-`frontend/public/data/*.json` (the snapshots this workflow commits) is
-**currently gitignored, deliberately, and not yet committed.** Don't assume
-"curated JSON battery output" implies "reviewed and safe to publish" — it
-doesn't. This project's own private risk assessment
-(`docs/strategy/PRIVATE_ASSESSMENT.md` — gitignored, not in this doc on
-purpose, read it directly rather than any summary) rates defamation
-exposure MODERATE-to-HIGH, specifically from named-individual claims that
-imply legal non-compliance and are rendered at headline/chart-note level
-rather than behind a drill-down. That assessment's action item #1 — a WA
-media lawyer consult — isn't done yet. Checked directly against the actual
-(uncommitted) snapshot content: the pattern that doc warns about is present
-verbatim in the current data, not just a theoretical risk.
+**`council draft <council>`** runs the exact same query/battery logic
+`council publish` always has (`src/analysis/queries.py` + `tests.py`), but
+writes to `data/draft/<council>/<run_id>/` — gitignored, never served, never
+part of any commit. This is the stage where the investigator agent and the
+defamation-auditor pass (a separate, in-development project) review the
+candidate output. Nothing about drafting is risky: it never touches git or
+the public directory, so it can run as often as needed.
 
-This workflow, as built, has **no review step between "generate JSON" and
-"commit it to a public repo."** That's fine for the tooling itself to
-exist (the workflow file contains no council data), but it must not be
-triggered for real until at least one of:
+**`council publish <council> --from-draft <path> --confirm "<note>"`** is
+the actual gate. Both flags are `required=True` at the argparse level — there
+is no code path that publishes without them, and no flag to skip the check
+(see `src/publish_gate.py`). It **copies the draft's JSON verbatim** into
+`frontend/public/data/` rather than recomputing from `council.db`. This
+matters: if it recomputed, a human could review draft output A and have the
+command publish a *different* output B (because the database changed in
+between) — copying bytes means what was reviewed is exactly what ships. Before
+copying, it also re-hashes every draft file and compares against the hashes
+recorded at draft time (`verify_draft_integrity`); any drift — even an
+innocent edit — aborts the publish rather than silently shipping something
+nobody actually reviewed.
 
-1. `docs/strategy/PRIVATE_ASSESSMENT.md`'s prioritized mitigations are done
-   (see that doc's "Immediate next steps" section — still the accurate
-   priority order); or
-2. A defamation-auditor pass (in development) has cleared a given publish
-   run and gates the commit step itself.
+Today, `check_clearance()` in `src/publish_gate.py` is satisfied by a real,
+non-trivial `--confirm` string — a human explicitly vouching for the draft.
+That's a genuine improvement over the old "no gate at all," but it is **not**
+the defamation-auditor pass; it's a deliberately minimal stub with one job:
+give the auditor project one clear, named place to plug in later, without
+this project having guessed at its interface ahead of time.
 
-Until then, treat this as **git history is forever**: even a same-day
-correction doesn't remove the original from `git log`, commit permalinks,
-or anyone's existing clone — unlike a live site, which can be fixed in
-place. "Commit now, review before the next one" is not a mitigation.
+**Why gitignore is no longer the safety mechanism.** Previously,
+`frontend/public/data/` being gitignored was the *only* thing standing
+between "generate JSON" and "public." That directory is now tracked (it
+holds bootstrap placeholder data — see "Placeholder data" below, and will
+hold real data once a draft clears the gate) — the CLI is what refuses to
+populate it with anything that hasn't been explicitly confirmed. A gitignore
+rule can't express "reviewed vs. not reviewed"; a required CLI flag can.
+
+**Why two workflow files, not one with two jobs.** `draft.yml` and
+`publish.yml` are independent human actions, not one pipeline run — drafting
+might happen today and publishing (after review) days later. They also need
+different permissions (`publish.yml` needs `contents: write` to commit;
+`draft.yml` never touches git) and different inputs (`publish.yml` needs
+`draft_gcs_path` + `confirm_note`; `draft.yml` needs neither). Keeping them
+separate makes each file's permission scope match what it actually does,
+rather than one file carrying the union of both.
+
+### A future paywalled tier, and why it can't just live in the git repo
+
+This project's frontend is expected to eventually gate a "full" report
+(quotation-level sourcing) behind a paywall, alongside free summary/graphs
+reports. **A client-side paywall cannot protect a static file** — anything
+under `frontend/public/` (committed or not) is served by Vercel to anyone
+who requests the URL directly, regardless of what the UI does. Real gating
+needs server-side auth (a function that checks a session + entitlement
+*before* returning data), which doesn't exist yet and isn't built by this
+change.
+
+What *is* built now, so nothing has to be re-architected later: every
+snapshot `council draft` produces is tagged in its manifest with a tier —
+`"public"` or `"full"` — via the `SNAPSHOT_TIER` map in `src/cli.py`.
+**Everything defaults to `"full"` unless explicitly listed as `"public"`**,
+so an unlisted or newly-added snapshot is private by default. `council
+publish` copies `"public"`-tier files to `frontend/public/data/` as normal,
+and copies `"full"`-tier files to `data/published_full/<council>/<run_id>/`
+instead — gitignored, and (when run via `publish.yml`) archived to a private
+GCS prefix rather than committed. No snapshot is marked `"public"` yet
+(the actual free/paywalled split — whole panels vs. per-field quote
+redaction — is an open product decision), so today this is a no-op: publish
+still only ever writes to `frontend/public/data/`, because nothing is tagged
+to go anywhere else. The seam exists; nobody has to remember to "turn on"
+gating when the product decision is made.
+
+### Placeholder data
+
+`frontend/public/data/*.json` currently holds structurally-valid but
+obviously-fake data — invented councillor names (`"Councillor Example A"`
+etc., never a real name), placeholder quote text, round numbers — generated
+by `scripts/generate_placeholder_data.py`. It's deliberately *not* wired
+into `council <cmd>`: it's a one-time bootstrap (`python
+scripts/generate_placeholder_data.py`), not a pipeline stage, and it never
+reads `council.db`. It exists so Vercel has something real to build and
+serve while the draft/publish pipeline is exercised for the first time on
+actual data — replace it by running `council draft` → review → `council
+publish` normally.
 
 **Why GCS, not a GitHub Release:** `council.db` is the _raw_ extraction —
 every entity and quote across the whole corpus, not just the curated subset
@@ -257,6 +328,16 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
   --member="serviceAccount:${SA_EMAIL}" \
   --role="roles/storage.objectViewer"
 
+# 8b. draft.yml and publish.yml also need to *write* — draft output to
+#     drafts/, full-tier publish output to published/full/ — but council.db
+#     itself must stay read-only. A prefix-scoped condition grants write
+#     access to just those two prefixes rather than broadening the viewer
+#     role above to the whole bucket.
+gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/storage.objectAdmin" \
+  --condition="expression=resource.name.startsWith(\"projects/_/buckets/${BUCKET}/objects/drafts/\") || resource.name.startsWith(\"projects/_/buckets/${BUCKET}/objects/published/full/\"),title=drafts-and-full-tier-write"
+
 # 9. The trust boundary: a Workload Identity Pool GCP will accept GitHub's
 #    OIDC tokens through
 gcloud iam workload-identity-pools create github-pool \
@@ -288,28 +369,49 @@ Knowing the provider path or service account email grants nothing on its
 own — access is only possible from a GitHub Actions run whose OIDC token
 satisfies the attribute condition set in step 10 (this exact repository).
 
-**Trigger the publish** (only once the review gap above is closed):
+**Trigger a draft:**
 
 ```bash
-gh workflow run publish.yml
+gh workflow run draft.yml
 ```
 
-**What it does:** checks out the repo, installs the package (`pip install
--e .` — `council publish` touches no Anthropic/extractor code, so no API
-key is needed on the runner — confirmed by reading `cmd_publish` in
-`src/cli.py` before writing this), authenticates to GCP via
+**What it does:** checks out the repo, installs the package (neither
+`council draft` nor `council publish` touch Anthropic/extractor code, so no
+API key is needed on either runner), authenticates to GCP via
 `google-github-actions/auth` (OIDC exchange, no key), downloads
-`council.db` from the bucket with `gcloud storage cp`, runs
-`council publish cambridge`, then commits `frontend/public/data/` with a
-bot identity and pushes — guarded by a `git diff --cached --quiet` check so
-a no-op publish (nothing changed) doesn't create an empty commit.
+`council.db` from the bucket, runs `council draft cambridge`, and uploads
+the resulting directory to `gs://$BUCKET/drafts/cambridge/<run_id>/` — the
+job summary prints that path plus the exact `publish.yml` command to run
+once it's been reviewed. Commits nothing; `contents: read` is enough.
 
-**Permissions:** `contents: write` **and** `id-token: write` at the
-workflow level, in contrast to `ci.yml`'s `contents: read` only. `id-token:
-write` is what lets the workflow mint the OIDC token in the first place —
-without it, `google-github-actions/auth` has nothing to hand GCP. Same
-least-privilege principle as `ci.yml`, different answer because this job
-actually needs to push a commit and authenticate outward.
+**Review happens here, outside CI** — the investigator agent and the
+defamation-auditor pass look at the drafted JSON (pulled from GCS, or
+generated locally against your own `council.db` — CI isn't required for
+this step) before anyone decides to publish it.
+
+**Trigger the publish** (only once a draft has actually been reviewed):
+
+```bash
+gh workflow run publish.yml -f draft_gcs_path=drafts/cambridge/<run_id> -f confirm_note="<reviewer name/date/summary>"
+```
+
+**What it does:** downloads the specified draft from GCS (no `council.db`
+needed — publish never recomputes), runs `council publish cambridge
+--from-draft ... --confirm ...`, archives any full-tier output to
+`gs://$BUCKET/published/full/cambridge/` (private — no serving layer reads
+this yet), then commits `frontend/public/data/` with a bot identity and
+pushes — guarded by a `git diff --cached --quiet` check so a no-op publish
+doesn't create an empty commit. `draft_gcs_path` and `confirm_note` are
+**required** `workflow_dispatch` inputs — GitHub's UI/CLI won't let you
+trigger this without supplying both, one more layer on top of the CLI's own
+`required=True` flags.
+
+**Permissions:** both workflows need `id-token: write` (to mint the OIDC
+token — without it, `google-github-actions/auth` has nothing to hand GCP).
+Only `publish.yml` needs `contents: write`; `draft.yml` stays at `contents:
+read` since it never touches git. Same least-privilege principle as
+`ci.yml`, split further because these two jobs now do genuinely different
+things.
 
 **A subtlety worth knowing cold:** a `git push` made from a workflow step
 using the default `${{ github.token }}` does **not** trigger other
@@ -332,7 +434,10 @@ its output" instead of running directly on the GitHub runner — same
 interface, swapped internals. Also the natural home for a later autonomous
 defamation-auditor pass: same trigger pattern, reading published JSON
 instead of writing it, flagging issues (plausibly as GitHub Issues — no new
-infra needed) and triggering the investigator to re-run.
+infra needed) and triggering the investigator to re-run. It's also the
+likely home for the paywalled full-tier serving layer described above —
+same OIDC story, an authenticated endpoint reading from
+`gs://$BUCKET/published/full/` instead of a static file.
 
 ## Adding coverage
 

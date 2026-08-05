@@ -1,16 +1,25 @@
 name: Publish
 
-# ⚠ DO NOT RUN AGAINST REAL DATA YET. This workflow has no defamation-review
-# gate between "generate JSON" and "commit it to a public repo." See the
-# "Known gap" section in docs/TESTING.md before triggering this for real —
-# frontend/public/data/ is deliberately still gitignored pending review.
+# The publish gate: copies a *reviewed* draft's public-tier snapshots into
+# frontend/public/data/ and commits them. This is stage three of the
+# draft → review → publish flow (see docs/TESTING.md "Draft & publish
+# workflow") — stage one is draft.yml, stage two is the investigator +
+# defamation-auditor review that happens on the draft output in between,
+# outside of CI.
+#
+# The gate itself lives in the CLI, not this workflow: `council publish`
+# refuses to run without both inputs below (draft_gcs_path + confirm_note —
+# see src/publish_gate.py). This workflow can't route around that; it's a
+# thin wrapper the same way every other pipeline workflow in this repo is.
+#
+# Doesn't need council.db at all — `council publish` only ever copies bytes
+# out of the draft directory, never recomputes from the database, so what
+# was reviewed is exactly what ships even if the DB has since changed.
 #
 # Manually triggered, deliberately not on a schedule: publishing reflects a
-# finished extraction/investigation pass, not the passage of time. Trigger
-# with: gh workflow run publish.yml
+# deliberate, reviewed decision, not the passage of time. Trigger with:
+#   gh workflow run publish.yml -f draft_gcs_path=drafts/cambridge/<run_id> -f confirm_note="<reviewer note>"
 #
-# Prerequisite: data/council.db must be uploaded to the private GCS bucket
-# (see docs/TESTING.md for the one-time GCP setup and the upload command).
 # Auth to GCP is via workload identity federation (OIDC) — no service
 # account key is stored anywhere. GCP_WORKLOAD_IDENTITY_PROVIDER,
 # GCP_SERVICE_ACCOUNT and GCP_BUCKET are repo Variables, not Secrets —
@@ -19,6 +28,21 @@ name: Publish
 # exact repo).
 on:
   workflow_dispatch:
+    inputs:
+      draft_gcs_path:
+        description: >-
+          GCS path (under the bucket) to the reviewed draft, e.g.
+          drafts/cambridge/draft_20260805_120000 — printed by draft.yml's
+          job summary.
+        required: true
+        type: string
+      confirm_note:
+        description: >-
+          Explicit confirmation that this draft has been reviewed (reviewer
+          name + date + summary). There is no default-approve — see
+          src/publish_gate.py.
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -26,7 +50,7 @@ permissions:
 
 jobs:
   publish:
-    name: Publish snapshots from council.db
+    name: Publish a reviewed draft
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -48,15 +72,28 @@ jobs:
 
       - uses: google-github-actions/setup-gcloud@v2
 
-      - name: Download council.db from GCS
+      - name: Download the reviewed draft from GCS
         run: |
-          mkdir -p data
-          gcloud storage cp "gs://${{ vars.GCP_BUCKET }}/council.db" data/council.db
+          mkdir -p data/draft/cambridge
+          gcloud storage cp -r "gs://${{ vars.GCP_BUCKET }}/${{ inputs.draft_gcs_path }}" data/draft/cambridge/
 
       - name: Run council publish
-        run: council publish cambridge
+        run: |
+          run_id=$(basename "${{ inputs.draft_gcs_path }}")
+          council publish cambridge \
+            --from-draft "data/draft/cambridge/${run_id}" \
+            --confirm "${{ inputs.confirm_note }}"
 
-      - name: Commit refreshed snapshots
+      - name: Archive full-tier output to GCS (private — no public serving layer yet)
+        run: |
+          full_dir="data/published_full/cambridge"
+          if [ -d "$full_dir" ] && [ -n "$(find "$full_dir" -mindepth 1 -maxdepth 1)" ]; then
+            gcloud storage cp -r "$full_dir"/* "gs://${{ vars.GCP_BUCKET }}/published/full/cambridge/"
+          else
+            echo "No full-tier output this run — nothing to archive."
+          fi
+
+      - name: Commit refreshed public-tier snapshots
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

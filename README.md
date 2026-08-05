@@ -56,8 +56,13 @@ council minutes site
    council analyse          ← query helpers for cross-meeting analysis
         │
         ▼
-   council publish          ← export analysis + the test battery as static JSON
-                              snapshots for the frontend
+   council draft            ← generate candidate JSON snapshots to data/draft/
+                              for review (investigator + defamation-auditor)
+        │
+        ▼
+   council publish          ← the gate: copy a *reviewed* draft into
+                              frontend/public/data/ for the frontend
+                              (--from-draft + --confirm required, always)
 ```
 
 ---
@@ -158,15 +163,18 @@ or in-memory-DB tests, no API key or network needed. `.github/workflows/ci.yml`
 runs this plus a frontend job (`npm ci && npm run lint && npm run build`) on
 every push to `main` and every PR.
 
-`.github/workflows/publish.yml` is a manually-triggered (`workflow_dispatch`)
-job that pulls `data/council.db` from a private GCS bucket — authenticated
-via workload identity federation (OIDC), no service account key stored
-anywhere — runs `council publish`, and commits the refreshed snapshots.
-**Not yet in use**: `frontend/public/data/*.json` is still gitignored
-pending a defamation-review gate (named-individual claims, documented risk
-in `docs/strategy/PRIVATE_ASSESSMENT.md`) — see `docs/TESTING.md` for the
-gap, the one-time GCP setup, and why the raw DB stays out of a public
-GitHub Release regardless.
+Publishing is two manually-triggered (`workflow_dispatch`) workflows, not
+one: `.github/workflows/draft.yml` pulls `data/council.db` from a private
+GCS bucket — authenticated via workload identity federation (OIDC), no
+service account key stored anywhere — runs `council draft`, and stages the
+output in GCS for review. `.github/workflows/publish.yml` then runs
+`council publish --from-draft ... --confirm ...` against a *reviewed* draft
+and commits the refreshed snapshots — both flags are required, so nothing
+publishes without an explicit human (eventually: defamation-auditor) signal.
+`frontend/public/data/*.json` currently holds obviously-fake placeholder
+data (`scripts/generate_placeholder_data.py`), not real output — see
+`docs/TESTING.md` for the full draft/publish shape, the one-time GCP setup,
+and why the raw DB stays out of a public GitHub Release regardless.
 
 See `docs/TESTING.md` for what's covered, the ruff rule-selection
 rationale, and why LLM calls are deliberately kept out of the required CI
@@ -177,7 +185,8 @@ path.
 ## Dashboard
 
 A React/Vite frontend visualises the analysis. It reads **static JSON snapshots**
-(no live API needed) that `council publish` exports to `frontend/public/data/`.
+(no live API needed) that `council publish` copies into `frontend/public/data/`
+from a reviewed `council draft` run.
 
 The page is organised as a **standard test battery**:
 
@@ -195,10 +204,14 @@ panel to reveal their actual declared interests, each with the verbatim minute
 quote), and the scorecard rows ↕ panels are linked both ways.
 
 ```bash
-# 1. Export the snapshots from the database (re-run after any data change)
-council publish cambridge          # → frontend/public/data/*.json
+# 1. Generate candidate snapshots from the database (re-run after any data change)
+council draft cambridge            # → data/draft/cambridge/<run_id>/*.json
 
-# 2. Run the frontend
+# 2. Review the draft (investigator + defamation-auditor), then publish it
+council publish cambridge --from-draft data/draft/cambridge/<run_id> \
+  --confirm "reviewed by <you>, <date>"   # → frontend/public/data/*.json
+
+# 3. Run the frontend
 cd frontend && npm run dev         # → http://localhost:5173
 # or: npm run build && npm run preview
 ```
@@ -434,14 +447,15 @@ All queries accept `--from-year` and `--to-year` to filter by meeting date.
 
 ---
 
-#### `council publish cambridge`
+#### `council draft cambridge`
 Exports the analysis and the **standard test battery** as static JSON snapshots to
-`frontend/public/data/` for the dashboard. Re-run after any data change (extraction,
-dedup, relationship build) so the site reflects the current database.
+`data/draft/cambridge/<run_id>/` — a private staging area, never committed, never
+served. Re-run after any data change (extraction, dedup, relationship build) to get
+a fresh candidate for review.
 
 ```bash
-council publish cambridge
-# → overview.json, scorecard.json, and one snapshot per panel (+ manifest.json)
+council draft cambridge
+# → data/draft/cambridge/draft_20260805_120000/{overview,scorecard,...}.json + manifest.json
 ```
 
 The `scorecard` snapshot is produced by the council-agnostic battery in
@@ -449,6 +463,30 @@ The `scorecard` snapshot is produced by the council-agnostic battery in
 a recognised-criterion mapping, a supportive/neutral/critical valence, and a chart
 payload. Adding a test there makes it run on every council and appear as a panel
 automatically.
+
+This is where the investigator agent and the defamation-auditor pass review
+output — nothing here is public until `council publish` says so.
+
+---
+
+#### `council publish cambridge --from-draft <path> --confirm "<note>"`
+The gate. Copies a *reviewed* draft's snapshots verbatim into
+`frontend/public/data/` for the dashboard — it never recomputes from the
+database, so what was reviewed is exactly what ships. Both flags are
+required; there's no way to publish without them.
+
+```bash
+council publish cambridge \
+  --from-draft data/draft/cambridge/draft_20260805_120000 \
+  --confirm "reviewed by Josef, 2026-08-05, no issues found"
+# → frontend/public/data/{overview,scorecard,...}.json + manifest.json
+```
+
+Before copying, it re-hashes every draft file and refuses if anything has
+changed since the draft was generated (`src/publish_gate.py`) — a review is
+only valid for the exact bytes it looked at. See `docs/TESTING.md` for the
+full draft → review → publish rationale, including the tier concept that
+keeps a future paywalled "full" report out of the public tree by default.
 
 ---
 
@@ -567,6 +605,10 @@ src/
   validation/
     core.py               — shared validation logic (five metrics, three-tier quote matching)
 
+  publish_gate.py          — the draft → publish gate seam: DraftManifest,
+                            verify_draft_integrity, check_clearance (stub —
+                            the defamation-auditor's future integration point)
+
 api/
   main.py                 — legacy FastAPI backend (REST view of the queries); not
                             used by the live site, which reads the static snapshots
@@ -591,8 +633,11 @@ frontend/
                              DissentProfiles, DissentCoalitions (not rendered; each
                              would need promoting to a battery test to return)
     hooks/useData.ts      — shared data-fetching hook
-  public/data/*.json      — published snapshots (generated by `council publish`)
-  (run: council publish cambridge, then cd frontend && npm run dev)
+  public/data/*.json      — published snapshots (copied in by `council publish`
+                            from a reviewed `council draft`; currently
+                            placeholder data — see scripts/generate_placeholder_data.py)
+  (run: council draft cambridge, review it, council publish cambridge --from-draft ...
+   --confirm ..., then cd frontend && npm run dev)
 
 scripts/
   census.py               — Level 0: keyword scan and census across all PDFs
@@ -622,6 +667,10 @@ data/
   audit_report.md         — Level 6: human audit findings (open alongside PDFs)
   raw/cambridge/          — downloaded PDFs + manifest.json (gitignored except manifest)
   council.db              — SQLite database (gitignored, re-generated from PDFs)
+  draft/{council}/{run_id}/ — council draft output: candidate snapshots + manifest
+                            (hashes, tiers) for review; gitignored, never served
+  published_full/{council}/{run_id}/ — council publish's full-tier (paywall-pending)
+                            output; gitignored — private, not part of the public site
 
 .cache/
   llm_responses/          — cached raw LLM responses ({hash}_{prompt-version}.json)
@@ -652,7 +701,7 @@ See `docs/pipeline/PIPELINE.md` for the detailed plan, build log, and dependency
 1. Create `src/scraper/<council>.py` subclassing `BaseScraper`
 2. Add one entry to the `COUNCILS` dict in `src/cli.py`
 
-All CLI commands work immediately for the new council — including `council publish`,
+All CLI commands work immediately for the new council — including `council draft`,
 which runs the identical test battery and produces a comparable scorecard. Because
 every test uses a stable `test_id`, two councils' results line up test-for-test
 (and "not computable" rows show which tests a given corpus supports).

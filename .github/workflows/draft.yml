@@ -1,0 +1,75 @@
+name: Draft
+
+# Generates candidate dashboard snapshots for review — never commits to git,
+# never touches frontend/public/data/. This is stage one of the draft →
+# review → publish gate (see docs/TESTING.md "Draft & publish workflow"):
+# `council draft` runs the same query/battery logic `council publish` always
+# has, but writes to a private staging area instead of the public tree, so
+# the investigator agent and the defamation-auditor pass (built separately)
+# have something to review *before* anything is eligible to go public.
+#
+# Manually triggered, deliberately not on a schedule — same reasoning as the
+# old publish.yml: drafting reflects a finished extraction/investigation
+# pass, not the passage of time. Trigger with: gh workflow run draft.yml
+#
+# Prerequisite: data/council.db must be uploaded to the private GCS bucket
+# (see docs/TESTING.md). Auth to GCP is via workload identity federation
+# (OIDC) — no service account key stored anywhere.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read     # never commits — no write access needed
+  id-token: write     # required to mint the OIDC token that authenticates to GCP
+
+jobs:
+  draft:
+    name: Draft snapshots from council.db
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -e .
+
+      - id: auth
+        name: Authenticate to GCP (OIDC, no long-lived key)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download council.db from GCS
+        run: |
+          mkdir -p data
+          gcloud storage cp "gs://${{ vars.GCP_BUCKET }}/council.db" data/council.db
+
+      - name: Run council draft
+        run: council draft cambridge
+
+      - name: Upload draft to GCS for review
+        run: |
+          # A fresh checkout produces exactly one run directory under
+          # data/draft/cambridge/ — glob it rather than parsing the command's
+          # stdout, so this step has no dependency on log formatting.
+          draft_dir=$(find data/draft/cambridge -mindepth 1 -maxdepth 1 -type d)
+          run_id=$(basename "$draft_dir")
+          gcloud storage cp -r "$draft_dir" "gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/"
+          {
+            echo "### Draft ready for review"
+            echo ""
+            echo "\`gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/${run_id}/\`"
+            echo ""
+            echo "After investigator + defamation-auditor review, publish it with:"
+            echo ""
+            echo '```'
+            echo "gh workflow run publish.yml -f draft_gcs_path=drafts/cambridge/${run_id} -f confirm_note=\"<reviewer note>\""
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
