@@ -128,8 +128,10 @@ The non-obvious edges, spelled out:
 | improving the exploration prompt | `investigator/EXPLORATION_PROTOCOL.md` (benchmark) → bump `Explorer_prompt.txt` |
 | improving the refinement prompt / harness | `investigator/REFINEMENT_PROTOCOL.md` (benchmark) → bump `Refiner_prompt.txt` |
 | writing up cross-cutting conclusions | `investigator/FINDINGS_SUMMARY.md` |
-| building a panel or a drill-down | `frontend/INTERACTIVITY.md` |
+| building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX |
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |
 | weighing risk, funding, or direction | `strategy/PRIVATE_ASSESSMENT.md` |
 | onboarding / public/dev reference | root `README.md` |
 | adding a test, changing ruff config, editing CI | `TESTING.md` |
+| publishing data so it's actually public (`council publish`, Vercel, GCS) | `TESTING.md` ("Draft & publish workflow") — the gate; note it covers the *data* layer only, not component source (see the panel row above) |
+| committing changes in this repo | `TESTING.md` ("Commit conventions") |

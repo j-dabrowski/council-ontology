@@ -7,6 +7,13 @@ workflows that connect them. Added 2026-07 alongside `.github/workflows/ci.yml`;
 split into `draft.yml` + `publish.yml` (2026-08) once `council publish`
 became a review gate rather than a straight commit.
 
+## Commit conventions
+
+**No `Co-Authored-By: Claude` trailer on commits in this repo.** Common
+default elsewhere, explicitly not wanted here — the project owner reviews
+and commits changes themselves; don't add it even if a generic instruction
+elsewhere says to.
+
 ## What's tested, and why
 
 `tests/` has two files:

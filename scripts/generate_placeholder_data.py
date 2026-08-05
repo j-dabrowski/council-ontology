@@ -499,13 +499,13 @@ def build_sponsorship() -> dict:
     def _edge(a, b, kind):
         return {
             "era_label": "Placeholder Era", "name_a": a, "name_b": b,
-            "sponsorships": 15, "lift": 1.4, "agree_pct": 0.88, "agree_n": 60, "kind": kind,
+            "sponsorships": 15, "lift": 1.4, "agree_pct": 88, "agree_n": 60, "kind": kind,
         }
 
     return {
         "alliances": [_edge(NAMES[0], NAMES[1], "alliance")],
         "procedural": [_edge(NAMES[2], NAMES[3], "procedural")],
-        "convergence_high_agree": 0.9, "convergence_low_agree": 0.4,
+        "convergence_high_agree": 90, "convergence_low_agree": 40,
         "oldguard_label": "Placeholder Old Guard Era",
         "oldguard_unanimous_pct": 76.0,
         "oldguard_nodes": [{"name": n, "moved": 20, "seconded": 15, "in_core": True} for n in NAMES[:2]],
