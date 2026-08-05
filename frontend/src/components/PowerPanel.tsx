@@ -33,12 +33,6 @@ function ContestedVoteRow({ v }: { v: ContestedVoteDetail }) {
   );
 }
 
-// Councillors worth labelling directly on the scatter (the rest get a tooltip).
-const HIGHLIGHT = new Set([
-  "Rod Bradley", "Pauline O'Connor", "Jo McAllister", "Corinne MacRae",
-  "Kate McKerracher", "David Berry", "Keri Shannon",
-]);
-
 const LINE_COLORS = ["#60a5fa", "#f59e0b", "#22c55e", "#f87171", "#8b5cf6", "#e879f9"];
 
 const WinTooltip = ({ active, payload }: {
@@ -98,6 +92,25 @@ export function PowerPanel() {
   const topWinner = spectrum[spectrum.length - 1];  // most dominant
   const losers = spectrum.filter((p) => p.win_rate < 0.5);
 
+  // Councillors worth labelling directly on the scatter (the rest get a tooltip) —
+  // the most active by contested-vote count, computed from data. Never hardcode
+  // specific names here: this panel (and any dataset it loads) must work
+  // unmodified for a placeholder run, a real reviewed run, or a second council.
+  const HIGHLIGHT = new Set(
+    [...data.profiles].sort((a, b) => b.n - a.n).slice(0, 6).map((p) => p.name)
+  );
+
+  // Most prolific dissenter (by AGAINST-vote count) and, separately, whoever
+  // converts objections into actual losses most often — both computed from
+  // the loaded data, not hardcoded, so the callout is accurate for any corpus.
+  const byDissentN = [...data.profiles]
+    .filter((p) => p.dissent_n > 0)
+    .sort((a, b) => b.dissent_n - a.dissent_n);
+  const mostProlific = byDissentN[0] ?? null;
+  const mostEffective = [...data.profiles]
+    .filter((p) => p.dissent_effectiveness !== null && p.name !== mostProlific?.name)
+    .sort((a, b) => (b.dissent_effectiveness ?? 0) - (a.dissent_effectiveness ?? 0))[0] ?? null;
+
   // Dissent effectiveness scatter (only councillors with enough AGAINST votes).
   const eff = data.profiles
     .filter((p) => p.dissent_effectiveness !== null)
@@ -118,6 +131,15 @@ export function PowerPanel() {
       return row;
     })
     .filter((row) => otNames.some((n) => row[n] !== null));
+
+  // The single lowest term-by-term win rate across the whole over_time series,
+  // for the closing chart-note — computed, not hardcoded, same reasoning as above.
+  const allTermPoints = data.over_time.flatMap((o) =>
+    o.points.map((p) => ({ name: o.name, term: p.term, win_rate: p.win_rate }))
+  );
+  const lowestTermPoint = allTermPoints.length
+    ? allTermPoints.reduce((min, p) => (p.win_rate < min.win_rate ? p : min))
+    : null;
 
   return (
     <Card
@@ -143,16 +165,24 @@ export function PowerPanel() {
         </div>
       </div>
 
-      <div className="objection-callout">
-        <span className="objection-callout-diff">4 in 5</span>
-        <span className="objection-callout-text">
-          of <strong><CouncillorLink name="Rod Bradley" /></strong>'s objections failed. Cambridge's most prolific dissenter
-          (20 years, more contested votes than anyone) saw just <strong>{pct(0.206)}</strong> of his
-          AGAINST votes actually sink a motion. <strong><CouncillorLink name="Pauline O'Connor" /></strong> dissented just as
-          often — but <strong>57%</strong> of her objections prevailed. Same rebelliousness, opposite
-          power. When the two sat opposite each other, O'Connor's side won 83% of the time.
-        </span>
-      </div>
+      {mostProlific && (
+        <div className="objection-callout">
+          <span className="objection-callout-diff">
+            {pct(1 - (mostProlific.dissent_effectiveness ?? 0))}
+          </span>
+          <span className="objection-callout-text">
+            of <strong><CouncillorLink name={mostProlific.name} /></strong>'s objections failed —
+            the chamber's most prolific dissenter by AGAINST-vote count ({mostProlific.dissent_n}),
+            yet only <strong>{pct(mostProlific.dissent_effectiveness ?? 0)}</strong> of those
+            objections actually sank a motion.
+            {mostEffective && (
+              <> <strong><CouncillorLink name={mostEffective.name} /></strong> dissents far less
+              often but converts <strong>{pct(mostEffective.dissent_effectiveness ?? 0)}</strong> of
+              objections into losses — same chamber, very different leverage.</>
+            )}
+          </span>
+        </div>
+      )}
 
       <p className="section-heading">
         The permanent majority — and minority
@@ -252,9 +282,14 @@ export function PowerPanel() {
       </ResponsiveContainer>
       <p className="chart-note">
         Win rate per four-year council term for the six longest-serving members (≥10 contested votes
-        in a term). Rod Bradley bottomed out at 37% in 2011–15 — outvoted on nearly two-thirds of
-        contested motions — then recovered above 60% as the chamber turned over. Reading the lines
-        sideways shows who rose and who fell as each election reshaped the majority.
+        in a term).
+        {lowestTermPoint && (
+          <> <CouncillorLink name={lowestTermPoint.name} /> hit the lowest single-term win rate on
+          record — {pct(lowestTermPoint.win_rate)} in {lowestTermPoint.term} — a reminder that no
+          seat is safe from an election reshaping the majority.</>
+        )}
+        {" "}Reading the lines sideways shows who rose and who fell as each election reshaped the
+        chamber.
       </p>
     </Card>
   );

@@ -93,6 +93,10 @@ export function SponsorshipNetworkPanel() {
   const lift = data.convergence_high_agree;
   const base = data.convergence_low_agree;
 
+  // The strongest validated alliances by lift, for the worked example below —
+  // computed from data, never hardcoded (must hold for any dataset this loads).
+  const topAlliances = [...data.alliances].sort((a, b) => b.lift - a.lift).slice(0, 2);
+
   return (
     <Card
       title="Who Backed Whom — the Sponsorship Network a Unanimous Vote Hides"
@@ -130,9 +134,16 @@ export function SponsorshipNetworkPanel() {
       <p className="chart-note">
         Each pair seconded each other's motions far more than their activity predicts (lift = observed ÷
         expected; ×2 means twice as often as chance), <em>and</em> sided together on contested votes well
-        above the {base}% chamber base rate. These are genuine working blocs — e.g. the modern
-        King–MacRae–O'Connor triangle and the 2000s Burkett–McAullay pairing. Lift controls for volume, so
-        a busy chair who seconds everything does not top the list. Bars scaled to the strongest lift.
+        above the {base}% chamber base rate. These are genuine working blocs
+        {topAlliances.length > 0 && (
+          <> — e.g. {topAlliances.map((e, i) => (
+            <span key={i}>
+              {i > 0 && " and "}
+              {lastName(e.name_a)}–{lastName(e.name_b)}
+            </span>
+          ))}</>
+        )}. Lift controls for volume, so a busy chair who seconds everything does not top the list.
+        Bars scaled to the strongest lift.
       </p>
 
       {data.procedural.length > 0 && (
@@ -165,11 +176,10 @@ export function SponsorshipNetworkPanel() {
       </div>
       <p className="chart-note">
         Through 2000–2007 a stable group of long-servers preferentially backed each other's motions. It is the
-        densest sponsorship cluster in 30 years — and it recruited the next generation: Rod Bradley and Kate
-        Barlow were drawn into it before each served 20+ years. But it is <em>not</em> a single voting bloc:
-        several of the strongest ties are <span style={{ color: KIND_COLOR.procedural }}>procedural</span>
-        {" "}(Bradley sponsored deep into the network yet voted against those same colleagues on divisive
-        items). "Old guard" describes a working establishment, not a unified faction.
+        densest sponsorship cluster in 30 years. But it is <em>not</em> a single voting bloc: several of the
+        strongest ties are <span style={{ color: KIND_COLOR.procedural }}>procedural</span> — members who
+        sponsored deep into the network yet voted against those same colleagues on divisive items.
+        "Old guard" describes a working establishment, not a unified faction.
       </p>
 
       {/* ── Part 3 — structural history ── */}

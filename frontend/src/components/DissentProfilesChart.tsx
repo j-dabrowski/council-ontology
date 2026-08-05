@@ -65,6 +65,13 @@ export function DissentProfilesChart() {
   const maxActive = chartData.filter((d) => d.is_active).reduce((m, d) => Math.max(m, d.dissent_rate), 0);
   const activeHighlight = chartData.find((d) => d.is_active && d.dissent_rate === maxActive);
 
+  // Most independent historical (non-active) voices, for the comparison note below —
+  // computed from data, never hardcoded (must hold for any dataset this loads).
+  const topHistorical = chartData
+    .filter((d) => !d.is_active)
+    .sort((a, b) => b.dissent_rate - a.dissent_rate)
+    .slice(0, 2);
+
   const chartHeight = Math.max(320, chartData.length * 30);
 
   return (
@@ -107,9 +114,15 @@ export function DissentProfilesChart() {
           <span className="badge badge-blue">Current council</span>
           <span>
             {activeHighlight.name} is the current chamber's most independent voice at{" "}
-            <strong>{(activeHighlight.dissent_rate * 100).toFixed(1)}%</strong> — mild by
-            historical standards. David Berry (49%) and Kerry Smith (45%) in the early 2000s
-            were far more willing to go against the tide.
+            <strong>{(activeHighlight.dissent_rate * 100).toFixed(1)}%</strong>.
+            {topHistorical.length > 0 && (
+              <> By comparison, {topHistorical.map((d, i) => (
+                <span key={i}>
+                  {i > 0 && " and "}
+                  {d.name} ({(d.dissent_rate * 100).toFixed(0)}%)
+                </span>
+              ))} were historically the most willing to go against the tide.</>
+            )}
           </span>
         </div>
       )}

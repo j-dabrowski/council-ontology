@@ -50,6 +50,12 @@ export function MayoralAgendaPanel() {
   const chartData = data.per_mayor.map((m) => ({ ...m, shortName: m.name }));
   const height = Math.max(220, chartData.length * 42);
 
+  // Highest- and lowest-contested mayoralties, for the worked example below —
+  // computed from data, never hardcoded (must hold for any dataset this loads).
+  const byContest = [...data.per_mayor].sort((a, b) => b.contest_pct - a.contest_pct);
+  const mostContested = byContest[0] ?? null;
+  const leastContested = byContest[byContest.length - 1] ?? null;
+
   function handleBarClick(entry: MayorContest) {
     if (!entry.n_shown) return;
     setSelected(selected === entry.name ? null : entry.name);
@@ -135,10 +141,14 @@ export function MayoralAgendaPanel() {
 
       <p className="chart-note">
         "Contested" = a carried motion that drew at least one AGAINST vote. The mayoral effect is far
-        from uniform: it is concentrated in the Anderton and Shannon mayoralties (the latter spanning
-        the turbulent 2015–2023 era), while Simon Withers's motions passed almost as quietly as the
-        backbench. Only mayors with dated terms (1999 onward) and ≥10 carried motions are shown;
-        earlier mayors fall into the backbench comparison.
+        from uniform:
+        {mostContested && leastContested && mostContested.name !== leastContested.name && (
+          <> it is concentrated in <CouncillorLink name={mostContested.name} />'s
+          term ({mostContested.contest_pct}% contested), while <CouncillorLink name={leastContested.name} />'s
+          motions passed almost as quietly as the backbench ({leastContested.contest_pct}%).</>
+        )}
+        {" "}Only mayors with dated terms (1999 onward) and ≥10 carried motions are shown; earlier
+        mayors fall into the backbench comparison.
       </p>
       <p className="chart-note">
         <strong>Read as a strength:</strong> a chamber that votes against its own Mayor <em>more</em>
