@@ -156,9 +156,21 @@ pytest tests/ -q
 `PASS`/`REVIEW`/`FAIL` gate (`src/validation/core.py`) — all pure-function
 or in-memory-DB tests, no API key or network needed. `.github/workflows/ci.yml`
 runs this plus a frontend job (`npm ci && npm run lint && npm run build`) on
-every push to `main` and every PR. See `docs/TESTING.md` for what's covered,
-the ruff rule-selection rationale, and why LLM calls are deliberately kept
-out of the required CI path.
+every push to `main` and every PR.
+
+`.github/workflows/publish.yml` is a manually-triggered (`workflow_dispatch`)
+job that pulls `data/council.db` from a private GCS bucket — authenticated
+via workload identity federation (OIDC), no service account key stored
+anywhere — runs `council publish`, and commits the refreshed snapshots.
+**Not yet in use**: `frontend/public/data/*.json` is still gitignored
+pending a defamation-review gate (named-individual claims, documented risk
+in `docs/strategy/PRIVATE_ASSESSMENT.md`) — see `docs/TESTING.md` for the
+gap, the one-time GCP setup, and why the raw DB stays out of a public
+GitHub Release regardless.
+
+See `docs/TESTING.md` for what's covered, the ruff rule-selection
+rationale, and why LLM calls are deliberately kept out of the required CI
+path.
 
 ---
 
