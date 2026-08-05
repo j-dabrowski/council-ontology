@@ -54,3 +54,9 @@ data/council.db.bak*
 
 # Private strategy notes (track: strategy)
 docs/strategy/
+
+# Untracked pending defamation review: editorial synthesis naming real
+# individuals with implied non-compliance framing (recusal drivers). Matches
+# the risk PRIVATE_ASSESSMENT.md documents. Kept locally; not removed from
+# git history — see the commit that untracked this for what that means.
+docs/investigator/INVESTIGATIONS.md
