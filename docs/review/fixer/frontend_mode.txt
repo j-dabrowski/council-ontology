@@ -1,0 +1,45 @@
+# Fixer — frontend mode
+
+**Read `Fixer_prompt.txt` first.** This file is the thin part — the mode's
+own brief is `docs/frontend/INTERACTIVITY.md`, not restated here.
+
+**Scope:** `frontend/src/components/*.tsx`, and `frontend/src/index.css` only
+if a fix genuinely needs a new style (prefer reusing an existing class —
+`.reveal`, `.reveal-body`, `.objection-callout`, etc. — over adding one).
+Nothing outside `frontend/src/`.
+
+**Brief:** `docs/frontend/INTERACTIVITY.md` in full, particularly:
+- The hard rule: no literal councillor name, vote count, or narrative claim
+  about a named individual as a string constant. Every name/stat a panel
+  renders must be computed from its `data` prop.
+- The `Reveal`/`DrillDown` pattern (`frontend/src/components/DrillDown.tsx`)
+  for gating a named-individual-plus-critical-stat claim behind a click
+  instead of standing text — the established convention as of the five-panel
+  fix on 2026-08-10 (`RecusalTrendPanel`, `PowerPanel`, `MayoralAgendaPanel`,
+  `SponsorshipNetworkPanel`, `DissentProfilesChart`). Match that pattern
+  rather than inventing a new gating mechanism.
+
+**Verification bar** (all required before reporting a flag as fixed):
+- `cd frontend && npx tsc --noEmit` clean
+- `npm run lint` clean (no new warnings beyond the pre-existing
+  `react-refresh/only-export-components` one in `CouncillorModal.tsx`)
+- Grep the changed file for the specific name/number the flag named, confirm
+  it no longer appears as a literal string if the flag was about hardcoding
+- If the flag was about placement (not hardcoding): confirm the claim is now
+  behind an interaction by reading the component, not just by making the
+  change and assuming it worked
+
+**Common flag shapes you'll see:**
+- *Placement* — a named individual + critical stat renders as standing text.
+  Fix: wrap it in `<Reveal label="...">...</Reveal>`, per the existing
+  pattern.
+- *Hardcoding* — a literal name/stat/claim in JSX instead of computed from
+  `data`. Fix: compute it (`.sort()`/`.filter()`/`.find()` over the data
+  prop, same as every other panel in this codebase), verify the computed
+  value matches what the flag's spot-check found.
+- *Proportionality/caveat* — a chart renders two legally-different categories
+  (e.g. must-leave vs. impartiality declarations) identically. Fix: this
+  usually needs a data-shape change, not just a rendering one — check whether
+  the snapshot JSON already carries the distinguishing field before assuming
+  you can fix it in `.tsx` alone; if it doesn't, this flag needs a `pipeline`
+  tag too and should be reported as partially-fixed with that noted.

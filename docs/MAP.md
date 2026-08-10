@@ -7,10 +7,12 @@ feed each other**. Read this first in a fresh session, then open the track you'r
 
 > The public/dev entry point is the root `README.md` (schema, CLI, dashboard, layout).
 > `docs/MAP.md` (this file) is the internal index. The prompts that run on the LLM
-> are **runtime artifacts**, not docs: `src/extraction/*.txt` (extraction) and
+> are **runtime artifacts**, not docs: `src/extraction/*.txt` (extraction),
 > `docs/investigator/Investigator_prompt.txt` + `Explorer_prompt.txt` /
 > `Refiner_prompt.txt` / `Runner_prompt.txt` (investigation — three modes, one
-> shared reference layer).
+> shared reference layer), and `docs/review/editor/Editor_prompt.txt` +
+> `docs/review/fixer/Fixer_prompt.txt` + its three `*_mode.txt` files
+> (post-draft review/fix — two more roles, same shared-layer-plus-modes shape).
 
 ---
 
@@ -19,6 +21,13 @@ feed each other**. Read this first in a fresh session, then open the track you'r
 Not owned by one track — gates all of them:
 - `TESTING.md` — testing & CI: what's covered, ruff config rationale, why LLM
   calls stay out of the required CI path. Companion to `.github/workflows/ci.yml`.
+- `review/` — the AI-assisted review/fix stage between `council draft` and
+  `council publish`: **Editor** (reviews a draft for defamation exposure
+  across every track) and **Fixer** (three modes — frontend / pipeline /
+  doc — that act on Editor's flags), chained by the **Conductor**
+  (`review/CONDUCTOR.md`). Start at `review/REVIEW.md`. Untested as of
+  2026-08-10 — see that file's status note before treating any of it as
+  calibrated.
 
 ## The four tracks
 
@@ -128,6 +137,11 @@ The non-obvious edges, spelled out:
 | improving the exploration prompt | `investigator/EXPLORATION_PROTOCOL.md` (benchmark) → bump `Explorer_prompt.txt` |
 | improving the refinement prompt / harness | `investigator/REFINEMENT_PROTOCOL.md` (benchmark) → bump `Refiner_prompt.txt` |
 | writing up cross-cutting conclusions | `investigator/FINDINGS_SUMMARY.md` |
+| reviewing a draft for defamation exposure | `review/editor/Editor_prompt.txt` (run) → writes `data/draft/<council>/<run_id>/defamation_review_<n>.md` |
+| improving the editor prompt | `review/editor/EDITOR_PROTOCOL.md` (benchmark) → bump `Editor_prompt.txt` |
+| fixing a flagged claim (frontend/pipeline/doc) | `review/fixer/<track>_mode.txt` (run) — only the track(s) the editor tagged |
+| adding a fourth fixer track | `review/fixer/FIXER_PROTOCOL.md` — additive by design, see "Adding a fourth mode" |
+| chaining editor + fixer, or asking what happens after a FAIL | `review/CONDUCTOR.md` — the loop, the pass cap, the one rule (never calls `council publish`) |
 | building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX |
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |
 | weighing risk, funding, or direction | `strategy/PRIVATE_ASSESSMENT.md` |

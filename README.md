@@ -57,7 +57,7 @@ council minutes site
         │
         ▼
    council draft            ← generate candidate JSON snapshots to data/draft/
-                              for review (investigator + defamation-auditor)
+                              for review (investigator + Editor)
         │
         ▼
    council publish          ← the gate: copy a *reviewed* draft into
@@ -170,7 +170,10 @@ service account key stored anywhere — runs `council draft`, and stages the
 output in GCS for review. `.github/workflows/publish.yml` then runs
 `council publish --from-draft ... --confirm ...` against a *reviewed* draft
 and commits the refreshed snapshots — both flags are required, so nothing
-publishes without an explicit human (eventually: defamation-auditor) signal.
+publishes without an explicit human signal. That stays true even once
+Editor/Fixer (`docs/review/`) are calibrated: they inform the human's
+decision, they never make it — see `docs/review/CONDUCTOR.md`'s one
+non-negotiable rule.
 `frontend/public/data/*.json` currently holds obviously-fake placeholder
 data (`scripts/generate_placeholder_data.py`), not real output — see
 `docs/TESTING.md` for the full draft/publish shape, the one-time GCP setup,
@@ -207,7 +210,7 @@ quote), and the scorecard rows ↕ panels are linked both ways.
 # 1. Generate candidate snapshots from the database (re-run after any data change)
 council draft cambridge            # → data/draft/cambridge/<run_id>/*.json
 
-# 2. Review the draft (investigator + defamation-auditor), then publish it
+# 2. Review the draft (investigator + Editor), then publish it
 council publish cambridge --from-draft data/draft/cambridge/<run_id> \
   --confirm "reviewed by <you>, <date>"   # → frontend/public/data/*.json
 
@@ -479,10 +482,11 @@ a recognised-criterion mapping, a supportive/neutral/critical valence, and a cha
 payload. Adding a test there makes it run on every council and appear as a panel
 automatically.
 
-This is where the investigator agent and the defamation-auditor pass review
-output — nothing here is public until `council publish` says so. To view a
-draft in the real dashboard while reviewing it, see "Previewing a draft
-before it's published" in the Dashboard section above.
+This is where the Editor role reviews output, and Fixer's track-scoped modes
+act on whatever it flags (`docs/review/`) — nothing here is public until
+`council publish` says so. To view a draft in the real dashboard while
+reviewing it, see "Previewing a draft before it's published" in the
+Dashboard section above.
 
 ---
 
@@ -624,7 +628,7 @@ src/
 
   publish_gate.py          — the draft → publish gate seam: DraftManifest,
                             verify_draft_integrity, check_clearance (stub —
-                            the defamation-auditor's future integration point)
+                            the Editor's future integration point)
 
 api/
   main.py                 — legacy FastAPI backend (REST view of the queries); not

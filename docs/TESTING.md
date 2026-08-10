@@ -184,19 +184,21 @@ council draft <council>        council publish <council>
         │                          --confirm "<note>"
         │                              │
         ▼                              ▼
-  investigator +              frontend/public/data/
-  defamation-auditor           (public, git-tracked,
-  review happens here          Vercel-served)
-  (external to CI)
+  Editor + Fixer               frontend/public/data/
+  review happens here          (public, git-tracked,
+  (external to CI)              Vercel-served)
 ```
 
 **`council draft <council>`** runs the exact same query/battery logic
 `council publish` always has (`src/analysis/queries.py` + `tests.py`), but
 writes to `data/draft/<council>/<run_id>/` — gitignored, never served, never
-part of any commit. This is the stage where the investigator agent and the
-defamation-auditor pass (a separate, in-development project) review the
-candidate output. Nothing about drafting is risky: it never touches git or
-the public directory, so it can run as often as needed.
+part of any commit. This is the stage where the Editor role
+(`docs/review/editor/Editor_prompt.txt`, v0.2, not yet run — see
+`docs/review/CONDUCTOR.md` for the loop that chains it with the Fixer role)
+reviews the candidate output, and Fixer's track-scoped modes
+(`docs/review/fixer/`) act on whatever it flags. Nothing about drafting is
+risky: it never touches git or the public directory, so it can run as often
+as needed.
 
 **Reviewing a draft against the actual site, locally.** A reviewer needs to
 see the draft rendered by the real panels, not just read raw JSON — but
@@ -246,9 +248,9 @@ nobody actually reviewed.
 Today, `check_clearance()` in `src/publish_gate.py` is satisfied by a real,
 non-trivial `--confirm` string — a human explicitly vouching for the draft.
 That's a genuine improvement over the old "no gate at all," but it is **not**
-the defamation-auditor pass; it's a deliberately minimal stub with one job:
-give the auditor project one clear, named place to plug in later, without
-this project having guessed at its interface ahead of time.
+an Editor pass; it's a deliberately minimal stub with one job: give the
+Editor role (`docs/review/editor/`) one clear, named place to plug in later,
+without this project having guessed at its interface ahead of time.
 
 **Why gitignore is no longer the safety mechanism.** Previously,
 `frontend/public/data/` being gitignored was the *only* thing standing
@@ -312,7 +314,7 @@ that made it into the vetted JSON battery on the live site. This repo is
 public; a GitHub Release asset would be too. Publishing the full,
 unreviewed DB publicly skips the editorial/liability review this project
 already treats as a real concern (see `docs/strategy/PRIVATE_ASSESSMENT.md`
-and the future defamation-auditor idea below) — so it lives in a **private**
+and `docs/review/editor/Editor_prompt.txt`) — so it lives in a **private**
 GCS bucket instead, readable only by this workflow.
 
 **Why OIDC, not a service account key:** a downloaded JSON key is a
@@ -423,10 +425,10 @@ the resulting directory to `gs://$BUCKET/drafts/cambridge/<run_id>/` — the
 job summary prints that path plus the exact `publish.yml` command to run
 once it's been reviewed. Commits nothing; `contents: read` is enough.
 
-**Review happens here, outside CI** — the investigator agent and the
-defamation-auditor pass look at the drafted JSON (pulled from GCS, or
-generated locally against your own `council.db` — CI isn't required for
-this step) before anyone decides to publish it.
+**Review happens here, outside CI** — the Editor role (and, if it flags
+anything, Fixer's track-scoped modes) look at the drafted JSON (pulled from
+GCS, or generated locally against your own `council.db` — CI isn't required
+for this step) before anyone decides to publish it.
 
 **Trigger the publish** (only once a draft has actually been reviewed):
 
@@ -470,10 +472,11 @@ rather than a second, separate credential story. This workflow's shape
 exist for the scraper/extractor/investigator, "run `council publish`"
 becomes "authenticate via OIDC, trigger the Cloud Run Job, wait, download
 its output" instead of running directly on the GitHub runner — same
-interface, swapped internals. Also the natural home for a later autonomous
-defamation-auditor pass: same trigger pattern, reading published JSON
-instead of writing it, flagging issues (plausibly as GitHub Issues — no new
-infra needed) and triggering the investigator to re-run. It's also the
+interface, swapped internals. Also the natural home for a later headless
+Conductor (`docs/review/CONDUCTOR.md`) once Editor/Fixer are calibrated
+enough to automate: same trigger pattern, dispatching Editor and Fixer
+instead of a human doing it interactively, escalating to a human (plausibly
+via GitHub Issues — no new infra needed) at the pass cap. It's also the
 likely home for the paywalled full-tier serving layer described above —
 same OIDC story, an authenticated endpoint reading from
 `gs://$BUCKET/published/full/` instead of a static file.

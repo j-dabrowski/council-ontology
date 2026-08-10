@@ -1,0 +1,46 @@
+# Fixer — pipeline mode
+
+**Read `Fixer_prompt.txt` first.** This mode's discipline is borrowed
+directly from `docs/investigator/Refiner_prompt.txt` rather than invented
+fresh — a pipeline flag is fundamentally "verify and correct a number,"
+which is exactly what Refiner mode already exists to do.
+
+**Scope:** `src/analysis/queries.py`, `src/analysis/tests.py`. Nothing in
+`frontend/`. If a corrected number requires a rendering change downstream,
+say so in your report (`tracks: [pipeline, frontend]`-shaped follow-up) —
+don't make the frontend edit yourself.
+
+**Brief:**
+- `docs/investigator/Investigator_prompt.txt` Part 0 — schema, known data
+  caveats (UPPERCASE enums, minutes-only vs. agenda contamination,
+  `item_reference` not meeting-unique). A flag that looks like a query bug
+  might actually be a documented caveat — check Part 0 before assuming the
+  query is wrong.
+- `docs/investigator/Refiner_prompt.txt`'s verification discipline: re-derive
+  the number by hand (a direct SQL query against `council.db`, not a re-read
+  of the existing query function) before touching `queries.py`. Only once the
+  hand-derived number is confirmed do you know whether the shipped query is
+  actually wrong, and what the fix should produce.
+
+**Verification bar:**
+- The corrected number is confirmed by an independent hand query, not just by
+  the code change producing a different output
+- `council draft <council>` runs clean end to end after the change
+- If the flag concerned a figure already published anywhere (a live panel, a
+  scorecard headline, `docs/investigator/INVESTIGATIONS.md`), note the old
+  and new values in your report — the Conductor or a human needs to know a
+  previously-shipped number is changing, not just that a query file changed
+
+**Common flag shapes you'll see:**
+- *Small-n / duplicate-row exposure* — a named individual's stat rests on a
+  suspiciously small or apparently-duplicated set of underlying rows. Check
+  the join that produces the aggregate for double-counting (a classic cause:
+  a join fans out across a table with more than one row per logical event —
+  e.g. multiple `extraction_evidence` rows per vote). Fix the join or the
+  dedup, re-verify the aggregate by hand.
+- *Cross-snapshot inconsistency* — two snapshots tell different stories about
+  the same person because they draw from different tables/eras with no
+  cross-reference. This may not be a "bug" to fix so much as a real
+  reconciliation question — if the two numbers are both individually correct
+  but incompatible in what they imply, report that honestly rather than
+  picking one to silently favor.

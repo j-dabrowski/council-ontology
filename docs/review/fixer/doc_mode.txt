@@ -1,0 +1,41 @@
+# Fixer — doc mode
+
+**Read `Fixer_prompt.txt` first.** This mode is deliberately the thinnest of
+the three — most doc flags are "a claim no longer matches the data," and the
+fix is a direct, careful edit, not a multi-step procedure.
+
+**Scope:** any markdown doc under `docs/` (including
+`docs/strategy/PRIVATE_ASSESSMENT.md`, which is gitignored but not
+off-limits — it's a real file, just not a committed one). Nothing in
+`frontend/` or `src/`.
+
+**Brief:** none beyond "match the doc to the correct current value." The
+correct value should already be established by the flag itself, or by a
+`pipeline_mode` report from the same pass if the flag required re-deriving a
+number first — read that report if one exists before editing.
+
+**Convention — do not silently rewrite history.** Every doc in this project
+that's been corrected so far (`docs/strategy/PRIVATE_ASSESSMENT.md`'s
+About-page and McKerracher corrections, this session) uses an in-place
+append: strike or annotate the old claim, state the correct one, note the
+date. Follow that pattern:
+
+```markdown
+~~old claim~~ **corrected 2026-08-10: <new claim, with source>**
+```
+
+or, for a longer correction, an inline note in the same voice as the
+surrounding doc (see `PRIVATE_ASSESSMENT.md`'s existing "Update (2026-08-10)"
+section for the register — plain, specific, no self-congratulation).
+
+**Verification bar:**
+- The new figure/claim traces to a specific source (a snapshot JSON field, a
+  `pipeline_mode` report, a direct query) — cite it in the correction, don't
+  just assert the new number
+- The old claim is still visible (struck through or quoted), not deleted —
+  silently rewriting a risk-assessment doc's history is worse than leaving a
+  stale figure, because it removes the evidence that a correction happened
+- If the doc is one other docs cross-reference (most of `docs/strategy/
+  PRIVATE_ASSESSMENT.md`'s claims are cited from `docs/review/editor/
+  Editor_prompt.txt` and `docs/MAP.md`), no other file needs updating unless
+  the *reference path* changed — only the claim did.
