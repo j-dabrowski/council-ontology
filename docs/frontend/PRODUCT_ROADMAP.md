@@ -80,3 +80,40 @@ Requires iteration and a test battery of known-notable past events.
 - Email alerts ("new minutes published — here's what matters"): paid tier
 
 ---
+
+### F3 — Paywalled full report (quotation-sourced)
+
+The plan (2026-08): three report tiers — a free summary, free graphs/stats,
+and a paywalled "full" report with quotation-level sourcing behind every
+claim. Not built yet; two things are, so this isn't starting from zero.
+
+**What's already built (2026-08, see `docs/TESTING.md` "A future paywalled
+tier" section):** every snapshot `council draft` produces is tagged
+`"public"` or `"full"` in a `SNAPSHOT_TIER` map (`src/cli.py`), defaulting
+to `"full"` (private) unless explicitly listed otherwise. `council publish`
+already routes `"full"`-tier snapshots to a private destination
+(`data/published_full/`, and a private GCS prefix in CI) that never touches
+git or `frontend/public/`. No snapshot is tagged `"public"` yet — that's
+the open decision below.
+
+**What's still an open product decision:**
+- **The actual split.** Two live options discussed and not yet chosen:
+  same panels with quote text stripped for the free tier vs. redacted
+  restored for paywalled; or whole panels free vs. whole panels paywalled
+  (the ones with named-individual claims — Recusal, Power, Tenders — being
+  the natural paywall candidates).
+- **The serving backend.** Nothing serves the `"full"` tier to a paying
+  user yet, and it can't be a static file — a client-side paywall doesn't
+  protect a static asset; anyone can fetch it directly by URL regardless of
+  UI gating. It needs a real server-side check (session + entitlement, e.g.
+  Stripe) before returning data, most likely a Cloud Run endpoint reading
+  from the private GCS prefix above — same OIDC trust relationship the
+  publish pipeline already uses, extended rather than duplicated (see
+  `docs/TESTING.md` "Where this goes next").
+
+**Scope note:** don't build the backend speculatively before the tier
+split is decided — the split determines what the backend's authorization
+model even needs to check (per-panel vs. per-field), so deciding that first
+avoids building the wrong shape twice.
+
+---
