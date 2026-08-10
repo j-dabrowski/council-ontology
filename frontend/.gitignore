@@ -38,3 +38,4 @@ public/data/wa_lga.geojson
 *.njsproj
 *.sln
 *.sw?
+.vercel
