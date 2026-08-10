@@ -6,7 +6,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api, MayorContest, MayoralMotion } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
-import { DrillDown, SourceQuote } from "./DrillDown";
+import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 
 const MayorTooltip = ({ active, payload }: {
@@ -141,14 +141,17 @@ export function MayoralAgendaPanel() {
 
       <p className="chart-note">
         "Contested" = a carried motion that drew at least one AGAINST vote. The mayoral effect is far
-        from uniform:
+        from uniform — click a bar above to inspect any individual mayoralty. Only mayors with dated
+        terms (1999 onward) and ≥10 carried motions are shown; earlier mayors fall into the backbench
+        comparison.
         {mostContested && leastContested && mostContested.name !== leastContested.name && (
-          <> it is concentrated in <CouncillorLink name={mostContested.name} />'s
-          term ({mostContested.contest_pct}% contested), while <CouncillorLink name={leastContested.name} />'s
-          motions passed almost as quietly as the backbench ({leastContested.contest_pct}%).</>
+          <> <Reveal label="the most- and least-contested mayoralties">
+            it is concentrated in <CouncillorLink name={mostContested.name} />'s
+            term ({mostContested.contest_pct}% contested), while{" "}
+            <CouncillorLink name={leastContested.name} />'s motions passed almost as quietly as the
+            backbench ({leastContested.contest_pct}%).
+          </Reveal></>
         )}
-        {" "}Only mayors with dated terms (1999 onward) and ≥10 carried motions are shown; earlier
-        mayors fall into the backbench comparison.
       </p>
       <p className="chart-note">
         <strong>Read as a strength:</strong> a chamber that votes against its own Mayor <em>more</em>

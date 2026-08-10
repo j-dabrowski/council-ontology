@@ -7,7 +7,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
-import { DrillDown, SourceQuote } from "./DrillDown";
+import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink } from "./CouncillorModal";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
@@ -257,11 +257,13 @@ export function RecusalTrendPanel() {
         {" "}went {data.financial_inquiry_pct}% → {data.financial_post_pct}%
         and proximity fell after the Inquiry as well. Faded bars are n&lt;20 (directional). Must-leave totals:
         pre {data.must_leave_pre_n}, Inquiry {data.must_leave_inquiry_n}, post {data.must_leave_post_n}.
-        {topDriver && (
-          <> Post-2022, the most frequent stay-and-vote on a serious conflict is{" "}
-          <CouncillorLink name={topDriver.name} /> ({topDriver.stayed}/{topDriver.total}).</>
-        )}
         {" "}Declaration→vote matched at item level (item reference ↔ agenda item).
+        {topDriver && (
+          <> <Reveal label="who drove this, post-2022">
+            Post-2022, the most frequent stay-and-vote on a serious conflict is{" "}
+            <CouncillorLink name={topDriver.name} /> ({topDriver.stayed}/{topDriver.total}).
+          </Reveal></>
+        )}
       </p>
     </Card>
   );

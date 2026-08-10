@@ -5,6 +5,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api, DissenterProfile } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { Reveal } from "./DrillDown";
 
 function dissenterColor(profile: DissenterProfile): string {
   const r = profile.dissent_rate;
@@ -112,7 +113,7 @@ export function DissentProfilesChart() {
       {activeHighlight && (
         <div className="dissent-active-note">
           <span className="badge badge-blue">Current council</span>
-          <span>
+          <Reveal label="who's the current chamber's most independent voice">
             {activeHighlight.name} is the current chamber's most independent voice at{" "}
             <strong>{(activeHighlight.dissent_rate * 100).toFixed(1)}%</strong>.
             {topHistorical.length > 0 && (
@@ -123,7 +124,7 @@ export function DissentProfilesChart() {
                 </span>
               ))} were historically the most willing to go against the tide.</>
             )}
-          </span>
+          </Reveal>
         </div>
       )}
 

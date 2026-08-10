@@ -2,6 +2,7 @@ import { useData } from "../hooks/useData";
 import { api, SponsorshipData, SponsorEdge, SponsorNode } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
+import { Reveal } from "./DrillDown";
 
 const KIND_COLOR: Record<string, string> = {
   alliance: "#22c55e",   // sponsor AND vote together — a real working bloc
@@ -134,16 +135,18 @@ export function SponsorshipNetworkPanel() {
       <p className="chart-note">
         Each pair seconded each other's motions far more than their activity predicts (lift = observed ÷
         expected; ×2 means twice as often as chance), <em>and</em> sided together on contested votes well
-        above the {base}% chamber base rate. These are genuine working blocs
+        above the {base}% chamber base rate. These are genuine working blocs. Lift controls for volume,
+        so a busy chair who seconds everything does not top the list. Bars scaled to the strongest lift.
         {topAlliances.length > 0 && (
-          <> — e.g. {topAlliances.map((e, i) => (
-            <span key={i}>
-              {i > 0 && " and "}
-              {lastName(e.name_a)}–{lastName(e.name_b)}
-            </span>
-          ))}</>
-        )}. Lift controls for volume, so a busy chair who seconds everything does not top the list.
-        Bars scaled to the strongest lift.
+          <> <Reveal label="the strongest validated pairs">
+            e.g. {topAlliances.map((e, i) => (
+              <span key={i}>
+                {i > 0 && " and "}
+                {lastName(e.name_a)}–{lastName(e.name_b)}
+              </span>
+            ))}
+          </Reveal></>
+        )}
       </p>
 
       {data.procedural.length > 0 && (

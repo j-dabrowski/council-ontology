@@ -1372,6 +1372,9 @@ a:hover { text-decoration: underline; }
   font-size: 0.84rem; color: var(--text-lo); line-height: 1.55;
 }
 
+/* ── reveal (named-individual claim gated behind a click) ──────────────── */
+.reveal-body { display: block; margin-top: 4px; }
+
 /* ── card header meta (back-link + valence chip) ───────────────────────── */
 .card-header-meta { display: flex; align-items: center; gap: 10px; flex: none; }
 .card-back {

@@ -7,7 +7,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api, PowerProfile, ContestedVoteDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
-import { DrillDown, SourceQuote } from "./DrillDown";
+import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -167,19 +167,19 @@ export function PowerPanel() {
 
       {mostProlific && (
         <div className="objection-callout">
-          <span className="objection-callout-diff">
-            {pct(1 - (mostProlific.dissent_effectiveness ?? 0))}
-          </span>
           <span className="objection-callout-text">
-            of <strong><CouncillorLink name={mostProlific.name} /></strong>'s objections failed —
-            the chamber's most prolific dissenter by AGAINST-vote count ({mostProlific.dissent_n}),
-            yet only <strong>{pct(mostProlific.dissent_effectiveness ?? 0)}</strong> of those
-            objections actually sank a motion.
-            {mostEffective && (
-              <> <strong><CouncillorLink name={mostEffective.name} /></strong> dissents far less
-              often but converts <strong>{pct(mostEffective.dissent_effectiveness ?? 0)}</strong> of
-              objections into losses — same chamber, very different leverage.</>
-            )}
+            <Reveal label="who's the chamber's most prolific dissenter, and how effective are they">
+              <strong>{pct(1 - (mostProlific.dissent_effectiveness ?? 0))}</strong> of{" "}
+              <strong><CouncillorLink name={mostProlific.name} /></strong>'s objections failed —
+              the chamber's most prolific dissenter by AGAINST-vote count ({mostProlific.dissent_n}),
+              yet only <strong>{pct(mostProlific.dissent_effectiveness ?? 0)}</strong> of those
+              objections actually sank a motion.
+              {mostEffective && (
+                <> <strong><CouncillorLink name={mostEffective.name} /></strong> dissents far less
+                often but converts <strong>{pct(mostEffective.dissent_effectiveness ?? 0)}</strong> of
+                objections into losses — same chamber, very different leverage.</>
+              )}
+            </Reveal>
           </span>
         </div>
       )}
@@ -282,14 +282,15 @@ export function PowerPanel() {
       </ResponsiveContainer>
       <p className="chart-note">
         Win rate per four-year council term for the six longest-serving members (≥10 contested votes
-        in a term).
+        in a term). Reading the lines sideways shows who rose and who fell as each election reshaped
+        the chamber.
         {lowestTermPoint && (
-          <> <CouncillorLink name={lowestTermPoint.name} /> hit the lowest single-term win rate on
-          record — {pct(lowestTermPoint.win_rate)} in {lowestTermPoint.term} — a reminder that no
-          seat is safe from an election reshaping the majority.</>
+          <> <Reveal label="the lowest single-term win rate on record">
+            <CouncillorLink name={lowestTermPoint.name} /> hit the lowest single-term win rate on
+            record — {pct(lowestTermPoint.win_rate)} in {lowestTermPoint.term} — a reminder that no
+            seat is safe from an election reshaping the majority.
+          </Reveal></>
         )}
-        {" "}Reading the lines sideways shows who rose and who fell as each election reshaped the
-        chamber.
       </p>
     </Card>
   );

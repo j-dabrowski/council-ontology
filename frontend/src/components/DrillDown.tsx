@@ -39,6 +39,24 @@ export function DrillDown({
 }
 
 /**
+ * Gates a named-individual claim (a specific person + a specific stat) behind
+ * an explicit click rather than rendering it as a standing headline note —
+ * the mitigation docs/strategy/PRIVATE_ASSESSMENT.md calls for wherever a
+ * panel would otherwise single someone out in always-visible chart-note prose.
+ */
+export function Reveal({ label, children }: { label: string; children: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="reveal">
+      <button className="src-toggle" onClick={() => setOpen((o) => !o)}>
+        {open ? "▾" : "▸"} {label}
+      </button>
+      {open && <span className="reveal-body">{children}</span>}
+    </span>
+  );
+}
+
+/**
  * The provenance "receipt": a collapsed toggle that reveals the verbatim minute
  * text an extracted fact came from. The credibility multiplier — and reusable
  * anywhere an entity has an extraction_evidence quote.
