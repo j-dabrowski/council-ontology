@@ -41,6 +41,14 @@ later step, once there's enough real chain data to know the interface is
 right. **Don't build it before that** — automating a dispatch policy nobody
 has run yet just moves the unproven part somewhere harder to inspect.
 
+For the fuller picture of *why* a headless Conductor eventually matters — not
+just "it could work," but the actual operational pressure that would make it
+worth building — see `docs/pipeline/PIPELINE.md` "Longer term → Production
+scale": once this project watches many councils on a recurring schedule
+rather than one council manually, a human reading every draft in full stops
+scaling, and the Conductor's whole job is shrinking that per-cycle human
+effort without ever removing the checkpoint itself.
+
 ## The stage contract
 
 Every worker's output — Editor's review, each Fixer mode's report — ends

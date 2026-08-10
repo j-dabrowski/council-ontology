@@ -145,6 +145,49 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
 
 - **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0**
 
+- **Production scale — periodic multi-council scraping (design sketch, not built).**
+  Everything above assumes a human runs `council scrape`/`council extract` by hand,
+  once, per council. That stops working once this is watching many councils on an
+  ongoing basis: each posts roughly 1–2 new meeting documents a month, so watching
+  even a modest number of councils means something like 5–100+ new documents a
+  month arriving on a rolling basis, not a one-time corpus to process.
+
+  **The shape this points toward:**
+  1. A **scheduled** GitHub Actions workflow (cron, not `workflow_dispatch`) —
+     the first scheduled job in this project. Every other workflow here
+     (`draft.yml`, `publish.yml`) is deliberately manual, on the reasoning that
+     drafting/publishing "reflects a decision, not the passage of time." A
+     recurring scrape genuinely *is* about the passage of time (new minutes get
+     posted on a council's own schedule, not this project's), so a schedule is
+     the right trigger *specifically here* even though it's the wrong one for
+     draft/publish. Runs `council scrape` + `council extract` across every
+     watched council, updates `council.db`, re-uploads it to the private GCS
+     bucket. Same compute-lives-on-GitHub-Actions reasoning as everything else
+     in this pipeline (see `docs/TESTING.md`) — extraction is per-document API
+     calls, not sustained heavy compute, so even 100 documents/month should
+     comfortably finish inside one scheduled run without needing Cloud Run.
+  2. Chained after it: `council draft` → the Conductor loop (Editor, and
+     Fixer if anything's flagged) — see `docs/review/CONDUCTOR.md`. At this
+     project's current scale (one council, infrequent updates) a human reading
+     every draft carefully is easy and clearly the right call given the real
+     defamation exposure documented in `docs/strategy/PRIVATE_ASSESSMENT.md`.
+     At the scale described above — many councils, every month — that stops
+     being realistic; full manual review becomes the bottleneck, not the
+     safety net. The likely resolution isn't removing the human, it's
+     **shrinking what the human has to do per cycle**: the scrape → extract →
+     draft → Conductor chain runs unattended, and the human's role narrows from
+     "read the whole draft" to "read one PASS/FAIL summary and click confirm"
+     — still a real, never-skipped checkpoint (`CONDUCTOR.md`'s one rule: the
+     loop never calls `council publish` itself), just far lighter per cycle.
+
+  **Not being built now** — this is a design sketch for where the current
+  manual, single-council pipeline would need to evolve, written down so it
+  doesn't have to be re-derived later. It's also downstream of a real
+  prerequisite: Editor/Fixer have never been run once yet (see
+  `docs/review/REVIEW.md`'s status note), and calibrating those correctly at
+  one-council scale should happen well before trusting them to gate many
+  councils' worth of monthly output with a lighter human check.
+
 ---
 
 ---
