@@ -202,14 +202,33 @@ the public directory, so it can run as often as needed.
 see the draft rendered by the real panels, not just read raw JSON — but
 copying draft files into `frontend/public/data/` to preview them would edit
 a git-tracked directory with unreviewed data, exactly the risk the gate
-exists to prevent. Instead, `frontend/vite.config.ts` has a dev-only plugin:
-run `VITE_DRAFT_DIR=../data/draft/<council>/<run_id> npm run dev` (path
-relative to `frontend/`) and snapshot fetches (`/data/<name>.json`) are
-served from that draft directory instead of the committed placeholder data.
-It only patches the `vite dev` middleware (`configureServer`), so it's a
-no-op for `vite build` — there's no code path by which this could leak draft
-data into a production bundle. Without `VITE_DRAFT_DIR` set, `npm run dev`
-behaves exactly as before.
+exists to prevent. See the README's "Dashboard" section for the reviewer-facing
+command; this is the mechanism behind it.
+
+`frontend/vite.config.ts` defines a small dev-only Vite plugin, `draftPreview()`.
+At server start it reads `process.env.VITE_DRAFT_DIR` and, if set, resolves it
+to an absolute path relative to `frontend/` (e.g.
+`VITE_DRAFT_DIR=../data/draft/cambridge/<run_id>`). Its `configureServer` hook
+registers a Connect middleware that runs *before* Vite's normal static-file
+handling: on every request it checks the URL against `/data/([\w-]+)\.json`,
+and if that name exists as a file in the resolved draft directory, it reads
+the file straight off disk (`readFileSync`) and writes it as the response —
+with `Cache-Control: no-store` so the browser never caches a stale draft
+across runs — instead of letting the request fall through to
+`frontend/public/data/`. If the URL doesn't match, the file isn't in the
+draft directory, or `VITE_DRAFT_DIR` isn't set at all, the middleware calls
+`next()` and Vite serves the committed placeholder data exactly as it always
+has. `getSnapshot()` in `frontend/src/api.ts` (every panel's data source) has
+no idea any of this is happening — it just calls `fetch('/data/<name>.json')`
+and gets back whichever bytes the dev server decided to serve.
+
+The reason this can't leak into production: `configureServer` is a dev-server
+hook. `vite build` never starts a server and never calls it, so the plugin is
+structurally inert during a production build — there's no flag to
+misconfigure, nothing to forget to turn off. And because the middleware reads
+from the gitignored `data/draft/` tree on every request rather than copying
+anything into `frontend/public/`, no tracked file is ever touched — closing
+the dev server (or not setting `VITE_DRAFT_DIR`) leaves zero trace.
 
 **`council publish <council> --from-draft <path> --confirm "<note>"`** is
 the actual gate. Both flags are `required=True` at the argparse level — there
