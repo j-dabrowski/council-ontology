@@ -198,6 +198,19 @@ defamation-auditor pass (a separate, in-development project) review the
 candidate output. Nothing about drafting is risky: it never touches git or
 the public directory, so it can run as often as needed.
 
+**Reviewing a draft against the actual site, locally.** A reviewer needs to
+see the draft rendered by the real panels, not just read raw JSON — but
+copying draft files into `frontend/public/data/` to preview them would edit
+a git-tracked directory with unreviewed data, exactly the risk the gate
+exists to prevent. Instead, `frontend/vite.config.ts` has a dev-only plugin:
+run `VITE_DRAFT_DIR=../data/draft/<council>/<run_id> npm run dev` (path
+relative to `frontend/`) and snapshot fetches (`/data/<name>.json`) are
+served from that draft directory instead of the committed placeholder data.
+It only patches the `vite dev` middleware (`configureServer`), so it's a
+no-op for `vite build` — there's no code path by which this could leak draft
+data into a production bundle. Without `VITE_DRAFT_DIR` set, `npm run dev`
+behaves exactly as before.
+
 **`council publish <council> --from-draft <path> --confirm "<note>"`** is
 the actual gate. Both flags are `required=True` at the argparse level — there
 is no code path that publishes without them, and no flag to skip the check
