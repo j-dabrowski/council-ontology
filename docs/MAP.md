@@ -21,6 +21,14 @@ feed each other**. Read this first in a fresh session, then open the track you'r
 Not owned by one track — gates all of them:
 - `TESTING.md` — testing & CI: what's covered, ruff config rationale, why LLM
   calls stay out of the required CI path. Companion to `.github/workflows/ci.yml`.
+  Current-state reference — kept accurate as designs change, not a history.
+- `CICD_DECISIONS.md` — the CI/CD decision log: dated entries (decision,
+  alternatives considered, trade-off) for the choices behind `TESTING.md`'s
+  current state, kept even after that state moves on — e.g. the single
+  `publish.yml` that committed straight to `main` before the draft/publish
+  gate replaced it. Source material for an eventual write-up and for
+  interview prep; also tracks open/undecided infra work (Cloud Run API
+  deploy).
 - `review/` — the AI-assisted review/fix stage between `council draft` and
   `council publish`: **Editor** (reviews a draft for defamation exposure
   across every track) and **Fixer** (three modes — frontend / pipeline /
@@ -156,5 +164,6 @@ The non-obvious edges, spelled out:
 | weighing risk, funding, or direction | `strategy/PRIVATE_ASSESSMENT.md` |
 | onboarding / public/dev reference | root `README.md` |
 | adding a test, changing ruff config, editing CI | `TESTING.md` |
+| making (or reversing) a CI/CD infra decision — new workflow, auth approach, deploy target | log it in `CICD_DECISIONS.md` (dated entry: decision, alternatives, trade-off), then update `TESTING.md` if the current-state description changed |
 | publishing data so it's actually public (`council publish`, Vercel, GCS) | `TESTING.md` ("Draft & publish workflow") — the gate; note it covers the *data* layer only, not component source (see the panel row above) |
 | committing changes in this repo | `TESTING.md` ("Commit conventions") |
