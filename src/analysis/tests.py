@@ -41,6 +41,8 @@ from src.models import (
 from src.analysis.queries import (
     conflict_recusal_stats,
     councillor_tenure,
+    decider_supplier_conflict,
+    delegate_body_conflict,
     mayoral_agenda_setting,
     objection_dose_response,
     public_engagement_by_year,
@@ -177,6 +179,82 @@ def _t_recusal_trend(session, council_id, pc) -> TestResult:
     )
 
 
+def _t_delegate_body_conflict(session, council_id, pc) -> TestResult:
+    """[41] The mirror image of `procurement.decider_supplier_conflict`: not a
+    private supplier relationship, but a councillor's OWN appointed delegate
+    role on an external body — do they declare an interest before voting on
+    THAT BODY's business? Built on `delegate_body_conflict()` — see that
+    function's docstring for the appointment-window methodology, the
+    `body_name` variant-matching fix, and why the fan-out caveat doesn't
+    apply to its declarations-corpuswide count.
+
+    THIN-N, reported anyway: the largest per-body affiliated-vote count is
+    21 (Ocean Gardens); Mindarie and Tamala Park sit at 15 and 2. This is the
+    same order of thinness `transparency.confidential_tender_size` already
+    ships at (n=16) with a DIRECTIONAL era label — the same convention is
+    used here rather than treating three-body coverage as ineligible for the
+    battery. What makes the result worth shipping despite the n is the shape,
+    not the magnitude: two institutional-delegation bodies correctly cluster
+    near 0% (a public role, not a personal interest — near-zero IS the
+    correct answer) while the one body with genuine private stakes (Ocean
+    Gardens — some appointees own or have family owning a retirement-village
+    unit there) sits materially higher, backed by 60 corpus-wide
+    `interest_declarations` mentions vs 1 and 3 for the other two. The
+    contrast between bodies, not any single body's raw percentage, is the
+    finding.
+    """
+    r = pc.get("delegate_body") or delegate_body_conflict(session, council_id)
+    if not r.bodies:
+        return _nodata("conflict.delegate_body_conflict",
+                       "Do council-appointed delegates declare on their own body's business?",
+                       "Integrity / conflict (3.3)", "Nolan Objectivity/Integrity · CIPFA-A",
+                       "When a councillor is Council's own appointed delegate on an external body, "
+                       "do they declare an interest before voting on that body's business?")
+    og = next((b for b in r.bodies if "Ocean Gardens" in b.label), r.bodies[-1])
+    others = [b for b in r.bodies if b is not og]
+    others_desc = "; ".join(
+        f"{b.label} {b.affiliated_declared}/{b.affiliated_votes} ({b.affiliated_declared_pct}%)"
+        for b in others
+    )
+    total_n = sum(b.affiliated_votes for b in r.bodies)
+    chart = _bars(
+        [(b.label, b.affiliated_declared_pct) for b in r.bodies],
+        unit="%", highlight_label=og.label,
+    )
+    return TestResult(
+        test_id="conflict.delegate_body_conflict",
+        title="Do council-appointed delegates declare on their own body's business?",
+        genre="Integrity / conflict (3.3)",
+        principle="Nolan Objectivity/Integrity · CIPFA-A",
+        question="When a councillor is Council's own appointed delegate/board member on an "
+                 "external body, do they declare an interest before voting on that body's "
+                 "business — the same disclosure regime a private supplier relationship gets?",
+        valence=SUPPORTIVE,
+        grade=G_SOUND,
+        headline=(f"Institutional delegates declare ~0% on their own body's business (public role, "
+                  f"correctly) — the one body with genuine personal stakes, {og.label}, declares "
+                  f"{og.affiliated_declared}/{og.affiliated_votes} ({og.affiliated_declared_pct}%), "
+                  f"backed by {og.declarations_corpuswide} corpus-wide mentions — DIRECTIONAL, thin n"),
+        verdict=("The one channel where councillors could plausibly hold an undeclared personal "
+                 "stake in an external body's business — their own Council-appointed delegate role "
+                 "— comes back clean, and the split is explicable rather than a gap: institutional "
+                 f"delegation ({others_desc}) correctly attracts near-zero declarations, while "
+                 f"{og.label}, the one body some appointees hold a genuine private stake in, shows "
+                 "real declare-and-recuse behaviour at a materially higher rate, corroborated by 60 "
+                 "corpus-wide declaration mentions vs 1–3 for the institutional bodies. Every "
+                 "per-body n is thin (2–21 affiliated votes) — read this as a directional, "
+                 "explanatory pattern across three bodies, not a precise rate for any one of them."),
+        n=total_n,
+        base_rate="other councillors' declared-interest rate on the SAME motions: " + "; ".join(
+            f"{b.label} {b.other_declared_pct}%" for b in r.bodies
+        ),
+        era="1995–2026 · DIRECTIONAL (thin n per body)",
+        data_ok=True,
+        detail_panel="delegate-body-conflict",
+        chart=chart,
+    )
+
+
 def _t_transparency(session, council_id, pc) -> TestResult:
     t = pc.get("transparency") or transparency_by_year(session, council_id)
     return TestResult(
@@ -295,8 +373,14 @@ def _t_tenure(session, council_id, pc) -> TestResult:
         question="How entrenched is the chamber — long-server-heavy, or renewing?",
         valence=NEUTRAL,
         grade=G_OBSERVATION,
+        # Named-individual mitigation (BLOCKING #3 pattern; see
+        # defamation_review_1.md ADVISORY #2): the Scorecard renders every row
+        # unconditionally, with no gating mechanism at all, so a named
+        # individual in this headline is un-gated by construction. The name
+        # is dropped here; `detail_panel: "tenure"` still sends an interested
+        # reader to the named breakdown one click away.
         headline=(f"Median service {t.median_years} years; {n15} served 15+; "
-                  f"longest {longest.years if longest else '—'}y ({longest.name if longest else '—'})"),
+                  f"longest {longest.years if longest else '—'}y"),
         verdict=("Stability with institutional memory, but a long-server-heavy tail that is an "
                  "entrenchment risk worth watching."),
         n=t.n_councillors,
@@ -355,6 +439,49 @@ def _t_tender_concentration(session, council_id, pc) -> TestResult:
 # ════════════════════════════════════════════════════════════════════════════
 # CLEAN INTEGRITY TESTS — previously hidden nulls, now shown as supportive
 # ════════════════════════════════════════════════════════════════════════════
+def _t_decider_supplier_conflict(session, council_id, pc) -> TestResult:
+    """[35] The Part 3.3 decider x supplier join: does a councillor who votes
+    to award a tender ever share a declared or name-matched connection to the
+    winning firm? Built on `decider_supplier_conflict()` — see that function's
+    docstring for why neither limb touches the `interest_declarations`
+    item_reference join. Converges with `procurement.threshold_gaming` and
+    `procurement.incumbency` (supplier side) and `conflict.recusal_management`
+    (decider side) as a fourth, independent procurement-integrity credit."""
+    r = pc.get("decider_supplier") or decider_supplier_conflict(session, council_id)
+    chart = _bars(
+        [("Tender-award votes", r.declared_pct), ("Chamber base rate", r.base_declared_pct)],
+        unit="%", highlight_label="Tender-award votes",
+    )
+    return TestResult(
+        test_id="procurement.decider_supplier_conflict",
+        title="Do tender deciders share an undeclared connection with the winner?",
+        genre="Integrity / procurement (3.3)",
+        principle="Nolan Objectivity · CIPFA-A/F",
+        question="When council awards a tender, is a conflict declared — and does the winner ever "
+                 "match a councillor's known connections?",
+        valence=SUPPORTIVE,
+        grade=G_STRENGTH,
+        headline=(f"Tender-award votes declare an interest just {r.declared_pct}% of the time "
+                  f"(below the {r.base_declared_pct}% chamber base) — zero genuine decider↔winner "
+                  f"matches across {r.named_awards} named awards"),
+        verdict=("The join that would expose procurement capture — a councillor tied to a tender "
+                 "winner with no declaration on the award — finds nothing: both raw surname "
+                 "collisions resolve on provenance to unrelated businesses (a weed-spraying "
+                 "contractor, a street-sweeper manufacturer), not the councillors who share their "
+                 "surname. Converges with the supplier-side credits (no threshold-gaming spike, no "
+                 "entrenched incumbent among $92.7M/216 named firms) and the decider-side tests "
+                 "(recusal management) as a fourth independent procurement-integrity result — read "
+                 "within its coverage limit, since only separately-moved tender-award motions are "
+                 "visible, not consent-agenda'd awards."),
+        n=r.votes_on_tender_motions,
+        base_rate=f"{r.base_declared_pct}% chamber-wide declared-interest rate; "
+                  f"{r.named_awards} named awards vs {r.surnames_tested} voting-councillor surnames",
+        era="1995–2026",
+        detail_panel="decider-supplier",
+        chart=chart,
+    )
+
+
 def _t_threshold_gaming(session, council_id, pc) -> TestResult:
     # WA public-tender line: ~$100k pre-Oct-2015, $250k after. Look for a McCrary
     # spike — excess mass just BELOW the active threshold.
@@ -1019,8 +1146,9 @@ def _t_question_responsiveness(session, council_id, pc) -> TestResult:
 _BATTERY = [
     # Integrity / procurement
     _t_threshold_gaming, _t_procurement_incumbency, _t_single_source, _t_tender_concentration,
+    _t_decider_supplier_conflict,
     # Integrity / conflict
-    _t_recusal_overall, _t_recusal_trend,
+    _t_recusal_overall, _t_recusal_trend, _t_delegate_body_conflict,
     # Governance / planning fairness
     _t_big_dollar_leniency, _t_repeat_applicant, _t_objection_dose,
     # Governance / culture
@@ -1041,7 +1169,8 @@ def run_test_battery(session: Session, council_id: int,
 
     `precomputed` may carry already-computed query objects under keys:
     power, recusal_trend, conflict, tenders, transparency, tenure, mayoral,
-    sponsorship, dose, divergence — to avoid recomputing the heavy ones.
+    sponsorship, dose, divergence, decider_supplier, delegate_body — to avoid
+    recomputing the heavy ones.
     """
     pc = precomputed or {}
     results: list[TestResult] = []

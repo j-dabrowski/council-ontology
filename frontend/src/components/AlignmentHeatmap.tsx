@@ -28,6 +28,16 @@ export function AlignmentHeatmap() {
   pairs.forEach((p) => { nameSet.add(p.name_a); nameSet.add(p.name_b); });
   const names = [...nameSet];
 
+  const lastName = (n: string) => n.split(" ").slice(-1)[0] || n;
+
+  // 100% pairs, computed from data.pairs at render time — never hardcoded.
+  // Same reasoning as SponsorshipNetworkPanel's topAlliances and PowerPanel's
+  // mostProlific/mostEffective: the chart-note must hold for any dataset this
+  // loads, not just whatever was true when the sentence was written.
+  const pairs100 = [...pairs]
+    .filter((p) => p.agreement_rate >= 0.999)
+    .sort((a, b) => b.shared_votes - a.shared_votes);
+
   // Build map for fast lookup
   const pairMap = new Map<string, AlignmentPair>();
   pairs.forEach((p) => {
@@ -78,7 +88,16 @@ export function AlignmentHeatmap() {
         </table>
       </div>
       <p className="chart-note">
-        100% pairs: Mayes/Heil, Cutler/Price, Cutler/Bhuiyan — tightest sub-blocs in an already near-unanimous chamber.
+        {pairs100.length > 0 && (
+          <>
+            100% pairs ({pairs100.length}): {pairs100.map((p, i) => (
+              <span key={`${p.name_a}|${p.name_b}`}>
+                {i > 0 && ", "}
+                {lastName(p.name_a)}/{lastName(p.name_b)}
+              </span>
+            ))} — tightest sub-blocs in an already near-unanimous chamber.{" "}
+          </>
+        )}
         Hover cells for shared vote count.
       </p>
     </Card>

@@ -64,8 +64,18 @@ data/council.db.bak*
 # Private strategy notes (track: strategy)
 docs/strategy/
 
-# Untracked pending defamation review: editorial synthesis naming real
-# individuals with implied non-compliance framing (recusal drivers). Matches
-# the risk PRIVATE_ASSESSMENT.md documents. Kept locally; not removed from
-# git history — see the commit that untracked this for what that means.
-docs/investigator/INVESTIGATIONS.md
+# Investigator-track OUTPUT docs (investigation findings, retroactive audits,
+# session synthesis) are gitignored by default — these are the artefacts that
+# name real individuals with risk-adjacent framing (recusal drivers, etc.),
+# matching the risk PRIVATE_ASSESSMENT.md documents. This is an allow-list,
+# not a per-filename deny-list, deliberately: a new investigation-output doc
+# type (e.g. a future AUDIT_<date>.md from a Refiner sweep, or any other new
+# session-output naming convention) is protected automatically, without
+# needing this file updated every time one is invented. Only the governing
+# prompt/protocol docs — methodology, not findings — are explicitly
+# un-ignored below. `INVESTIGATIONS.md` specifically: kept locally, not
+# removed from git history — see the commit that untracked it for what that
+# means.
+docs/investigator/*.md
+!docs/investigator/EXPLORATION_PROTOCOL.md
+!docs/investigator/REFINEMENT_PROTOCOL.md

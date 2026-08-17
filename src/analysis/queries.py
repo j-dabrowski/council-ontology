@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from src.models import (
     ApplicationStatus,
+    Appointment,
     BudgetItem,
     Councillor,
     CouncillorTerm,
@@ -1552,8 +1553,23 @@ class RecusalProfile:
     name: str
     declared_votes: int
     recused: int          # ABSENT on a declared-interest vote = stepped out
-    recusal_rate: float
+    recusal_rate: float   # blended across ALL declared-interest types (financial,
+                           # proximity AND impartiality) — do not use this alone to
+                           # colour-code compliance; see must_leave_recusal_rate.
     is_active: bool
+    # "Must-leave" split (financial/proximity interests legally require leaving the
+    # room; impartiality interests permit staying and voting — see 0.4 in
+    # Investigator_prompt.txt). Restricted to the subset of this councillor's
+    # declared-interest VOTES that matched a financial/proximity declaration
+    # (same match already computed in `declarations` below — reused, not
+    # re-derived, to avoid a second join implementation that could disagree with
+    # the drill-down list a reader can click into).
+    must_leave_declared: int = 0
+    must_leave_recused: int = 0
+    # None (not 0.0) when the councillor has zero must-leave declarations on
+    # record — lets a consumer (e.g. the frontend colour-coder) distinguish "no
+    # mandatory conflicts to comply with" from "0% compliance on a real one."
+    must_leave_recusal_rate: float | None = None
     declarations: list[DeclarationDetail] = field(default_factory=list)
 
 
@@ -1580,53 +1596,81 @@ def _enum_str(v) -> str | None:
     return getattr(v, "value", str(v))
 
 
-def _populate_declaration_details(session, council_id, profiles, from_year, to_year) -> None:
-    """Attach the per-vote drill-down list to each RecusalProfile.
+@dataclass
+class LinkedDeclaredVote:
+    """One declared-interest VOTE, linked to its matching declaration (if any).
 
-    Drives off the councillor's declared-interest VOTES (so the drawer matches the
-    bar), then enriches each with the interest TYPE, the DESCRIPTION ("what it is")
-    and a verbatim minute QUOTE by a meeting-scoped link to interest_declarations
-    (item_reference == motion.item_number within the same meeting — the [19] join).
-    Falls back to the vote's own interest_description where no declaration matches.
+    Vote-driven, not declaration-driven — `votes` carries `UNIQUE(motion_id,
+    councillor_id)`, so this cannot fan out the way a raw
+    declarations-JOIN-motions-JOIN-votes query can when a meeting has more
+    than one motion sharing an item_number, or more than one declaration row
+    for the same real declaration (both occur in this corpus). The
+    declaration match is a dict lookup keyed (councillor, meeting, item
+    reference) — last-wins on a duplicate key, never a row multiplier.
+
+    This is the single, shared implementation of the [19] item-level link
+    (item_reference == motion.item_number within one meeting). Every query
+    that needs "which votes were cast on a declared conflict, and what kind"
+    must build on this, not re-derive its own join — `recusal_compliance_trend`
+    used to maintain an independent raw-SQL version of this same link without
+    the `votes.declared_interest = 1` anchor, and it silently fabricated
+    inflated counts (traced live: a false post-2022 stay-and-vote claim
+    naming a real councillor, from meeting-258 fan-out) — see docs/review,
+    BLOCKING flag, 2026-08-11 pass 3.
     """
-    if not profiles:
-        return
-    ids = [p.councillor_id for p in profiles]
+    councillor_id: int
+    name: str
+    choice: "VoteChoice"
+    item: str | None
+    title: str | None
+    meeting_id: int
+    date: str          # YYYY-MM-DD
+    year: int | None
+    interest_type: str | None   # normalised lowercase, or None if unmatched
+    what: str | None
+    declaration_id: int | None
+    quote: str | None
 
-    # 1. declared-interest votes for the profiled councillors
+
+def _linked_declared_votes(
+    session, council_id, from_year=None, to_year=None, councillor_ids=None,
+) -> list[LinkedDeclaredVote]:
+    """The one safe, vote-driven declared-interest linkage — see `LinkedDeclaredVote`."""
     vq = (
         session.query(
             Vote.councillor_id, Vote.choice, Vote.interest_description,
             Motion.item_number, Motion.title, Meeting.id, Meeting.meeting_date,
+            Councillor.given_name, Councillor.family_name,
         )
         .join(Motion, Vote.motion_id == Motion.id)
         .join(Meeting, Motion.meeting_id == Meeting.id)
+        .join(Councillor, Vote.councillor_id == Councillor.id)
         .filter(
             Meeting.council_id == council_id,
             Vote.declared_interest == True,  # noqa: E712
-            Vote.councillor_id.in_(ids),
         )
     )
+    if councillor_ids:
+        vq = vq.filter(Vote.councillor_id.in_(councillor_ids))
     vq = _year_filter_query(vq, Meeting, from_year, to_year)
 
-    # 2. declarations for those councillors, keyed for a meeting-scoped item match
-    decls = (
-        session.query(
-            InterestDeclaration.id, InterestDeclaration.councillor_id,
-            InterestDeclaration.meeting_id, InterestDeclaration.item_reference,
-            InterestDeclaration.interest_type, InterestDeclaration.description,
-        )
-        .filter(InterestDeclaration.councillor_id.in_(ids))
-        .all()
+    # declarations, keyed for a meeting-scoped item match (last-wins on a
+    # duplicate key — a dict lookup can't multiply rows the way a join can)
+    decl_q = session.query(
+        InterestDeclaration.id, InterestDeclaration.councillor_id,
+        InterestDeclaration.meeting_id, InterestDeclaration.item_reference,
+        InterestDeclaration.interest_type, InterestDeclaration.description,
     )
+    if councillor_ids:
+        decl_q = decl_q.filter(InterestDeclaration.councillor_id.in_(councillor_ids))
     decl_by_key: dict[tuple, tuple] = {}
     decl_ids: list[int] = []
-    for did, cid, mid, iref, itype, desc in decls:
+    for did, cid, mid, iref, itype, desc in decl_q:
         decl_ids.append(did)
         if iref:
             decl_by_key[(cid, mid, iref)] = (did, itype, desc)
 
-    # 3. one representative minute quote per declaration
+    # one representative minute quote per declaration
     quote_by_decl: dict[int, str] = {}
     if decl_ids:
         for did, q in (
@@ -1639,30 +1683,61 @@ def _populate_declaration_details(session, council_id, profiles, from_year, to_y
         ):
             quote_by_decl.setdefault(did, q)
 
-    by_councillor: dict[int, list[DeclarationDetail]] = {cid: [] for cid in ids}
-    for cid, choice, vote_desc, item_no, title, mid, mdate in vq:
+    out: list[LinkedDeclaredVote] = []
+    for cid, choice, vote_desc, item_no, title, mid, mdate, given, family in vq:
         matched = decl_by_key.get((cid, mid, item_no)) if item_no else None
         itype = _enum_str(matched[1]) if matched else None
         what = (matched[2] if matched and matched[2] else None) or vote_desc
         quote = quote_by_decl.get(matched[0]) if matched else None
-        must_leave = bool(matched and matched[1] in _MUST_LEAVE_TYPES)
-        if choice == VoteChoice.ABSENT:
+        out.append(LinkedDeclaredVote(
+            councillor_id=cid,
+            name=f"{given or ''} {family or ''}".strip(),
+            choice=choice,
+            item=item_no,
+            title=title,
+            meeting_id=mid,
+            date=mdate.isoformat() if mdate else "",
+            year=mdate.year if mdate else None,
+            interest_type=itype,
+            what=what,
+            declaration_id=matched[0] if matched else None,
+            quote=quote,
+        ))
+    return out
+
+
+def _populate_declaration_details(session, council_id, profiles, from_year, to_year) -> None:
+    """Attach the per-vote drill-down list to each RecusalProfile.
+
+    Built on `_linked_declared_votes` — see that function for why this is
+    fan-out-safe. Falls back to the vote's own interest_description where no
+    declaration matches.
+    """
+    if not profiles:
+        return
+    ids = [p.councillor_id for p in profiles]
+    linked = _linked_declared_votes(session, council_id, from_year, to_year, councillor_ids=ids)
+
+    by_councillor: dict[int, list[DeclarationDetail]] = {cid: [] for cid in ids}
+    for row in linked:
+        must_leave = row.interest_type in {"financial", "proximity"}
+        if row.choice == VoteChoice.ABSENT:
             action = "Stepped out"
-        elif choice == VoteChoice.AGAINST:
+        elif row.choice == VoteChoice.AGAINST:
             action = "Stayed — voted against"
-        elif choice == VoteChoice.FOR:
+        elif row.choice == VoteChoice.FOR:
             action = "Stayed — voted for"
         else:
             action = "Stayed"
-        by_councillor.setdefault(cid, []).append(DeclarationDetail(
-            date=mdate.isoformat() if mdate else "",
-            item=item_no,
-            title=title,
-            interest_type=itype,
-            what=what,
+        by_councillor.setdefault(row.councillor_id, []).append(DeclarationDetail(
+            date=row.date,
+            item=row.item,
+            title=row.title,
+            interest_type=row.interest_type,
+            what=row.what,
             action=action,
             must_leave=must_leave,
-            quote=quote,
+            quote=row.quote,
         ))
 
     for p in profiles:
@@ -1754,6 +1829,16 @@ def conflict_recusal_stats(
 
     _populate_declaration_details(session, council_id, profiles, from_year, to_year)
 
+    # Must-leave split, computed from the same per-declaration `must_leave` flag
+    # already attached above (financial/proximity vs. impartiality/other) — not a
+    # fresh SQL join, so it can't disagree with what the drill-down shows.
+    for p in profiles:
+        ml_declared = sum(1 for d in p.declarations if d.must_leave)
+        ml_recused = sum(1 for d in p.declarations if d.must_leave and d.action == "Stepped out")
+        p.must_leave_declared = ml_declared
+        p.must_leave_recused = ml_recused
+        p.must_leave_recusal_rate = round(ml_recused / ml_declared, 4) if ml_declared else None
+
     return ConflictRecusalStats(
         declared_total=d_total,
         declared_recused=d_absent,
@@ -1779,6 +1864,13 @@ def _normalise_contractor(name: str) -> str:
     n = n.replace(".", "").replace(",", "")
     n = "".join(n.split())  # drop all internal whitespace: 'r j vincent' -> 'rjvincent'
     return n
+
+
+def _normalise_tender_ref(ref: str | None) -> str:
+    """Collapse spacing/hyphen variants so 'RFT 2023-16' == 'RFT202316' == 'RFT2023-16'."""
+    if not ref:
+        return ""
+    return "".join(ch for ch in ref.lower() if ch.isalnum())
 
 
 @dataclass
@@ -1827,6 +1919,20 @@ def tender_concentration(
     Splits the corpus into *named* contractors and the confidential
     "Respondent N" placeholders used in closed tender reports, then ranks
     named contractors by total awarded dollars (spelling variants merged).
+
+    Filters to `document_type == 'minutes'` (matching `_tender_rows` in
+    `tests.py`) and deduplicates rows that share the same contractor,
+    normalised reference number, AND amount before aggregating. Both
+    guards are needed: an agenda document can carry a near-duplicate row
+    for the same tender that its own minutes document also records, AND a
+    single minutes document has been seen to extract the same declared
+    award twice. Without them a single real award gets summed once per
+    extracted row — confirmed live for Kilmore Group Pty Ltd (one real
+    $2.08M award reported as $6.24M / 3 awards) — see docs/investigator/
+    AUDIT_2026-08-14.md. Only rows agreeing on amount are merged — two rows
+    sharing a reference number but a genuinely different amount are left
+    separate, since that's the signature of a legitimate multi-tranche
+    award under one contract number, not a duplicate.
     """
     q = (
         session.query(
@@ -1837,11 +1943,28 @@ def tender_concentration(
         .join(Meeting, Tender.meeting_id == Meeting.id)
         .filter(
             Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
             Tender.amount.isnot(None),
         )
     )
     q = _year_filter_query(q, Meeting, from_year, to_year)
-    rows = q.all()
+    all_rows = q.all()
+
+    # Dedup: same contractor + same normalised reference + same amount ==
+    # one real award extracted more than once, not independent awards.
+    seen: dict[tuple[str, str, float], int] = {}  # (contractor_key, ref_key, amount) -> row index
+    rows = []
+    for r in all_rows:
+        tid, awarded_to, amount, desc, ref, conf, mdate = r
+        contractor_key = _normalise_contractor((awarded_to or "").strip())
+        ref_key = _normalise_tender_ref(ref)
+        amt = float(amount or 0)
+        if ref_key and contractor_key:
+            dedup_key = (contractor_key, ref_key, amt)
+            if dedup_key in seen:
+                continue  # duplicate extraction of the same real award — skip
+            seen[dedup_key] = tid
+        rows.append(r)
 
     total_amount = 0.0
     total_awards = 0
@@ -1925,6 +2048,450 @@ def tender_concentration(
         top10_share=round(top10_amount / named_amount, 4) if named_amount else 0.0,
         contractors=contractors,
     )
+
+
+# ---------------------------------------------------------------------------
+# Decider x supplier — the Part 3.3 conflict-of-interest join between who
+# AWARDS a tender and who WINS it
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class SurnameCollision:
+    """One raw surname-substring hit between a tender winner's business name
+    and a real voting councillor's surname. A hit is a candidate to
+    investigate on provenance, not a confirmed conflict — see
+    `decider_supplier_conflict`'s docstring for why."""
+    firm: str
+    amount: float
+    councillor_id: int
+    councillor_name: str
+    surname: str
+
+
+@dataclass
+class DeciderSupplierConflict:
+    tender_motions: int              # minutes motions matched as tender-award (Limb 1)
+    votes_on_tender_motions: int
+    declared_votes: int
+    declared_pct: float
+    base_declared_pct: float         # chamber-wide declared_interest rate, all minutes votes
+    named_awards: int                # deduped named (non-Respondent, non-NULL) minutes tenders (Limb 2)
+    surnames_tested: int
+    collisions: list[SurnameCollision] = field(default_factory=list)
+
+
+def decider_supplier_conflict(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+) -> DeciderSupplierConflict:
+    """
+    Part 3.3 procurement-integrity test: does the decider<->winner join expose
+    an undeclared conflict of interest between whoever votes on a tender award
+    and whoever wins it?
+
+    Two independent limbs. Neither touches `interest_declarations`, so the
+    item_reference fan-out risk documented in Investigator_prompt.txt §0.4 /
+    `_linked_declared_votes` (a same-numbered agenda item recurring across
+    unrelated meetings, or more than one `interest_declarations` row for one
+    real declaration) does not apply to this function at all:
+
+    (1) Declaration rate on tender-award motions. Tender-award motions are
+        identified by a keyword match for tender/RFT/contract-award language
+        on `motions.title` / `motions.motion_text` (minutes only — agendas
+        carry officer recommendations, not decided votes). The declaration
+        signal is read DIRECTLY off `votes.declared_interest` for the votes
+        cast on those motions, never via a join out to
+        `interest_declarations` — `votes` carries
+        UNIQUE(motion_id, councillor_id), so this limb cannot fan out no
+        matter how `item_reference` is reused elsewhere in the corpus.
+        Compared against the chamber-wide declaration rate across ALL minutes
+        votes as the base rate.
+
+    (2) Name-match. Does any tender WINNER (`tenders.awarded_to`) contain a
+        real voting councillor's surname? This is a plain string match
+        against `tenders.awarded_to` — there is no schema link from `tenders`
+        to a `motions`/`votes`/`interest_declarations` row at all, so there is
+        no join-safety risk here either; the only risk is a name-COLLISION
+        false positive (a firm whose name happens to contain a councillor's
+        surname), which is why every raw hit is data for a human to resolve
+        on provenance, not itself evidence of a conflict.
+        - Surnames tested are restricted to councillors who cast >=1 vote
+          (`Councillor.id` present in `votes.councillor_id`) and whose
+          `family_name` is >=4 characters. The vote-cast restriction is what
+          excludes the ~197 zero-vote placeholder councillor records
+          (Investigator_prompt.txt §0.4) — they carry no vote row to match
+          on, so they're never selected; no separate filter is needed. The
+          length floor cuts short-surname noise (a 3-letter surname collides
+          with too many unrelated business names to be informative).
+        - `awarded_to` NULL/blank rows are EXCLUDED from this limb outright,
+          never treated as a redacted or concealed award (the [25] trap,
+          §0.6) — a NULL winner here is an extraction gap, not evidence.
+          "Respondent N" placeholders (confidential awards) are excluded for
+          the same reason: there is no name to match against.
+        - Named award rows are deduplicated by (normalised contractor,
+          normalised reference number, amount) before matching — the same
+          guard `tender_concentration()` needed after AUDIT_2026-08-14.md
+          found it missing there. Confirmed live on this corpus: "G T Evans
+          Weed Spraying Service" / ref TEN0008 / $70,000 is extracted as TWO
+          minutes rows 16 days apart (ids 172, 1850) — one real 1995 award,
+          not two. Without this guard a single real-world surname collision
+          gets counted twice; this function counts it once.
+
+    Both limbs filter to `Meeting.document_type == 'minutes'`.
+
+    `collisions` lists whatever survives dedup; resolving whether a listed
+    collision is a real relationship or a business-name coincidence (e.g. a
+    firm trading under a common surname, or a product/manufacturer name that
+    happens to match) requires reading the tender's own extraction_evidence
+    quote — this function does not do that resolution itself, it only
+    surfaces candidates.
+    """
+    # ---- Limb 1: declaration rate on tender-award motions ----------------
+    tender_kw = (
+        func.lower(Motion.title).like("%tender%")
+        | func.lower(Motion.title).like("% rft %")
+        | func.lower(Motion.title).like("rft %")
+        | func.lower(Motion.title).like("%contract%award%")
+        | func.lower(Motion.motion_text).like("%accept the tender%")
+        | func.lower(Motion.motion_text).like("%awards%contract%")
+        | func.lower(Motion.motion_text).like("%rft %")
+    )
+    tm_q = (
+        session.query(Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            tender_kw,
+        )
+    )
+    tm_q = _year_filter_query(tm_q, Meeting, from_year, to_year)
+    tender_motion_ids = [mid for (mid,) in tm_q.all()]
+
+    votes_on_tm = 0
+    declared_on_tm = 0
+    if tender_motion_ids:
+        vote_rows = (
+            session.query(Vote.declared_interest)
+            .filter(Vote.motion_id.in_(tender_motion_ids))
+            .all()
+        )
+        votes_on_tm = len(vote_rows)
+        declared_on_tm = sum(1 for (d,) in vote_rows if d)
+
+    base_q = (
+        session.query(Vote.declared_interest)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+    )
+    base_q = _year_filter_query(base_q, Meeting, from_year, to_year)
+    base_rows = base_q.all()
+    base_pct = round(100 * sum(1 for (d,) in base_rows if d) / len(base_rows), 2) if base_rows else 0.0
+
+    # ---- Limb 2: name-match tender winners against real councillor surnames
+    surnames = (
+        session.query(Councillor.id, Councillor.given_name, Councillor.family_name)
+        .filter(
+            Councillor.family_name.isnot(None),
+            func.length(Councillor.family_name) >= 4,
+            Councillor.id.in_(select(Vote.councillor_id).distinct()),
+        )
+        .all()
+    )
+
+    aw_q = (
+        session.query(Tender.id, Tender.awarded_to, Tender.amount, Tender.reference_number)
+        .join(Meeting, Tender.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Tender.awarded_to.isnot(None),
+            func.trim(Tender.awarded_to) != "",
+            ~func.lower(Tender.awarded_to).like("respondent%"),
+        )
+    )
+    aw_q = _year_filter_query(aw_q, Meeting, from_year, to_year)
+
+    # Dedup pass — see docstring: a real award can be extracted more than
+    # once (agenda+minutes, or twice within minutes); collapse rows sharing
+    # the same normalised contractor + normalised reference + amount before
+    # matching, exactly like `tender_concentration()`'s fix.
+    seen: dict[tuple[str, str, float], int] = {}
+    named_rows: list[tuple[int, str, float]] = []
+    for tid, awarded_to, amount, ref in aw_q.all():
+        name = awarded_to.strip()
+        amt = float(amount or 0)
+        ck = _normalise_contractor(name)
+        rk = _normalise_tender_ref(ref)
+        if ck and rk:
+            key = (ck, rk, amt)
+            if key in seen:
+                continue
+            seen[key] = tid
+        named_rows.append((tid, name, amt))
+
+    import re as _re_dsc
+    collisions: list[SurnameCollision] = []
+    for _tid, firm, amt in named_rows:
+        fl = firm.lower()
+        for cid, given, family in surnames:
+            s = family.lower().strip()
+            if _re_dsc.search(r"\b" + _re_dsc.escape(s) + r"\b", fl):
+                collisions.append(SurnameCollision(
+                    firm=firm, amount=amt, councillor_id=cid,
+                    councillor_name=f"{given or ''} {family or ''}".strip(),
+                    surname=family,
+                ))
+
+    return DeciderSupplierConflict(
+        tender_motions=len(tender_motion_ids),
+        votes_on_tender_motions=votes_on_tm,
+        declared_votes=declared_on_tm,
+        declared_pct=round(100 * declared_on_tm / votes_on_tm, 2) if votes_on_tm else 0.0,
+        base_declared_pct=base_pct,
+        named_awards=len(named_rows),
+        surnames_tested=len(surnames),
+        collisions=collisions,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Delegate/board-member conflict — the mirror image of decider_supplier_conflict:
+# does the DECIDER's OWN appointed role on an external body go undeclared when
+# that body's business comes before Council? [41] in INVESTIGATIONS.md.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class DelegateBodyResult:
+    label: str                      # display name for the body
+    n_appointed_councillors: int    # distinct councillors ever appointed to this body
+    n_appointment_windows: int      # appointment-tenure windows built (see function docstring)
+    n_motions: int                  # minutes motions matching the body's keyword
+    affiliated_votes: int           # votes cast by an appointee, inside their own tenure window
+    affiliated_declared: int
+    affiliated_declared_pct: float
+    other_votes: int                # every other councillor's vote on the SAME motions
+    other_declared: int
+    other_declared_pct: float
+    declarations_corpuswide: int    # interest_declarations rows anywhere mentioning the keyword
+
+
+@dataclass
+class DelegateBodyConflict:
+    bodies: list[DelegateBodyResult] = field(default_factory=list)
+
+
+# Cambridge-specific config, not a generic mechanism: the three external bodies
+# with enough appointment + motion volume to test on THIS corpus (identified by
+# the [41] Explorer session's Part-1 survey of the `appointments` table). A
+# second council would need its own list of regional-council / outside-board
+# appointments — there is no way to discover "which external bodies get their
+# own councillors appointed to them" generically without a table of them, so
+# (like the 2018-21 Authorised-Inquiry window hardcoded in `_recusal_era` and
+# `public_question_responsiveness`, per REFINEMENT_PROTOCOL.md's dimension-4
+# backlog) this is logged as a documented, council-specific literal rather than
+# a blocking issue: `council_id`/`from_year`/`to_year` stay fully generic, only
+# this table is Cambridge-specific, and a second council with no equivalent
+# appointments simply yields an empty `bodies` list (see `data_ok` handling in
+# the calling TestResult).
+#
+# `appt_like` / `appt_exclude` are case-insensitive substring matches against
+# `appointments.body_name`, not exact-string matches. This is a deliberate fix
+# over the original scratchpad script (scratchpad/h41_body_conflict.py), which
+# matched `body_name` by an exact IN-list and — for Ocean Gardens specifically —
+# undercounted appointment windows by ~45% (23 of 43 rows): the same real
+# retirement-village board is extracted across meetings/years as "Ocean Gardens
+# (Inc) Board of Management", "Ocean Gardens (Inc)", "Ocean Gardens (Inc)
+# Board", "Ocean Gardens (Inc.) Board" and "Ocean Gardens Retirement Village"
+# (confirmed same `role` values — Director / Director Appointment — across all
+# five variants). This is the same free-text-inconsistency failure mode the
+# STANDING CONFOUND CHECKLIST already documents for `appointments.role`
+# (Explorer_prompt.txt, added the same session), just on `body_name` instead —
+# not previously caught because [41] was the first session to touch this
+# table. Fixing it changes Ocean Gardens from 17/3 (17.6%) declared affiliated
+# votes to 21/5 (23.8%) — a materially different, MORE supportive number, not
+# a smaller one; verified directly against council.db during refinement
+# (2026-08-14).
+_DELEGATE_BODIES: list[dict] = [
+    {
+        "label": "Mindarie Regional Council",
+        "appt_like": ["Mindarie Regional Council"],
+        # "Mindarie Regional Council Working Group" (1 appointment row, 2011)
+        # is deliberately excluded: a working group is a distinct sub-body,
+        # not the plenary regional council whose meeting reports/tenders are
+        # the "Mindarie"-titled motions this test measures against.
+        "appt_exclude": ["Working Group"],
+        "motion_keyword": "Mindarie",
+    },
+    {
+        "label": "Tamala Park Regional Council",
+        "appt_like": ["Tamala Park"],
+        "appt_exclude": [],
+        "motion_keyword": "Tamala Park",
+    },
+    {
+        "label": "Ocean Gardens (Inc) Board of Management",
+        "appt_like": ["Ocean Gardens"],
+        "appt_exclude": [],
+        "motion_keyword": "Ocean Gardens",
+    },
+]
+
+
+def delegate_body_conflict(
+    session: Session,
+    council_id: int,
+    from_year: int | None = None,
+    to_year: int | None = None,
+) -> DelegateBodyConflict:
+    """
+    Part 3.3 integrity test, the mirror image of `decider_supplier_conflict`:
+    when a councillor is Council's OWN appointed delegate / representative /
+    board member on an external body, do they declare an interest before
+    voting on THAT BODY's business — the same disclosure regime that would
+    apply to a private supplier relationship?
+
+    Per body in `_DELEGATE_BODIES` (a documented, Cambridge-specific config —
+    see that constant's docstring for why council-agnosticism stops there):
+
+      1. Build one appointment-tenure "window" per (councillor, appointment)
+         row: [this appointment's meeting_date, the SAME councillor's next
+         reappointment to the SAME body, or +4y if there is none). A
+         councillor only counts as "affiliated" during their actual delegate
+         tenure, not their whole career on Council — skipping this windowing
+         gives a materially different, wrong answer (confirmed during
+         refinement: a naive "ever appointed" match inflates the affiliated
+         vote count by counting votes cast years before or after the actual
+         appointment).
+      2. Find every `document_type='minutes'` motion whose title or text
+         contains the body's keyword (free-text match — inherits the same
+         false-positive risk `decider_supplier_conflict` accepts for its
+         tender-keyword match: one genuine false positive is documented in
+         INVESTIGATIONS.md [41], a 2017 "thank three retiring councillors"
+         motion that incidentally mentions "Mindarie"; disclosed as a
+         precision limit, it does not change the direction of the result
+         since it contributes zero declarations either way).
+      3. Split every vote on those motions into "affiliated" (cast by a
+         councillor inside their own tenure window for that body) vs "other"
+         (every OTHER councillor's vote on the SAME motions — this controls
+         for the motion's own declaration-worthiness, a cleaner comparison
+         than a bare corpus-wide base rate).
+      4. `declarations_corpuswide` is a separate, independent sanity count:
+         how many `interest_declarations` rows anywhere in the whole corpus
+         mention the body's keyword in free text. This is a plain
+         `WHERE description LIKE ...` — it does NOT join
+         `interest_declarations` out to `motions`/`votes` at all, so the
+         §0.4 `item_reference` fan-out caveat (anchor on
+         `votes.declared_interest=1` before treating a declaration as
+         anything but an enrichment lookup — see `_linked_declared_votes`)
+         does not apply here: there is no join to fan out. Steps 1–3's
+         affiliated/other split is read directly off `votes.declared_interest`
+         (`votes` carries UNIQUE(motion_id, councillor_id)), the same
+         fan-out-safe pattern `decider_supplier_conflict`'s Limb 1 uses.
+
+    `document_type='minutes'` is filtered on the appointment side and the
+    motion side (agendas carry officer text but no decided vote outcomes).
+    `from_year`/`to_year` filter which MOTIONS (and so which votes) are in
+    scope; appointment history itself is read in full regardless of the year
+    filter, because a window opened before `from_year` can still be open
+    (and so still relevant) during it.
+    """
+    result = DelegateBodyConflict()
+
+    for body in _DELEGATE_BODIES:
+        appt_q = (
+            session.query(Appointment.councillor_id, Meeting.meeting_date)
+            .join(Meeting, Appointment.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Meeting.document_type == "minutes",
+                Appointment.councillor_id.isnot(None),
+            )
+        )
+        like_clause = None
+        for kw in body["appt_like"]:
+            c = Appointment.body_name.ilike(f"%{kw}%")
+            like_clause = c if like_clause is None else (like_clause | c)
+        appt_q = appt_q.filter(like_clause)
+        for ex in body["appt_exclude"]:
+            appt_q = appt_q.filter(~Appointment.body_name.ilike(f"%{ex}%"))
+
+        by_cid: dict[int, list[date]] = defaultdict(list)
+        for cid, mdate in appt_q.all():
+            if mdate:
+                by_cid[cid].append(mdate if isinstance(mdate, date) else date.fromisoformat(mdate))
+
+        windows: list[tuple[int, date, date]] = []
+        for cid, dates in by_cid.items():
+            dates = sorted(set(dates))
+            for i, d in enumerate(dates):
+                end = dates[i + 1] if i + 1 < len(dates) else d + timedelta(days=365 * 4)
+                windows.append((cid, d, end))
+
+        motion_q = (
+            session.query(Motion.id, Meeting.meeting_date)
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Meeting.document_type == "minutes",
+                (Motion.title.ilike(f"%{body['motion_keyword']}%"))
+                | (Motion.motion_text.ilike(f"%{body['motion_keyword']}%")),
+            )
+        )
+        motion_q = _year_filter_query(motion_q, Meeting, from_year, to_year)
+        motion_date: dict[int, date] = {}
+        for mid, mdate in motion_q.all():
+            if mdate:
+                motion_date[mid] = mdate if isinstance(mdate, date) else date.fromisoformat(mdate)
+
+        aff_n = aff_decl = oth_n = oth_decl = 0
+        if motion_date:
+            vote_rows = (
+                session.query(Vote.motion_id, Vote.councillor_id, Vote.declared_interest)
+                .filter(Vote.motion_id.in_(list(motion_date.keys())))
+                .all()
+            )
+            for mid, cid, declared in vote_rows:
+                mdate = motion_date[mid]
+                is_aff = any(
+                    wcid == cid and start <= mdate < end for wcid, start, end in windows
+                )
+                if is_aff:
+                    aff_n += 1
+                    aff_decl += bool(declared)
+                else:
+                    oth_n += 1
+                    oth_decl += bool(declared)
+
+        decl_n = (
+            session.query(func.count(InterestDeclaration.id))
+            .join(Meeting, InterestDeclaration.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                InterestDeclaration.description.ilike(f"%{body['motion_keyword']}%"),
+            )
+            .scalar()
+        ) or 0
+
+        result.bodies.append(DelegateBodyResult(
+            label=body["label"],
+            n_appointed_councillors=len(by_cid),
+            n_appointment_windows=len(windows),
+            n_motions=len(motion_date),
+            affiliated_votes=aff_n,
+            affiliated_declared=aff_decl,
+            affiliated_declared_pct=round(100 * aff_decl / aff_n, 1) if aff_n else 0.0,
+            other_votes=oth_n,
+            other_declared=oth_decl,
+            other_declared_pct=round(100 * oth_decl / oth_n, 1) if oth_n else 0.0,
+            declarations_corpuswide=decl_n,
+        ))
+
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -2350,18 +2917,22 @@ def mayoral_agenda_setting(
 # recusal collapsed even WITHIN the must-leave categories (which a shift in the
 # legal mix toward impartiality interests cannot explain).
 #
-# Linkage is item-level: interest_declarations.item_reference == motions.item_number
-# at the same meeting, then that councillor's vote on that motion. This avoids the
-# meeting-level cross-contamination where a councillor declaring several interest
-# types at one meeting would otherwise have every type attributed to every vote.
+# Linkage is item-level and vote-driven, via the shared `_linked_declared_votes`
+# helper (see its docstring): interest_declarations.item_reference ==
+# motions.item_number at the same meeting, then that councillor's vote on that
+# motion. Anchoring on votes.declared_interest = 1 (not on interest_declarations
+# rows joined outward) avoids both the meeting-level cross-contamination where a
+# councillor declaring several interest types at one meeting would otherwise have
+# every type attributed to every vote, AND the fan-out a declaration-driven join
+# produces when a meeting has duplicate declaration rows or multiple motions
+# sharing one item_number — see `LinkedDeclaredVote`'s docstring for the concrete
+# fabricated-claim case (naming a real councillor) this replaced.
 
 _RECUSAL_ERAS = [
     ("pre", "Before Inquiry (pre-2018)", None, 2017),
     ("inquiry", "Authorised Inquiry (2018–2021)", 2018, 2021),
     ("post", "After Inquiry (2022+)", 2022, None),
 ]
-_MUST_LEAVE = ("FINANCIAL", "PROXIMITY")
-
 
 def _recusal_era(year: int) -> str:
     if year < 2018:
@@ -2437,38 +3008,21 @@ def recusal_compliance_trend(
     council_id: int,
     min_year_n: int = 4,
 ) -> RecusalTrendStats:
-    """Recusal compliance over time, split by the legal type of interest."""
+    """Recusal compliance over time, split by the legal type of interest.
+
+    Built on `_linked_declared_votes` — the same vote-driven, fan-out-safe
+    linkage `conflict_recusal_stats`/`declared.json` uses — rather than a
+    second, independently-computed item-level join. The two must never be
+    able to disagree on "how many declared-interest votes did X cast"; see
+    `LinkedDeclaredVote`'s docstring for what went wrong when this query
+    maintained its own join.
+    """
     from sqlalchemy import text
 
-    # Item-level linked declaration -> that councillor's vote on that item.
-    linked = session.execute(text("""
-        SELECT i.interest_type AS itype,
-               CAST(strftime('%Y', mt.meeting_date) AS INTEGER) AS yr,
-               v.choice AS choice,
-               (c.given_name || ' ' || c.family_name) AS name,
-               i.id AS did,
-               i.item_reference AS item,
-               i.description AS descr,
-               mt.meeting_date AS mdate
-        FROM interest_declarations i
-        JOIN meetings mt ON i.meeting_id = mt.id
-        JOIN motions m ON m.meeting_id = i.meeting_id
-            AND lower(trim(m.item_number)) = lower(trim(i.item_reference))
-        JOIN votes v ON v.motion_id = m.id AND v.councillor_id = i.councillor_id
-        JOIN councillors c ON c.id = i.councillor_id
-        WHERE mt.council_id = :cid
-          AND mt.document_type = 'minutes'
-          AND i.councillor_id IS NOT NULL
-          AND i.item_reference IS NOT NULL AND trim(i.item_reference) != ''
-    """), {"cid": council_id}).all()
-
-    def _norm_type(t) -> str:
-        t = (t or "OTHER").upper()
-        return t.lower()
+    linked = _linked_declared_votes(session, council_id)
 
     def _recused(choice) -> bool:
-        # Enum stored uppercase; ABSENT == stepped out of the room.
-        return (choice or "").upper() == "ABSENT"
+        return choice == VoteChoice.ABSENT
 
     # by type x era
     te: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])  # [declared, recused]
@@ -2479,27 +3033,29 @@ def recusal_compliance_trend(
     # raw declaration rows behind each (type, era) cell, for the drill-down
     te_rows: dict[tuple[str, str], list[tuple]] = defaultdict(list)
 
-    for itype, yr, choice, name, did, item, descr, mdate in linked:
-        t = _norm_type(itype)
-        era = _recusal_era(yr)
-        rec = _recused(choice)
+    for row in linked:
+        if row.year is None:
+            continue
+        t = row.interest_type or "other"
+        era = _recusal_era(row.year)
+        rec = _recused(row.choice)
         te[(t, era)][0] += 1
         if rec:
             te[(t, era)][1] += 1
-        te_rows[(t, era)].append((did, item, name, rec, descr, mdate))
-        if (itype or "").upper() in _MUST_LEAVE:
-            ml_year[yr][0] += 1
+        te_rows[(t, era)].append((row.declaration_id, row.item, row.name, rec, row.what, row.date))
+        if t in ("financial", "proximity"):
+            ml_year[row.year][0] += 1
             if rec:
-                ml_year[yr][1] += 1
-            if yr >= 2022:
-                drv[name][1] += 1
+                ml_year[row.year][1] += 1
+            if row.year >= 2022:
+                drv[row.name][1] += 1
                 if not rec:
-                    drv[name][0] += 1
+                    drv[row.name][0] += 1
 
     # one representative minute quote per declaration behind a cell
     _CELL_CAP = 60
     all_dids = [r[0] for rows in te_rows.values() for r in sorted(
-        rows, key=lambda x: x[5] or "", reverse=True)[:_CELL_CAP]]
+        rows, key=lambda x: x[5] or "", reverse=True)[:_CELL_CAP] if r[0] is not None]
     quote_by_decl: dict[int, str] = {}
     if all_dids:
         for did, q in (

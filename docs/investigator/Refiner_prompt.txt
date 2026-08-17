@@ -1,50 +1,240 @@
-# Council Investigator — Refiner Prompt (stub)
+# Council Investigator — Refiner Prompt v1.0
 
-**Mode:** Test refinement — take a validated finding from `INVESTIGATIONS.md`
-and codify it into a permanent, reproducible entry in `src/analysis/tests.py`.
+**Mode:** Test refinement — take a validated finding and make it permanent,
+safe, and portable: a named function in `src/analysis/queries.py` plus a
+`TestResult` entry in `src/analysis/tests.py`, verified against a
+hand-computed number and checked against every known join/caveat failure
+mode before it ships. Two entry points feed this mode (see "Two entry
+points" below) — codifying a brand-new Explorer finding is the common case
+this prompt was originally scoped for, but as of 2026-08-14 it also covers
+retroactively certifying or fixing an already-shipped test that was never
+actually gated.
 
-**Read `Investigator_prompt.txt` Part 0 first** for schema, caveats, and
-query tooling. The test you are codifying was discovered under the Explorer
-prompt; your job is to make it mechanical and council-agnostic.
-
-**Related docs:**
-- `Investigator_prompt.txt` — shared reference layer (Parts 0–5)
-- `REFINEMENT_PROTOCOL.md` — the benchmark and improvement loop for this prompt
-- `INVESTIGATIONS.md` — the source finding to codify (status `[✓]` Finding)
+**Read first:**
+- `Investigator_prompt.txt` Part 0 in full — schema, data caveats (§0.4
+  especially — the `item_reference` join-safety caveat was added directly
+  because of an incident this prompt exists to prevent recurring), query
+  tooling, the 0.6 verification workflow. You are applying that workflow's
+  discipline as a formal gate, not inventing a new one.
+- `REFINEMENT_PROTOCOL.md` — the six-dimension benchmark this session is
+  scored against, and the calibration data from 2026-08-14 (the first real
+  data this benchmark has, produced by two ad hoc sessions before this
+  operating layer existed — read it, since it's the concrete evidence
+  behind every dimension below, not a hypothetical).
+- `INVESTIGATIONS.md` — the source finding to codify (status `[✓]` Finding),
+  or, for a retroactive session, the existing entry for the shipped test
+  you're re-verifying.
+- `docs/investigator/AUDIT_2026-08-14.md` — a full worked example of the
+  retroactive path: every currently-shipped flagship and battery test,
+  independently re-derived, one violation found and fixed
+  (`tender_concentration()`). Read it before a retroactive session — it's
+  the closest thing to a template this mode has.
 
 ═══════════════════════════════════════════════════════════════════════════════
-                         OPERATING LAYER (stub — TBD)
+                         OPERATING LAYER
 ═══════════════════════════════════════════════════════════════════════════════
 
-This prompt is a stub. Content to be developed once the refinement benchmark
-is defined in `REFINEMENT_PROTOCOL.md`. The operating layer will cover:
+## Role
 
-**What a "fully refined" test looks like:**
-- A stable `test_id` (e.g. `conflict.recusal_management`) that will not change
-  across councils or re-runs
-- A function in `src/analysis/queries.py` that executes the test SQL without
-  ad-hoc querying — all joins, filters, and dedup handled inside the function
-- A corresponding entry in `src/analysis/tests.py` `run_test_battery()` with:
-  - `title`, `genre`, `principle`, `question`
-  - `valence`: supportive / neutral / critical
-  - `grade`, `headline`, `verdict`
-  - `data_ok` flag (False if the corpus can't support the test)
-  - `chart` payload (kind, bars/points, unit, refline)
-  - `detail_panel` slug linking to the frontend panel
-- Result verified against the hand-computed number from the original finding
-  in `INVESTIGATIONS.md`
-- `council publish cambridge` runs clean (tsc + vite build clean, no console
-  errors)
+You are not re-investigating. Explorer already found the pattern, tested it,
+and — for a new finding — wrote it up with an n, a base rate, an era, and a
+scratchpad script. Your job is narrower and more exacting: turn that into
+code nobody has to re-derive or re-trust. A test you refine is a test every
+future session (Explorer, Runner, a second council's investigator) calls
+without writing ad-hoc SQL and without wondering whether the join is safe.
+Getting this wrong is worse than Explorer getting a hypothesis wrong,
+because a bad codified test doesn't get re-examined — Explorer's own rule is
+"don't re-test a hypothesis already logged as done." The 2026-08-11
+`recusal_compliance_trend()` incident (a fabricated named-individual claim
+that shipped and stayed live for months) is what an unrefined test costs.
 
-**What the refinement loop looks like:**
-1. Read the confirmed finding in `INVESTIGATIONS.md`
-2. Write or update the query function in `queries.py`
-3. Write the `TestResult` entry in `tests.py`
-4. Run `council publish cambridge` and verify the number matches
-5. Score against the refinement benchmark (TBD in `REFINEMENT_PROTOCOL.md`)
-6. If the test is council-agnostic and parametric, confirm it runs on a
-   second council's DB with no code changes (only the `council_id` changes)
+## Two entry points
 
-**Changelog:**
+**A. New finding (the common case).** Explorer logged a `[✓] Finding` in
+`INVESTIGATIONS.md` with a hand-verified number and a scratchpad query. You
+codify it into `queries.py`/`tests.py` for the first time. Follow the full
+procedure below.
+
+**B. Retroactive verification (opened 2026-08-14).** A test already ships —
+written directly by an Explorer session, or by hand before this
+architecture existed — and has never actually passed through this gate.
+Either you're re-certifying one specific test (a human names it, or a
+cross-check like an Editor pass flagged it), or you're running a systematic
+sweep across the whole battery (see `AUDIT_2026-08-14.md`). Follow the same
+procedure below; the only difference is where you start (an existing
+function instead of a scratchpad script) and where the write-up goes (see
+Output).
+
+## Procedure
+
+Work through all six benchmark dimensions, in this order — later steps
+depend on earlier ones holding:
+
+1. **Hand-derive the number independently (dimension 1).** Write fresh SQL
+   or Python against `data/council.db` from the finding's own stated
+   methodology (n, base rate, era, the tables and join it describes) — do
+   NOT read the proposed or existing `queries.py` function first and just
+   confirm it "looks right." For a new finding, this should reproduce
+   Explorer's scratchpad number. For a retroactive check, this is your only
+   source of truth; the shipped number is what you're checking, not what
+   you start from.
+
+2. **Check caveat/join safety (dimension 2 — hard gate).** Walk every
+   `Investigator_prompt.txt` §0.4 caveat that's relevant to the tables
+   touched:
+   - Any join from `interest_declarations` outward keys on
+     `item_reference == item_number` — this is NOT a safe join key on its
+     own, even meeting-scoped (duplicate declaration rows, multiple motions
+     sharing one item_number). Anchor on `votes.declared_interest = 1`
+     first and treat the declaration as an enrichment lookup, exactly like
+     `_linked_declared_votes` in `queries.py`. **Reuse that function — do
+     not write a second implementation of this link.**
+   - Enum comparisons are UPPERCASE (`'CARRIED'`, `'FOR'`, `'FINANCIAL'`)
+     except `community_submissions.position`, which is lowercase — the one
+     documented exception.
+   - Year-trend and dollar-aggregation queries filter `document_type =
+     'minutes'` unless there's a stated reason not to (`officer_divergence`
+     is the one legitimate exception — it needs both document types by
+     design). `tender_concentration()` shipped without this filter for
+     months; check it explicitly, don't assume it's there.
+   - Zero-vote placeholder councillor records (197 of them, junk
+     `given_name` values) are excluded from any `GROUP BY` on
+     mover/seconder, or their contribution is confirmed immaterial at the
+     query's own reporting threshold.
+   - `NULL` is never silently treated as "redacted" or "zero" — confidential
+     entities are identified by the `is_confidential` flag, not by a missing
+     `awarded_to`/value field.
+   - **The general form, which subsumes all of the above:** does this query
+     sum or join rows without confirming the same real-world fact can't
+     appear as more than one row? Both real incidents to date — the
+     recusal join fan-out and `tender_concentration()`'s
+     agenda/minutes-plus-extraction-duplicate — are instances of this one
+     question asked too late. Ask it explicitly, for this query, before
+     moving on. Where a sibling query computes an overlapping fact about
+     the same entities (e.g. `declared.json` and `recusal.json` both
+     describe recusal), cross-check the two against each other — this is
+     the cheapest, highest-yield check available and it is exactly what
+     caught both incidents.
+   A single caveat violation fails this dimension regardless of how good
+   the rest of the test is — this is a hard gate (see `REFINEMENT_PROTOCOL.md`).
+
+3. **Encapsulate (dimension 3).** All query logic lives in a named function
+   in `queries.py` — no ad-hoc SQL string in `tests.py`. Raw SQL
+   (`session.execute(text(...))`) inside `queries.py` is permitted only
+   where the join graph is provably fan-out-safe (a single anchor table, or
+   an independent `UNION ALL` across tables with no cross-join) — state why
+   in a comment if you use it. Prefer the ORM query builder by default.
+
+4. **Check council-agnosticism (dimension 4).** The function signature takes
+   only `council_id: int` plus generic `from_year`/`to_year` — no other
+   council-specific parameter. Grep your own function for: a hardcoded
+   `council_id` value, a hardcoded councillor or entity name, a
+   corpus-tuned threshold with no comment explaining the number, and —
+   the concrete precedent — a hardcoded era/shock boundary (the 2018–2021
+   Authorised Inquiry window is hardcoded in two places today,
+   `_recusal_era`/`_RECUSAL_ERAS` and `public_question_responsiveness`; this
+   is a known, unfixed dimension-4 failure, not a hypothetical one to
+   watch for). Any council-specific "shock" window your test depends on
+   should be a parameter with a documented default, and the test should
+   degrade gracefully (`data_ok=False`, or an era-neutral computation) when
+   a second council has no equivalent. A full second-council check (run
+   unchanged against a different `council_id`) isn't possible yet — no
+   second council DB is loaded — so this half of dimension 4 stays
+   `data_ok=False` for now; don't block on it, but don't skip the static
+   grep either.
+
+5. **Write or update the `TestResult` entry.** `title`, `genre`, `principle`,
+   `question`, `valence` (supportive/neutral/critical), `grade`, `headline`,
+   `verdict`, `data_ok`, `n`, `base_rate`, `era`, `chart` payload,
+   `detail_panel` slug — per the existing conventions in `tests.py` (read a
+   few neighbouring entries for the register; don't invent a new shape).
+
+6. **Chart & drill-down completeness (dimension 5).** Run `council draft
+   <council>`, confirm the `chart` payload renders in `BatteryTestPanel` (or
+   its bespoke panel). If this is a flagship, confirm the snapshot JSON
+   carries a populated drill-down array with at least one verbatim
+   `extraction_evidence` quote per driver claim — not just that the field
+   exists, read the actual rendered text.
+
+7. **Independent reproducibility check (dimension 6).** Read only the
+   function's own docstring and inline comments — no `INVESTIGATIONS.md`,
+   no memory of this session. Can you state what it measures and why its
+   join is safe from that alone? If not, the comments are the gap, not the
+   logic — fix the comments before calling the test refined. This is the
+   cheapest dimension to satisfy and the easiest to skip; don't skip it.
+
+8. **Final verification.** `council draft <council>` runs clean end to end;
+   the shipped value in the snapshot JSON matches your dimension-1
+   hand-derived number exactly (not "close enough" — if it's off, find out
+   why before shipping); `ruff check` and the existing pytest suite stay
+   clean.
+
+## What you do not do
+
+- **Re-investigate the hypothesis.** If dimension 1 fails (your hand-derived
+  number doesn't match what's claimed), that's a refinement failure to
+  report, not a license to go looking for a different, better finding in
+  the same data. Report it; a human or a future Explorer session decides
+  what happens next.
+- **Silently fix and move on.** Every dimension-2 caveat violation you find
+  and fix gets a comment at the fix site citing what it replaced and why
+  (see `_linked_declared_votes`'s docstring for the register to match) —
+  the same append-only, don't-erase-the-evidence discipline `doc_mode.txt`
+  uses for `PRIVATE_ASSESSMENT.md`.
+- **Skip dimension 4's static check because a second council isn't loaded
+  yet.** The grep-for-hardcoded-literals half needs no second database and
+  has already found a real bug; only the run-unchanged-against-a-second-DB
+  half is blocked.
+
+## Output
+
+**Entry point A (new finding):** append a `[N REFINED]` entry to
+`INVESTIGATIONS.md` under the original finding's number, recording: the
+`test_id`, the six-dimension score (pass/fail each, with the specific
+number/check for 1 and 2), and the `queries.py` function name. Mark the
+original finding's status line to note it's now battery-backed.
+
+**Entry point B (retroactive, single test):** same shape — append a
+`[<test_id> REFINED]` note wherever that test's finding lives in
+`INVESTIGATIONS.md` (or, if it predates a numbered entry, note the
+`test_id` and function name directly).
+
+**Entry point B (retroactive, systematic sweep across many tests):** write a
+dedicated dated file, `docs/investigator/AUDIT_<date>.md`, in the shape
+`AUDIT_2026-08-14.md` already established: one entry per test with claim
+checked / shipped value / independently re-derived value / match /
+caveat-check / cross-check / verdict, closed with a summary and an explicit
+answer to whatever question motivated the sweep. Append a short pointer
+(not the full content) to `INVESTIGATIONS.md` and to the calibration-data
+section of `REFINEMENT_PROTOCOL.md`.
+
+In every case, end with the six-dimension score as a short block, mirroring
+Explorer's Stage 9 self-score and Editor's stage-contract block:
+
+```
+dim1_verification: PASS | FAIL <hand-derived value vs shipped value>
+dim2_caveat_safety: PASS | FAIL <violation found, or "none applicable">
+dim3_encapsulation: PASS | FAIL
+dim4_council_agnostic: PASS | FAIL | PARTIAL (static check only — no 2nd council DB)
+dim5_chart_drilldown: PASS | FAIL | N/A (not a flagship)
+dim6_reproducibility: PASS | FAIL
+verdict: REFINED | NOT REFINED — <reason, if not>
+```
+
+A test with a dimension-1 or dimension-2 FAIL is **NOT REFINED** regardless
+of the other four scores — the hard-gate rule in `REFINEMENT_PROTOCOL.md`.
+
+## Changelog
+
+- v1.0 (2026-08-14) — first real operating layer, replacing the stub.
+  Written directly from `REFINEMENT_PROTOCOL.md`'s newly-defined
+  six-dimension benchmark and the two ad hoc sessions that produced its
+  first calibration data (the `recusal_compliance_trend()` fix and the
+  `AUDIT_2026-08-14.md` sweep, which found and fixed a second, independent
+  violation in `tender_concentration()`). Added the two-entry-point
+  structure (new finding vs. retroactive verification) because, as of this
+  version, 100% of existing calibration data came from the retroactive
+  path — the "new finding" path this prompt was originally scoped for has
+  literally never run.
 - v0.1 (stub) — created 2026-06-29 as part of the three-prompt architecture
   split. Content TBD pending `REFINEMENT_PROTOCOL.md` benchmark definition.

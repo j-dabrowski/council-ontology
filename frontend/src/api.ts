@@ -168,6 +168,13 @@ export interface RecusalProfile {
   recused: number;
   recusal_rate: number;
   is_active: boolean;
+  // Legally-mandatory (financial/proximity) declarations only — excludes lawful
+  // "impartiality" declarations the councillor is entitled to stay and vote on.
+  // must_leave_recusal_rate is null when must_leave_declared is 0 (no mandatory
+  // conflicts on record at all), matching the pipeline's null-for-zero convention.
+  must_leave_declared: number;
+  must_leave_recused: number;
+  must_leave_recusal_rate: number | null;
   declarations: DeclarationDetail[];
 }
 

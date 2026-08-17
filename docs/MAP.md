@@ -51,17 +51,25 @@ one shared reference layer, two protocol documents.
   defensibility. Read by all three modes before doing anything.
 - `investigator/Explorer_prompt.txt` — **exploration mode** (v2.3): generate and test
   novel hypotheses; Stage 9 self-scores the session and proposes the next prompt edit.
-- `investigator/Refiner_prompt.txt` — **refinement mode** (stub): codify a validated
-  finding into a permanent, council-agnostic entry in `tests.py` / `queries.py`.
-- `investigator/Runner_prompt.txt` — **production run mode** (stub): execute the frozen
-  battery, export JSON snapshots, verify the frontend. No hypothesis generation.
+- `investigator/Refiner_prompt.txt` — **refinement mode** (v1.0): codify a validated
+  finding into a permanent, council-agnostic entry in `tests.py` / `queries.py` —
+  or retroactively verify/fix an already-shipped test against the six-dimension
+  benchmark (two entry points; the retroactive path is the one with real
+  calibration data so far, see `AUDIT_2026-08-14.md`).
+- `investigator/Runner_prompt.txt` — **production run mode** (v1.0): execute the frozen
+  battery, export JSON snapshots, verify the frontend, spot-check for regressions
+  against the latest `AUDIT_<date>.md`. No hypothesis generation, no self-scoring;
+  never calls `council publish` itself — a clean run is input to the human
+  publish decision, not a substitute for it.
 
 **Protocol documents:**
 - `investigator/EXPLORATION_PROTOCOL.md` — benchmark-gated improvement loop for
   `Explorer_prompt.txt`: seven dimensions, Cambridge calibration scores, improvement
   loop. Explorer prompt is improved until benchmark is cleared, then frozen.
 - `investigator/REFINEMENT_PROTOCOL.md` — benchmark-gated improvement loop for
-  `Refiner_prompt.txt` and the test harness. Benchmark TBD after first refinement run.
+  `Refiner_prompt.txt` and the test harness. Six dimensions defined 2026-08-14
+  (two hard gates: verification accuracy, caveat/join safety); first calibration
+  data recorded.
 
 **Investigation records:**
 - `investigator/INVESTIGATIONS.md` — the detective's notebook; every hypothesis,
@@ -117,7 +125,7 @@ The non-obvious edges, spelled out:
 | **Pipeline → Investigator** | substrate | The extracted DB + schema is what the investigator queries. Extraction **caveats** (UPPERCASE enums, minutes-only vs agenda contamination, `item_reference` not meeting-unique) are documented in `Investigator_prompt.txt` Part 0 — change the pipeline and that section must follow. |
 | **Investigator → Pipeline** (`DATA_ENRICHMENT.md`) | backlog | When an investigation is **scored against the protocol benchmark**, the gaps it hits (fields that would unlock deeper analysis) are written into `pipeline/DATA_ENRICHMENT.md`. That file lives in the pipeline track but is *populated by the investigator* — it's the bridge that turns "we couldn't test X" into a planned re-extraction. |
 | **EXPLORATION_PROTOCOL.md → Explorer_prompt.txt** | governance | The exploration protocol is the benchmark-gated plan for iterating the explorer prompt. Stage 9 of each session self-scores against the benchmark and proposes the next edit; a human approves before the version is bumped. |
-| **REFINEMENT_PROTOCOL.md → Refiner_prompt.txt** | governance | The refinement protocol governs how validated findings are codified into permanent battery tests. Benchmark TBD after first refinement run. |
+| **REFINEMENT_PROTOCOL.md → Refiner_prompt.txt** | governance | The refinement protocol governs how validated findings are codified into permanent battery tests, and (as of 2026-08-14) how already-shipped tests are retroactively verified against the same six-dimension benchmark. |
 | **Investigator → Frontend** | findings | Findings in `INVESTIGATIONS.md` become panels via the `INTERACTIVITY.md` recipe; the standard test battery (`src/analysis/tests.py`) feeds the Scorecard; `FINDINGS_SUMMARY.md` feeds the Overview panel. |
 | **Pipeline → Frontend** | data | `council publish` (a pipeline CLI command) exports the static JSON snapshots the panels read; drill-down "receipts" come from the `extraction_evidence` table the pipeline populates. |
 | **Strategy → all** | priorities | `PRIVATE_ASSESSMENT.md` consumes every track's output to rank what matters next (second council, defamation mitigation on named individuals, About/methodology pages). |

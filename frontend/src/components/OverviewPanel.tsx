@@ -74,7 +74,7 @@ export function OverviewPanel() {
       n: 4,
       title: "Entrenchment renews itself",
       stat: `${d.tenure_top_years} yrs`,
-      statLabel: `longest-serving councillor (${d.tenure_top_name})`,
+      statLabel: "longest-serving councillor",
       body: (
         <>Median service is {d.tenure_median_years} years and{" "}
         {d.tenure_15plus} councillors served 15+. The 2000s "old guard" sponsorship

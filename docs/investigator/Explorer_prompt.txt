@@ -443,6 +443,39 @@ LOGGED CYCLES:
   raw effect looks strong (e.g. [40] deputations 11% vs 6.3%), control for item
   contentiousness BEFORE claiming engagement efficacy — the [3] confound recurs.
 
+- Session 10 (2026-08-14) — first Explorer session run since the Explorer/
+  Refiner/Runner split went fully live (same-day: `AUDIT_2026-08-14.md`
+  retroactive audit, `Refiner_prompt.txt`/`Runner_prompt.txt` first real runs).
+  5 hypotheses [41]–[45], full domain breadth (A–E). Which genre produced the
+  most defensible finding: C-integrity — [41], the first-ever "absence is the
+  signal" test on the previously-unmined `appointments` table (council's own
+  external-body delegates), landed clean and well-provenanced (a fifth
+  converging integrity credit) even though it stayed at Null/Observation
+  altitude rather than flagship. Which hypothesis looked hot and died: [43]
+  (CEO/officer-turnover discontinuity) — real-looking movement in both
+  contestation and confidential share around the 2006 CEO appointment, killed
+  by its own pre-registered confound (only one usable, Inquiry-uncontaminated
+  turnover event exists in the whole corpus, and it unavoidably overlaps the
+  adjacent electoral cycle). New standing-checklist entry added below:
+  single-event discontinuities cannot support a causal claim on this corpus
+  regardless of effect size. Did the balance hold: yes — [42] (no pre-election
+  tender spending spike) and [41] both landed as reassuring strength results
+  without being inflated, and the two Banked results ([44] CEO-confidentiality,
+  [45] appointment-spread) were folded into FINDINGS_SUMMARY.md at the modest,
+  corroborative weight the evidence actually supports rather than oversold as
+  new insights. **Stage 9 self-score: 6/7 dimensions pass; dimension 6 (Stage
+  completion) fails at 5/7** — not a rigour gap but a benchmark-wording gap the
+  three-prompt split exposed: Stage 5/6 (evidence export, panel generation)
+  structurally have nothing to act on in a session whose Stage-4 yield is
+  Null/Banked-only, now that turning a Banked result into a battery row is
+  Refiner's job, not Explorer's. A minimal, non-applied fix to
+  `EXPLORATION_PROTOCOL.md`'s Stage-completion row is logged in full in
+  `INVESTIGATIONS.md`'s `[STAGE 9]` entry for Session 10 (a diff-style
+  replacement of the Stage-completion table row) — targets
+  `EXPLORATION_PROTOCOL.md`, not this file, since that is where Stages 1–7 are
+  actually defined; no version bump proposed for this (Explorer_prompt.txt)
+  file itself.
+
 STANDING CONFOUND CHECKLIST (grow this):
 - Selection in planning: bigger/uglier proposals attract *both* more objectors
   and more refusals — control for value, zoning, suburb before claiming an
@@ -472,6 +505,21 @@ STANDING CONFOUND CHECKLIST (grow this):
   confidential-tender share to 100% vs the defensible 62% on the
   `is_confidential` flag alone). Measure confidentiality by the flag, not by
   award-field missingness.
+- **Single-event discontinuities cannot support a causal claim on this corpus,
+  regardless of how large the effect looks.** Only shocks with multiple
+  independent instances (the 2018–21 Inquiry as a multi-year, well-populated
+  window; elections, repeated ~15 times) let you separate the shock's effect
+  from that one episode's idiosyncratic circumstances. A one-off administrative
+  event with a clean, real date — e.g. a single CEO turnover — still has n=1,
+  so any before/after movement is confounded with everything else that
+  happened to be going on that one time (an adjacent election, in [43]'s case).
+  Killed [43] (CEO-turnover discontinuity, Session 10); check for this before
+  investing in ANY newly-discovered "clean date" that doesn't recur.
+- `appointments.role` free text is **inconsistently cased** ("member"/"Member",
+  "delegate"/"Delegate", "presiding member"/"Presiding Member") — normalise
+  case before grouping or a role silently splits into two buckets. Surfaced by
+  the [41]/[45] Session-10 Stage-1 survey (the first session to touch this
+  table).
 
 ═══════════════════════════════════════════════════
 CHANGELOG

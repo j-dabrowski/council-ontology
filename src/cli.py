@@ -1879,6 +1879,15 @@ def _generate_snapshots(session, council_id: int, output_dir: Path, generated_at
                 "recused": p.recused,
                 "recusal_rate": p.recusal_rate,
                 "is_active": p.is_active,
+                # must-leave (financial/proximity) split of the blended rate above —
+                # see BLOCKING #3, defamation_review_1.md: the blended recusal_rate
+                # mixes legally-mandatory conflicts with lawful impartiality
+                # declarations, which mis-colours councillors with zero mandatory
+                # conflicts as if they'd ignored one. must_leave_recusal_rate is
+                # None when the councillor has no must-leave declarations on record.
+                "must_leave_declared": p.must_leave_declared,
+                "must_leave_recused": p.must_leave_recused,
+                "must_leave_recusal_rate": p.must_leave_recusal_rate,
                 # inline drill-down detail — each declared-interest vote expanded
                 "declarations": [_dc(d) for d in p.declarations],
             }

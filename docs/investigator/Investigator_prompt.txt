@@ -160,6 +160,25 @@ These have already produced wrong answers. They are not optional reading.
 - **`declared_interest=1` is rare (~600 votes)** and splits by legal type — a
   declared *impartiality* interest legally permits voting; a *financial* one does
   not. Always split by `interest_type` before drawing a recusal conclusion.
+- **`interest_declarations.item_reference` is NOT a safe join key on its own —
+  not even meeting-scoped.** It's a recycled agenda position (e.g. '6.3',
+  '13.3.4'), not a stable matter ID: the same number is reused across
+  different meetings for unrelated matters ([19]/[23]/[34] caveat), AND a
+  single meeting can have more than one `motions` row sharing one
+  `item_number` (a real motion plus an unrelated procedural item, e.g. a
+  deferral) AND more than one near-duplicate `interest_declarations` row for
+  the same real declaration (an extraction artifact). Joining
+  `interest_declarations` outward to `motions`/`votes` on
+  `item_reference == item_number` alone will fan out and silently inflate
+  counts — this shipped a fabricated "stayed and voted 9/9 times" claim about
+  a named councillor before it was caught (2026-08-11, Editor pass 3; see
+  `src/analysis/queries.py`'s `_linked_declared_votes`). **Always anchor the
+  join on `votes.declared_interest = 1` first** (votes carry
+  `UNIQUE(motion_id, councillor_id)`, so they can't fan out) and treat the
+  declaration match as an enrichment lookup, not the query's starting table.
+  `_linked_declared_votes` in `src/analysis/queries.py` is the one shared,
+  already-correct implementation of this link — build on it, don't re-derive
+  a second one.
 - **Councillor identity is good but not perfect.** Dedup merged ~84 split
   identities, but a few same-surname / nickname cases remain (e.g. Kate vs
   Catherine Barlow; ambiguous Everett/McKerracher/Steele family-only stubs).
