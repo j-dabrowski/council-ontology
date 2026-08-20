@@ -60,13 +60,19 @@ the next improvement to `Investigator_prompt.txt`.
 
 | # | Dimension | Threshold | How to measure |
 |---|-----------|-----------|----------------|
-| 1 | **Domain breadth** | ≥ 4 of the 5 Phase-1 genre domains (A Financial, B Governance, C Integrity, D Transparency) must each have ≥ 1 bespoke hypothesis before testing; domain E Strength expected | Count bespoke hypothesis entries by Phase-1 genre in Stage 2 output |
+| 1 | **Domain breadth** | ≥ 5 of the 6 Phase-1 genre domains (A Financial, B Governance, C Integrity, D Transparency, F Effectiveness) must each have ≥ 1 bespoke hypothesis before testing; domain E Strength expected | Count bespoke hypothesis entries by Phase-1 genre in Stage 2 output |
 | 2 | **Stage 1 data survey** | Binary PASS: a structured data profile — table row counts, investigation-critical NULL rates, known corpus gaps, date-span coverage by key table — must exist in scratchpad before the Stage 2 hypothesis list | Check scratchpad for a named profile artifact dated before Stage 2 |
 | 3 | **Structural kill rate** | ≤ 10% of bespoke hypotheses tested in Stage 4 die to structurally missing data (columns that the test requires are absent or 100% NULL) | Count hypotheses classified INFEASIBLE or died to schema/NULL gaps; divide by total bespoke tested; Stage 1 should surface these before Stage 4 |
 | 4 | **Finding rate** | ≥ 25% of bespoke hypotheses tested produce a Finding (built) or an actionable Banked result | Count `INVESTIGATIONS.md` entries classified `[✓]` Finding or `[◐]` Banked with a clear build path; exclude structural kills (those belong to Dim 3); divide by total bespoke tested |
 | 5 | **Evidence completeness** | ≥ 75% of confirmed flagship findings have drill-down data inlined in their snapshot JSON, with ≥ 1 verbatim source quote from `extraction_evidence` per inlined record | Check `frontend/public/data/*.json` for populated drill-down arrays (`declarations`, `awards`, `votes`, `items`, etc.) with a non-empty `quote` field |
 | 6 | **Stage completion** | ≥ 6 of 7 Stages 1–7 produce their defined output (Stage 8 is explicitly permitted to defer) | Binary checklist: Stage 1 profile in scratchpad; Stage 2 numbered hypothesis list; Stage 3 `scorecard.json` updated; Stage 4 `INVESTIGATIONS.md` updated; Stage 5 snapshot JSONs carry drill-down; Stage 6 `tsc + vite build` clean and frontend verified; Stage 7 `overview.json` + `FINDINGS_SUMMARY.md` updated |
 | 7 | **Framing balance** | 100% of confirmed flagship findings carry both the hostile-reader sentence and the promoter sentence, and are published in the NEUTRAL register | Review each flagship panel's text for the mandatory two-sentence pair (Investigator_prompt.txt Phase 4); verify register is NEUTRAL, not pure-CRITIC |
+
+**Note (2026-08-20):** domain F (Effectiveness, `Investigator_prompt.txt`
+Part 3.5) was added after all Cambridge calibration below was scored — those
+sessions predate it and cannot be read as having covered it. The next
+investigation session is the first one scored against the 6-domain version
+of Dimension 1.
 
 **Cambridge calibration — Phase A–K sessions scored against the benchmark:**
 

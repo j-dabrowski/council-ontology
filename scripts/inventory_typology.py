@@ -35,6 +35,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 INVENTORIES_DIR = Path("data/inventories")
 OUTPUT_DIR = Path("data")
 QUALITY_DIR = Path("data/inventory_quality")
+DATA_ENRICHMENT_PATH = Path("docs/pipeline/DATA_ENRICHMENT.md")
 
 # other_content rate at or below this → inventory is good enough; show extraction prompt
 QUALITY_THRESHOLD = 0.20
@@ -538,6 +539,56 @@ def _print_quality_history(council_key: str) -> None:
 # Extraction schema prompt (shown when inventory quality is good)
 # ---------------------------------------------------------------------------
 
+def _load_data_enrichment_patterns() -> list[dict]:
+    """Parse the council-agnostic Pattern lines out of DATA_ENRICHMENT.md.
+
+    Component C of DISCOVERY_LOOP_DESIGN.md: the typology stage's read side
+    of the compounding-knowledge loop. Pure text parsing, no LLM call — the
+    full pattern list is handed to whatever LLM session the human triggers
+    to act on the generated prompt, so the actual matching judgement happens
+    inside a call that was already going to run, at zero incremental cost.
+    """
+    if not DATA_ENRICHMENT_PATH.exists():
+        return []
+    text = DATA_ENRICHMENT_PATH.read_text(encoding="utf-8")
+    header_re = re.compile(r"^### (\d+)\.\s*(\S+)\s+(.+)$", re.MULTILINE)
+    headers = list(header_re.finditer(text))
+    entries: list[dict] = []
+    for i, m in enumerate(headers):
+        entry_id, emoji, title = m.group(1), m.group(2), m.group(3).strip()
+        block_start = m.end()
+        block_end = headers[i + 1].start() if i + 1 < len(headers) else len(text)
+        block = text[block_start:block_end]
+        pattern_m = re.search(
+            r"\*\*Pattern:\*\*\s*(.+?)(?=\n- \*\*Instance)", block, re.DOTALL
+        )
+        if not pattern_m:
+            continue
+        pattern_text = " ".join(pattern_m.group(1).split())
+        entries.append({"id": entry_id, "emoji": emoji, "title": title, "pattern": pattern_text})
+    return entries
+
+
+def _section_known_patterns(patterns: list[dict]) -> list[str]:
+    """Format accumulated cross-corpus patterns for inclusion in the schema-update prompt."""
+    if not patterns:
+        return []
+    lines = [
+        "Known cross-corpus patterns (accumulated in DATA_ENRICHMENT.md from prior",
+        "corpora and investigations) — check each of these against the rare section",
+        "headings and other_content residual above BEFORE finalising schema decisions.",
+        "A pattern that matches this corpus's content is a candidate for a dedicated",
+        "field even if it wouldn't otherwise clear the >10%/2% thresholds above, since",
+        "it has already been validated as analytically valuable on another corpus:",
+        "",
+    ]
+    for p in patterns:
+        lines.append(f"  [{p['id']}] {p['title']}")
+        lines.append(f"      {p['pattern']}")
+        lines.append("")
+    return lines
+
+
 def _generate_extraction_prompt(ok: list[dict], quality: dict, output_path: Path) -> str:
     """Prompt shown when other_content rate is below threshold — proceed to extraction schema."""
     n_docs = len(ok)
@@ -581,9 +632,18 @@ def _generate_extraction_prompt(ok: list[dict], quality: dict, output_path: Path
     out.append("")
     out.append(f"  Rare section headings: {n_rare} appear in 2–10 docs — check coverage.")
     out.append("")
+
+    known_patterns = _load_data_enrichment_patterns()
+    out.extend(_section_known_patterns(known_patterns))
+
     out.append("Instructions:")
     out.append("  1. Read the full typology report.")
     out.append("  2. Apply the decision rule to every inventory field and other_content residual.")
+    if known_patterns:
+        out.append("  2a. Cross-check every known cross-corpus pattern listed above against this")
+        out.append("      corpus's rare headings and other_content residual. Where one plausibly")
+        out.append("      matches, treat it as a dedicated-field candidate now — before extraction")
+        out.append("      commits — rather than waiting to discover it via re-extraction later.")
     out.append("  3. For each type getting a dedicated field:")
     out.append("       a. Add a Pydantic sub-model in schemas.py with lenient validators.")
     out.append("          Every model MUST include: source_quotes: list[str] = Field(default_factory=list)")

@@ -486,6 +486,26 @@ fishing. Each is paired with a real example and a data signature.
 - **Vexatious-complaint and information suppression** — harder to see in
   minutes, but petitions/deputations that vanish without resolution are a trace.
 
+### 3.5 Policy / programme effectiveness (outcomes, not misconduct)
+Added 2026-08-20 (`DISCOVERY_LOOP_DESIGN.md` Component A). This genre is not
+about wrongdoing — 3.1–3.4 hunt for a council doing something *wrong*; this
+one asks whether a council's own declared interventions actually achieved
+what it said they would. It needs three things to co-occur, not one field:
+a stated commitment, an implementation record, and an outcome measurement.
+
+| Failure mode | Real example | Data signature |
+|---|---|---|
+| Declared intervention never evaluated against its own stated goal | UK Local Audit and Accountability Act 2014 imposes a "value for money" arrangements duty on local auditors (economy/efficiency/**effectiveness**); the recurring VFM-audit finding is that individual programmes are rarely evaluated against their own stated objectives post-implementation | A `motions`/`budget_items` record approving intervention X with a stated purpose, but no later record (report, review item) measuring whether X achieved that purpose |
+| Outcome measured but never reported back to the deciding body | CIPFA/SOLACE *Delivering Good Governance* Principle C ("defining outcomes in terms of sustainable... benefits") and Principle D ("determining the interventions necessary to optimise the achievement of the intended outcomes") — core precisely because they are commonly skipped in practice | Measurement data exists in free text (e.g. before/after figures reported at a later meeting) but is never linked back to the approving motion or referenced as a review of it |
+| Programme repeated/expanded with no intervening evaluation | generic VFM-audit risk — spending renewed without ever checking whether the prior round worked | Repeated similar interventions (same treatment/programme type) approved across years with no evaluation motion between any of them |
+
+Worked example (hypothetical, not yet tested on any corpus): a council
+reports before/after measurements for physical interventions (traffic
+calming, capital works, service pilots) scattered across decades of
+minutes, tied to discrete approval decisions, with no compiled record of
+outcome-vs-goal anywhere. That shape — approval, implementation, scattered
+measurement, no synthesis — is what 3.5 is built to catch.
+
 ---
 
 ## PART 4 — THE DEFENSIBILITY LAYER (the standard of proof)
@@ -566,6 +586,8 @@ only where the evidence earns it.
 - NSW ICAC procurement & conflict-of-interest guidance; IBAC *Corruption risks
   in local-government procurement* (Operation Royston); SA ICAC *Buying Trust*.
 - *Briginshaw v Briginshaw* (1938) 60 CLR 336.
+- UK Local Audit and Accountability Act 2014 — the "value for money"
+  arrangements duty on local auditors (Part 3.5).
 
 > Treat every figure above as a research note to re-verify before publishing,
 > not as established fact in your corpus.

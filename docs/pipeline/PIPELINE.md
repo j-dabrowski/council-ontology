@@ -145,10 +145,75 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
 
 - **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0**
 
+- **Corpus onboarding order — first corpus vs subsequent (design sketch, not
+  built as an automated chain — see `docs/DISCOVERY_LOOP_DESIGN.md`).** The
+  stages exist (CLI commands + three agent roles: Researcher, Explorer/
+  Refiner/Runner, Editor/Fixer) but nothing sequences them yet. This is the
+  order that minimises LLM spend, worked out 2026-08-20 — a human (or
+  eventually a harness) runs each to completion before starting the next.
+  This is a **one-time-per-council onboarding sequence**, distinct from and
+  prerequisite to the recurring "Production scale" loop below, which is
+  what runs *after* a council has been onboarded.
+
+  **First corpus onboarded:**
+  1. **Researcher** — run generously before touching the corpus at all.
+     Corpus-independent, so its output (new `Investigator_prompt.txt`
+     Part 3 genres + `DATA_ENRICHMENT.md` patterns) is available before the
+     very first schema decision, for the cost of web research rather than
+     a later re-extraction.
+  2. `council scrape` / `council census` — free, deterministic.
+  3. `council inventory` (sample-limited) → typology loop (`council
+     typology`, now reading `DATA_ENRICHMENT.md`'s pattern layer per
+     Level 1→2 above) → schema-update agent session → repeat until
+     `other_content_rate ≤ 20%`.
+  4. Full `council inventory --force` + `council typology` to confirm
+     convergence holds corpus-wide.
+  5. `council sample` → `extract-sample` → `validate-sample` (Level 3,
+     ~$1–2) — first spend on the real extraction model, small, before the
+     big one.
+  6. Full extraction (Level 4+) — the single biggest cost in the pipeline;
+     only spent after step 5 passes.
+  7. dedup / build-relationships / geocode / archive.
+  8. **Explorer** — no frozen battery exists yet for a genuinely first
+     corpus, so hypothesis generation has to happen here. Every structural
+     kill now writes to `DATA_ENRICHMENT.md` (`Explorer_prompt.txt` v2.4),
+     feeding every corpus onboarded after this one.
+  9. **Refiner** — codifies validated findings into `tests.py`, building
+     the reusable, council-agnostic battery for the first time.
+  10. Review (Editor/Fixer) → human publish decision.
+
+  **Subsequent corpora onboarded:**
+  1. Researcher — **optional, not automatic.** Only run it if meaningfully
+     new precedent exists since the last session (`RESEARCH_PROTOCOL.md`'s
+     cadence note); re-running it every corpus is exactly the redundant
+     spend this design exists to avoid.
+  2. scrape/census, inventory, typology loop — same mechanics, but
+     `DATA_ENRICHMENT.md` is now richer (Researcher patterns plus every
+     structural kill logged by prior corpora), so convergence should need
+     fewer iterations and the initial schema draft should need fewer
+     follow-up re-extractions.
+  3. Level 3 sample validation — still worth running even on a mature
+     schema; corpus-specific quirks are still possible.
+  4. Full extraction.
+  5. dedup/relationships/geocode.
+  6. **Runner before Explorer.** `tests.py`'s battery is already
+     council-agnostic and frozen — Runner executes it deterministically
+     (SQL only, no hypothesis generation, close to free) and produces an
+     immediate cross-council scorecard (`DATA_ENRICHMENT.md` #12's payoff,
+     live for the first time from the second corpus onward). Don't spend
+     an expensive Explorer session re-deriving standard governance tests
+     this council already has coded answers for.
+  7. **Then Explorer**, scoped to what's actually novel about this council,
+     informed by what Runner already showed. Structural kills still log to
+     `DATA_ENRICHMENT.md`, compounding further for the next corpus.
+  8. Refiner codifies anything new; review; human publish.
+
 - **Production scale — periodic multi-council scraping (design sketch, not built).**
-  Everything above assumes a human runs `council scrape`/`council extract` by hand,
-  once, per council. That stops working once this is watching many councils on an
-  ongoing basis: each posts roughly 1–2 new meeting documents a month, so watching
+  Assumes the onboarding sequence above has already run for each council in scope —
+  this section is about what happens *after* a council is onboarded, watching it
+  for new documents on an ongoing basis. Everything above that assumes a human runs
+  `council scrape`/`council extract` by hand, once, per council. That stops working
+  once this is watching many councils on an ongoing basis: each posts roughly 1–2 new meeting documents a month, so watching
   even a modest number of councils means something like 5–100+ new documents a
   month arriving on a rolling basis, not a one-time corpus to process.
 
@@ -702,6 +767,8 @@ Use Level 0 and Level 1 outputs to revise the extraction schema and prompt BEFOR
 **Gated by Level 1 quality.** Do not begin Level 2 until `other_content_rate ≤ 20%` across the full corpus. The extraction schema should reflect what has been validated to exist in the corpus — not what was guessed upfront. Once the inventory prompt converges, `council typology` automatically switches its prompt box from inventory improvement instructions to extraction schema instructions.
 
 **Run `council typology <council>` to get the schema update prompt.** This reads the typology report and generates instructions for updating `schemas.py`, `system_prompt.txt`, `ontology.py`, `extractor.py`, and `__init__.py` based on what the inventory has confirmed. The generated prompt explicitly requires: `source_quotes: list[str]` on every new entity model, `source_quotes` in the OUTPUT SCHEMA block of the extraction prompt, a new SQLAlchemy table per entity type, and provenance wiring in `save_extraction()` using the `_ev()` + `session.flush()` pattern. (Updated 2026-05-29 — prior version omitted `extractor.py` and said nothing about provenance.)
+
+**Reads `DATA_ENRICHMENT.md`'s pattern layer before finalising schema decisions (added 2026-08-20, `DISCOVERY_LOOP_DESIGN.md` Component C).** The generated prompt now also lists every council-agnostic Pattern from `pipeline/DATA_ENRICHMENT.md` (pure text parse of that file, no additional LLM call — see `scripts/inventory_typology.py::_load_data_enrichment_patterns`) and asks the schema-update step to cross-check each against this corpus's rare section headings / `other_content` residual. This is the mechanism that lets schema-gap knowledge compound across corpora: a pattern surfaced reactively by investigation on corpus 1 gets checked *proactively*, before Level 2 commits, on corpus 2 and every corpus after — so less has to be caught later via costly re-extraction. On corpus 1 (Cambridge) the pattern list is necessarily empty or self-referential; the payoff starts at corpus 2.
 
 ### Tasks
 - Review Level 1 typology against current Pydantic schema (`src/extraction/schemas.py`). Identify gaps:
