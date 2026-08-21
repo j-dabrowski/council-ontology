@@ -84,14 +84,14 @@ Editor — defamation-review mode, pass 1 (agent)
         └── FAIL, flags tagged [frontend|pipeline|doc]
                     │
                     ▼
-            pass < 3 (cap)?
+            pass < max_passes (cap)?
                     │
         ┌───────────┴───────────┐
        yes                      no
         │                        │
         ▼                        ▼
   dispatch Fixer modes    escalate to human —
-  for the tracks present   3 passes failed,
+  for the tracks present   cap passes failed,
   (only the tagged ones —  stop iterating
    e.g. a frontend-only
    FAIL never touches
@@ -104,10 +104,11 @@ Editor — defamation-review mode, pass 1 (agent)
   Editor pass 2 ──── loop ────────────────────────────► (same branch as above)
 ```
 
-**Loop cap: 3 Editor passes.** Chosen, not derived — a starting point to
-revise once there's real data on how many passes a typical FAIL actually
-takes to clear. If pass 3 still has blocking flags, the Conductor stops and
-escalates rather than attempting pass 4. Per `Editor_prompt.txt`'s own
+**Loop cap: `conductor_max_passes` in `config/agent_switches.json`
+(currently 3).** Chosen, not derived — a starting point to revise once
+there's real data on how many passes a typical FAIL actually takes to
+clear. If the cap is hit and blocking flags remain, the Conductor stops and
+escalates rather than attempting another pass. Per `Editor_prompt.txt`'s own
 instruction: persistent failure across multiple targeted fixes is a signal
 the underlying claim may not be publishable in *any* framing — a judgment
 call for a human (and eventually a lawyer), not something to keep automating

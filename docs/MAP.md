@@ -68,7 +68,7 @@ one shared reference layer, two protocol documents.
   before), and from the 🔭 Research track's human-applied candidates (Part 3.5,
   added 2026-08-20, is the first of the latter, merged directly in design
   conversation before the track's file-review gate existed — see below).
-- `investigator/Explorer_prompt.txt` — **exploration mode** (v2.3): generate and test
+- `investigator/Explorer_prompt.txt` — **exploration mode** (v2.6): generate and test
   novel hypotheses; Stage 9 self-scores the session and proposes the next prompt edit.
 - `investigator/Refiner_prompt.txt` — **refinement mode** (v1.0): codify a validated
   finding into a permanent, council-agnostic entry in `tests.py` / `queries.py` —
@@ -201,7 +201,7 @@ The non-obvious edges, spelled out:
 | Edge | Direction | What flows |
 |------|-----------|-----------|
 | **Pipeline → Investigator** | substrate | The extracted DB + schema is what the investigator queries. Extraction **caveats** (UPPERCASE enums, minutes-only vs agenda contamination, `item_reference` not meeting-unique) are documented in `Investigator_prompt.txt` Part 0 — change the pipeline and that section must follow. |
-| **Investigator → Pipeline** (`DATA_ENRICHMENT.md`) | backlog | When an investigation is **scored against the protocol benchmark**, the gaps it hits (fields that would unlock deeper analysis) are written into `pipeline/DATA_ENRICHMENT.md`, now with a council-agnostic pattern layer above the corpus-specific instance. That file lives in the pipeline track but is *populated by the investigator* — it's the bridge that turns "we couldn't test X" into a planned re-extraction. |
+| **Investigator → Pipeline** (`DATA_ENRICHMENT.md`) | backlog | Every structural kill in an Explorer session is written into `pipeline/DATA_ENRICHMENT.md`, with a council-agnostic pattern layer above the corpus-specific instance — *while `data_enrichment_status` in `config/agent_switches.json` reads OPEN* (`Explorer_prompt.txt` v2.6 step 0). Flip that value to FROZEN once the backlog is judged sufficient and Explorer skips the write (its core investigation is unaffected); reading the file (typology cross-reference, Pattern-exists check) still happens either way. That file lives in the pipeline track but is *populated by the investigator* — it's the bridge that turns "we couldn't test X" into a planned re-extraction. |
 | **Pipeline → Pipeline** (`DATA_ENRICHMENT.md` → typology stage) — *new 2026-08-20* | self-loop, read | On every new corpus, the typology convergence loop (`council typology <council>`) cross-references its rare-heading/`other_content` aggregation against `DATA_ENRICHMENT.md`'s pattern layer before generating the Level 2 schema-update prompt. Pure text parse, no new LLM call — reuses the aggregation typology already computes. This is what lets schema-gap knowledge compound across corpora instead of only ever being caught reactively, post-extraction. |
 | **Research → Investigator + Pipeline** (→ `pending_merges/` → Part 3 + `DATA_ENRICHMENT.md`) — *new 2026-08-20, gated by default as of v1.2* | taxonomy + pattern growth | A candidate genre from the 🔭 Research track that clears its own four-dimension self-check gets a ready-to-apply file in `research/pending_merges/` (default) for a human to paste into both `Investigator_prompt.txt` Part 3 and `pipeline/DATA_ENRICHMENT.md`'s pattern layer — or, only if a human explicitly declared auto-merge mode at session start, Researcher writes both directly, same session. Council-agnostic — benefits every future corpus, not just whichever one (if any) motivated the research. |
 | **RESEARCH_PROTOCOL.md → Researcher_prompt.txt** — *new 2026-08-20* | governance | Same shape as `EXPLORATION_PROTOCOL.md → Explorer_prompt.txt`: benchmark-gated. Default is file-review (Researcher scores its own session, writes pending-merge files, a human applies them); auto-merge is available only as an explicit per-session opt-in, ending in a stage-contract completion block either way. |
@@ -239,6 +239,7 @@ The non-obvious edges, spelled out:
 | building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX |
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |
 | weighing risk, funding, or direction | `strategy/PRIVATE_ASSESSMENT.md` |
+| flipping a gate that controls agent behavior (data-enrichment freeze, researcher default gate mode, conductor pass cap) | `config/agent_switches.json` (loaded by `src/agent_config.py`) — not the prose docs that describe each gate |
 | onboarding / public/dev reference | root `README.md` |
 | adding a test, changing ruff config, editing CI | `TESTING.md` |
 | making (or reversing) a CI/CD infra decision — new workflow, auth approach, deploy target | log it in `CICD_DECISIONS.md` (dated entry: decision, alternatives, trade-off), then update `TESTING.md` if the current-state description changed |

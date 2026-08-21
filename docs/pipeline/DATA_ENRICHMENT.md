@@ -1,5 +1,16 @@
 # Data-Enrichment Wishlist — fields/entities that would unlock deeper investigation
 
+**Status is set in `config/agent_switches.json`** (`data_enrichment_status:
+OPEN | FROZEN`), not here — see that file for the live value.
+`Explorer_prompt.txt` Phase 3 step 0 reads it before writing. Flip it to
+`FROZEN` once the backlog below is judged sufficient for runs on future
+corpora; Explorer then skips the write step entirely (still logs the null
+in `INVESTIGATIONS.md` as normal) until it's flipped back to `OPEN`.
+Freezing only stops *new* writes — the typology stage keeps reading
+whatever's here either way. Researcher's contribution isn't gated by this
+flag: it only adds anything when you choose to run it, so controlling
+whether it runs is already the control.
+
 Forward-looking notes (started 2026-06-24, session 6). Each entry is a candidate
 for a **future re-extraction** (adapt the extraction prompts, re-run over the
 existing minutes/agenda PDFs) or an **external-data join**. The corpus and PDFs

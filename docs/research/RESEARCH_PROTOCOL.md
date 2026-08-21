@@ -54,7 +54,7 @@ one bad candidate should not hide behind three good ones.
 | 3 | **Data-signature translatability** | The precedent translates into a concrete signature expressible against this project's schema vocabulary (tables/fields/free-text patterns a minutes-derived corpus could plausibly hold) | Write the signature row the way Part 3.1–3.5 write theirs; if it can't be written without inventing data no minutes corpus would have, it fails |
 | 4 | **Defamation safety** | Genre-level only; no claim, named or implied, about any specific council currently in this project's scope | Re-read the candidate as if it were about Cambridge — if it reads as an assertion rather than a lens, it fails |
 
-## Merge flow — gated by default (v1.2, 2026-08-20)
+## Merge flow — gated by default (v1.3, 2026-08-22)
 
 **Two modes.** `Researcher_prompt.txt` v1.1 (2026-08-20) removed the human
 gate entirely, on the reasoning that every stage needs to be chainable by a
@@ -62,14 +62,18 @@ future harness/cloud runner without a human deciding whether each one may
 proceed. That reasoning is sound for a role with a track record — but v1.1
 shipped before Researcher had ever been run once, so it removed the one
 check that would have caught a bad self-check with zero real evidence that
-the self-check was trustworthy. v1.2 restores a gate as the **default** and
-keeps the fully-autonomous path available as an **explicit, human-declared
-opt-in** — the same shape every other role in this project uses (see
+the self-check was trustworthy. v1.2 restored a gate as the **default**,
+kept as an explicit, human-declared per-session opt-in for the fully
+autonomous path — the same shape every other role in this project uses (see
 `Explorer_prompt.txt`'s Stage 9, `CONDUCTOR.md`'s escalation flow): gated
 by default, autonomous only when a human deliberately says so when starting
-the run, never as something the role decides for itself mid-session.
+the run, never as something the role decides for itself mid-session. v1.3
+moved the *default* itself into `researcher_gate_mode` in
+`config/agent_switches.json`, so a headless/scheduled invocation with no
+one present to "declare" anything at session start still has a real value
+to read; an explicit per-session instruction still overrides it either way.
 
-**File-review mode (default):**
+**File-review mode (the config's default value):**
 1. Researcher session runs, drafts candidate(s), self-scores each against
    the four dimensions below.
 2. **All four pass** → Researcher writes a self-contained, ready-to-apply
@@ -85,7 +89,7 @@ the run, never as something the role decides for itself mid-session.
    `PRECEDENT_BANK.md` entry to `status: merged` or `status: rejected`
    accordingly.
 
-**Auto-merge mode (only when explicitly declared at session start):**
+**Auto-merge mode (when the config's value is `auto-merge`, or explicitly declared at session start):**
 1. Researcher session runs, drafts candidate(s), self-scores each against
    the four dimensions below.
 2. **All four pass** → Researcher itself merges the candidate into

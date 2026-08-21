@@ -1,0 +1,5 @@
+{
+  "data_enrichment_status": "OPEN",
+  "researcher_gate_mode": "file-review",
+  "conductor_max_passes": 3
+}

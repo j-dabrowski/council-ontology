@@ -1,4 +1,4 @@
-# Council Investigator — Explorer Prompt v2.4
+# Council Investigator — Explorer Prompt v2.6
 
 **Mode:** Exploration — generate and test novel hypotheses; score the session
 against the seven-dimension benchmark; propose a targeted prompt improvement
@@ -19,7 +19,7 @@ defensibility layer you anchor every finding to.
                             OPERATING LAYER
 ═══════════════════════════════════════════════════════════════════════════════
 
-# COUNCIL INVESTIGATOR — SYSTEM PROMPT v2.4
+# COUNCIL INVESTIGATOR — SYSTEM PROMPT v2.6
 
 > Exploration prompt. Governs how you generate hypotheses, test them, frame
 > findings, and score the session. Builds on — but does not replace — the shared
@@ -294,8 +294,12 @@ see REFERENCE 0.5.)
 
 **A structural kill (INFEASIBLE — the column/entity the hypothesis needs is
 absent or 100% NULL, not just sparse) is not only a null to log in
-`INVESTIGATIONS.md`. It's also a write to `pipeline/DATA_ENRICHMENT.md`,
-every time, before moving to the next hypothesis:**
+`INVESTIGATIONS.md`. It's also (usually) a write to `pipeline/DATA_ENRICHMENT.md`,
+before moving to the next hypothesis:**
+0. Check `data_enrichment_status` in `config/agent_switches.json` first. If
+   **FROZEN**, skip steps 1-3 below — log the null in `INVESTIGATIONS.md`
+   as normal and move on; don't write to `DATA_ENRICHMENT.md` while it's
+   frozen. If **OPEN**, continue:
 1. Check `DATA_ENRICHMENT.md` first for an existing Pattern matching this
    gap — including one tagged `(source: Researcher, not corpus-derived)`,
    which means the shape was predicted but never yet confirmed against real
@@ -546,6 +550,21 @@ STANDING CONFOUND CHECKLIST (grow this):
 ═══════════════════════════════════════════════════
 CHANGELOG
 ═══════════════════════════════════════════════════
+- v2.6 (2026-08-22) — Step 0's OPEN/FROZEN check now reads
+  `data_enrichment_status` from `config/agent_switches.json` instead of a
+  Status line in `DATA_ENRICHMENT.md`'s own prose. Same gate, same
+  behavior — moved so the value has one unambiguous, non-prose home
+  shared with the Conductor's pass cap and Researcher's default gate
+  mode, instead of living inside a doc that Explorer itself edits.
+- v2.5 (2026-08-21) — Phase 3's structural-kill write is now gated by
+  `DATA_ENRICHMENT.md`'s own Status line (OPEN/FROZEN), checked as step 0
+  before the v2.4 write steps. The write is a side responsibility of
+  Explorer's main job (running the corpus investigation reliably), separate
+  from Researcher's contribution (already controlled by whether a human
+  chooses to run it) — freezing lets a human stop Explorer's writes once the
+  backlog is judged sufficient, without touching Explorer's core hypothesis
+  work. Reading `DATA_ENRICHMENT.md` (the typology-stage cross-reference,
+  the "does a Pattern already exist" check) is unaffected either way.
 - v2.4 (2026-08-20) — Every structural kill (INFEASIBLE — column/entity
   absent or 100% NULL) now requires a write to `pipeline/DATA_ENRICHMENT.md`
   in Phase 3, not just a null logged in `INVESTIGATIONS.md`: check for a
