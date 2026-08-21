@@ -45,13 +45,17 @@ inside the track it happens to have been designed alongside.
    `*_mode.txt` files + [`fixer/FIXER_PROTOCOL.md`](fixer/FIXER_PROTOCOL.md)
    — if you're running or improving a fix stage.
 
-## Status (2026-08-10)
+## Status (2026-08-22)
 
-Nothing in this directory has ever been run. `Editor_prompt.txt` has one
-dry-run's worth of design discussion behind it but zero real invocations at
-the time this index was written. Treat every doc here as an untested first
-structure — the thing to do next with this directory isn't more design, it's
-a real run.
+Three real Editor passes have run, chained against successive Aug 10 drafts
+(`defamation_review_1.md` in `draft_20260810_065408`, `_161747`, and
+`_180259`) — the last hit the 3-pass cap with blocking flags still open and
+escalated to a human per `CONDUCTOR.md`'s rule, rather than continuing.
+Since then, `Editor_prompt.txt` gained a machine-readable
+`defamation_review_<n>.json` sidecar (v0.3, 2026-08-21) alongside its
+markdown review; no draft has been reviewed under that version yet — the
+six Aug 14 drafts have no review of either format. The next real invocation
+will be the first to exercise the JSON sidecar.
 
 ## Where this sits in the larger pipeline
 
