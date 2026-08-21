@@ -2584,14 +2584,18 @@ def cmd_publish(args) -> None:
     """The publish gate: copy a reviewed draft's snapshots into
     frontend/public/data/ — the only command allowed to write there.
 
-    Requires --from-draft (a directory produced by `council draft`) and
-    --confirm (an explicit human review note). Both are required by argparse
-    itself — there is no code path that publishes without them. Copies bytes
-    verbatim from the draft; never recomputes from the database, so what was
-    reviewed is exactly what ships even if council.db has since changed.
-    Public-tier snapshots go to frontend/public/data/; full-tier snapshots
-    (paywall-pending — no serving layer exists yet) go to a private,
-    gitignored data/published_full/ instead. See src/publish_gate.py.
+    Requires --from-draft (a directory produced by `council draft`) always,
+    plus one of two authorization paths selected by --gate-profile:
+    'interactive' (default) requires --confirm, an explicit human review
+    note; 'auto' requires no --confirm, and instead independently
+    re-validates a real Editor PASS record already in the draft directory
+    (see src/publish_gate.py). There is no code path that publishes without
+    clearing one of these. Copies bytes verbatim from the draft; never
+    recomputes from the database, so what was reviewed is exactly what ships
+    even if council.db has since changed. Public-tier snapshots go to
+    frontend/public/data/; full-tier snapshots (paywall-pending — no serving
+    layer exists yet) go to a private, gitignored data/published_full/
+    instead.
     """
     import json as _json
     import shutil
@@ -2631,7 +2635,17 @@ def cmd_publish(args) -> None:
         )
         sys.exit(1)
 
-    clearance = check_clearance(draft_dir, args.confirm)
+    if args.gate_profile == "interactive" and not (args.confirm or "").strip():
+        console.print(
+            "[red]--confirm is required in --gate-profile interactive "
+            "(the default) — pass --gate-profile auto instead if this "
+            "draft has a real Editor PASS record to clear it on.[/red]"
+        )
+        sys.exit(1)
+
+    clearance = check_clearance(
+        draft_dir, args.confirm, manifest.run_id, gate_profile=args.gate_profile,
+    )
     if not clearance.cleared:
         console.print(f"[red]Not cleared to publish: {clearance.reason}[/red]")
         sys.exit(1)
@@ -2656,7 +2670,14 @@ def cmd_publish(args) -> None:
         "published_at": published_at,
         "council": key,
         "draft_run_id": manifest.run_id,
-        "confirm_note": args.confirm,
+        "authorization": {
+            "gate_profile": args.gate_profile,
+            "confirm_note": args.confirm if args.gate_profile == "interactive" else None,
+            "clearance_source": (
+                clearance.reason if args.gate_profile == "auto" else None
+            ),
+            "reason": clearance.reason,
+        },
         "snapshots": public_names,
     }, indent=2))
 
@@ -3200,10 +3221,23 @@ def main() -> None:
         help="Path to a data/draft/<council>/<run_id>/ directory produced by `council draft`",
     )
     p_publish.add_argument(
-        "--confirm", required=True, metavar="NOTE",
+        "--confirm", required=False, metavar="NOTE", default=None,
         help="Explicit human confirmation that this draft has been reviewed "
              "(free-text note, e.g. reviewer name + date + summary). Required "
-             "every time — there is no default-approve.",
+             "in the default --gate-profile interactive; ignored and not "
+             "required in --gate-profile auto, where clearance instead comes "
+             "from an on-disk Editor PASS record. There is no default-approve "
+             "in interactive mode.",
+    )
+    p_publish.add_argument(
+        "--gate-profile", choices=["interactive", "auto"], default="interactive",
+        dest="gate_profile",
+        help="How this publish is authorized. 'interactive' (default): "
+             "requires --confirm, a human vouching directly. 'auto': requires "
+             "no --confirm, instead independently re-validates a real Editor "
+             "PASS record (defamation_review_<n>.json) already in the draft "
+             "directory — see src/publish_gate.py and "
+             "docs/review/CONDUCTOR.md's 'Gate profiles' section.",
     )
     p_publish.set_defaults(func=cmd_publish)
 

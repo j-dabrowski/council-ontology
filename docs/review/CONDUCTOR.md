@@ -2,8 +2,9 @@
 
 Governs the orchestrator role that chains Editor and Fixer together: how it's
 actually triggered today, the stage-contract every worker's output must
-carry, the loop itself, the pass cap, and — the one rule that must survive
-every future change to this doc — what it is never allowed to do.
+carry, the loop itself, the pass cap, and — the one invariant that must
+survive every future change to this doc — what publish authorization always
+requires, under every gate profile.
 
 Related: `docs/review/REVIEW.md` (how this fits with Editor/Fixer),
 `docs/review/editor/Editor_prompt.txt` + `EDITOR_PROTOCOL.md`,
@@ -126,20 +127,79 @@ fix. Re-draft after every dispatched Fixer round, even though it's
 mechanically wasteful — reviewing stale output defeats the entire point of
 the gate.
 
-## The one rule that must survive every future version of this doc
+## The one invariant that must survive every future version of this doc
 
-**The Conductor never calls `council publish`.** Not "unless a human
-pre-authorizes bypassing review" — never, structurally, regardless of
-verdict. Mechanically nothing stops an agent from typing a `--confirm`
-string; the constraint is a project convention, not a code-enforced one (see
-`docs/TESTING.md`: `--confirm` is supposed to encode genuine human vouching).
-Both exits from the loop above — clean PASS and cap-hit escalation — lead to
-the same human sign-off node. The Conductor's job ends at "here's a draft and
-its full review trail, ready for a decision." Publish is always the
-separately, manually invoked command.
+**Publish always requires a verifiable authorization record, never any
+single agent's self-assessment.** Two profiles satisfy this today (see
+"Gate profiles" below):
+
+- **`--gate-profile interactive` (default).** A human types `--confirm`
+  directly — the record *is* their own action, in the moment. The Conductor
+  never calls `council publish` in this profile, full stop; both exits from
+  the loop above (clean PASS and cap-hit escalation) lead to the same human
+  sign-off node, exactly as before.
+- **`--gate-profile auto` (opt-in, see "Gate profiles").** `check_clearance()`
+  (`src/publish_gate.py`) independently re-validates Editor's own on-disk
+  PASS record against the exact draft being published — the record isn't
+  the Conductor's claim, it's Editor's file, re-derived by code. **In this
+  profile, and only this profile, the Conductor is permitted to invoke
+  `council publish --gate-profile auto`** — its authority to do so comes
+  from that independent re-validation succeeding, not from the Conductor
+  asserting anything about its own review.
+
+What must never happen, in either profile: an agent publishing on its own
+say-so, with no record independent of that agent to check against.
+
+## Gate profiles
+
+Every checkpoint in this loop — sign-off after PASS, escalation at the pass
+cap — runs in one of two modes today, chosen once, by whoever starts the
+run; no stage decides its own mode or escalates its own permissions
+mid-run. This mirrors how `docs/research/Researcher_prompt.txt` already
+does session-level mode selection for its own merge gate.
+
+- **`interactive`** (default) — every checkpoint above is exactly what it's
+  always been: PASS routes to a human, cap-hit routes to a human, publish
+  needs a human-typed `--confirm`.
+- **`auto`** — PASS still requires the same 7-dimension, zero-blocking-flags
+  bar (nothing about Editor's own scoring loosens); the difference is what
+  happens *after* a real PASS is on disk — `council publish --gate-profile
+  auto` can re-validate it and proceed without a human typing anything.
+  Cap-hit escalation is **not** made autonomous by this profile — 3 failed
+  automated fix attempts stays a stop, not a proceed, in every profile;
+  what changes with a profile is only whether *clearing* moves forward
+  unattended, never whether *failing* does.
+- **`async:<channel>`** (e.g. email) — designed, not built. A profile where
+  a checkpoint pauses and notifies a human out-of-band instead of either
+  blocking interactively or clearing automatically. Deferred to a later
+  phase; noted here so a future version of this doc has a named slot for it
+  rather than needing another rule reframe.
+
+**What the `auto` guarantee actually covers:** it's *structural*, not
+adversarial. It stops an accidental publish of stale, regressed, or
+non-PASS content, because the verdict is re-derived from Editor's own file
+rather than trusted from the Conductor's report of it. It does **not** stop
+a compromised or malicious agent from writing a fake PASS record directly —
+every role in this pipeline runs with the same repo write access today, so
+that's not a boundary code can enforce yet. A genuinely adversarial
+guarantee needs a signer distinct from whatever writes the draft — that's
+what the deferred `async` profile is for, not a security control `auto`
+provides on its own.
 
 ## Changelog
 
+- v0.2 (2026-08-20) — reframed "the Conductor never calls `council publish`"
+  around the real invariant it was standing in for (a verifiable
+  authorization record, never an agent's self-assessment), now that
+  `council publish` has a second, code-enforced authorization path.
+  In `--gate-profile auto` the Conductor is now permitted to invoke publish
+  itself, because clearance comes from `check_clearance()` independently
+  re-validating Editor's on-disk PASS record, not from the Conductor's
+  own claim. Added the "Gate profiles" section (`interactive`/`auto` built,
+  `async:<channel>` designed but deferred) and an explicit honesty note
+  that `auto`'s guarantee is structural, not adversarial. See
+  `src/publish_gate.py` and `docs/review/editor/Editor_prompt.txt` v0.3 for
+  the code/prompt sides of this same change.
 - v0.1 (2026-08-10) — first draft. Absorbs and corrects the loop/triggering
   content that used to live in `EDITOR_PROTOCOL.md` (née
   `DEFAMATION_AUDIT_PROTOCOL.md`), which described FAIL routing to "the next

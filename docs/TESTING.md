@@ -181,12 +181,15 @@ review signal. The pipeline is now three stages:
 ```
 council draft <council>        council publish <council>
    (data/draft/, private)    →     --from-draft <path>
-        │                          --confirm "<note>"
-        │                              │
-        ▼                              ▼
-  Editor + Fixer               frontend/public/data/
-  review happens here          (public, git-tracked,
-  (external to CI)              Vercel-served)
+        │                          --gate-profile interactive|auto
+        │                          (interactive: --confirm "<note>"
+        │                           auto: no --confirm, re-validates
+        │                           Editor's on-disk PASS record)
+        ▼                              │
+  Editor + Fixer                       ▼
+  review happens here           frontend/public/data/
+  (external to CI)              (public, git-tracked,
+                                  Vercel-served)
 ```
 
 **`council draft <council>`** runs the exact same query/battery logic
@@ -232,10 +235,9 @@ from the gitignored `data/draft/` tree on every request rather than copying
 anything into `frontend/public/`, no tracked file is ever touched — closing
 the dev server (or not setting `VITE_DRAFT_DIR`) leaves zero trace.
 
-**`council publish <council> --from-draft <path> --confirm "<note>"`** is
-the actual gate. Both flags are `required=True` at the argparse level — there
-is no code path that publishes without them, and no flag to skip the check
-(see `src/publish_gate.py`). It **copies the draft's JSON verbatim** into
+**`council publish <council> --from-draft <path>`** is the actual gate.
+`--from-draft` is always required — there is no code path that publishes
+without it. It **copies the draft's JSON verbatim** into
 `frontend/public/data/` rather than recomputing from `council.db`. This
 matters: if it recomputed, a human could review draft output A and have the
 command publish a *different* output B (because the database changed in
@@ -245,12 +247,24 @@ recorded at draft time (`verify_draft_integrity`); any drift — even an
 innocent edit — aborts the publish rather than silently shipping something
 nobody actually reviewed.
 
-Today, `check_clearance()` in `src/publish_gate.py` is satisfied by a real,
-non-trivial `--confirm` string — a human explicitly vouching for the draft.
-That's a genuine improvement over the old "no gate at all," but it is **not**
-an Editor pass; it's a deliberately minimal stub with one job: give the
-Editor role (`docs/review/editor/`) one clear, named place to plug in later,
-without this project having guessed at its interface ahead of time.
+**`--gate-profile`** (`interactive` default, or `auto`) picks how the rest of
+the gate is satisfied — see `src/publish_gate.py`'s `check_clearance()` and
+`docs/review/CONDUCTOR.md`'s "Gate profiles" section for the fuller design:
+
+- `interactive` — needs `--confirm "<note>"`, a real, non-trivial string a
+  human types to explicitly vouch for the draft. This is still exactly the
+  minimal stub it always was: a name/length check, nothing more. `--confirm`
+  is rejected as missing/too short with `sys.exit(1)` before any file is
+  touched.
+- `auto` — needs no `--confirm` at all. Instead, `check_clearance()`
+  independently re-validates the Editor role's own on-disk PASS record (the
+  `defamation_review_<n>.json` sidecar Editor writes into the draft
+  directory — see `docs/review/editor/Editor_prompt.txt`) against the exact
+  draft being published: same `run_id`, `status == "PASS"`, empty `tracks`.
+  See `docs/review/CONDUCTOR.md`'s "Gate profiles" section for what this
+  guarantee does and doesn't cover.
+
+`auto` mode is the first real code-level consumer of an Editor verdict.
 
 **Why gitignore is no longer the safety mechanism.** Previously,
 `frontend/public/data/` being gitignored was the *only* thing standing
@@ -436,16 +450,32 @@ for this step) before anyone decides to publish it.
 gh workflow run publish.yml -f draft_gcs_path=drafts/cambridge/<run_id> -f confirm_note="<reviewer name/date/summary>"
 ```
 
+or, in `auto` gate profile:
+
+```bash
+gh workflow run publish.yml -f draft_gcs_path=drafts/cambridge/<run_id> -f gate_profile=auto
+```
+
 **What it does:** downloads the specified draft from GCS (no `council.db`
 needed — publish never recomputes), runs `council publish cambridge
---from-draft ... --confirm ...`, archives any full-tier output to
+--from-draft ... --gate-profile ...` (with `--confirm` only in the
+`interactive` case), archives any full-tier output to
 `gs://$BUCKET/published/full/cambridge/` (private — no serving layer reads
 this yet), then commits `frontend/public/data/` with a bot identity and
 pushes — guarded by a `git diff --cached --quiet` check so a no-op publish
-doesn't create an empty commit. `draft_gcs_path` and `confirm_note` are
-**required** `workflow_dispatch` inputs — GitHub's UI/CLI won't let you
-trigger this without supplying both, one more layer on top of the CLI's own
-`required=True` flags.
+doesn't create an empty commit. `draft_gcs_path` is a **required**
+`workflow_dispatch` input; `gate_profile` defaults to `interactive` and
+`confirm_note` is required only in that default case (enforced by the CLI,
+same as running locally — GitHub Actions itself can't conditionally require
+one input based on another).
+
+**Operational caveat for `auto` mode through CI:** `draft.yml` uploads its
+draft to GCS *before* review happens, so the uploaded copy has no
+`defamation_review_<n>.json` sidecar yet. To publish via `auto` through this
+workflow, whoever ran Editor locally has to re-upload the augmented draft
+directory (JSON sidecar included) to the same GCS path first. Full
+round-tripping — Editor itself running as a CI step — is a later-phase
+concern, not solved here.
 
 **Permissions:** both workflows need `id-token: write` (to mint the OIDC
 token — without it, `google-github-actions/auth` has nothing to hand GCP).

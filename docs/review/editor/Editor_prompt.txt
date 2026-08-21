@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.1 (untested first draft)
+# Council Editor — Defamation-Review Mode v0.3
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -9,7 +9,8 @@ shared reference layer.
 **Mode:** Defamation-review — audit a `council draft` output (JSON snapshots
 *and* the frontend components that render them) for defamation exposure. This
 is an editorial risk screen, not legal advice, and a PASS here does not
-authorize `council publish --confirm`.
+itself authorize `council publish` — see "What this prompt is not" below for
+how that authorization actually works under each gate profile.
 
 **Read first:**
 - `docs/review/REVIEW.md` — how Editor fits with Conductor and Fixer; read
@@ -106,12 +107,27 @@ license.
 
 ## Output
 
-Write a review file into the draft's own run directory (gitignored,
-colocated with what was reviewed, never git-tracked):
+Write **two** files into the draft's own run directory (gitignored,
+colocated with what was reviewed, never git-tracked), both with the same
+`<n>` — increment `<n>` on re-review after a rewrite, so the full chain is
+visible in one directory rather than overwriting history:
 
-`data/draft/<council>/<run_id>/defamation_review_<n>.md` — increment `<n>`
-on re-review after a rewrite, so the full chain is visible in one directory
-rather than overwriting history.
+1. `data/draft/<council>/<run_id>/defamation_review_<n>.md` — the full
+   review, shown below.
+2. `data/draft/<council>/<run_id>/defamation_review_<n>.json` — a
+   machine-only sidecar carrying just the stage-contract fields, so
+   `council publish --gate-profile auto` (`src/publish_gate.py`) can
+   independently re-validate this verdict without parsing markdown:
+   ```json
+   {"run_id": "<run_id>", "council": "<council>", "pass": <n>,
+    "status": "PASS|FAIL", "tracks": [<same list as the markdown block>],
+    "reviewed_at": "<ISO 8601 timestamp>"}
+   ```
+   These fields must match the markdown stage-contract block below
+   exactly — the JSON isn't a separate judgment, it's the same verdict in a
+   format code can trust. Write it whether the verdict is PASS or FAIL (a
+   FAIL record is what lets `auto` mode correctly refuse to publish, not
+   just what a PASS record lets it clear).
 
 ```markdown
 # Defamation review — <council> <run_id> — <date> — pass <n>
@@ -187,16 +203,29 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 - Not a substitute for `PRIVATE_ASSESSMENT.md`'s recommended WA media lawyer
   consult — that consult is still required before any meaningful public
   launch on real data, regardless of how many times this review passes.
-- Not authorization to run `council publish --confirm` — a human still makes
-  that call. Per `docs/TESTING.md`, `--confirm` means a human is vouching
-  for the draft; an agent's PASS is input to that decision, not a
-  replacement for it.
+- Not authorization to run `council publish` — you produce a verdict; you
+  don't decide how it's used. In `--gate-profile interactive` (the default),
+  a human still makes the call and `--confirm` means a human is vouching for
+  the draft directly. In `--gate-profile auto`, your PASS record *is* the
+  authorization `check_clearance()` re-validates against — but that's a
+  decision about which profile to run in, made by whoever starts the
+  Conductor loop, never by you deciding your own PASS means "go ahead."
 - Not able to verify factual accuracy against the source PDF — it can flag a
   small-n claim as risky, but confirming a quote is correctly attributed to
   the right person is the investigator's/human's job, not this prompt's.
 
 ## Changelog
 
+- v0.3 (2026-08-20) — Output now includes a `defamation_review_<n>.json`
+  sidecar alongside the markdown review (same stage-contract fields:
+  `run_id`/`council`/`pass`/`status`/`tracks`/`reviewed_at`), written on
+  every pass regardless of verdict. This is what `council publish
+  --gate-profile auto` (`src/publish_gate.py`) independently re-validates
+  instead of trusting a free-text `--confirm` — the first real code-level
+  consumer of Editor's verdict. Updated "What this prompt is not" to
+  describe both gate profiles instead of a single `--confirm`-only model.
+  Also corrected this file's own version drift (title said v0.1 while the
+  changelog's latest entry was already v0.2).
 - v0.2 (2026-08-10) — moved from `docs/investigator/DefamationEditor_prompt.txt`
   to `docs/review/editor/Editor_prompt.txt` (Editor was never
   investigator-owned — it reviews across all tracks). Renamed role from

@@ -62,7 +62,9 @@ council minutes site
         ▼
    council publish          ← the gate: copy a *reviewed* draft into
                               frontend/public/data/ for the frontend
-                              (--from-draft + --confirm required, always)
+                              (--from-draft always required; --confirm or a
+                              re-validated Editor PASS record, depending on
+                              --gate-profile)
 ```
 
 ---
@@ -168,12 +170,14 @@ one: `.github/workflows/draft.yml` pulls `data/council.db` from a private
 GCS bucket — authenticated via workload identity federation (OIDC), no
 service account key stored anywhere — runs `council draft`, and stages the
 output in GCS for review. `.github/workflows/publish.yml` then runs
-`council publish --from-draft ... --confirm ...` against a *reviewed* draft
-and commits the refreshed snapshots — both flags are required, so nothing
-publishes without an explicit human signal. That stays true even once
-Editor/Fixer (`docs/review/`) are calibrated: they inform the human's
-decision, they never make it — see `docs/review/CONDUCTOR.md`'s one
-non-negotiable rule.
+`council publish --from-draft ... --gate-profile ...` against a *reviewed*
+draft and commits the refreshed snapshots — `--from-draft` is always
+required, and clearance always comes from a verifiable authorization
+record: either a human-typed `--confirm` (`--gate-profile interactive`,
+the default), or an independent re-validation of Editor's own on-disk PASS
+record (`--gate-profile auto`) — never a single agent's self-assessment.
+See `docs/review/CONDUCTOR.md`'s "Gate profiles" section and
+`src/publish_gate.py`.
 `frontend/public/data/*.json` currently holds obviously-fake placeholder
 data (`scripts/generate_placeholder_data.py`), not real output — see
 `docs/TESTING.md` for the full draft/publish shape, the one-time GCP setup,
@@ -490,11 +494,16 @@ Dashboard section above.
 
 ---
 
-#### `council publish cambridge --from-draft <path> --confirm "<note>"`
+#### `council publish cambridge --from-draft <path> [--gate-profile interactive|auto] [--confirm "<note>"]`
 The gate. Copies a *reviewed* draft's snapshots verbatim into
 `frontend/public/data/` for the dashboard — it never recomputes from the
-database, so what was reviewed is exactly what ships. Both flags are
-required; there's no way to publish without them.
+database, so what was reviewed is exactly what ships. `--from-draft` is
+always required. `--gate-profile` (default `interactive`) picks how
+clearance is proven: `interactive` requires `--confirm`, a human vouching
+directly; `auto` requires no `--confirm` and instead independently
+re-validates a real Editor PASS record already in the draft directory. See
+`docs/review/CONDUCTOR.md`'s "Gate profiles" section — there's no way to
+publish without clearing one of these.
 
 ```bash
 council publish cambridge \
@@ -627,8 +636,9 @@ src/
     core.py               — shared validation logic (five metrics, three-tier quote matching)
 
   publish_gate.py          — the draft → publish gate seam: DraftManifest,
-                            verify_draft_integrity, check_clearance (stub —
-                            the Editor's future integration point)
+                            verify_draft_integrity, check_clearance
+                            (two gate profiles — interactive: human --confirm;
+                            auto: re-validates Editor's on-disk PASS record)
 
 api/
   main.py                 — legacy FastAPI backend (REST view of the queries); not

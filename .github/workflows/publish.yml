@@ -8,9 +8,21 @@ name: Publish
 # outside of CI.
 #
 # The gate itself lives in the CLI, not this workflow: `council publish`
-# refuses to run without both inputs below (draft_gcs_path + confirm_note —
-# see src/publish_gate.py). This workflow can't route around that; it's a
-# thin wrapper the same way every other pipeline workflow in this repo is.
+# refuses to run without draft_gcs_path, plus one of two authorization paths
+# selected by gate_profile — see src/publish_gate.py and docs/review/
+# CONDUCTOR.md's "Gate profiles" section. This workflow can't route around
+# that; it's a thin wrapper the same way every other pipeline workflow in
+# this repo is.
+#
+# gate_profile: interactive (default) requires confirm_note, a human's own
+# note. auto requires no confirm_note — council publish instead re-validates
+# a defamation_review_<n>.json PASS record already inside the draft
+# directory. Operational caveat: draft.yml uploads its draft to GCS *before*
+# review happens, so for auto to work through this workflow, whoever ran
+# Editor locally must re-upload the augmented draft dir (including the JSON
+# sidecar) to the same GCS path before triggering this workflow in auto
+# mode. Full round-tripping through CI (Editor running as a CI step too) is
+# a later-phase concern, not solved here.
 #
 # Doesn't need council.db at all — `council publish` only ever copies bytes
 # out of the draft directory, never recomputes from the database, so what
@@ -19,6 +31,8 @@ name: Publish
 # Manually triggered, deliberately not on a schedule: publishing reflects a
 # deliberate, reviewed decision, not the passage of time. Trigger with:
 #   gh workflow run publish.yml -f draft_gcs_path=drafts/cambridge/<run_id> -f confirm_note="<reviewer note>"
+# or, in auto gate profile:
+#   gh workflow run publish.yml -f draft_gcs_path=drafts/cambridge/<run_id> -f gate_profile=auto
 #
 # Auth to GCP is via workload identity federation (OIDC) — no service
 # account key is stored anywhere. GCP_WORKLOAD_IDENTITY_PROVIDER,
@@ -36,12 +50,25 @@ on:
           job summary.
         required: true
         type: string
+      gate_profile:
+        description: >-
+          interactive (default): requires confirm_note below. auto:
+          requires no confirm_note — re-validates an Editor PASS record
+          already in the draft directory instead. See
+          docs/review/CONDUCTOR.md's "Gate profiles" section.
+        required: false
+        type: choice
+        default: interactive
+        options:
+          - interactive
+          - auto
       confirm_note:
         description: >-
           Explicit confirmation that this draft has been reviewed (reviewer
-          name + date + summary). There is no default-approve — see
-          src/publish_gate.py.
-        required: true
+          name + date + summary). Required when gate_profile is interactive
+          (the default); ignored when gate_profile is auto. There is no
+          default-approve in interactive mode — see src/publish_gate.py.
+        required: false
         type: string
 
 permissions:
@@ -80,9 +107,17 @@ jobs:
       - name: Run council publish
         run: |
           run_id=$(basename "${{ inputs.draft_gcs_path }}")
-          council publish cambridge \
-            --from-draft "data/draft/cambridge/${run_id}" \
-            --confirm "${{ inputs.confirm_note }}"
+          gate_profile="${{ inputs.gate_profile || 'interactive' }}"
+          if [ "$gate_profile" = "auto" ]; then
+            council publish cambridge \
+              --from-draft "data/draft/cambridge/${run_id}" \
+              --gate-profile auto
+          else
+            council publish cambridge \
+              --from-draft "data/draft/cambridge/${run_id}" \
+              --gate-profile interactive \
+              --confirm "${{ inputs.confirm_note }}"
+          fi
 
       - name: Archive full-tier output to GCS (private — no public serving layer yet)
         run: |
