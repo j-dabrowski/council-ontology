@@ -216,11 +216,95 @@ Legend: 🟢 in-corpus re-extraction (prompt change) · 🟡 in-corpus but lossy
     infeasible even after re-extraction — verify on a sample before committing.
   - **Effort/confidence:** medium / low — may not exist in the source at all.
 
+### 11. 🟡 Savings-target delivery tracking (budget line persistence across years)
+- **Pattern:** Budget/savings-target lines are typically approved and recorded
+  per-cycle without a persistent identifier linking the same named
+  target across budget years, so "was this savings line ever actually
+  delivered, or does it just keep reappearing" (Part 3.6) can't be tested
+  without fuzzy text-matching across separate annual budget records — a
+  generic gap wherever budget line items are extracted year-by-year without
+  a cross-year delivery-status field.
+- **Instance:** *(source: Researcher, not corpus-derived — no Cambridge
+  instance yet; a future session should backfill one if an Explorer pass
+  hits this wall on a real corpus.)*
+  - **Unblocks:** the budget-optimism/deferred-savings genre (3.6).
+  - **Want:** a stable `savings_target_id` (or matched description/category
+    key) per named savings/efficiency line in `budget_items`, plus a
+    `delivery_status` (achieved / re-profiled / not delivered / unclear) set
+    at the point a later budget or report addresses it, so the same line can
+    be tracked across budget cycles instead of re-parsed as unrelated free
+    text each year.
+  - **Effort/confidence:** medium / medium — depends on how consistently
+    minutes name/describe the same savings line year to year.
+
+### 12. 🟡 Capital-receipt vs. revenue-line classification on disposal proceeds
+- **Pattern:** Minutes recording an asset disposal and minutes recording how
+  its proceeds were applied are typically captured as separate free-text
+  items without a link tagging whether the receipt was applied to capital or
+  revenue/operating spend, so "is this council using disposal proceeds to
+  cover recurring costs" (Part 3.7) can't be tested without manually
+  cross-referencing two unrelated agenda items — a generic gap wherever
+  disposal and budget-application records are extracted independently.
+- **Instance:** *(source: Researcher, not corpus-derived — no Cambridge
+  instance yet; a future session should backfill one if an Explorer pass
+  hits this wall on a real corpus.)*
+  - **Unblocks:** the capitalisation-dependency genre (3.7).
+  - **Want:** a link from an asset-disposal record (in whatever entity
+    captures property/asset sales) to the `budget_items` line the proceeds
+    were subsequently applied to, plus a `capital` vs. `revenue` tag on that
+    application.
+  - **Effort/confidence:** medium / low-medium — depends on whether minutes
+    routinely state the intended application of disposal proceeds, or only
+    the disposal itself.
+
+### 13. 🟡 Severance/exit-payment amount and approval-level linkage
+- **Pattern:** Minutes recording a senior officer's departure (already
+  targeted by #7's `senior_officer_events` entity) typically don't capture
+  the *payment* terms of that departure as a linked, typed field — amount,
+  approval body, and whether it exceeded ordinary contractual entitlement —
+  so "was this exit payment properly authorised and disclosed" (Part 3.8)
+  can't be tested even once #7's timeline entity exists, without an
+  additional field connecting the event to its financial terms.
+- **Instance:** *(source: Researcher, not corpus-derived — no Cambridge
+  instance yet; a future session should backfill one if an Explorer pass
+  hits this wall on a real corpus.)*
+  - **Unblocks:** the special-severance-payment genre (3.8); deepens #7.
+  - **Want:** extend the `senior_officer_events` entity (or a linked table)
+    with `payment_amount`, `approval_body` (committee / full council /
+    delegated), and `stated_reason`, captured whenever a departure motion
+    discloses them.
+  - **Effort/confidence:** medium / low-medium — depends heavily on whether
+    minutes disclose payment amounts at all, which is itself part of what
+    this genre tests for.
+
+### 14. 🟡 Statement-of-Accounts audit-opinion and timeliness tracking
+- **Pattern:** Minutes recording the audit/governance committee accepting
+  the annual Statement of Accounts are typically captured (if at all) as an
+  undifferentiated agenda item, without a typed field for the auditor's
+  opinion (unqualified/qualified/disclaimed) or the gap between the
+  statutory deadline and the actual presentation date — so "can this
+  period's financial data be treated as audited" (Part 3.9) can't be tested
+  as a standing check across a corpus, only noticed ad hoc if a session
+  happens to read the relevant minute in full.
+- **Instance:** *(source: Researcher, not corpus-derived — no Cambridge
+  instance yet; a future session should backfill one if an Explorer pass
+  hits this wall on a real corpus.)*
+  - **Unblocks:** the audit-backlog/meta-signal genre (3.9); also a caveat
+    layer for every other financial-failure finding (3.1, 3.6, 3.7) — a
+    period with a disclaimed opinion should be flagged wherever those
+    findings cite it.
+  - **Want:** a `accounts_audit_events` entity (or fields on an existing
+    reports entity): `financial_year`, `statutory_deadline`,
+    `presented_date`, `opinion_type`.
+  - **Effort/confidence:** low / high — this is exactly the kind of
+    committee-level administrative item minutes reliably record, once
+    looked for.
+
 ---
 
 ## B. External-data joins (needs data the corpus does not contain)
 
-### 11. 🔴 Councillor ↔ external-entity relationship graph
+### 15. 🔴 Councillor ↔ external-entity relationship graph
 - **Pattern:** Any minutes-only corpus can see *declared* interests but
   never the *absence* of a declaration where an undisclosed relationship
   existed — the highest-value integrity signal structurally requires an
@@ -240,7 +324,7 @@ Legend: 🟢 in-corpus re-extraction (prompt change) · 🟡 in-corpus but lossy
   - **Effort/confidence:** high / high-value but data-acquisition- and privacy-sensitive; treat as
     a distinct project, and apply the Part 4 defensibility bar with maximum caution.
 
-### 12. 🔴 Cross-council comparison corpus
+### 16. 🔴 Cross-council comparison corpus
 - **Pattern:** Every finding on a single-council corpus carries an
   unanswered "is this normal?" — base rates only exist once a second/third
   council runs through the same pipeline. This isn't a per-council gap at

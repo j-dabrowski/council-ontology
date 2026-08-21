@@ -199,8 +199,8 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
   6. **Runner before Explorer.** `tests.py`'s battery is already
      council-agnostic and frozen — Runner executes it deterministically
      (SQL only, no hypothesis generation, close to free) and produces an
-     immediate cross-council scorecard (`DATA_ENRICHMENT.md` #12's payoff,
-     live for the first time from the second corpus onward). Don't spend
+     immediate cross-council scorecard (base rates against peer councils
+     only become possible once a second corpus exists). Don't spend
      an expensive Explorer session re-deriving standard governance tests
      this council already has coded answers for.
   7. **Then Explorer**, scoped to what's actually novel about this council,

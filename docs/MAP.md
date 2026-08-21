@@ -210,7 +210,7 @@ The non-obvious edges, spelled out:
 | **Investigator → Frontend** | findings | Findings in `INVESTIGATIONS.md` become panels via the `INTERACTIVITY.md` recipe; the standard test battery (`src/analysis/tests.py`) feeds the Scorecard; `FINDINGS_SUMMARY.md` feeds the Overview panel. |
 | **Pipeline → Frontend** | data | `council publish` (a pipeline CLI command) exports the static JSON snapshots the panels read; drill-down "receipts" come from the `extraction_evidence` table the pipeline populates. |
 | **Strategy → all** | priorities | `PRIVATE_ASSESSMENT.md` consumes every track's output to rank what matters next (second council, defamation mitigation on named individuals, About/methodology pages). |
-| **Second-council loop** | cross-track | Adding a council touches all three working tracks: pipeline scraper + prompt-generalisation review, de-Cambridge-ing the investigator prompt, and the council-agnostic battery. Tracked in `PIPELINE.md` ("Longer term"), `DATA_ENRICHMENT.md` #12, and `PRIVATE_ASSESSMENT.md`. |
+| **Second-council loop** | cross-track | Adding a council touches all three working tracks: pipeline scraper + prompt-generalisation review, de-Cambridge-ing the investigator prompt, and the council-agnostic battery. Tracked in `PIPELINE.md` ("Longer term") and `PRIVATE_ASSESSMENT.md`. |
 
 ---
 

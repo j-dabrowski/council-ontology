@@ -135,12 +135,40 @@ would actually have caught something the on-demand trigger missed.
 
 ## Calibration log
 
-No sessions run yet. First entry should record: date, number of candidates
-proposed, dimension-by-dimension pass/fail per candidate, and — the thing
-`EXPLORATION_PROTOCOL.md`'s Cambridge calibration made legible — *why* any
-failure happened, so the next `Researcher_prompt.txt` revision targets the
-actual root cause rather than a guess.
+**First session run against this version of the prompt (v1.3)** — 2026-08-22.
+Both candidates passed all four dimensions on first draft; no rejections this
+session, so no "why did it fail" data yet — that's still open for a future
+session.
+
+Proposed prompt/protocol edit for human review (not applied — see
+`Researcher_prompt.txt`'s "self-edit gate" note): the four dimensions
+themselves felt well-calibrated and not ambiguous to self-check in practice.
+The one friction point worth recording: `Researcher_prompt.txt`'s ROLE
+section frames this as "broad web research," but nothing in the prompt or
+protocol tells a session whether it has web-search tooling available, or
+requires it before Dimension 2 can be honestly scored as "pass." This
+session used live web search to verify both candidates' citations
+(specific report names, dates, and figures came back exactly as drafted from
+prior knowledge, so no drafts needed correction this time) — but a session
+without search tooling would have no way to know its Dimension-2 self-score
+was resting on unverified memory rather than a checked citation. Suggested
+edit for a human to consider: add a line to Phase 1 or Phase 3 making live
+verification of each citation (not just recall) an explicit part of the
+Dimension 2 check, so the gate doesn't silently degrade to "sounds
+plausible" in an environment without search access.
 
 | Date | Session | Gate mode | Candidates proposed | Pending review | Merged | Rejected (dimension, reason) |
 |---|---|---|---|---|---|---|
-| — | — | — | — | — | — | — |
+| 2026-08-22 | first-ever Researcher run (v1.3) | file-review | 2 (P2, P3) | 2 | 0 | 0 |
+| 2026-08-22 | second Researcher run (v1.3) | file-review | 2 (P4, P5) | 2 | 0 | 0 |
+
+**Second-session note:** again no rejections, so still no failure-mode data.
+Both candidates this pass (P4 special severance payments, P5 audit-opinion
+backlog) sit closer to existing genres than P2/P3 did — worth a human
+double-checking Dimension 1 specifically on these two once reviewing the
+pending-merge files, since a same-session self-check has an obvious blind
+spot (the session that drafts a candidate is also the one scoring its own
+non-duplication). If a future session starts seeing candidates rejected on
+Dimension 1 at review time despite a self-scored "pass," that's the signal
+this risk was real and Phase 1's non-duplication notes need to be written
+more adversarially, not just descriptively.

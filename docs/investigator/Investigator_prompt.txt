@@ -506,6 +506,89 @@ minutes, tied to discrete approval decisions, with no compiled record of
 outcome-vs-goal anywhere. That shape — approval, implementation, scattered
 measurement, no synthesis — is what 3.5 is built to catch.
 
+### 3.6 Budget-balancing through perpetually deferred savings targets (optimism bias)
+Added 2026-08-22 (Researcher P2). Not a single bad forecast — the recurring
+pattern is a savings target approved as part of balancing the budget, then
+carried forward unrealised into the next budget cycle instead of being
+delivered or replaced, so the underlying structural gap never actually
+closes even though each individual year's budget is nominally "balanced."
+
+| Failure mode | Real example | Data signature |
+|---|---|---|
+| A named savings/efficiency target is approved as part of balancing the budget, then reappears — same or larger, same description/category — in a subsequent year's budget with no intervening record that it was achieved, alongside member-level "insufficient challenge" on whether the savings were deliverable in the first place | Croydon London Borough Council: external audit findings (Grant Thornton, reported via the Institute for Government and Accountancy Daily, Aug–Nov 2020) found "insufficient challenge" from members on the credibility and deliverability of the savings plan, alongside real failure to deliver planned children's/adults' social-care savings — contributing to the council's 2020 s.114 notice; Slough Borough Council: Grant Thornton's Section 24 statutory report (May 2021) found up to 50% of the 2021/22 savings programme (£15.576m) was not achieved, with many savings lines carried in the budget without a costed delivery plan | A `motions`/`budget_items` record approving a budget with a named savings/efficiency line (amount, description, category), where that same description/category reappears in a later year's budget approval at the same or an increased figure, with no intervening motion or report recording it as achieved, or explicitly minuted as "not yet delivered" / "re-profiled" / "slipped" |
+
+Worked example (hypothetical, not sourced from any real corpus): a council's
+annual budget papers list a "waste-service efficiency savings — $400k" line
+under "savings still to be identified," carried at the same or a growing
+figure across three consecutive annual budgets, with no report at any
+intervening meeting confirming it was achieved or replaced by a costed
+alternative measure.
+
+### 3.7 Capital receipts used to plug recurring revenue deficits (capitalisation dependency)
+Added 2026-08-22 (Researcher P3). Selling an asset to fund a one-off capital
+project is ordinary council business. The failure genre is different:
+proceeds from disposing of an asset (a capital receipt), or a formal
+government "capitalisation direction" permitting revenue costs to be
+treated as capital, being applied to cover *recurring, day-to-day* budget
+shortfalls rather than capital expenditure — a practice UK central
+government itself treats as exceptional and time-limited (it requires an
+external assurance review and a 20-year repayment plan via Minimum Revenue
+Provision), not a sustainable substitute for closing a structural deficit.
+
+| Failure mode | Real example | Data signature |
+|---|---|---|
+| Proceeds explicitly described as coming from an asset sale/disposal (a capital receipt), or an equivalent formal permission to treat revenue costs as capital, are applied to cover an operating/revenue budget line rather than restricted to capital expenditure — recurring across consecutive budget cycles rather than a genuine one-off | UK "capitalisation direction" mechanism (a council applies annually for government permission to treat certain revenue costs — e.g. redundancy, equal-pay liabilities — as capital, funded via capital receipts or PWLB borrowing at a premium, repaid over ~20 years via Minimum Revenue Provision, subject to external assurance review): recipients on the public record include Croydon (£70m), Nottingham City Council, Wirral (£9m), Bexley (£3.87m), Eastbourne (£6.8m), Luton (£35m), and Peterborough (£4.8m) | A `motions`/`budget_items` record where a receipt or permission explicitly tied to an asset disposal (or described as a "capitalisation") is applied against an operating/revenue line rather than a capital-project line, especially where this recurs across consecutive financial years rather than appearing once |
+
+Worked example (hypothetical, not sourced from any real corpus): a council's
+minutes approve the sale of a surplus administrative building, and a later
+budget report applies the resulting capital receipt to cover a shortfall in
+that year's day-to-day operating budget rather than a capital project —
+repeated in the following year's budget with a different disposed asset,
+with no accompanying plan to close the underlying recurring gap.
+
+### 3.8 Senior-officer exit payments used to avoid a dispute becoming public
+Added 2026-08-22 (Researcher P4). Ordinary contractual severance on
+redundancy or retirement is not the target. The failure genre is a payment
+*above* ordinary entitlement — a "special severance payment" — approved for
+a departing senior officer, often confidentially, without the sign-off
+level or disclosure the payment size should have triggered, in
+circumstances suggesting it was used to settle a disciplinary, performance,
+or whistleblowing dispute quietly rather than see it through a proper
+process.
+
+| Failure mode | Real example | Data signature |
+|---|---|---|
+| A payment to a departing senior officer beyond ordinary contractual entitlement is approved — often under a confidential/exempt item, with a generic rationale ("by mutual agreement") and no matching disciplinary/performance record — at an approval level or disclosure standard inconsistent with what the payment size should have required | UK government statutory guidance, "Statutory guidance on the making and disclosure of Special Severance Payments by local authorities in England" (DLUHC, May 2021) — issued specifically because such payments had been made without proper sign-off or later disclosure; the guidance now requires full-council approval for payments ≥£100,000, named sign-off (Head of Paid Service / Leader) between £20,000–£100,000, and disclosure of all special severance payments in annual accounts | A confidential/exempt `motions` record approving a payment tied to a senior officer's departure (cross-referenced against `senior_officer_events`, DATA_ENRICHMENT #7), where the recorded approval level doesn't match the amount's statutory threshold, or the payment is absent from the corresponding year's published accounts disclosure |
+
+Worked example (hypothetical, not sourced from any real corpus): a director
+departs mid-contract; the minutes record a confidential item approving "an
+agreed exit arrangement" with the amount redacted and no reference to a
+disciplinary or performance process, approved at committee level rather
+than full council, in a year where the annual accounts' severance-payments
+disclosure note is blank or does not mention the departure at all.
+
+### 3.9 Unaudited or disclaimed accounts as a meta-signal
+Added 2026-08-22 (Researcher P5). Not itself a claim that anything in the
+accounts is wrong — the failure genre is narrower and, in a sense, prior to
+that question: the council's own annual accounts go one or more years
+without a clean audit opinion (delayed, qualified, or formally disclaimed),
+which means every other financial signal this taxonomy hunts for (3.1, 3.6,
+3.7) is, for that period, *unverified* rather than merely bad. Persistent
+non-verification is itself a recognised leading indicator in UK practice,
+not a neutral administrative delay.
+
+| Failure mode | Real example | Data signature |
+|---|---|---|
+| The council's annual Statement of Accounts is presented to its audit/governance committee substantially after the statutory deadline, and/or receives a qualified or disclaimed audit opinion, for one or more consecutive financial years — meaning the reserves/spend/investment data reported elsewhere cannot itself be taken as independently verified for that period | England-wide local audit backlog: 771 audits overdue as of 31 December 2023 (peak 918, 30 September 2023); government-imposed statutory backstop (13 December 2024 for years up to 2022/23; 27 February 2026 for 2024/25); over 200 councils received disclaimed opinions on their 2023/24 accounts as a direct result | A `budget_items`/reports record of the Statement of Accounts being received/accepted by committee, capturing the opinion type (unqualified / qualified / disclaimed) and the gap in days/years between the statutory deadline and the date it was actually presented, tracked across consecutive years |
+
+Worked example (hypothetical, not sourced from any real corpus): a
+council's audit & governance committee minutes show the Statement of
+Accounts for three consecutive financial years being received together, two
+to three years after the relevant statutory deadlines, with a disclaimed
+opinion noted for the two most recent years — meaning every reserve/spend
+trend claim drawn from those years' `budget_items` should be flagged as
+provisional rather than audited fact.
+
 ---
 
 ## PART 4 — THE DEFENSIBILITY LAYER (the standard of proof)
