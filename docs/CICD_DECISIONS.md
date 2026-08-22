@@ -267,7 +267,7 @@ matter, without introducing a deploy workflow file to maintain.
 
 ---
 
-## Open decisions (not yet made / not yet built, as of 2026-08-17)
+## Open decisions (not yet made / not yet built, as of 2026-08-22)
 
 Logged now, before they're decided, specifically so the eventual entry can
 say what was actually weighed rather than reconstructing it after the fact.
@@ -283,6 +283,74 @@ say what was actually weighed rather than reconstructing it after the fact.
   a cold-start step and a runtime GCS dependency). Per the original
   plan, decide by checking actual `.db` / image size first, not on
   priors.
+- **Out-of-band DB fix detection once `council.db` lives in GCS.** Surfaced
+  2026-08-22, alongside `Investigator_prompt.txt` §0.5's new "State
+  hygiene" rule (a fresh agent session has no way to know a human fixed
+  something via raw SQL in a terminal unless a doc says so — and docs can
+  be wrong, see that rule's own worked example of catching its own
+  inaccurate claim). The rule solves the *documentation* half; this entry
+  is the *detection* half, for once agent sessions no longer share a
+  local filesystem with the human running manual fixes — GitHub Actions
+  runners today, a possible Cloud Run job/service later.
+  - **What was validated locally, works, costs nothing new:** SQLite
+    itself keeps no query/change history (no server process, no built-in
+    audit log; the `sqlite3` CLI's `~/.sqlite_history` only covers
+    interactive sessions, isn't stored in the DB file, and wouldn't travel
+    with it regardless). But `ATTACH DATABASE` lets one connection diff
+    two `.db` files directly — tested against
+    `data/council.db.bak-walkerfix-20260822` (the backup taken
+    immediately before the Colin Walker/Walker Colin merge) and it
+    reproduced the exact change (one `councillors` row removed, one
+    `appointments.councillor_id` reassigned) with no false positives.
+    This works on any two local SQLite files regardless of where they
+    came from — a GitHub Actions runner or Cloud Run job downloading both
+    the live DB and a backup from GCS onto its own ephemeral disk, then
+    running the same diff, is architecturally identical to running it on
+    a laptop.
+  - **What's missing today, concretely:** nothing uploads a backup to GCS
+    at all right now. The one-time setup only uploads `council.db` itself
+    ("repeat this after every re-extraction" — a manual, local
+    `gcloud storage cp`, not part of any workflow), and the service
+    account's write access (`storage.objectAdmin`) is scoped by a
+    resource-name condition to exactly `drafts/` and `published/full/` —
+    `council.db` itself is read-only even to the workflow. Read access
+    needs no change (`storage.objectViewer` is granted bucket-wide, no
+    prefix condition, so a workflow can already read a hypothetical
+    `backups/` prefix today). Write access for backups is the one open
+    question, and it forks on *who* creates them: staying a manual
+    `gcloud storage cp` step (same habit as `council.db` itself today, no
+    IAM change) vs. an automated pipeline stage creating its own backup
+    before writing (needs `backups/` added to the existing prefix-scoped
+    `objectAdmin` condition — the exact same pattern already used for the
+    other two prefixes, not a new design).
+  - **A cloud-native alternative to the `.bak-<label>-<date>` filename
+    convention, worth preferring over replicating it in GCS:** enable
+    Object Versioning on the bucket and always upload `council.db` to the
+    same path. GCS then retains every prior version automatically on
+    overwrite — no naming convention to invent or remember, no separate
+    upload-a-backup step at all. Fetch a specific prior version to diff
+    against via `gcloud storage cp gs://$BUCKET/council.db#<generation>
+    ./before.db` (`gcloud storage objects list --all-versions` to find
+    generation numbers). The local `.bak-*` convention exists only because
+    a local SQLite file doesn't version itself; that reason disappears
+    once the canonical copy lives in GCS.
+  - **Compatible with a later Cloud Run migration without redesign** — this
+    is the same "pull from GCS at startup, do the work" shape
+    `CICD_DECISIONS.md`'s Cloud Run entry above is already weighing for
+    `api/`, reusing the same OIDC trust relationship; the backup-diff step
+    is one more thing that pull-and-run shape does, not a different
+    architecture for a different compute target.
+  - **Cost/lifecycle, not yet decided:** `council.db` is ~176MB as of
+    2026-08-22 (confirmed from the local backup file size), so each
+    version is a full copy, not a delta — only ever fetch the single most
+    recent backup/version for diffing, never the whole history, and set a
+    GCS lifecycle rule to expire old versions after some retention window
+    (undecided) so storage cost doesn't creep silently regardless of which
+    approach (named backups vs. Object Versioning) is chosen.
+  - Still entirely undecided: named-backup-upload vs. Object Versioning:
+    the retention window; and whether this becomes a documented manual
+    pre-flight step for a human-triggered session or an automatic first
+    action every agent session takes before reasoning about anything else.
 - **Scheduled/automated extraction.** The original plan had a Cloud Run
   Job on a schedule. What got built instead is `workflow_dispatch`-only —
   see `TESTING.md`, "publishing reflects a deliberate, reviewed decision,
