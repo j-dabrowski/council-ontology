@@ -38,6 +38,13 @@ Not owned by one track — gates all of them:
   (`review/CONDUCTOR.md`). Start at `review/REVIEW.md`. Untested as of
   2026-08-10 — see that file's status note before treating any of it as
   calibrated.
+- `AGENT_PROMPTS.md` — the fixed, copy-pasteable invocation string for every
+  agent role across all tracks (Explorer/Refiner/Runner, Researcher,
+  Conductor/Editor/Fixer) — no per-call customization, so the same string
+  works for a human starting a session or a future scheduled/programmatic
+  caller. Each role's own prompt file governs its actual reading order;
+  this doc just indexes where to start and notes which roles are
+  self-directing (pick their own target) vs. need one named.
 
 ## The four tracks
 

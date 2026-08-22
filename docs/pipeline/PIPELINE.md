@@ -111,6 +111,39 @@ without a nickname dictionary:
   sqlite3 data/council.db "SELECT id, given_name, family_name FROM councillors WHERE family_name='Barlow' ORDER BY id"
   ```
 
+**Given/family-name field swap between two records** — unlike the categories
+above, this one is mechanically detectable and should become a fourth pass
+in `scripts/dedup_councillors.py`, not left as a case-by-case find. Found
+2026-08-22 during a Refiner attempt at `[48]` (`docs/investigator/
+INVESTIGATIONS.md`): `councillor_id` 246 (`given_name='Colin',
+family_name='Walker'`) and 385 (`given_name='Walker', family_name='Colin'`)
+were the same person recorded as two rows with the two fields transposed —
+manually merged (385 → 246; 385 had exactly one attached row, in
+`appointments`, confirmed by checking every table with a councillor
+foreign key first). **Why the existing three passes miss this class
+entirely** (read `scripts/dedup_councillors.py`'s own docstring before
+changing it): Pass 1 needs `given_name` to be a title/placeholder — a real
+first name like "Walker" isn't one; Pass 2 needs a shared `family_name`
+with an empty `given_name` — both fields are populated here, just swapped;
+Pass 3 needs `family_name` to be a fuzzy misspelling of a real surname —
+"Colin" isn't a typo of "Walker". This isn't a data-sparsity gap that
+resolves with more votes (unlike the two categories above it) — it's a
+structural blind spot in candidate generation, present regardless of corpus
+size, and it will recur on every future council (LLM name extraction can
+transpose given/family fields for any document, on any corpus).
+**Recommended Pass 4, council-agnostic:** for every pair of councillor
+rows, flag a candidate where `(given_name, family_name)` of one exactly
+equals `(family_name, given_name)` of the other (cheap — a single
+hash-map pass, no fuzzy matching needed, near-zero false-positive risk on
+an exact transposition). Auto-merge only under the same confidence
+discipline `--use-terms` already applies elsewhere in this script: if one
+side of the pair has no rows in any other councillor-keyed table (`votes`,
+`motions.moved_by_id`/`seconded_by_id`, `interest_declarations`,
+`appointments`, `councillor_terms`) beyond a small, cleanly-reassignable
+set, merge it automatically; otherwise hold it for manual review exactly
+like a `TERM ✗`/`TERM ?` case. Not yet implemented — this entry is the
+design, not the code; flag if you want it built.
+
 **2017 terms gap** — no Cambridge election results for 2017 (absent from statewide PDF).
 Seats up were O'Connor and Grinceri (Coast) and MacRae and King (Wembley) from the 2013 cohort.
 To fill: check Elections WA for a Cambridge-specific 2017 notice PDF, or contact the Town directly.
