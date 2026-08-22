@@ -177,6 +177,47 @@ for a ratio to mean anything). All eight verified empty in
 scripts/dedup_councillors.py --apply`. A fresh dry run now reports zero
 field-swap pairs corpus-wide.
 
+**Orphan single-token stubs (empty given_name, family_name matches no known
+family)** — `scripts/dedup_councillors.py` **Pass 5, built and live as of
+2026-08-23.** Found live during a Conductor-loop Editor pass on Cambridge:
+`councillor_id` 173 (`given_name='', family_name='Gary'`) was a fragment of
+Gary Mack (id=7) with no last name captured at all — invisible to Pass 4
+(needs both `given_name` and `family_name` populated to detect a swap) and
+to Pass 2 (needs a shared `family_name` with a real-name candidate; "Gary"
+matches no one's actual surname). Fixer correctly declined to merge it
+unilaterally — an irreversible identity merge with no auto-merge path yet
+existed for this shape of stub — and escalated per `FIXER_PROTOCOL.md`.
+
+**How Pass 5 works:** scans stubs left over after Passes 1–3 with an empty
+`given_name`, no real-name candidate in the same family group, and zero
+votes/terms (no competing identity evidence). For each, computes its full
+set of `(meeting_id, item_reference)` interest-declaration keys and looks
+system-wide (not scoped to a family group, since the fragment has no usable
+family name) for a real-named candidate whose own declarations cover
+**every** one of those keys — a single shared key is unremarkable on a busy
+agenda item with several independent declarants, but full coverage of a
+small key set is not. Also requires the stub's fragment to be a literal
+name token of the candidate (case-insensitive whole-word match) — added
+after the first real run caught a false positive: `councillor_id` 315
+("Cam") coincidentally shared one busy agenda item with Sonia Grinceri, but
+315's own declaration text read "Director Community Development declared an
+impartiality interest" — a council staff member, not a councillor at all,
+with zero lexical relationship to Grinceri's name. Requiring both signals
+(full key coverage **and** name-token plausibility) auto-merges only when
+they agree; either alone isn't enough. Auto-merges only when exactly one
+candidate qualifies; multiple qualifying candidates or key-coverage without
+lexical plausibility are both held for review, not silently dropped.
+
+**Results as of 2026-08-23**: two pairs resolved on the Cambridge corpus —
+`councillor_id` 173 ("Gary") → Gary Mack (id=7, 2 of 2 keys covered) and 202
+("Keri") → Keri Shannon (id=200, 3 of 3 keys covered). Both verified empty
+in `relationships` and `extraction_evidence` before applying. Five held for
+review: two bare staff titles ("Acting Chief Executive Officer", "CEO")
+with no covering candidate at all, two more staff records ("Ross Willcock
+JP", "G Burkett JP") that coincidentally cover multiple councillors'
+declaration keys without any name-token match, and "Cam" (id=315, the
+staff-member false positive above).
+
 **2017 terms gap** — no Cambridge election results for 2017 (absent from statewide PDF).
 Seats up were O'Connor and Grinceri (Coast) and MacRae and King (Wembley) from the 2013 cohort.
 To fill: check Elections WA for a Cambridge-specific 2017 notice PDF, or contact the Town directly.

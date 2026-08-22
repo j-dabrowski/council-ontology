@@ -5,7 +5,7 @@ The extraction pipeline historically created duplicate records when the LLM outp
 names in different formats ("Cr Barlow", "Kate Barlow", "Barlow", "null Barlow",
 "Barlow Cr" etc.).  This script finds, reports, and merges those duplicates.
 
-Four passes:
+Five passes:
   Pass 1 — Bad records: given_name is a title, placeholder, self-repeat, or the
             fields are swapped with a TITLE (family_name is the title).  These
             are unambiguously wrong and are merged into the canonical for their
@@ -24,6 +24,25 @@ Four passes:
             docs/pipeline/PIPELINE.md "Known dedup gaps" for the incident (Colin
             Walker/Walker Colin, found 2026-08-22 during a Refiner session) this
             pass was written to generalise and catch automatically next time.
+  Pass 5 — Orphan single-token stubs (given_name empty AND family_name matches
+            no known family, e.g. a bare "Gary" with no last name captured at
+            all — not even a swap candidate, since Pass 4 requires both fields
+            populated). Resolved system-wide (not scoped to a family group) by
+            requiring a real-named candidate's interest_declarations to cover
+            EVERY one of the stub's (meeting, item_reference) keys, not just
+            one — a single shared key is common on a busy agenda item where
+            several councillors independently declare on the same item, but
+            covering the stub's entire declaration set is not. Also requires
+            the stub's fragment to be a literal name token of the candidate
+            (catches the case where full coverage is coincidental — e.g. a
+            council staff member's declaration text sharing an agenda item
+            with an unrelated councillor, not the same declaration extracted
+            twice). Auto-merged only when exactly one candidate qualifies and
+            the stub itself has zero votes/terms (no competing identity
+            evidence); else held. See
+            docs/pipeline/PIPELINE.md "Known dedup gaps" for the incident
+            (councillor_id=173 "Gary" → Gary Mack, found 2026-08-23 during a
+            live Conductor-loop Editor pass) this pass generalises.
 
 Merge target selection (in order):
   1. Exact normalised-slug match (e.g. "Cr Gavin Foley" → "gavin-foley").
@@ -720,6 +739,98 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
         merging_ids.add(phantom["id"])
 
     # -------------------------------------------------------------------
+    # Pass 5: orphan single-token stubs — given_name empty AND family_name
+    # doesn't match any real-named candidate's family (so Pass 2 already
+    # tried and failed via "no-real-candidate", and Pass 4 never considered
+    # it since a field swap needs both fields populated). The only
+    # remaining evidence is interest_declarations content: if a real-named
+    # candidate's declarations cover the stub's ENTIRE key set (every
+    # (meeting_id, item_reference) pair the stub declared on, not just
+    # one — a lone shared key is unremarkable on a busy agenda item with
+    # several independent declarants), that's strong evidence the stub is
+    # the same declaration extracted twice under a fragment name. Scoped
+    # to stubs with zero votes/terms so this only fires when no other
+    # identity signal exists to contradict or confirm it.
+    # -------------------------------------------------------------------
+    def _declaration_keys(cid: int) -> set[tuple[int, str]]:
+        return {
+            (m, i) for m, i in conn.execute(
+                "SELECT meeting_id, item_reference FROM interest_declarations "
+                "WHERE councillor_id=? AND item_reference IS NOT NULL", (cid,)
+            ).fetchall()
+        }
+
+    dup_decl_merges: list[tuple[dict, dict, str]] = []
+    dup_decl_held: list[tuple[dict, str]] = []
+
+    still_skipped2: list[tuple[dict, str]] = []
+    for c, reason in skipped:
+        is_orphan = (
+            "no-real-candidate" in reason
+            and not is_real_given(c["given_name"])
+            and c["id"] not in merging_ids
+            and votes_total.get(c["id"], 0) == 0
+            and not terms.get(c["id"])
+        )
+        if not is_orphan:
+            still_skipped2.append((c, reason))
+            continue
+
+        stub_keys = _declaration_keys(c["id"])
+        if not stub_keys:
+            still_skipped2.append((c, reason))
+            continue
+
+        stub_token = (c["norm_family"] or c["family_name"] or "").strip().lower()
+
+        def _name_tokens(x: dict) -> set[str]:
+            return {
+                t.lower() for t in
+                f"{x['given_name'] or ''} {x['family_name'] or ''}".split()
+            }
+
+        covering = [
+            x for x in councillors
+            if x["id"] != c["id"]
+            and x["id"] not in merging_ids
+            and is_real_given(x["norm_given"] or x["given_name"])
+            and stub_token in _name_tokens(x)
+            and stub_keys <= _declaration_keys(x["id"])
+        ]
+
+        if len(covering) == 1:
+            t = covering[0]
+            dup_decl_merges.append((
+                c, t,
+                f"[Pass 5] orphan stub, candidate's declarations cover all "
+                f"{len(stub_keys)} of the stub's (meeting, item) keys "
+                f"→ '{t['given_name']} {t['family_name']}'",
+            ))
+            merging_ids.add(c["id"])
+        elif len(covering) > 1:
+            names = ", ".join(f"'{x['given_name']} {x['family_name']}'" for x in covering[:4])
+            dup_decl_held.append((c, f"[Pass 5] multiple candidates cover all declaration keys — {names}"))
+        else:
+            key_only = [
+                x for x in councillors
+                if x["id"] != c["id"]
+                and x["id"] not in merging_ids
+                and is_real_given(x["norm_given"] or x["given_name"])
+                and stub_keys <= _declaration_keys(x["id"])
+            ]
+            if key_only:
+                names = ", ".join(f"'{x['given_name']} {x['family_name']}'" for x in key_only[:4])
+                dup_decl_held.append((
+                    c,
+                    f"[Pass 5] key coverage found but not lexically plausible "
+                    f"(fragment '{stub_token}' isn't a name token of the candidate) — {names}",
+                ))
+            else:
+                dup_decl_held.append((c, "[Pass 5] no candidate covers the full declaration key set"))
+
+    skipped = still_skipped2
+
+    # -------------------------------------------------------------------
     # Term annotation — always computed; affects --apply behaviour only
     # when --use-terms is set
     # -------------------------------------------------------------------
@@ -763,11 +874,14 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     print(f"Bad records       : {len(bad_records)}")
     print(f"Family-only stubs : {len(family_only)}")
     print(f"Field-swap pairs  : {len(swap_merges) + len(swap_held)}")
-    print(f"Merges planned    : {len(auto) + len(swap_merges)}")
+    print(f"Orphan stubs      : {len(dup_decl_merges) + len(dup_decl_held)}")
+    print(f"Merges planned    : {len(auto) + len(swap_merges) + len(dup_decl_merges)}")
     if held:
         print(f"Held for review   : {len(held)}")
     if swap_held:
         print(f"Held (field-swap) : {len(swap_held)}")
+    if dup_decl_held:
+        print(f"Held (orphan)     : {len(dup_decl_held)}")
     print(f"In-place fixes    : {len(in_place)}")
     print(f"Skipped/ambiguous : {len(skipped)}")
     n_terms = sum(1 for v in terms.values() if v)
@@ -806,6 +920,17 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
             print(f"  [{a['id']} ↔ {b['id']}]  {_label(a)}  ↔  {_label(b)}")
             print(f"           reason: {reason}")
 
+    if dup_decl_merges:
+        print(f"\n--- Orphan-stub merges, Pass 5 ({len(dup_decl_merges)}) ---")
+        for bad, tgt, reason in dup_decl_merges:
+            print(f"  [{bad['id']}→{tgt['id']}]  {_label(bad)}  →  {_label(tgt)}")
+            print(f"           reason: {reason}")
+
+    if dup_decl_held:
+        print(f"\n--- Held — orphan stub, needs review ({len(dup_decl_held)}) ---")
+        for c, reason in dup_decl_held:
+            print(f"  [{c['id']}]  {_label(c)}  —  {reason}")
+
     if in_place:
         print(f"\n--- In-place normalisations ({len(in_place)}) ---")
         for c, ng, nf, ns in in_place:
@@ -823,7 +948,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     # -------------------------------------------------------------------
     # Apply — only auto-confirmed merges when --use-terms is active
     # -------------------------------------------------------------------
-    merges_to_apply = [(b, t, r) for b, t, r, _ in auto] + swap_merges
+    merges_to_apply = [(b, t, r) for b, t, r, _ in auto] + swap_merges + dup_decl_merges
     print(f"\nApplying {len(merges_to_apply)} merges + {len(in_place)} in-place fixes …")
 
     for bad, tgt, _ in merges_to_apply:
