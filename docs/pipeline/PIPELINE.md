@@ -280,19 +280,108 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
   month arriving on a rolling basis, not a one-time corpus to process.
 
   **The shape this points toward:**
-  1. A **scheduled** GitHub Actions workflow (cron, not `workflow_dispatch`) —
-     the first scheduled job in this project. Every other workflow here
-     (`draft.yml`, `publish.yml`) is deliberately manual, on the reasoning that
+  1. A **scheduled** GitHub Actions workflow (cron, not `workflow_dispatch`,
+     though keep `workflow_dispatch` too for manual runs) — the first
+     scheduled job in this project. Every other workflow here (`draft.yml`,
+     `publish.yml`) is deliberately manual, on the reasoning that
      drafting/publishing "reflects a decision, not the passage of time." A
-     recurring scrape genuinely *is* about the passage of time (new minutes get
-     posted on a council's own schedule, not this project's), so a schedule is
-     the right trigger *specifically here* even though it's the wrong one for
-     draft/publish. Runs `council scrape` + `council extract` across every
-     watched council, updates `council.db`, re-uploads it to the private GCS
-     bucket. Same compute-lives-on-GitHub-Actions reasoning as everything else
-     in this pipeline (see `docs/TESTING.md`) — extraction is per-document API
-     calls, not sustained heavy compute, so even 100 documents/month should
-     comfortably finish inside one scheduled run without needing Cloud Run.
+     recurring scrape genuinely *is* about the passage of time (new minutes
+     get posted on a council's own schedule, not this project's), so a
+     schedule is the right trigger *specifically here* even though it's the
+     wrong one for draft/publish. **No container needed** — this runs the
+     same way `draft.yml` already does (a plain GitHub-hosted runner,
+     `actions/setup-python`, `pip install -e .`), not a Docker image; a
+     container only becomes relevant if this later moves to Cloud Run (see
+     the open Cloud Run entry in `CICD_DECISIONS.md`), which is a *different*
+     decision, not a prerequisite for this one. Cron syntax note: GitHub
+     Actions cron has no native "every N days" primitive — a fixed weekly
+     schedule, or a twice-monthly day-of-month pattern (`0 3 1,15 * *`), are
+     the practical options; pick whichever cadence actually matches how
+     often the council posts, don't force an exact "every 2 weeks."
+     `.[browser]` + `playwright install chromium` still needs to run on the
+     runner (the current scraper uses a headless-browser fallback for
+     2022+ Cambridge meetings) — a real, existing setup cost carried over
+     from the manual pipeline, not new.
+
+     **What the job actually does, and how each stage behaves in steady
+     state vs. an escalation branch** — this is not "re-run the whole
+     onboarding sequence on a timer." A mature, already-onboarded corpus
+     only has a handful of genuinely new documents per cycle (Cambridge:
+     ~1–2/month); the goal is processing *those*, not re-touching 30 years
+     of already-extracted history:
+     - Download `council.db` from GCS (existing pattern).
+     - `council scrape` (+ `scraper-audit`/`wayback-fill` if a gap shows
+       up) — free, safe to run in full every cycle.
+     - `council census` — free, already incremental (skips already-scanned
+       PDFs) — no design change needed.
+     - `council inventory` — cheap Haiku calls, already incremental by
+       design (cached by document hash + prompt version). The cache itself
+       (`.cache/llm_responses/`) doesn't currently persist anywhere outside
+       a local disk, so on an ephemeral runner every cycle re-inventories
+       from scratch — **deliberately not fixed here**: at ~1–2 new
+       documents a cycle the wasted spend is pennies, and persisting the
+       cache to GCS too is real added complexity for a saving that doesn't
+       matter yet. Revisit if/when document volume (more councils, or a
+       busier one) makes it matter.
+     - `council typology` — **a check, not the full mutate-and-loop from
+       onboarding.** The onboarding loop exists to *converge* a schema
+       against a corpus nobody has looked at yet; a steady-state cycle is
+       running against an already-converged, frozen schema, so the question
+       isn't "iterate until `other_content_rate ≤ 20%`," it's "does the new
+       batch still clear the bar the existing schema was built for."
+       - **Passes:** proceed — the existing extraction schema/prompt
+         already covers what's in these documents.
+       - **Fails** (the new batch surfaces a genuinely new content
+         pattern): **stop before extraction, don't auto-revise anything.**
+         A schema/prompt change is exactly as consequential as a Refiner
+         code change — it changes what *every future document* means, not
+         just this batch — so it gets the same gate `AUTOMATION_ARCHITECTURE.md`
+         Flow B already establishes for code: an agent may *propose* a
+         revision, but it lands as a PR for human review, never a
+         same-run autonomous mutation. The job escalates (a GitHub issue is
+         the lightest mechanism available — no new infra, same idea
+         `docs/TESTING.md` already floats for a future headless Conductor's
+         cap-hit escalation) and stops; it does not extract against a
+         schema that just failed its own check.
+     - **Level 3 (`sample`/`extract-sample`/`validate-sample`) is skipped in
+       steady state** — that stage exists to validate a prompt nobody has
+       trusted yet, before spending on full extraction; a frozen, already-
+       validated prompt doesn't need re-validating by sample on every
+       incremental batch. It re-enters the picture *inside* the escalation
+       branch above, the same way it does during onboarding, if a schema
+       revision actually happens.
+     - `council extract` — full extraction, already incremental (skips
+       already-extracted documents) — only the genuinely new documents get
+       real (paid) work done on them.
+     - `council validate` — free, per-document confidence scoring. This is
+       the safety check, not just a report: compare the new batch's metrics
+       (quote completeness, PASS/REVIEW/FAIL rate) against the corpus's
+       established baseline. **A sanity cap on volume, too** — if `scrape`
+       finds an unusually large number of "new" documents in one cycle (a
+       manifest bug, a scraper regression pulling duplicates), that's
+       anomalous for a ~1–2/month cadence and worth flagging before
+       spending on it, not blindly processing.
+     - `council dedup` / `build-relationships` / `geocode` — idempotent,
+       cheap, safe to re-run against the whole DB every cycle to keep
+       derived state consistent as new rows land.
+     - **Promotion — staged, then PR-gated, matching the uniform branch/PR
+       rule `AUTOMATION_ARCHITECTURE.md` Part 3 applies to every stage that
+       writes a file change.** `council.db` is a GCS blob, not a git file,
+       so it can't be committed to a PR directly — the candidate DB instead
+       uploads to a **staged** GCS path (never overwriting the canonical
+       `gs://$BUCKET/council.db`), and a small git-trackable **summary**
+       (new document count, date range, validation metrics, the staged
+       path — plus the real schema/prompt diff, in the same PR, if the
+       typology check failed and triggered a revision) is committed to a
+       branch and opened as a PR. You read the summary (and any code diff)
+       and merge; merging triggers a promotion job that copies the staged
+       DB to the canonical path, which in turn is what allows the agents
+       pipeline (`AUTOMATION_ARCHITECTURE.md` Flow A/B) to start — it never
+       runs against a DB update still sitting in an unmerged PR. If
+       validation looks anomalous before the PR is even opened: don't
+       stage/PR at all, escalate the same way the typology-fail branch
+       does. See `AUTOMATION_ARCHITECTURE.md` Part 3 ("Flow 0") for the
+       full branch/PR/promotion mechanics — not duplicated here.
   2. Chained after it: `council draft` → the Conductor loop (Editor, and
      Fixer if anything's flagged) — see `docs/review/CONDUCTOR.md`. At this
      project's current scale (one council, infrequent updates) a human reading
@@ -314,6 +403,13 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
   `docs/review/REVIEW.md`'s status note), and calibrating those correctly at
   one-council scale should happen well before trusting them to gate many
   councils' worth of monthly output with a lighter human check.
+
+  This section covers the scrape → extract → draft → Conductor chain only.
+  `docs/AUTOMATION_ARCHITECTURE.md` extends the same design-sketch exercise
+  into the parts this section doesn't touch: exactly where Explorer/Refiner/
+  Editor output lives once sessions run on ephemeral GitHub Actions runners
+  instead of a laptop with a persistent disk, a full stage-by-stage
+  input/output map, and the branch/PR strategy for agent-written changes.
 
 ---
 

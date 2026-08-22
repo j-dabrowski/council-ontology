@@ -45,6 +45,14 @@ Not owned by one track — gates all of them:
   caller. Each role's own prompt file governs its actual reading order;
   this doc just indexes where to start and notes which roles are
   self-directing (pick their own target) vs. need one named.
+- `AUTOMATION_ARCHITECTURE.md` — design sketch (not built) for running the
+  full agent pipeline via GitHub Actions: the GCS-vs-git rule that decides
+  where every file lands, a stage-by-stage input/output map, and a uniform
+  rule (any pipeline run that writes a git-tracked file change opens its
+  own PR — one PR per triggered run, not per role, never a direct commit)
+  applied across the DB-update pipeline and every agent role. Extends
+  `pipeline/PIPELINE.md`'s "Production scale" section into the
+  investigator/review tracks that section doesn't cover.
 
 ## The four tracks
 
