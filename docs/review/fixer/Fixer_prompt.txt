@@ -56,10 +56,27 @@ in a later pass once the number exists) does the rendering fix.
 
 ## Output
 
-Write a report to the same run directory as the review you're acting on:
+Write **two** files to the same run directory as the review you're acting
+on, both with the same `<n>` (the Editor pass number that produced the
+flags you addressed) — mirroring exactly how `Editor_prompt.txt` v0.3
+pairs a markdown review with a machine-only JSON sidecar, for the same
+reason: so the Conductor (agent or script) can trust your verdict without
+parsing prose.
 
-`data/draft/<council>/<run_id>/fix_report_<track>_<n>.md` — `<n>` matches the
-Editor pass number that produced the flags you addressed.
+1. `data/draft/<council>/<run_id>/fix_report_<track>_<n>.md` — the full
+   report, shown below.
+2. `data/draft/<council>/<run_id>/fix_report_<track>_<n>.json` — the
+   stage-contract fields only:
+   ```json
+   {"run_id": "<run_id>", "council": "<council>", "pass": <n>,
+    "track": "<this track>", "status": "DONE|BLOCKED",
+    "blocked_on": [<empty if DONE, else one entry per flag you could not
+    resolve yourself — see below>], "reported_at": "<ISO 8601 timestamp>"}
+   ```
+   Each `blocked_on` entry: `{"flag": "<one-line summary>", "reason":
+   "<why this needs a human, not you>"}`. These fields must match the
+   markdown stage-contract block below exactly — write the JSON whether
+   the verdict is `DONE` or `BLOCKED`.
 
 ```markdown
 # Fix report — <track> — <council> <run_id> — pass <n>
@@ -69,21 +86,53 @@ Editor pass number that produced the flags you addressed.
 ### <flag summary, one line>
 - Change made: <file:line, what changed>
 - Verified: <how — see your mode file's bar>
-- Status: fixed / partially fixed (explain) / not fixed (explain why — a
-  flag that turns out to need a product decision or isn't fixable in this
-  track is a legitimate outcome, not a failure to hide>
+- Status: fixed / partially fixed (explain) / **not fixed — belongs to
+  another track** (a legitimate handoff, not blocking — note it under
+  Observations, the other track's own dispatch will pick it up) / **not
+  fixed — needs a human decision** (a genuine BLOCKED case: the fix
+  requires authorizing something you should not decide alone — a
+  hard-to-reverse shared-data write, a product/legal call, anything
+  where "I did it anyway" would be the wrong instinct even if you could
+  technically execute it. List it in `blocked_on` below, don't just
+  describe it in prose and hope someone reads that far.)
 
 ## Observations outside this track's scope
-<anything noticed but not acted on — becomes input to a future Editor pass
-or a human's own review, not something you fixed yourself>
+<anything noticed but not acted on because it's another track's job —
+becomes input to that track's own dispatch, not a blocker>
+
+## Blocked — needs a human decision
+<one entry per blocked_on item: what's being asked, the evidence you
+gathered, and the specific options a human is choosing between. Empty
+section if status is DONE.>
 
 <!-- stage-contract block — docs/review/CONDUCTOR.md reads this -->
-status: DONE
+status: DONE|BLOCKED
 tracks: [<this track>]
-next: re-draft once all dispatched tracks report DONE, then re-review
+next: <"re-draft once all dispatched tracks report DONE, then re-review"
+  on DONE — "escalate to a human, do not re-draft" on BLOCKED, listing
+  what's blocked>
 ```
+
+**A single `BLOCKED` flag makes the whole report `BLOCKED`**, the same
+"one blocking item overrides an otherwise-clean pass" rule
+`Editor_prompt.txt` already applies to its own PASS/FAIL verdict — this
+isn't a new principle, just the same one applied one stage later in the
+chain. Whatever orchestrates you (Conductor, or `scripts/
+conductor_loop.py`) is expected to stop and escalate immediately on
+`BLOCKED` rather than re-drafting and re-reviewing — see that script's
+own handling for the concrete behaviour this status exists to trigger.
 
 ## Changelog
 
+- v0.2 (2026-08-23) — added the `BLOCKED` status and the JSON sidecar,
+  mirroring `Editor_prompt.txt` v0.3. Motivated by the first real
+  Conductor-loop run (2026-08-22): a Fixer pass correctly declined to
+  merge split-identity councillor records without a human's sign-off,
+  said so in prose, and the loop had no way to detect that — it read a
+  clean subprocess exit as "done" and would have looped straight past a
+  decision that needed a human, had the pass cap not independently
+  caught the same unresolved flag from Editor's side. `status: DONE` was
+  previously the only value this block ever wrote, unconditionally — see
+  `scripts/conductor_loop.py`'s corresponding update for the read side.
 - v0.1 (2026-08-10) — first draft, written alongside `Editor_prompt.txt` v0.2
   and `docs/review/CONDUCTOR.md` v0.1. Never run.

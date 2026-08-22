@@ -38,10 +38,15 @@ Usage:
     python scripts/conductor_loop.py cambridge --max-passes 3
     python scripts/conductor_loop.py cambridge --dry-run   # print the plan, run nothing
 
-Exit codes: 0 = clean PASS reached. 1 = cap hit, escalated, needs a human.
-2 = something in the loop itself failed unexpectedly (bad JSON, missing
-file, a `claude` invocation erroring) -- distinct from a normal FAIL
-review, which is expected loop behaviour, not an error.
+Exit codes: 0 = clean PASS reached. 1 = escalated, needs a human -- either
+the pass cap was reached with blocking flags still open, or (checked
+first, every pass) a Fixer track reported BLOCKED, meaning it correctly
+declined a decision that isn't its to make. Either way this script stops
+immediately rather than re-drafting into another pass that would just
+rediscover the same open item. 2 = something in the loop itself failed
+unexpectedly (bad JSON, missing file, a `claude` invocation erroring) --
+distinct from either normal escalation, which is expected loop behaviour,
+not an error.
 """
 from __future__ import annotations
 
@@ -151,6 +156,52 @@ def latest_review_record(draft_dir: Path) -> dict:
     return record
 
 
+def latest_fix_report(draft_dir: Path, track: str) -> dict:
+    """The highest-pass-numbered fix_report_<track>_<n>.json in draft_dir.
+
+    Mirrors latest_review_record's selection logic exactly, scoped to one
+    track's reports. Fixer_prompt.txt v0.2 added this sidecar (alongside
+    Editor's own, already read above) specifically so a BLOCKED verdict
+    can be detected mechanically -- see that file's changelog for the
+    incident this closes: a Fixer pass correctly declined a hard-to-reverse
+    decision in prose, and nothing downstream was reading prose.
+    """
+    candidates = list(draft_dir.glob(f"fix_report_{track}_*.json"))
+    if not candidates:
+        raise RuntimeError(
+            f"no fix_report_{track}_<n>.json found in {draft_dir} — did Fixer[{track}] actually run?"
+        )
+
+    def _pass_num(p: Path) -> int:
+        try:
+            return int(p.stem.rsplit("_", 1)[-1])
+        except ValueError:
+            return -1
+
+    latest = max(candidates, key=_pass_num)
+    report = json.loads(latest.read_text())
+    for field in ("run_id", "track", "status", "blocked_on"):
+        if field not in report:
+            raise RuntimeError(f"{latest} is missing required field {field!r} — malformed sidecar")
+    return report
+
+
+def escalate_blocked(council: str, run_id: str, blocked_reports: list[dict]) -> None:
+    print(f"\n{'=' * 70}")
+    print("ESCALATING — Fixer flagged something it correctly won't decide alone.")
+    print(f"Draft: data/draft/{council}/{run_id}/")
+    for report in blocked_reports:
+        print(f"\n[{report['track']}]")
+        for item in report["blocked_on"]:
+            print(f"  - {item.get('flag', '<no summary given>')}")
+            print(f"    reason: {item.get('reason', '<no reason given>')}")
+    print(
+        "\nNot re-drafting or re-reviewing — see docs/review/fixer/Fixer_prompt.txt's "
+        "\"A single BLOCKED flag...\" rule and the full fix_report_<track>_<n>.md for detail."
+    )
+    print(f"{'=' * 70}\n")
+
+
 def escalate(council: str, run_id: str, record: dict, max_passes: int) -> None:
     print(f"\n{'=' * 70}")
     print(f"ESCALATING — pass cap ({max_passes}) reached with blocking flags still open.")
@@ -205,6 +256,7 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
             escalate(council, run_id, record, max_passes)
             return 1
 
+        fix_reports = []
         for track in tracks:
             # No pass_num substitution here on purpose -- fixer.txt tells
             # Fixer to find the review file by listing the directory, not
@@ -215,6 +267,15 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
             # "<n> numbering: per run-directory or per-chain?").
             fixer_prompt = _load_prompt("fixer", council=council, run_id=run_id, track=track)
             run_claude(fixer_prompt, f"Fixer [{track}], pass {pass_num}, run {run_id}")
+            fix_reports.append(latest_fix_report(draft_dir, track))
+
+        # Run every dispatched track before checking, not stop-on-first-BLOCKED:
+        # tracks are independent, and a track that finished cleanly shouldn't
+        # be left undone just because a different one hit a human decision.
+        blocked = [r for r in fix_reports if r["status"] == "BLOCKED"]
+        if blocked:
+            escalate_blocked(council, run_id, blocked)
+            return 1
 
         # loop continues -> next iteration re-drafts fresh, per CONDUCTOR.md:
         # "every pass's draft must be freshly generated"
