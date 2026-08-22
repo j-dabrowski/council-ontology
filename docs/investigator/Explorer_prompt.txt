@@ -502,6 +502,44 @@ LOGGED CYCLES:
   actually defined; no version bump proposed for this (Explorer_prompt.txt)
   file itself.
 
+- Session 11 (2026-08-22) — first session run against the 6-domain version
+  of Dimension 1 (F/Effectiveness now required alongside A–E), and the
+  first to actually test domain F on this corpus: 4 hypotheses [46]–[49],
+  covering A/B/C/E/F (D deliberately skipped — heavily covered across the
+  last two sessions). Which genre produced the most defensible finding:
+  the new F genre itself — [46] (trial/pilot evaluation) landed the
+  session's most resident-vivid result (a 1999–2000 intersection safety
+  trial with no visible evaluation, needing a fresh federal Blackspot
+  application for the same intersection 22 years later) on its very first
+  outing, though it's capped at Banked pending a scalable matching method.
+  Which hypothesis looked hot and died: [47] (fiscal-year-end budget
+  clustering) looked like a clean spike in raw June counts, then dissolved
+  entirely once traced to a single bulk-extraction meeting (2012-06-18,
+  56% of the raw June total) — the same failure mode already on the
+  checklist for `delegated_decisions` ([33]), now confirmed on
+  `budget_items` too, plus a second, more serious caveat: `budget_items.
+  amount` mixes real spend with whole-of-council balance-sheet statement
+  totals and cannot be summed without filtering. Both added to the
+  STANDING CONFOUND CHECKLIST below. Did the balance hold: yes — [48]
+  (oversight-body appointees span the full power spectrum, including the
+  corpus's most prolific dissenter) is a clean, novel Strength/Governance
+  dual-domain credit, not oversold, and [49]'s confidential-flag
+  consistency check came back clean without being dressed up as more than
+  a minor confirmation. **Stage 9 self-score: 6/7 pass; dimension 6 (Stage
+  completion) fails at 5/7 — a SECOND consecutive session hitting the
+  identical benchmark-wording gap Session 10 already diagnosed and
+  proposed a fix for** (Stage 5/6 structurally have nothing to act on when
+  Stage 4 yields only Null/Banked, not a Finding). Two independent
+  sessions landing on the same gap is stronger evidence than one;
+  recommend a human apply Session 10's proposed `EXPLORATION_PROTOCOL.md`
+  diff (logged in `INVESTIGATIONS.md`'s Session 10 `[STAGE 9]` entry)
+  before a third session re-logs it. No version bump proposed for this
+  file — the automated title/word-overlap matching approach tried for
+  [46] and discarded (35/38 spurious hits) is recorded as a dead end in
+  `scratchpad/h46_trial_evaluation.py`, not as a checklist item, since it
+  isn't a data caveat but a methods note for whoever runs a future F-genre
+  hypothesis.
+
 STANDING CONFOUND CHECKLIST (grow this):
 - Selection in planning: bigger/uglier proposals attract *both* more objectors
   and more refusals — control for value, zoning, suburb before claiming an
@@ -546,6 +584,23 @@ STANDING CONFOUND CHECKLIST (grow this):
   case before grouping or a role silently splits into two buckets. Surfaced by
   the [41]/[45] Session-10 Stage-1 survey (the first session to touch this
   table).
+- **`budget_items` COUNT trends can be dominated by a single meeting's bulk
+  extraction** — 2012-06-18 alone contributed 264 of 472 raw June rows
+  (56%) corpus-wide, entirely an extraction artefact (one large annual
+  budget document itemised into many rows), not a behavioural June spike.
+  Same class of artefact as the `delegated_decisions` bulk-register-dump
+  caveat above, now confirmed on a second table. Always check for one
+  dominant `meeting_id` before reading any `budget_items` COUNT trend as
+  behaviour. Killed [47] (Session 11).
+- **`budget_items.amount` is not safe to SUM across the table** — it mixes
+  real transactional spend/variance lines with whole-of-council
+  balance-sheet/asset-revaluation STATEMENT totals (e.g. a single 2026-03
+  meeting contributes ≈$3.46 billion via rows like "Property, plant and
+  equipment – total balance at 30 June 2025"). No flag distinguishes them;
+  only free-text pattern-matching ("total balance", "total value") would
+  filter them out. Generalises [25]'s narrower finding (previously stated
+  only for the 24 confidential `budget_items` rows) to the whole table.
+  Surfaced by [47] (Session 11).
 
 ═══════════════════════════════════════════════════
 CHANGELOG
