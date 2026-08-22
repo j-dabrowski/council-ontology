@@ -1,0 +1,4 @@
+Read docs/research/RESEARCH_PROTOCOL.md, docs/research/PRECEDENT_BANK.md,
+docs/investigator/Investigator_prompt.txt Part 3, and
+docs/pipeline/DATA_ENRICHMENT.md, then docs/research/Researcher_prompt.txt
+as your operating mode.

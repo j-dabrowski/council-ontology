@@ -1,0 +1,4 @@
+Read docs/investigator/Investigator_prompt.txt Part 0 in full (schema, data
+caveats, verification workflow), then docs/investigator/REFINEMENT_PROTOCOL.md
+(the six-dimension benchmark), then docs/investigator/Refiner_prompt.txt as
+your operating mode.

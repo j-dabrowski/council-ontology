@@ -1,0 +1,7 @@
+Read docs/review/REVIEW.md, then docs/review/CONDUCTOR.md's "stage
+contract" section, then docs/review/editor/Editor_prompt.txt in full (the
+review that produced the flags you're acting on), then
+docs/review/fixer/FIXER_PROTOCOL.md, then docs/review/fixer/Fixer_prompt.txt
+(shared layer) and docs/review/fixer/<track>_mode.txt (your specific
+mode) as your operating mode. Act only on flags tagged [<track>] in
+data/draft/<council>/<run_id>/defamation_review_<pass_num>.md.

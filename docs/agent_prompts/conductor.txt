@@ -1,0 +1,18 @@
+Read docs/review/REVIEW.md for orientation, then docs/review/CONDUCTOR.md in
+full — you are acting as the Conductor for this session: drive the loop,
+spawn Editor and Fixer as subagents, decide what runs next. Read
+config/agent_switches.json first (conductor_max_passes).
+
+Run the chain starting from a fresh `council draft cambridge`. Dispatch
+Editor (docs/review/editor/Editor_prompt.txt, defamation-review mode) on
+that draft. If Editor returns FAIL: dispatch only the Fixer mode(s)
+(docs/review/fixer/) the flags actually tagged, re-run `council draft
+cambridge` (fresh run_id — never re-review a stale one), and re-run Editor.
+Repeat up to conductor_max_passes. If the cap is hit with blocking flags
+still open, stop and escalate to a human rather than continuing.
+
+Do not run `council publish` under any circumstances, in any gate profile —
+that is a human sign-off action per CONDUCTOR.md's one invariant, not
+something you do. Stop once you have either a clean Editor PASS or a
+cap-hit escalation, and report which, plus the exact `council publish`
+command that would run next if it PASSed.

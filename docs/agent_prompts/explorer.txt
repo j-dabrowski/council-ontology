@@ -1,0 +1,3 @@
+Read docs/investigator/Investigator_prompt.txt in full (Parts 0–5), then
+docs/investigator/Explorer_prompt.txt as your operating mode. Read
+docs/investigator/INVESTIGATIONS.md first per the prompt's own instruction.

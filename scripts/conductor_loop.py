@@ -62,21 +62,21 @@ VALID_TRACKS = {"frontend", "pipeline", "doc"}
 # Same tool set Refiner/Fixer need locally -- see docs/AGENT_PROMPTS.md.
 ALLOWED_TOOLS = "Read,Edit,Write,Bash,Grep,Glob"
 
-EDITOR_PROMPT_TEMPLATE = """\
-Read docs/review/REVIEW.md, then docs/review/CONDUCTOR.md (the loop this
-mode runs inside of when chained), then docs/investigator/Investigator_prompt.txt
-Part 4, then docs/strategy/PRIVATE_ASSESSMENT.md (gitignored, read
-directly), then docs/review/editor/Editor_prompt.txt as your operating
-mode. Review data/draft/{council}/{run_id}/ — this is pass {pass_num}."""
+# Editor's and Fixer's own prompt TEXT lives in docs/agent_prompts/ -- the
+# single source of truth also used by AGENT_PROMPTS.md's documented
+# commands (see that doc's "Editor alone" / "Fixer" sections for the same
+# placeholders filled the same way). Loaded and substituted here rather
+# than duplicated inline, so there is exactly one copy of each prompt
+# anywhere in this repo, not a third one drifting out of sync with the
+# other two.
+AGENT_PROMPTS_DIR = ROOT / "docs" / "agent_prompts"
 
-FIXER_PROMPT_TEMPLATE = """\
-Read docs/review/REVIEW.md, then docs/review/CONDUCTOR.md's "stage
-contract" section, then docs/review/editor/Editor_prompt.txt in full (the
-review that produced the flags you're acting on), then
-docs/review/fixer/FIXER_PROTOCOL.md, then docs/review/fixer/Fixer_prompt.txt
-(shared layer) and docs/review/fixer/{track}_mode.txt (your specific mode)
-as your operating mode. Act only on flags tagged [{track}] in
-data/draft/{council}/{run_id}/defamation_review_{pass_num}.md."""
+
+def _load_prompt(name: str, **placeholders: str) -> str:
+    text = (AGENT_PROMPTS_DIR / f"{name}.txt").read_text()
+    for key, value in placeholders.items():
+        text = text.replace(f"<{key}>", value)
+    return text
 
 
 def load_max_passes() -> int:
@@ -171,7 +171,7 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
         run_id = run_draft(council)
         draft_dir = DATA_DRAFT / council / run_id
 
-        editor_prompt = EDITOR_PROMPT_TEMPLATE.format(council=council, run_id=run_id, pass_num=pass_num)
+        editor_prompt = _load_prompt("editor", council=council, run_id=run_id)
         run_claude(editor_prompt, f"Editor, pass {pass_num}, run {run_id}")
 
         record = latest_review_record(draft_dir)
@@ -206,8 +206,8 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
             return 1
 
         for track in tracks:
-            fixer_prompt = FIXER_PROMPT_TEMPLATE.format(
-                council=council, run_id=run_id, pass_num=pass_num, track=track
+            fixer_prompt = _load_prompt(
+                "fixer", council=council, run_id=run_id, pass_num=str(pass_num), track=track
             )
             run_claude(fixer_prompt, f"Fixer [{track}], pass {pass_num}, run {run_id}")
 

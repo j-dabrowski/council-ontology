@@ -1,0 +1,5 @@
+Read docs/review/REVIEW.md, then docs/review/CONDUCTOR.md (the loop this
+mode runs inside of when chained), then docs/investigator/Investigator_prompt.txt
+Part 4, then docs/strategy/PRIVATE_ASSESSMENT.md (gitignored, read
+directly), then docs/review/editor/Editor_prompt.txt as your operating
+mode. Review data/draft/<council>/<run_id>/.
