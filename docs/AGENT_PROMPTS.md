@@ -134,6 +134,82 @@ specific mode) as your operating mode. Act only on flags tagged
 [<track>] in <the specific Editor review file/run_id>.
 ```
 
+## Running any of these via GitHub Actions
+
+The prompts above are unchanged whether run locally or in CI — see
+`AUTOMATION_ARCHITECTURE.md` Part 3's chaining/branch/PR rules for what
+wraps around them. This section is the CLI mechanics of the wrapping
+itself: installing Claude Code on a runner and authenticating it without
+touching pay-per-token API billing.
+
+**Install:**
+```bash
+npm install -g @anthropic-ai/claude-code
+```
+
+**Authenticate — subscription-based, never `ANTHROPIC_API_KEY`, by
+deliberate choice (this project's runs must never bill against API
+credits).** Generate a token once, locally, logged into the account whose
+subscription should cover these runs:
+```bash
+claude setup-token
+```
+This opens a browser OAuth flow (same as `/login`). After approving,
+the token prints directly in the terminal — copy it immediately, it is
+not saved anywhere. Store it as a GitHub Actions **secret** (not a
+Variable — this is a real credential, unlike the GCS `vars.*` values
+elsewhere in this project, which deliberately aren't secret):
+```bash
+gh secret set CLAUDE_CODE_OAUTH_TOKEN
+# paste the token when prompted
+```
+or via the web UI: repo → Settings → Secrets and variables → Actions →
+New repository secret, named exactly `CLAUDE_CODE_OAUTH_TOKEN`.
+
+**Two caveats worth knowing before relying on this, not fully documented
+by Anthropic as of this writing:**
+- **The token is tied to the person who ran `claude setup-token`, not a
+  service account.** Anthropic's own docs point toward API keys instead
+  for org-wide CI/CD, precisely because a `setup-token` credential is a
+  personal subscription token, not shared infrastructure. Practical
+  consequence: CI usage draws from the *same* usage pool as that
+  person's own interactive Claude Code sessions, and if their
+  password/session changes or the subscription lapses, every scheduled
+  run breaks at once. A deliberate trade-off for this project (avoiding
+  metered billing was the explicit priority), not an oversight.
+- **Rate limits and the exact expiry/renewal mechanism under repeated
+  automated use aren't documented anywhere verifiable.** The token is
+  described as a "one-year OAuth token," but whether it warns before
+  expiring, and whether CI-style repeated calls hit different throttling
+  than interactive use, isn't stated. No proactive warning to build
+  against — treat a workflow that starts failing on an auth error as the
+  signal to regenerate it.
+
+**Invocation** — every role's prompt above runs headless the same way:
+```bash
+claude -p "<the role's prompt from this doc>" \
+  --permission-mode dontAsk \
+  --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+env:
+  CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+```
+`-p` removes the interactive TUI; `dontAsk` auto-denies anything not in
+`--allowedTools` rather than stopping to ask (there's nobody there to
+answer). See `AUTOMATION_ARCHITECTURE.md` Part 3 for the full workflow
+shape this drops into (branch creation before the call, commit/PR after).
+
+**The draft → Editor → Fixer loop specifically has a scripted
+alternative to the Conductor prompt above: `scripts/conductor_loop.py`.**
+It reads Editor's machine-readable `defamation_review_<n>.json` sidecar
+directly and handles the pass-counting/dispatch-by-track mechanically,
+calling `claude -p` only for Editor's and Fixer's own judgment calls —
+see that script's own docstring for why this is a legitimate replacement
+for an agent-driven loop specifically (Editor's verdict is already
+structured data) and not a shortcut around the parts that still need
+real judgment. It applies the same `ANTHROPIC_API_KEY`-stripping
+discipline as this section, and never calls `council publish`, same as
+Conductor itself.
+
 ## What's still manual (not a queued prompt — a human action)
 
 **`council publish`** — never run by Conductor, Editor, or any agent under
