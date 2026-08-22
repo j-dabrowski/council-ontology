@@ -2495,6 +2495,166 @@ def delegate_body_conflict(
 
 
 # ---------------------------------------------------------------------------
+# Oversight-body capture — [48] in INVESTIGATIONS.md: does membership on the
+# council's own accountability bodies (Audit Committee, CEO Performance
+# Review Committee) skew toward the chamber's habitual winners, or does it
+# draw broadly? The "who controls the controls" mirror of
+# `decider_supplier_conflict` (3.3), read as a Governance/3.2 AND Strength/E
+# dual-domain test.
+# ---------------------------------------------------------------------------
+
+@dataclass
+class OversightAppointeeProfile:
+    councillor_id: int
+    name: str
+    n: int              # contested votes cast (cohort floor already applied)
+    win_rate: float      # share on the winning side
+
+
+@dataclass
+class OversightBodyCaptureStats:
+    n_appointees: int              # distinct councillors EVER appointed (no vote-count floor)
+    appointee_n: int               # pooled contested votes, cohort appointees only
+    appointee_won: int
+    appointee_win_rate: float
+    non_appointee_n: int
+    non_appointee_won: int
+    non_appointee_win_rate: float
+    n_appointee_cohort: int        # appointees with >= min_votes contested votes
+    n_non_appointee_cohort: int
+    profiles: list[OversightAppointeeProfile] = field(default_factory=list)  # cohort appointees, by win_rate
+
+
+def oversight_body_capture(
+    session: Session,
+    council_id: int,
+    min_votes: int = 20,
+) -> OversightBodyCaptureStats:
+    """
+    [48] Governance/3.2 ("who controls the controls") AND Strength/E: do the
+    council's own accountability bodies — the Audit Committee (and its
+    corpus renamings: Audit and Risk / Audit, Risk and Improvement / Audit
+    Standing / Town's Audit Committee / Audit Committee interviewing panel)
+    and the CEO/Chief Executive Officer Performance Review Committee — draw
+    appointees from across the chamber's power spectrum, or only from its
+    habitual winners?
+
+    Appointee set: every distinct `councillor_id` EVER appointed to a body
+    whose `appointments.body_name` case-insensitively contains "audit", or
+    both "ceo"/"chief executive" AND "performance". Unlike
+    `delegate_body_conflict`'s `_DELEGATE_BODIES` (a hand-maintained list of
+    Cambridge-specific external-body names), these are generic committee-role
+    keywords any English-speaking council's audit/CEO-review body is likely
+    to be named with — so, unusually for an `appointments`-table query, this
+    half needs no council-specific config to stay meaningful on a second
+    corpus. No `document_type` filter on the appointments side: an
+    appointment can be minuted via either document type, and this is a plain
+    `DISTINCT councillor_id` over a single-anchor join (`appointments` →
+    `meetings`), not a query that could fan out — filtering would only risk
+    dropping a real appointee, not fixing a duplication that isn't there.
+
+    Win-rate methodology reused verbatim from `voting_power()` / [18], for
+    an apples-to-apples appointee-vs-non-appointee comparison:
+    `document_type='minutes'`, `outcome IN (CARRIED, LOST)`, `votes_against
+    > 0`, `choice IN (FOR, AGAINST)`, won = (FOR & CARRIED) or (AGAINST &
+    LOST). `document_type='minutes'` is required here — without it, 2
+    agenda-document motions with a CARRIED/LOST outcome (an extraction
+    artifact; agendas aren't supposed to carry an outcome) leak into the
+    contested-vote pool (see [48 REFINEMENT ATTEMPT] in INVESTIGATIONS.md).
+    NOTE: `voting_power()` itself does not carry this filter yet
+    (REFINEMENT_PROTOCOL.md dimension-2 backlog, logged but not fixed
+    unilaterally there) — this function's pooled win rate is therefore NOT
+    directly comparable to `voting_power()`'s published figures; both are
+    internally consistent but on a slightly different vote pool.
+
+    Cohort floor (`min_votes`, default 20) matches `councillor_tenure()`'s
+    ([45]) threshold, for comparability across the two tests. `votes`
+    carries `UNIQUE(motion_id, councillor_id)`, so grouping by
+    `Vote.councillor_id` here cannot fan out.
+    """
+    appt_pattern = (
+        Appointment.body_name.ilike("%audit%")
+        | (
+            (Appointment.body_name.ilike("%ceo%") | Appointment.body_name.ilike("%chief executive%"))
+            & Appointment.body_name.ilike("%performance%")
+        )
+    )
+    appointee_ids: set[int] = {
+        cid for (cid,) in (
+            session.query(Appointment.councillor_id)
+            .join(Meeting, Appointment.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Appointment.councillor_id.isnot(None),
+                appt_pattern,
+            )
+            .distinct()
+        )
+    }
+
+    rows = (
+        session.query(
+            Vote.councillor_id, Vote.choice, Motion.outcome,
+            Councillor.given_name, Councillor.family_name,
+        )
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .join(Councillor, Vote.councillor_id == Councillor.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.outcome.in_([MotionOutcome.CARRIED, MotionOutcome.LOST]),
+            Motion.votes_against > 0,
+            Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]),
+        )
+        .all()
+    )
+
+    per_cllr: dict[int, dict] = defaultdict(lambda: {"n": 0, "won": 0, "name": ""})
+    for cid, choice, outcome, given, family in rows:
+        won = (choice == VoteChoice.FOR and outcome == MotionOutcome.CARRIED) or \
+              (choice == VoteChoice.AGAINST and outcome == MotionOutcome.LOST)
+        d = per_cllr[cid]
+        d["n"] += 1
+        d["won"] += int(won)
+        d["name"] = f"{given or ''} {family or ''}".strip()
+
+    profiles: list[OversightAppointeeProfile] = []
+    app_n = app_won = non_n = non_won = 0
+    n_app_cohort = n_non_cohort = 0
+    for cid, d in per_cllr.items():
+        if d["n"] < min_votes:
+            continue
+        if cid in appointee_ids:
+            app_n += d["n"]
+            app_won += d["won"]
+            n_app_cohort += 1
+            profiles.append(OversightAppointeeProfile(
+                councillor_id=cid, name=d["name"], n=d["n"],
+                win_rate=round(100 * d["won"] / d["n"], 1),
+            ))
+        else:
+            non_n += d["n"]
+            non_won += d["won"]
+            n_non_cohort += 1
+
+    profiles.sort(key=lambda p: p.win_rate)
+
+    return OversightBodyCaptureStats(
+        n_appointees=len(appointee_ids),
+        appointee_n=app_n,
+        appointee_won=app_won,
+        appointee_win_rate=round(100 * app_won / app_n, 2) if app_n else 0.0,
+        non_appointee_n=non_n,
+        non_appointee_won=non_won,
+        non_appointee_win_rate=round(100 * non_won / non_n, 2) if non_n else 0.0,
+        n_appointee_cohort=n_app_cohort,
+        n_non_appointee_cohort=n_non_cohort,
+        profiles=profiles,
+    )
+
+
+# ---------------------------------------------------------------------------
 # Objection dose-response — how many objectors does it take to sink a DA?
 # ---------------------------------------------------------------------------
 

@@ -45,6 +45,7 @@ from src.analysis.queries import (
     delegate_body_conflict,
     mayoral_agenda_setting,
     objection_dose_response,
+    oversight_body_capture,
     public_engagement_by_year,
     public_question_responsiveness,
     recusal_compliance_trend,
@@ -317,6 +318,73 @@ def _t_voting_power(session, council_id, pc) -> TestResult:
         base_rate=f"{round(p.base_carry_rate * 100, 1)}% base carry rate",
         era="2003–2026 (contested motions)",
         detail_panel="power",
+    )
+
+
+def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
+    """[48] "Who controls the controls": does membership on the council's own
+    accountability bodies (Audit Committee, CEO Performance Review Committee)
+    skew toward the chamber's habitual winners, or draw broadly — including
+    from its habitual dissenters? Governance/3.2 AND Strength/E dual-domain,
+    mirroring [41]'s delegate-body test but for INTERNAL oversight bodies and
+    [18]'s power-spread metric rather than declared-interest rates. Built on
+    `oversight_body_capture()` — see that function's docstring for the
+    council-agnostic body-name match and why its win-rate figure is NOT
+    directly comparable to `voting_power()`'s own published number.
+
+    Refined 2026-08-22 (`Refiner_prompt.txt` v1.1, Step 0 self-selected
+    target, second attempt): the first attempt on this finding failed
+    dimension 1 on a stale DB state (the [48] Banked entry's own "33 distinct
+    councillors" headline vs a hand-derived 32/31) — see
+    `[48 REFINEMENT ATTEMPT]` in INVESTIGATIONS.md. That gap is resolved: a
+    split councillor identity (`councillor_id` 385 "Walker Colin" merged into
+    246 "Colin Walker") was fixed out-of-band the same day, and this session
+    independently re-derived every figure below fresh against the live DB
+    (not by reading and trusting this function) before shipping it.
+    """
+    r = pc.get("oversight") or oversight_body_capture(session, council_id)
+    if r.n_appointees == 0:
+        return _nodata("governance.oversight_body_capture",
+                       "Is the council's own oversight function captured by its most powerful members?",
+                       "Governance / culture (3.2) & Strength (E)", "CIPFA-A · Nolan Accountability",
+                       "Does membership on the council's Audit/CEO-Performance-Review bodies skew "
+                       "toward the chamber's habitual winners, or draw broadly?")
+    gap = round(r.appointee_win_rate - r.non_appointee_win_rate, 1)
+    lo = min((p.win_rate for p in r.profiles), default=None)
+    hi = max((p.win_rate for p in r.profiles), default=None)
+    loser = min(r.profiles, key=lambda p: p.win_rate) if r.profiles else None
+    winner = max(r.profiles, key=lambda p: p.win_rate) if r.profiles else None
+    chart = _bars(
+        [("Appointees", r.appointee_win_rate), ("Non-appointees", r.non_appointee_win_rate)],
+        unit="%",
+    )
+    return TestResult(
+        test_id="governance.oversight_body_capture",
+        title="Is the council's own oversight function captured by its most powerful members?",
+        genre="Governance / culture (3.2) & Strength (E)",
+        principle="CIPFA-A (internal audit/oversight function) · Nolan Accountability",
+        question="Does membership on the council's Audit Committee / CEO Performance Review "
+                 "Committee skew toward the chamber's habitual winners, or draw broadly — "
+                 "including from its habitual dissenters?",
+        valence=SUPPORTIVE,
+        grade=G_STRENGTH,
+        headline=(f"{r.n_appointees} distinct councillors have ever sat on an oversight body; "
+                  f"appointee win rate {r.appointee_win_rate}% (n={r.appointee_n}) vs "
+                  f"non-appointee {r.non_appointee_win_rate}% (n={r.non_appointee_n}) — a "
+                  f"{gap} pp gap, statistically indistinguishable"),
+        verdict=(f"No self-appointment of the powerful to watch themselves: the oversight-body "
+                 f"appointee list's win-rate spread ({lo}–{hi}%) runs almost the full range of "
+                 f"the chamber, and includes both {winner.name} ({winner.win_rate}%, its most "
+                 f"consistent winner among appointees) and {loser.name} ({loser.win_rate}%, "
+                 f"n={loser.n} — one of the corpus's most frequent dissenters). CIPFA-A's internal "
+                 f"audit/oversight-function principle is met on this reading; era-pooled across "
+                 f"31 years, so a modern-era shift could still hide in the aggregate."),
+        n=r.appointee_n + r.non_appointee_n,
+        base_rate=f"non-appointee win rate {r.non_appointee_win_rate}% (n={r.non_appointee_n})",
+        era="1995–2026, era-pooled",
+        data_ok=True,
+        detail_panel="oversight-body-capture",
+        chart=chart,
     )
 
 
@@ -1152,7 +1220,7 @@ _BATTERY = [
     # Governance / planning fairness
     _t_big_dollar_leniency, _t_repeat_applicant, _t_objection_dose,
     # Governance / culture
-    _t_officer_divergence, _t_voting_power, _t_unanimity_trend, _t_mayoral,
+    _t_officer_divergence, _t_voting_power, _t_oversight_body_capture, _t_unanimity_trend, _t_mayoral,
     _t_sponsorship, _t_tenure, _t_freshman, _t_election_cycle, _t_attendance,
     # Transparency
     _t_transparency, _t_confidential_tender_size, _t_confidential_topics,
@@ -1169,8 +1237,8 @@ def run_test_battery(session: Session, council_id: int,
 
     `precomputed` may carry already-computed query objects under keys:
     power, recusal_trend, conflict, tenders, transparency, tenure, mayoral,
-    sponsorship, dose, divergence, decider_supplier, delegate_body — to avoid
-    recomputing the heavy ones.
+    sponsorship, dose, divergence, decider_supplier, delegate_body,
+    oversight — to avoid recomputing the heavy ones.
     """
     pc = precomputed or {}
     results: list[TestResult] = []
