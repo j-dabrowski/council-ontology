@@ -181,14 +181,24 @@ These have already produced wrong answers. They are not optional reading.
   a second one.
 - **Councillor identity is good but not perfect.** Dedup merged ~84 split
   identities, but a few same-surname / nickname cases remain (e.g. Kate vs
-  Catherine Barlow; ambiguous Everett/McKerracher/Steele family-only stubs;
-  `councillor_id` 246 "Colin Walker" vs 385 "Walker Colin" — a
-  given-name/family-name field-swap duplicate, found 2026-08-22 during a
-  [48] refinement attempt: id 385 has zero `votes` rows so it's invisible to
-  any vote-based query, but still holds its own `appointments` row, so a
-  distinct-councillor count on `appointments` can overcount by this pair).
-  When a per-person stat looks split or impossibly low, check for sibling records
-  by surname before trusting it. A DB backup predating the last dedup exists at
+  Catherine Barlow; ambiguous Everett/McKerracher/Steele family-only stubs).
+  A further, structurally distinct class — a **given/family-name field
+  swap between two records** (e.g. "Colin Walker" vs "Walker Colin": the
+  same person, same two real name tokens, transposed across two rows) —
+  was found 2026-08-22 and is not caught by any prior dedup pass; two
+  instances (Colin Walker/Walker Colin; Simon Withers/Withers Simon) are
+  fixed as of that date, but **six more confirmed pairs are still open**,
+  including two touching heavily-used flagship data: `councillor_id` 2
+  "Kate Barlow" vs 193 "Barlow Kate", and 214 "Pauline O'Connor" vs 501
+  "O'Connor Pauline" (also Anklesaria, Anderton, McConnell, a second Steele
+  pair, and Jason/Lyon). Any per-person stat touching these names is
+  exposed until they're resolved. `scripts/dedup_councillors.py`'s Pass 4
+  detects this class automatically (`python scripts/dedup_councillors.py`,
+  dry run by default) — run it before trusting a new per-councillor count,
+  and see `docs/pipeline/PIPELINE.md` "Known dedup gaps" for the full
+  current list. When a per-person stat looks split or impossibly low,
+  check for sibling records by surname AND by swapped given/family fields
+  before trusting it. A DB backup predating the last dedup exists at
   `data/council.db.bak-*`.
 - **Some fields are structurally empty.** `planning_applications.application_date`
   / `decision_date` (100% NULL), `councillor_terms` (sparse), and pre-Phase-2
@@ -202,6 +212,42 @@ hypothesis tested, with status keys (`[ ]` queued, `[→]` in progress, `[✓]`
 finding, `[✗]` null). **Read it before starting** so you don't re-run a
 hypothesis that's already a documented null or a built panel.
 
+- **State hygiene: an out-of-band fix isn't done until this file (and any
+  affected §0.4 caveat) says so.** `data/council.db` is gitignored, and any
+  human running raw SQL or a script directly in a terminal — outside a
+  documented CLI stage (`council dedup`, `council extract`, etc.) — changes
+  it invisibly to every future session. This project runs on fixed,
+  reusable prompts invoked cold in fresh sessions (see `docs/AGENT_PROMPTS.md`);
+  a session has no way to know the database changed since it last read
+  this file, only what this file *says*. The concrete incident: a Refiner
+  session found a split-councillor-identity bug, correctly stopped short
+  of shipping (dimension-1 hard gate), and logged "human/future-session
+  decision needed." A human then fixed the DB directly, in a separate
+  terminal, in the same real-world session — but didn't update this file
+  or `Investigator_prompt.txt` §0.4 in that same turn. A second, fresh
+  Refiner session read the stale "still needs a decision" text, correctly
+  had no way to know otherwise, and stopped again to ask — not a bug in
+  that session, a gap in the human side of the workflow. **The rule going
+  forward: the same turn that applies an out-of-band DB fix (SQL, a
+  one-off script, anything not run through a documented pipeline stage)
+  also writes the resolution into whatever entry described the problem
+  here, and into §0.4 if it named a caveat** — before ending that
+  conversation, not "later." Treat an unresolved entry's own stated
+  blocking condition as load-bearing: if you're the human who just cleared
+  it, say so in the file, or the next session has no way to know.
+  **The mirror-image rule for the reading side, not just the writing
+  side: never just trust this file's claim that something was resolved —
+  spot-check it against the live database before treating a blocking
+  condition as cleared, the same discipline dimension 1 already applies to
+  every hand-derived number (`Refiner_prompt.txt`: "do NOT read the
+  proposed function first and just confirm it looks right").** This isn't
+  hypothetical caution — writing this very rule down, a resolution note
+  claimed a merge had been "applied" when only a dry run had actually been
+  run; it was caught by re-querying the live DB before committing, not by
+  re-reading the note more carefully. A written record can drift from
+  reality the moment it's written, not just over time — treat any
+  "resolved"/"applied"/"fixed" claim here as a hint of what to verify, not
+  as verified fact on its own.
 - ~22 hypotheses logged across five sessions. **Built flagship findings:**
   Conflict/Recusal ([1]), Tender concentration ([2]), Objection dose–response
   ([12]), Transparency-went-dark-during-the-Inquiry ([9]), Tenure/incumbency

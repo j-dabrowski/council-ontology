@@ -5,15 +5,25 @@ The extraction pipeline historically created duplicate records when the LLM outp
 names in different formats ("Cr Barlow", "Kate Barlow", "Barlow", "null Barlow",
 "Barlow Cr" etc.).  This script finds, reports, and merges those duplicates.
 
-Three passes:
+Four passes:
   Pass 1 — Bad records: given_name is a title, placeholder, self-repeat, or the
-            fields are swapped (family_name is the title).  These are unambiguously
-            wrong and are merged into the canonical for their family name.
+            fields are swapped with a TITLE (family_name is the title).  These
+            are unambiguously wrong and are merged into the canonical for their
+            family name.
   Pass 2 — Family-only stubs: given_name is empty/null but a real-name canonical
             exists for the same family name.  Merged when unambiguous.
   Pass 3 — Fuzzy family-name stubs: family name is a near-misspelling of a real
             councillor's name (e.g. "Timmermans" → "Timmermanis", "Pelcar" →
             "Pelczar").  Resolved using term overlap; reported for review otherwise.
+  Pass 4 — Given/family field swap between TWO records (e.g. "Colin Walker" vs
+            "Walker Colin" — two REAL name tokens transposed across two distinct
+            rows, not one bad record with a title in the wrong field, which Pass 1
+            already handles). Detected by exact transposition; auto-merged only
+            when one side has zero rows in every other councillor-keyed table
+            (a confirmed phantom), else held for review. See
+            docs/pipeline/PIPELINE.md "Known dedup gaps" for the incident (Colin
+            Walker/Walker Colin, found 2026-08-22 during a Refiner session) this
+            pass was written to generalise and catch automatically next time.
 
 Merge target selection (in order):
   1. Exact normalised-slug match (e.g. "Cr Gavin Foley" → "gavin-foley").
@@ -539,6 +549,88 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     skipped = still_skipped
 
     # -------------------------------------------------------------------
+    # Pass 4: given/family-name field swap between two distinct records
+    # (e.g. "Colin Walker" id=246 vs "Walker Colin" id=385) — a structural
+    # blind spot Passes 1-3 above cannot catch: no title/placeholder is
+    # involved (Pass 1's trigger), both fields are populated with real
+    # tokens (Pass 2 needs an empty given_name), and the family names
+    # aren't a fuzzy misspelling of each other (Pass 3's threshold).
+    # Detected by exact transposition — cheap, one hash-map pass, no fuzzy
+    # matching, near-zero false-positive risk on an exact swap. Only
+    # auto-merged when one side has zero rows in every OTHER
+    # councillor-keyed table (votes, motions moved/seconded,
+    # interest_declarations, councillor_terms) — a confirmed phantom whose
+    # only trace is something cleanly reassignable (`appointments`, in the
+    # one instance found so far; any FK_COLUMNS table would be handled the
+    # same way). If both sides have independent activity, they could
+    # genuinely be two different people who happen to have swapped-looking
+    # names — held for review, never auto-merged.
+    # -------------------------------------------------------------------
+    def _raw_key(c: dict) -> tuple[str, str]:
+        return (
+            (c["given_name"] or "").strip().lower(),
+            (c["family_name"] or "").strip().lower(),
+        )
+
+    def _identity_activity(cid: int) -> int:
+        """Rows in tables that confirm a real, independent identity.
+        Excludes `appointments`, which Pass 4 treats as cleanly
+        reassignable and never lets block an auto-merge on its own."""
+        n = votes_total.get(cid, 0) + len(terms.get(cid, []))
+        n += conn.execute(
+            "SELECT COUNT(*) FROM motions WHERE moved_by_id=? OR seconded_by_id=?",
+            (cid, cid),
+        ).fetchone()[0]
+        n += conn.execute(
+            "SELECT COUNT(*) FROM interest_declarations WHERE councillor_id=?",
+            (cid,),
+        ).fetchone()[0]
+        return n
+
+    by_raw_key: dict[tuple[str, str], dict] = {}
+    for c in councillors:
+        if c["id"] in merging_ids:
+            continue
+        g, f = _raw_key(c)
+        if g and f and g != f and is_real_given(g) and is_real_given(f):
+            by_raw_key.setdefault((g, f), c)  # first record wins any exact dup
+
+    swap_merges: list[tuple[dict, dict, str]] = []
+    swap_held: list[tuple[dict, dict, str]] = []
+    seen_pairs: set[frozenset] = set()
+
+    for (g, f), c in by_raw_key.items():
+        swapped = by_raw_key.get((f, g))
+        if not swapped or swapped["id"] == c["id"]:
+            continue
+        pair_key = frozenset({c["id"], swapped["id"]})
+        if pair_key in seen_pairs:
+            continue
+        seen_pairs.add(pair_key)
+
+        a_activity = _identity_activity(c["id"])
+        b_activity = _identity_activity(swapped["id"])
+
+        if a_activity == 0 and b_activity > 0:
+            phantom, canonical = c, swapped
+        elif b_activity == 0 and a_activity > 0:
+            phantom, canonical = swapped, c
+        else:
+            swap_held.append((
+                c, swapped,
+                f"field-swap, both sides have identity activity ({a_activity} vs "
+                f"{b_activity} rows) — cannot tell which is the phantom, needs manual review",
+            ))
+            continue
+
+        swap_merges.append((
+            phantom, canonical,
+            f"field-swap (given↔family of '{canonical['given_name']} {canonical['family_name']}') "
+            f"→ '{canonical['given_name']} {canonical['family_name']}' [phantom had 0 identity rows]",
+        ))
+        merging_ids.add(phantom["id"])
+
+    # -------------------------------------------------------------------
     # Term annotation — always computed; affects --apply behaviour only
     # when --use-terms is set
     # -------------------------------------------------------------------
@@ -581,9 +673,12 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     print(f"Total councillors : {len(councillors)}")
     print(f"Bad records       : {len(bad_records)}")
     print(f"Family-only stubs : {len(family_only)}")
-    print(f"Merges planned    : {len(auto)}")
+    print(f"Field-swap pairs  : {len(swap_merges) + len(swap_held)}")
+    print(f"Merges planned    : {len(auto) + len(swap_merges)}")
     if held:
         print(f"Held for review   : {len(held)}")
+    if swap_held:
+        print(f"Held (field-swap) : {len(swap_held)}")
     print(f"In-place fixes    : {len(in_place)}")
     print(f"Skipped/ambiguous : {len(skipped)}")
     n_terms = sum(1 for v in terms.values() if v)
@@ -610,6 +705,18 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
             print(f"           reason: {reason}  [{TERM_SYMBOLS[term_status]}]")
             print(f"           stub votes: {date_span}  |  candidate terms: {term_spans}")
 
+    if swap_merges:
+        print(f"\n--- Field-swap merges, Pass 4 ({len(swap_merges)}) ---")
+        for bad, tgt, reason in swap_merges:
+            print(f"  [{bad['id']}→{tgt['id']}]  {_label(bad)}  →  {_label(tgt)}")
+            print(f"           reason: {reason}")
+
+    if swap_held:
+        print(f"\n--- Held — field-swap, needs review ({len(swap_held)}) ---")
+        for a, b, reason in swap_held:
+            print(f"  [{a['id']} ↔ {b['id']}]  {_label(a)}  ↔  {_label(b)}")
+            print(f"           reason: {reason}")
+
     if in_place:
         print(f"\n--- In-place normalisations ({len(in_place)}) ---")
         for c, ng, nf, ns in in_place:
@@ -627,7 +734,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     # -------------------------------------------------------------------
     # Apply — only auto-confirmed merges when --use-terms is active
     # -------------------------------------------------------------------
-    merges_to_apply = [(b, t, r) for b, t, r, _ in auto]
+    merges_to_apply = [(b, t, r) for b, t, r, _ in auto] + swap_merges
     print(f"\nApplying {len(merges_to_apply)} merges + {len(in_place)} in-place fixes …")
 
     for bad, tgt, _ in merges_to_apply:

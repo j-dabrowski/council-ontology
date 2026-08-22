@@ -111,38 +111,67 @@ without a nickname dictionary:
   sqlite3 data/council.db "SELECT id, given_name, family_name FROM councillors WHERE family_name='Barlow' ORDER BY id"
   ```
 
-**Given/family-name field swap between two records** — unlike the categories
-above, this one is mechanically detectable and should become a fourth pass
-in `scripts/dedup_councillors.py`, not left as a case-by-case find. Found
-2026-08-22 during a Refiner attempt at `[48]` (`docs/investigator/
-INVESTIGATIONS.md`): `councillor_id` 246 (`given_name='Colin',
-family_name='Walker'`) and 385 (`given_name='Walker', family_name='Colin'`)
-were the same person recorded as two rows with the two fields transposed —
-manually merged (385 → 246; 385 had exactly one attached row, in
-`appointments`, confirmed by checking every table with a councillor
-foreign key first). **Why the existing three passes miss this class
-entirely** (read `scripts/dedup_councillors.py`'s own docstring before
+**Given/family-name field swap between two records** — `scripts/
+dedup_councillors.py` **Pass 4, built and live as of 2026-08-22.** Found
+during a Refiner attempt at `[48]` (`docs/investigator/INVESTIGATIONS.md`):
+`councillor_id` 246 (`given_name='Colin', family_name='Walker'`) and 385
+(`given_name='Walker', family_name='Colin'`) were the same person recorded
+as two rows with the two fields transposed. **Why the prior three passes
+miss this class entirely** (read the script's own docstring before
 changing it): Pass 1 needs `given_name` to be a title/placeholder — a real
 first name like "Walker" isn't one; Pass 2 needs a shared `family_name`
 with an empty `given_name` — both fields are populated here, just swapped;
 Pass 3 needs `family_name` to be a fuzzy misspelling of a real surname —
-"Colin" isn't a typo of "Walker". This isn't a data-sparsity gap that
-resolves with more votes (unlike the two categories above it) — it's a
-structural blind spot in candidate generation, present regardless of corpus
-size, and it will recur on every future council (LLM name extraction can
-transpose given/family fields for any document, on any corpus).
-**Recommended Pass 4, council-agnostic:** for every pair of councillor
-rows, flag a candidate where `(given_name, family_name)` of one exactly
-equals `(family_name, given_name)` of the other (cheap — a single
-hash-map pass, no fuzzy matching needed, near-zero false-positive risk on
-an exact transposition). Auto-merge only under the same confidence
-discipline `--use-terms` already applies elsewhere in this script: if one
-side of the pair has no rows in any other councillor-keyed table (`votes`,
-`motions.moved_by_id`/`seconded_by_id`, `interest_declarations`,
-`appointments`, `councillor_terms`) beyond a small, cleanly-reassignable
-set, merge it automatically; otherwise hold it for manual review exactly
-like a `TERM ✗`/`TERM ?` case. Not yet implemented — this entry is the
-design, not the code; flag if you want it built.
+"Colin" isn't a typo of "Walker". Not a data-sparsity gap that resolves
+with more votes (unlike the two categories above it) — a structural blind
+spot in candidate generation, present regardless of corpus size, and it
+will recur on every future council (LLM name extraction can transpose
+given/family fields for any document, on any corpus).
+
+**How Pass 4 works:** flags a candidate where `(given_name, family_name)`
+of one record exactly equals `(family_name, given_name)` of another (one
+hash-map pass, no fuzzy matching, near-zero false-positive risk on an
+exact transposition). Auto-merges only when one side has zero rows in
+every other councillor-keyed table (`votes`, `motions.moved_by_id`/
+`seconded_by_id`, `interest_declarations`, `councillor_terms` — `
+appointments` is excluded from this check since it's cleanly reassignable
+on its own); otherwise holds it for manual review, same conservative
+principle as `TERM ✗`/`TERM ?` elsewhere in the script. **Known gap in
+the automated check** (present in the original three passes too, not new
+to Pass 4): `relationships` and `extraction_evidence` aren't checked or
+reassigned by any pass, including the main `FK_COLUMNS`-driven apply step
+— verify both are empty by hand for any specific candidate before
+applying, the same way the Colin Walker fix did, until a future session
+extends the check.
+
+**First run's results (2026-08-22):** 8 field-swap pairs found corpus-wide.
+One (Colin Walker/Walker Colin) was already fixed by hand before Pass 4
+existed — the incident that motivated building it. One more, Simon
+Withers/Withers Simon (id 386→212), is confidently auto-mergeable and
+independently verified safe (`relationships`/`extraction_evidence` both
+checked and zero — the two tables Pass 4's own check doesn't cover, see
+above) — **but not yet applied**: nobody has run `python
+scripts/dedup_councillors.py --apply` yet, so id 386 still exists in
+`data/council.db` as of this writing. **Six more held for manual review,
+also unresolved** — every one is a real councillor with a
+lopsided-but-nonzero footprint on the "phantom" side (1–3 stray rows, not
+zero), so Pass 4 correctly declines to guess a direction:
+- `councillor_id` 2 "Kate Barlow" (849 votes) ↔ 193 "Barlow Kate" (1 vote)
+  — touches the Tenure flagship ([8]).
+- `councillor_id` 214 "Pauline O'Connor" (679 votes) ↔ 501 "O'Connor
+  Pauline" (0 votes, 1 other row) — touches Power ([18]) and Recusal
+  ([19]).
+- `councillor_id` 203 "Meg Anklesaria" ↔ 399 "Anklesaria Meg".
+- `councillor_id` 216 "Marlene Anderton" ↔ 425 "Anderton Marlene".
+- `councillor_id` 227 "Robina McConnell" ↔ 289 "McConnell Robina".
+- `councillor_id` 312 "Ian Steele" ↔ 412 "Steele Ian" (a second, distinct
+  Steele pair from the pre-existing family-only-stub ambiguity above).
+- `councillor_id` 454 "Jason Lyon" ↔ 455 "Lyon Jason" (both zero
+  activity — genuinely ambiguous which is the phantom).
+
+Run `python scripts/dedup_councillors.py` (dry run by default) to see the
+current live report; none of the six above are resolved as of this
+writing.
 
 **2017 terms gap** — no Cambridge election results for 2017 (absent from statewide PDF).
 Seats up were O'Connor and Grinceri (Coast) and MacRae and King (Wembley) from the 2013 cohort.

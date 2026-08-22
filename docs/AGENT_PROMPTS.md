@@ -13,6 +13,15 @@ file doesn't need to change — every string below points at the file, it
 doesn't inline its content. Only touch this file when a role's *reading
 order* changes (a new file added to its "Read first" list, or removed).
 
+**A fixed prompt is only as reliable as the state it reads.** These
+strings assume every prior session's output is written down accurately —
+if a human fixes something out-of-band (raw SQL against `data/council.db`
+in a terminal, a one-off script, anything outside a documented CLI stage)
+and doesn't update the doc that described the problem in the same turn,
+the next cold session reads stale state and can only stop and ask, not
+proceed autonomously. See `Investigator_prompt.txt` §0.5's "State hygiene"
+note for the incident this was written from and the rule it sets.
+
 ## Investigator (3 modes, one shared reference layer)
 
 **Explorer — generate and test novel hypotheses.**
