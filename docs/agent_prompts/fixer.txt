@@ -4,4 +4,9 @@ review that produced the flags you're acting on), then
 docs/review/fixer/FIXER_PROTOCOL.md, then docs/review/fixer/Fixer_prompt.txt
 (shared layer) and docs/review/fixer/<track>_mode.txt (your specific
 mode) as your operating mode. Act only on flags tagged [<track>] in
-data/draft/<council>/<run_id>/defamation_review_<pass_num>.md.
+the highest-numbered defamation_review_<n>.md in
+data/draft/<council>/<run_id>/ (that directory holds exactly one
+review under the Conductor's design — a fresh draft per pass — so
+this is normally _1.md; find it by listing the directory rather than
+assuming the number, since Editor's own <n> is directory-scoped, not
+the Conductor's chain-wide pass count).

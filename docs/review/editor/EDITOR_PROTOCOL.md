@@ -62,6 +62,57 @@ loudly (the mode has no authority over the named file) or, worse, succeeds
 quietly by touching something adjacent — check tagging accuracy the same way
 you'd check flag accuracy.
 
+## Open questions
+
+- **Superlative single-name call-outs near the n≤3 floor** — flagged
+  2026-08-22 (Editor pass 1,
+  `data/draft/cambridge/draft_20260822_144521/defamation_review_1.md`): a
+  mayoral "least contested" callout named a single councillor at n=5, just
+  above the BLOCKING small-n floor. Not a threshold violation under today's
+  rules — no code change was made for this flag — but worth a human decision
+  on whether superlative single-name call-outs ("most", "least", "longest")
+  warrant a stricter n floor than incidental mentions, since the superlative
+  wording reads as an individual claim even when the underlying n only
+  barely clears the generic floor. Undecided as of this entry.
+
+- **`<n>` numbering: per run-directory or per-chain?** — flagged 2026-08-22
+  (Editor pass 2's own review, `data/draft/cambridge/draft_20260822_152453/defamation_review_1.md`,
+  and its fix reports; recurred in pass 3,
+  `data/draft/cambridge/draft_20260822_154217/defamation_review_1.md`).
+  `Editor_prompt.txt` says to "increment `<n>` on re-review... so the full
+  chain is visible in one directory," which assumes re-review happens inside
+  the *same* run directory. Under the Conductor's actual design, each
+  dispatched Fixer round produces a brand-new `council draft` output in a
+  brand-new directory, so every directory only ever holds one review — `<n>`
+  as a directory-scoped filename counter is always 1, while `<n>` as a
+  chain-scoped pass count (which is what `CONDUCTOR.md`'s pass-cap logic and
+  the stage-contract's own `pass:` field track) climbs normally. Passes 2 and
+  3 both resolved this ad hoc by naming the file `_1` but titling/stage-
+  contracting it with the true chain pass number — workable, but it already
+  caused one Fixer session (pass 2's pipeline round) to have to reason about
+  which file was authoritative. Undecided as of this entry: either change
+  `Editor_prompt.txt`'s filename instruction to explicitly say "chain-scoped,
+  not directory-scoped" (so the file itself is named `defamation_review_3.md`
+  even though it's the first file in its directory), or accept the
+  directory-scoped filename permanently and drop the "chain visible in one
+  directory" rationale, since the architecture doesn't deliver on it.
+
+  **Resolved 2026-08-23: directory-scoped, `Editor_prompt.txt` unchanged.**
+  Chain-scoping would have required Editor to know the Conductor's
+  chain-wide pass count just to name a file correctly — a concept that
+  doesn't exist for Editor's other real entry point (a standalone
+  re-review of the same directory without a fresh draft, where
+  directory-scoped `<n>` is exactly the right, meaningful behaviour
+  `Editor_prompt.txt` already describes). Fixed on the *caller* side
+  instead — `docs/agent_prompts/fixer.txt` no longer predicts the
+  filename via a `<pass_num>` substitution; it now tells Fixer to find
+  the highest-numbered `defamation_review_<n>.md` in the directory by
+  listing it, the same lookup `_latest_review_record()` in
+  `src/publish_gate.py` already uses. Both pass-2 and pass-3 Fixer
+  sessions had already reasoned their way to the right file from content
+  alone despite the wrong instruction — this closes the gap they were
+  routing around rather than relying on that continuing to work.
+
 ## Logging
 
 Every pass writes `data/draft/<council>/<run_id>/defamation_review_<n>.md` —

@@ -121,14 +121,18 @@ you want, since it already dispatches Editor as its first step.
 Not really a standalone, context-free invocation — a Fixer mode only does
 something meaningful when it's acting on a specific Editor FAIL's tagged
 flags, which is inherently per-call, not a fixed string.
-`docs/agent_prompts/fixer.txt` has four placeholders (`<track>`,
-`<council>`, `<run_id>`, `<pass_num>`); fill all four before invoking:
+`docs/agent_prompts/fixer.txt` has three placeholders (`<track>`,
+`<council>`, `<run_id>`) — no pass number, deliberately: Fixer finds its
+review file by listing the draft directory (Editor's own `<n>` there is
+directory-scoped, always `_1` under this design's one-draft-per-pass
+architecture, not the Conductor's chain-wide pass count — see
+`EDITOR_PROTOCOL.md`'s "`<n>` numbering" entry for the incident this
+was fixed from). Fill the three real placeholders before invoking:
 ```bash
 claude -p "$(sed \
     -e "s/<track>/frontend/g" \
     -e "s/<council>/cambridge/g" \
     -e "s/<run_id>/draft_20260822_120000/g" \
-    -e "s/<pass_num>/1/g" \
     docs/agent_prompts/fixer.txt)" \
   --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
 ```

@@ -206,9 +206,14 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
             return 1
 
         for track in tracks:
-            fixer_prompt = _load_prompt(
-                "fixer", council=council, run_id=run_id, pass_num=str(pass_num), track=track
-            )
+            # No pass_num substitution here on purpose -- fixer.txt tells
+            # Fixer to find the review file by listing the directory, not
+            # by a predicted filename. Editor's <n> is directory-scoped
+            # (always 1 under this design, one draft per pass), not the
+            # Conductor's chain-wide pass_num -- passing the latter in
+            # here is exactly the bug this fixed (see EDITOR_PROTOCOL.md's
+            # "<n> numbering: per run-directory or per-chain?").
+            fixer_prompt = _load_prompt("fixer", council=council, run_id=run_id, track=track)
             run_claude(fixer_prompt, f"Fixer [{track}], pass {pass_num}, run {run_id}")
 
         # loop continues -> next iteration re-drafts fresh, per CONDUCTOR.md:
