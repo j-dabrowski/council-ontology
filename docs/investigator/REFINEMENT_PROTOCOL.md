@@ -117,6 +117,32 @@ documented procedure.
 
 ---
 
+**2026-08-22 — first live entry-point-A session (Refiner_prompt.txt v1.1,
+Step 0 self-selection).** Every previous calibration point was retroactive
+(auditing already-shipped code) or ran entry point A on a human-named
+target. This session ran unnamed: Step 0 scanned `INVESTIGATIONS.md`,
+correctly excluded every other `[◐] Banked` entry by its own disqualifying
+text ("folded into...", "not standalone", "methodology needs tightening",
+already shipped as a panel), and landed on [48] as the sole qualifying
+candidate. Result: **dimension 1 FAIL, verdict NOT REFINED** — the
+finding's actual substantive claim (appointee win rate statistically
+indistinguishable from non-appointees: 73.4% vs 73.1%, spread and two named
+examples all reproduced to the vote) held exactly, but the "33 distinct
+councillors" headline count hand-derived to 32 (31 once a newly-found
+split councillor identity, Colin Walker/Walker Colin, is merged — now
+logged in `Investigator_prompt.txt` §0.4). See `[48 REFINEMENT ATTEMPT]`
+in `INVESTIGATIONS.md` for the full write-up. Two things this confirms
+about the operating layer as written: (a) Step 0's disqualification
+language matching works on real, messy Banked-entry prose, not just the
+clean cases it was designed against; (b) the dimension-1 hard gate does its
+job on a genuinely new (not retroactive) case — a plausible, internally-
+consistent-looking headline number was caught before any code shipped,
+exactly the failure mode this protocol exists to prevent. A side-finding
+(the incidentally-discovered gap in `voting_power()`'s caveat safety,
+§0.4's `document_type='minutes'` filter) was logged as backlog rather than
+fixed in-session, since it belongs to a different, already-shipped
+flagship ([18]) than the one this session was scoped to.
+
 ### Open questions
 
 - **Batch vs. single-finding sessions.** Should a refinement session codify
@@ -143,6 +169,13 @@ documented procedure.
 
 ## Changelog
 
+- v0.3 (2026-08-22) — recorded the first live entry-point-A calibration
+  point (Refiner_prompt.txt v1.1, Step 0 self-selected target [48]):
+  dimension-1 hard gate caught a headline-count mismatch (33 claimed vs
+  32/31 hand-derived) before any code shipped, while the finding's
+  substantive win-rate claim reproduced exactly. No benchmark changes —
+  the six dimensions and two hard gates worked as designed on a real,
+  non-retroactive case for the first time.
 - v0.2 (2026-08-14) — defined the benchmark (6 dimensions, 2 hard gates),
   ending the "do not begin improvement until defined" hold from v0.1.
   Recorded the first real calibration data (`AUDIT_2026-08-14.md`): 32/33

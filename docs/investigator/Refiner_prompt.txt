@@ -1,4 +1,4 @@
-# Council Investigator — Refiner Prompt v1.0
+# Council Investigator — Refiner Prompt v1.1
 
 **Mode:** Test refinement — take a validated finding and make it permanent,
 safe, and portable: a named function in `src/analysis/queries.py` plus a
@@ -50,8 +50,10 @@ that shipped and stayed live for months) is what an unrefined test costs.
 
 ## Two entry points
 
-**A. New finding (the common case).** Explorer logged a `[✓] Finding` in
-`INVESTIGATIONS.md` with a hand-verified number and a scratchpad query. You
+**A. New finding (the common case).** `INVESTIGATIONS.md` has an entry with
+status `[✓] Finding`, OR status `[◐] Banked` whose own text explicitly
+states it's ready to become a battery test (see Step 0's eligibility rule
+below — Banked is heterogeneous; not every Banked entry qualifies). You
 codify it into `queries.py`/`tests.py` for the first time. Follow the full
 procedure below.
 
@@ -64,6 +66,48 @@ sweep across the whole battery (see `AUDIT_2026-08-14.md`). Follow the same
 procedure below; the only difference is where you start (an existing
 function instead of a scratchpad script) and where the write-up goes (see
 Output).
+
+## Step 0 — Select your target (do this before Procedure step 1)
+
+This mode is meant to run unattended from a fixed prompt, so pick your own
+target rather than waiting to be told one — unless a human already named a
+specific hypothesis number or test_id when invoking you, in which case work
+that one and skip this step.
+
+1. Read `INVESTIGATIONS.md` top to bottom. Build the set of **candidates**:
+   every entry whose status is `[✓] Finding`, plus every entry whose status
+   is `[◐] Banked` **and** whose own write-up explicitly states it's ready
+   to become a battery/queries.py test right now — look for language like
+   "Refiner candidate," "clear build path," "good candidate for a new
+   battery test." A Banked entry does **not** qualify, no matter how
+   interesting, if its own text says any of: it's folded into
+   `FINDINGS_SUMMARY.md` instead of becoming a standalone test; it's too
+   close to / duplicates an existing panel; it's statistically underpowered
+   or needs a better method before it's usable; or "not a standalone
+   finding." When it's genuinely ambiguous whether a Banked entry qualifies,
+   it does **not** — leave it out rather than guessing.
+2. From the candidate set, exclude anything already graduated: a
+   `[N REFINED]` (entry point A) or `[<test_id> REFINED]` (entry point B)
+   marker already exists for it anywhere in `INVESTIGATIONS.md`, or an
+   `AUDIT_<date>.md` sweep already covers it with a REFINED verdict.
+   Grep for the marker; don't assume from context.
+3. Of what's left, pick the **lowest hypothesis number** (oldest first —
+   FIFO). This is entry-point A's target.
+4. **If the candidate set is empty after steps 1–2**, don't fall back to a
+   retroactive sweep and don't idle silently — report the same
+   machine-readable block used under Output, with:
+   ```
+   status: DONE
+   verdict: NOTHING QUEUED
+   next: none — no [✓] Finding or Refiner-ready [◐] Banked entry in
+         INVESTIGATIONS.md without an existing REFINED marker
+   ```
+   plus, if any Banked entries were excluded as ambiguous in step 1, list
+   their hypothesis numbers so a human can resolve the ambiguity (relabel,
+   clarify, or explicitly hand you one directly) before the next run.
+   Stop there — do not invent a retroactive-sweep session on your own
+   initiative; that's a distinct, deliberately separate kind of session
+   (see entry point B), not this mode's default when idle.
 
 ## Procedure
 
@@ -226,6 +270,20 @@ of the other four scores — the hard-gate rule in `REFINEMENT_PROTOCOL.md`.
 
 ## Changelog
 
+- v1.1 (2026-08-22) — Added Step 0 (self-directing target selection):
+  scan `INVESTIGATIONS.md`, build the candidate set (`[✓] Finding` +
+  `[◐] Banked` entries that explicitly state battery-test readiness),
+  exclude anything already `REFINED`, pick the oldest (FIFO), or emit a
+  clean `NOTHING QUEUED` stage-contract block if none qualify. Also widened
+  entry-point A's own definition to include Refiner-ready Banked entries,
+  not just literal `[✓] Finding` — matching actual practice ([30]/[31]/[36]/
+  [37] all started life Banked, not Finding). Motivation: this prompt is
+  meant to be invoked with a fixed, unmodified string in production
+  (scheduled/programmatic calls), which means it can no longer assume a
+  human names the target hypothesis in the invocation itself, the way every
+  session up to and including the one that motivated this change (Session
+  11, hypothesis [48]) has worked. Decision on FIFO-vs-newest and the
+  Banked-eligibility widening made by the project owner, not assumed.
 - v1.0 (2026-08-14) — first real operating layer, replacing the stub.
   Written directly from `REFINEMENT_PROTOCOL.md`'s newly-defined
   six-dimension benchmark and the two ad hoc sessions that produced its
