@@ -185,20 +185,20 @@ These have already produced wrong answers. They are not optional reading.
   A further, structurally distinct class — a **given/family-name field
   swap between two records** (e.g. "Colin Walker" vs "Walker Colin": the
   same person, same two real name tokens, transposed across two rows) —
-  was found 2026-08-22 and is not caught by any prior dedup pass; two
-  instances (Colin Walker/Walker Colin; Simon Withers/Withers Simon) are
-  fixed as of that date, but **six more confirmed pairs are still open**,
-  including two touching heavily-used flagship data: `councillor_id` 2
-  "Kate Barlow" vs 193 "Barlow Kate", and 214 "Pauline O'Connor" vs 501
-  "O'Connor Pauline" (also Anklesaria, Anderton, McConnell, a second Steele
-  pair, and Jason/Lyon). Any per-person stat touching these names is
-  exposed until they're resolved. `scripts/dedup_councillors.py`'s Pass 4
-  detects this class automatically (`python scripts/dedup_councillors.py`,
-  dry run by default) — run it before trusting a new per-councillor count,
-  and see `docs/pipeline/PIPELINE.md` "Known dedup gaps" for the full
-  current list. When a per-person stat looks split or impossibly low,
-  check for sibling records by surname AND by swapped given/family fields
-  before trusting it. A DB backup predating the last dedup exists at
+  was found 2026-08-22, not caught by any prior dedup pass.
+  `scripts/dedup_councillors.py`'s Pass 4 detects and auto-resolves this
+  class (three tiers: zero-activity phantom, no-shared-motion dominance,
+  duplicate declaration — see `docs/pipeline/PIPELINE.md` "Known dedup
+  gaps" for the full mechanics); all 8 instances found on this corpus were
+  resolved 2026-08-23, including two that had touched heavily-used
+  flagship data (Kate Barlow, Pauline O'Connor). Run `python
+  scripts/dedup_councillors.py` (dry run by default) before trusting a new
+  per-councillor count on any future re-extraction — this class recurs on
+  any corpus, since it's a property of LLM name extraction, not this
+  council's data specifically. When a per-person stat looks split or
+  impossibly low, check for sibling records by surname AND by swapped
+  given/family fields before trusting it. A DB backup predating the last
+  dedup exists at
   `data/council.db.bak-*`.
 - **Some fields are structurally empty.** `planning_applications.application_date`
   / `decision_date` (100% NULL), `councillor_terms` (sparse), and pre-Phase-2

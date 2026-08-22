@@ -131,47 +131,51 @@ given/family fields for any document, on any corpus).
 **How Pass 4 works:** flags a candidate where `(given_name, family_name)`
 of one record exactly equals `(family_name, given_name)` of another (one
 hash-map pass, no fuzzy matching, near-zero false-positive risk on an
-exact transposition). Auto-merges only when one side has zero rows in
-every other councillor-keyed table (`votes`, `motions.moved_by_id`/
-`seconded_by_id`, `interest_declarations`, `councillor_terms` — `
-appointments` is excluded from this check since it's cleanly reassignable
-on its own); otherwise holds it for manual review, same conservative
-principle as `TERM ✗`/`TERM ?` elsewhere in the script. **Known gap in
-the automated check** (present in the original three passes too, not new
-to Pass 4): `relationships` and `extraction_evidence` aren't checked or
-reassigned by any pass, including the main `FK_COLUMNS`-driven apply step
-— verify both are empty by hand for any specific candidate before
-applying, the same way the Colin Walker fix did, until a future session
-extends the check.
+exact transposition). Three independent auto-merge tiers, any of which
+resolves a pair — not one all-or-nothing threshold:
+1. **Zero-activity phantom** (the original check) — one side has zero
+   rows in every other councillor-keyed table (`votes`,
+   `motions.moved_by_id`/`seconded_by_id`, `interest_declarations`,
+   `councillor_terms` — `appointments` is excluded, cleanly reassignable
+   on its own).
+2. **No-shared-motion dominance** (added 2026-08-23) — neither side is
+   zero, but they never voted on the same motion (`votes`' own
+   `UNIQUE(motion_id, councillor_id)` makes this a provable disqualifier
+   for "same person," not an assumption — if they *do* share a motion,
+   the pair is provably two different people and is never merged,
+   regardless of any other evidence) **and** one side's activity is both
+   small in absolute terms (≤10 rows) and dominated by a wide margin
+   (≥20:1).
+3. **Duplicate declaration** — no shared motion, dominance doesn't apply
+   (both sides too small/even for a ratio to mean anything), but both
+   sides declared an interest on the same meeting + `item_reference` —
+   direct evidence of one real declaration extracted twice, not an
+   identity inference. Direction in this case is arbitrary (lower id
+   kept) and labelled as such, since dominance genuinely can't pick one.
 
-**First run's results (2026-08-22):** 8 field-swap pairs found corpus-wide.
-One (Colin Walker/Walker Colin) was already fixed by hand before Pass 4
-existed — the incident that motivated building it. One more, Simon
-Withers/Withers Simon (id 386→212), is confidently auto-mergeable and
-independently verified safe (`relationships`/`extraction_evidence` both
-checked and zero — the two tables Pass 4's own check doesn't cover, see
-above) — **but not yet applied**: nobody has run `python
-scripts/dedup_councillors.py --apply` yet, so id 386 still exists in
-`data/council.db` as of this writing. **Six more held for manual review,
-also unresolved** — every one is a real councillor with a
-lopsided-but-nonzero footprint on the "phantom" side (1–3 stray rows, not
-zero), so Pass 4 correctly declines to guess a direction:
-- `councillor_id` 2 "Kate Barlow" (849 votes) ↔ 193 "Barlow Kate" (1 vote)
-  — touches the Tenure flagship ([8]).
-- `councillor_id` 214 "Pauline O'Connor" (679 votes) ↔ 501 "O'Connor
-  Pauline" (0 votes, 1 other row) — touches Power ([18]) and Recusal
-  ([19]).
-- `councillor_id` 203 "Meg Anklesaria" ↔ 399 "Anklesaria Meg".
-- `councillor_id` 216 "Marlene Anderton" ↔ 425 "Anderton Marlene".
-- `councillor_id` 227 "Robina McConnell" ↔ 289 "McConnell Robina".
-- `councillor_id` 312 "Ian Steele" ↔ 412 "Steele Ian" (a second, distinct
-  Steele pair from the pre-existing family-only-stub ambiguity above).
-- `councillor_id` 454 "Jason Lyon" ↔ 455 "Lyon Jason" (both zero
-  activity — genuinely ambiguous which is the phantom).
+Anything none of the three resolve is still held for manual review — the
+tiers only add auto-merge paths, they never remove the original safety
+net. **Known gap in the automated check** (present in the original three
+passes too, not new to Pass 4): `relationships` and `extraction_evidence`
+aren't checked or reassigned by any pass, including the main
+`FK_COLUMNS`-driven apply step — verify both are empty by hand for any
+specific candidate before applying, the same way the Colin Walker fix did.
 
-Run `python scripts/dedup_councillors.py` (dry run by default) to see the
-current live report; none of the six above are resolved as of this
-writing.
+**Results as of 2026-08-23: all 8 field-swap pairs found on this corpus
+are now resolved**, plus the original Colin Walker/Walker Colin pair
+(246/385) fixed by hand before Pass 4 existed — the incident that
+motivated building it in the first place. Of the 8 Pass 4 itself found:
+one (Simon Withers 212←386) was already confidently zero-activity from
+Pass 4's very first run, just not yet applied; the other seven needed
+tiers 2 and 3 to resolve, added 2026-08-23 — six via no-shared-motion
+dominance (Kate Barlow 2←193, Pauline O'Connor 214←501, Meg Anklesaria
+203←399, Marlene Anderton 216←425, Robina McConnell 227←289, Ian Steele
+312←412) and one via duplicate declaration (Jason Lyon 454←455, same
+meeting + `item_reference`, not a dominance call — both sides too small
+for a ratio to mean anything). All eight verified empty in
+`relationships` and `extraction_evidence` before applying via `python
+scripts/dedup_councillors.py --apply`. A fresh dry run now reports zero
+field-swap pairs corpus-wide.
 
 **2017 terms gap** — no Cambridge election results for 2017 (absent from statewide PDF).
 Seats up were O'Connor and Grinceri (Coast) and MacRae and King (Wembley) from the 2013 cohort.

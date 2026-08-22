@@ -556,16 +556,39 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     # tokens (Pass 2 needs an empty given_name), and the family names
     # aren't a fuzzy misspelling of each other (Pass 3's threshold).
     # Detected by exact transposition — cheap, one hash-map pass, no fuzzy
-    # matching, near-zero false-positive risk on an exact swap. Only
-    # auto-merged when one side has zero rows in every OTHER
-    # councillor-keyed table (votes, motions moved/seconded,
-    # interest_declarations, councillor_terms) — a confirmed phantom whose
-    # only trace is something cleanly reassignable (`appointments`, in the
-    # one instance found so far; any FK_COLUMNS table would be handled the
-    # same way). If both sides have independent activity, they could
-    # genuinely be two different people who happen to have swapped-looking
-    # names — held for review, never auto-merged.
+    # matching, near-zero false-positive risk on an exact swap.
+    #
+    # Three independent ways to confirm which side is the phantom, tried
+    # in order, ANY of which auto-merges — not a single all-or-nothing
+    # threshold:
+    #   Tier 1 — one side has zero rows in every OTHER councillor-keyed
+    #     table. The original check.
+    #   Tier 2 — neither side is zero, but they never share a motion (the
+    #     same gold-standard, no-fan-out disambiguation signal Passes 1-3
+    #     already trust elsewhere in this script — votes carries
+    #     UNIQUE(motion_id, councillor_id), so two records that ever
+    #     BOTH voted on the same motion cannot be the same real person,
+    #     making "no shared motion" a genuine, checkable fact, not an
+    #     assumption) AND one side's activity is small in absolute terms
+    #     AND dominated by a wide margin. Added 2026-08-23 after a live
+    #     Conductor-loop run found this exact evidence (no shared motion,
+    #     overlapping vote-date spans) already being gathered by hand,
+    #     for pairs the original zero-only check couldn't resolve because
+    #     the "phantom" side had 1-3 stray rows, not exactly zero.
+    #   Tier 3 — neither side is zero and Tier 2's dominance margin isn't
+    #     met (this is what a 1-vs-1 pair like a duplicate-declaration
+    #     case looks like — dominance is meaningless when both sides are
+    #     equally small), but both sides declared an interest on the
+    #     *same* meeting + item_reference — direct evidence of one real
+    #     declaration extracted twice under two swapped-name records, not
+    #     an identity inference at all.
+    # If NONE of the three fire, held for review exactly as before —
+    # these tiers only ADD auto-merge paths, they never remove the
+    # existing safety net.
     # -------------------------------------------------------------------
+    _DOMINANCE_MIN_RATIO = 20  # smaller side's activity times this <= larger side's
+    _DOMINANCE_MAX_ABSOLUTE = 10  # smaller side's raw activity count must also be small
+
     def _raw_key(c: dict) -> tuple[str, str]:
         return (
             (c["given_name"] or "").strip().lower(),
@@ -586,6 +609,36 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
             (cid,),
         ).fetchone()[0]
         return n
+
+    def _shares_motion(a_id: int, b_id: int) -> bool:
+        """True if the two ever BOTH voted on the same motion — if so,
+        they cannot be the same real person (UNIQUE(motion_id,
+        councillor_id) on votes), so this is a hard disqualifier for
+        Tiers 2 and 3, checked before either regardless of how strong
+        the other evidence looks."""
+        a_motions = motion_sets.get(a_id, set())
+        b_motions = motion_sets.get(b_id, set())
+        return bool(a_motions & b_motions)
+
+    def _duplicate_declaration(a_id: int, b_id: int) -> bool:
+        """True if the two share an interest_declarations row on the
+        same meeting + item_reference — the same real declaration,
+        extracted twice under two swapped-name records. Queried per side
+        so a shared key requires BOTH ids present, not just two
+        declarations from one side landing in the same bucket."""
+        a_keys = {
+            (m, i) for m, i in conn.execute(
+                "SELECT meeting_id, item_reference FROM interest_declarations "
+                "WHERE councillor_id=? AND item_reference IS NOT NULL", (a_id,)
+            ).fetchall()
+        }
+        b_keys = {
+            (m, i) for m, i in conn.execute(
+                "SELECT meeting_id, item_reference FROM interest_declarations "
+                "WHERE councillor_id=? AND item_reference IS NOT NULL", (b_id,)
+            ).fetchall()
+        }
+        return bool(a_keys & b_keys)
 
     by_raw_key: dict[tuple[str, str], dict] = {}
     for c in councillors:
@@ -610,23 +663,59 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
 
         a_activity = _identity_activity(c["id"])
         b_activity = _identity_activity(swapped["id"])
+        phantom = canonical = None
+        tier_reason = ""
 
         if a_activity == 0 and b_activity > 0:
             phantom, canonical = c, swapped
+            tier_reason = "phantom had 0 identity rows"
         elif b_activity == 0 and a_activity > 0:
             phantom, canonical = swapped, c
-        else:
+            tier_reason = "phantom had 0 identity rows"
+        elif _shares_motion(c["id"], swapped["id"]):
+            # Hard disqualifier: they voted on the same motion at least
+            # once, so they are provably two different real people
+            # regardless of any other evidence. Never merge; say why.
             swap_held.append((
                 c, swapped,
-                f"field-swap, both sides have identity activity ({a_activity} vs "
-                f"{b_activity} rows) — cannot tell which is the phantom, needs manual review",
+                f"field-swap, but both sides voted on at least one SHARED motion "
+                f"({a_activity} vs {b_activity} activity rows) — provably two "
+                f"different people despite the swapped-looking names, do not merge",
             ))
             continue
+        else:
+            lo, hi = sorted((a_activity, b_activity))
+            if lo > 0 and lo <= _DOMINANCE_MAX_ABSOLUTE and hi >= lo * _DOMINANCE_MIN_RATIO:
+                phantom, canonical = (c, swapped) if a_activity < b_activity else (swapped, c)
+                tier_reason = (
+                    f"no shared motion, dominance {hi}:{lo} "
+                    f"(>= {_DOMINANCE_MIN_RATIO}:1, phantom side <= {_DOMINANCE_MAX_ABSOLUTE} rows)"
+                )
+            elif _duplicate_declaration(c["id"], swapped["id"]):
+                # Dominance alone can't pick a direction when both sides
+                # are equally small (e.g. 1 vs 1) -- the duplicate
+                # declaration doesn't imply one either, so default to the
+                # lower-id record as canonical (arbitrary but stable) and
+                # say so plainly rather than pretend it's evidence-based.
+                phantom, canonical = (swapped, c) if c["id"] < swapped["id"] else (c, swapped)
+                tier_reason = (
+                    "no shared motion, matching interest_declarations on the same "
+                    "meeting+item_reference (duplicate declaration, not an identity "
+                    "inference) — direction chosen arbitrarily (lower id kept), not by evidence"
+                )
+            else:
+                swap_held.append((
+                    c, swapped,
+                    f"field-swap, both sides have identity activity ({a_activity} vs "
+                    f"{b_activity} rows), no shared motion but neither dominance nor a "
+                    f"duplicate declaration confirms a direction — needs manual review",
+                ))
+                continue
 
         swap_merges.append((
             phantom, canonical,
             f"field-swap (given↔family of '{canonical['given_name']} {canonical['family_name']}') "
-            f"→ '{canonical['given_name']} {canonical['family_name']}' [phantom had 0 identity rows]",
+            f"→ '{canonical['given_name']} {canonical['family_name']}' [{tier_reason}]",
         ))
         merging_ids.add(phantom["id"])
 
