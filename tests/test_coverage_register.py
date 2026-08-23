@@ -15,6 +15,8 @@ execution of the extraction pipeline itself).
 """
 import ast
 
+import pytest
+
 from src.analysis.coverage_register import (
     extract_shipped_test_ids,
     load_register,
@@ -161,3 +163,24 @@ def test_real_battery_source_file_exists_at_expected_path():
     from src.analysis.coverage_register import TESTS_SOURCE_PATH
     assert TESTS_SOURCE_PATH.exists()
     assert ast.parse(TESTS_SOURCE_PATH.read_text())  # parses without error
+
+
+def test_extract_shipped_test_ids_raises_when_battery_shape_is_unrecognised(tmp_path):
+    # A refactor like `_BATTERY = _CORE + _EXTRA` yields no names. Failing
+    # loudly here beats returning an empty set, which would report every
+    # register entry as an unknown test_id and send the maintainer to the
+    # wrong file.
+    src = tmp_path / "tests.py"
+    src.write_text("_CORE = []\n_EXTRA = []\n_BATTERY = _CORE + _EXTRA\n")
+    with pytest.raises(ValueError, match="_BATTERY"):
+        extract_shipped_test_ids(src)
+
+
+def test_extract_shipped_test_ids_handles_an_annotated_battery_assignment(tmp_path):
+    src = tmp_path / "tests.py"
+    src.write_text(
+        "def _t_x():\n"
+        "    return TestResult(test_id='fixture.x')\n"
+        "_BATTERY: list = [_t_x]\n"
+    )
+    assert extract_shipped_test_ids(src) == {"fixture.x"}

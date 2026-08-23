@@ -28,8 +28,11 @@ from src.reply_packets import (
     assemble_reply_packets,
     attach_reply,
     load_response_window_days,
+    load_sent_ledger,
     non_response_text,
+    person_slug,
     render_packet_template,
+    update_sent_ledger,
 )
 
 
@@ -194,3 +197,74 @@ def test_load_response_window_days_rejects_non_positive(tmp_path):
     path.write_text(json.dumps({"response_window_days": 0}))
     with pytest.raises(ValueError):
         load_response_window_days(path)
+
+
+# ---------------------------------------------------------------------------
+# the sent ledger — dedup across runs (the filter that could never fire)
+# ---------------------------------------------------------------------------
+
+def test_ledger_suppresses_a_claim_the_person_was_already_approached_about():
+    battery = [_claim(
+        test_id="conflict.recusal",
+        unit_of_analysis=UNIT_INDIVIDUAL,
+        named_entities=["Ada Fixture"],
+        entity_resolution=ENTITY_RESOLUTION_CLEAN,
+    )]
+    ledger = {"Ada Fixture": ["conflict.recusal"]}
+    assert assemble_reply_packets(battery, 14, "2026-08-24T00:00:00Z", ledger) == []
+
+
+def test_ledger_still_emits_a_claim_that_person_has_not_seen():
+    battery = [_claim(
+        test_id="procurement.concentration",
+        unit_of_analysis=UNIT_INDIVIDUAL,
+        named_entities=["Ada Fixture"],
+        entity_resolution=ENTITY_RESOLUTION_CLEAN,
+    )]
+    ledger = {"Ada Fixture": ["conflict.recusal"]}
+    packets = assemble_reply_packets(battery, 14, "2026-08-24T00:00:00Z", ledger)
+    assert [p.person for p in packets] == ["Ada Fixture"]
+
+
+def test_update_sent_ledger_accumulates_without_duplicating():
+    battery = [_claim(
+        test_id="conflict.recusal",
+        unit_of_analysis=UNIT_INDIVIDUAL,
+        named_entities=["Ada Fixture"],
+        entity_resolution=ENTITY_RESOLUTION_CLEAN,
+    )]
+    packets = assemble_reply_packets(battery, 14, "2026-08-24T00:00:00Z")
+    first = update_sent_ledger({}, packets)
+    assert first == {"Ada Fixture": ["conflict.recusal"]}
+    # Folding the same packets in again must not double up.
+    assert update_sent_ledger(first, packets) == first
+
+
+def test_load_sent_ledger_missing_file_is_empty(tmp_path):
+    assert load_sent_ledger(tmp_path / "sent_ledger.json") == {}
+
+
+# ---------------------------------------------------------------------------
+# person_slug — a collision silently destroys one person's packet
+# ---------------------------------------------------------------------------
+
+def test_person_slug_strips_path_separators_and_punctuation():
+    assert person_slug("O'Connor, Pauline").startswith("o-connor-pauline-")
+    assert "/" not in person_slug("Smith / Jones")
+
+
+def test_person_slug_never_produces_a_hidden_or_empty_filename():
+    for name in ("...", "   ", "/"):
+        slug = person_slug(name)
+        assert slug.startswith("person-")
+        assert "/" not in slug
+
+
+def test_person_slug_distinguishes_the_split_identity_shape():
+    # "O'Connor, Pauline" vs "O'Connor Pauline" fold to the same readable
+    # stem; the digest is what stops one packet overwriting the other.
+    assert person_slug("O'Connor, Pauline") != person_slug("O'Connor Pauline")
+
+
+def test_person_slug_is_stable_for_the_same_name():
+    assert person_slug("Ada Fixture") == person_slug("Ada Fixture")

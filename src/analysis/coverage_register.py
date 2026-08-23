@@ -53,15 +53,34 @@ def extract_shipped_test_ids(source_path: Path = TESTS_SOURCE_PATH) -> set[str]:
 
     battery_names: list[str] = []
     functions: dict[str, ast.FunctionDef] = {}
+    recognised = False
     for node in ast.walk(tree):
         if isinstance(node, ast.FunctionDef):
             functions[node.name] = node
-        if isinstance(node, ast.Assign) and any(
-            isinstance(t, ast.Name) and t.id == "_BATTERY" for t in node.targets
-        ):
-            for elt in node.value.elts:
-                if isinstance(elt, ast.Name):
-                    battery_names.append(elt.id)
+        # Both assignment forms: `_BATTERY = [...]` and `_BATTERY: list = [...]`.
+        targets = (
+            node.targets if isinstance(node, ast.Assign)
+            else [node.target] if isinstance(node, ast.AnnAssign)
+            else []
+        )
+        if any(isinstance(t, ast.Name) and t.id == "_BATTERY" for t in targets):
+            # Only a literal list/tuple is walkable. An empty one is a real,
+            # recognised battery that happens to have no generators; anything
+            # else (e.g. `_CORE + _EXTRA`) is a shape this parser can't read.
+            if isinstance(node.value, (ast.List, ast.Tuple)):
+                recognised = True
+                for elt in node.value.elts:
+                    if isinstance(elt, ast.Name):
+                        battery_names.append(elt.id)
+
+    if not recognised:
+        raise ValueError(
+            f"No readable _BATTERY assignment in {source_path}. This parser "
+            "recognises `_BATTERY = [fn, ...]` (or an annotated assignment) of "
+            "plain names; if _BATTERY is now built some other way, update this "
+            "function — otherwise every register entry would look like an "
+            "unknown test_id and point the maintainer at the wrong file."
+        )
 
     ids: set[str] = set()
     for name in battery_names:

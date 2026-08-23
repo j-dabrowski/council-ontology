@@ -1393,7 +1393,14 @@ def cmd_reply_packets(args) -> None:
 
     from src.analysis.queries import get_council_by_name
     from src.analysis.tests import run_test_battery
-    from src.reply_packets import assemble_reply_packets, load_response_window_days, render_packet_template
+    from src.reply_packets import (
+        assemble_reply_packets,
+        load_response_window_days,
+        load_sent_ledger,
+        person_slug,
+        render_packet_template,
+        update_sent_ledger,
+    )
     from src.storage.database import init_db, make_session_factory
 
     key = args.council
@@ -1413,15 +1420,25 @@ def cmd_reply_packets(args) -> None:
     session.close()
 
     generated_at = datetime.now(timezone.utc).isoformat()
-    packets = assemble_reply_packets(battery, load_response_window_days(), generated_at)
+    council_dir = Path("data/reply_packets") / key
+    ledger_path = council_dir / "sent_ledger.json"
+    # Persisted across runs: without it every run re-emits every packet, and
+    # the harm is approaching a real person twice about the same claim.
+    # --regenerate ignores it deliberately (a packet was lost, or a claim
+    # changed materially enough to warrant a second approach).
+    ledger = {} if getattr(args, "regenerate", False) else load_sent_ledger(ledger_path)
+    packets = assemble_reply_packets(battery, load_response_window_days(), generated_at, ledger)
 
     run_id = f"reply_{datetime.now(timezone.utc):%Y%m%d_%H%M%S}"
-    output_dir = Path("data/reply_packets") / key / run_id
+    output_dir = council_dir / run_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for packet in packets:
-        slug = packet.person.strip().lower().replace(" ", "-")
-        (output_dir / f"{slug}.md").write_text(render_packet_template(packet))
+        (output_dir / f"{person_slug(packet.person)}.md").write_text(render_packet_template(packet))
+
+    ledger_path.write_text(_json.dumps(
+        update_sent_ledger(load_sent_ledger(ledger_path), packets), indent=2, sort_keys=True
+    ))
 
     (output_dir / "manifest.json").write_text(_json.dumps({
         "run_id": run_id,
@@ -1438,8 +1455,10 @@ def cmd_reply_packets(args) -> None:
         ))
     else:
         console.print(Panel(
-            f"0 reply packets — no `individual`-unit claim in this battery names anyone "
-            f"(manifest written to {output_dir} regardless, for the record).",
+            f"0 reply packets — either no `individual`-unit claim in this battery "
+            f"names anyone, or everyone it names has already been approached about "
+            f"those claims (see {ledger_path}; --regenerate overrides). Manifest "
+            f"written to {output_dir} regardless, for the record.",
             style="blue",
         ))
 
@@ -2733,6 +2752,13 @@ def cmd_draft(args) -> None:
     council_id = council_obj.id
 
     written, battery = _generate_snapshots(session, council_id, output_dir, generated_at)
+    # Fetch before closing: the gate's text-level name scan needs the corpus's
+    # real people to check institutional claims against (src/invariant_gate.py).
+    from src.models.ontology import Councillor as _Councillor
+    known_names = {
+        (c.given_name, c.family_name)
+        for c in session.query(_Councillor.given_name, _Councillor.family_name).all()
+    }
     session.close()
 
     # S7 invariant gate (docs/INFORMATION_ARCHITECTURE.md §3, C2) — scripted,
@@ -2744,7 +2770,7 @@ def cmd_draft(args) -> None:
     from dataclasses import asdict as _asdict
 
     from src.invariant_gate import load_min_n, run_invariant_gate
-    gate = run_invariant_gate(battery, min_n=load_min_n())
+    gate = run_invariant_gate(battery, min_n=load_min_n(), known_names=known_names)
     (output_dir / "gate_report.json").write_text(_json.dumps({
         "run_id": run_id,
         "council": key,
@@ -3133,6 +3159,13 @@ def main() -> None:
              "with no reply on file (src/reply_packets.py) — never sends anything",
     )
     p_reply.add_argument("council", choices=list(COUNCILS))
+    p_reply.add_argument(
+        "--regenerate",
+        action="store_true",
+        help="Re-emit packets for claims already recorded in sent_ledger.json. "
+             "Off by default so a rerun can't approach the same person twice "
+             "about the same claim.",
+    )
     p_reply.set_defaults(func=cmd_reply_packets)
 
     # batch-collect

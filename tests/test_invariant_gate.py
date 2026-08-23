@@ -20,7 +20,12 @@ from src.analysis.tests import (
     UNIT_INDIVIDUAL_IMPLICATING,
     UNIT_INSTITUTIONAL,
 )
-from src.invariant_gate import derive_claim_tier, load_min_n, run_invariant_gate
+from src.invariant_gate import (
+    derive_claim_tier,
+    load_min_n,
+    run_invariant_gate,
+    usable_roster_names,
+)
 
 
 def _claim(**overrides) -> TestResult:
@@ -246,3 +251,92 @@ def test_not_computable_claim_does_not_block_public_tier():
 
 def test_empty_battery_derives_public():
     assert derive_claim_tier([]) == "public"
+
+
+# ---------------------------------------------------------------------------
+# name-free TEXT — the check that makes "provably name-free" true rather than
+# merely declared. named_entities is a declaration a generator can fail to set.
+# ---------------------------------------------------------------------------
+
+_ROSTER = {("Ada", "Fixture"), ("Bo", "Sample")}
+
+
+def test_institutional_claim_with_a_full_name_in_its_headline_is_blocked():
+    # The review's scenario: a generator interpolates a name into the headline
+    # and leaves unit/named_entities at their institutional defaults, so the
+    # schema check passes and tier derivation would promote it to public.
+    claim = _claim(
+        unit_of_analysis=UNIT_INSTITUTIONAL,
+        headline="Ada Fixture recused 3 times",
+    )
+    result = run_invariant_gate([claim], min_n=3, known_names=_ROSTER)
+    assert not result.passed
+    assert [v.check for v in result.violations] == ["name-free-text"]
+    assert "Ada Fixture" in result.violations[0].detail
+
+
+def test_institutional_claim_with_a_titled_surname_is_blocked():
+    claim = _claim(unit_of_analysis=UNIT_INSTITUTIONAL, verdict="Cr Sample voted against.")
+    result = run_invariant_gate([claim], min_n=3, known_names=_ROSTER)
+    assert [v.check for v in result.violations] == ["name-free-text"]
+
+
+def test_a_name_hidden_in_a_chart_label_is_blocked():
+    claim = _claim(
+        unit_of_analysis=UNIT_INSTITUTIONAL,
+        chart={"kind": "bars", "unit": "", "refline": None,
+               "bars": [{"label": "Ada Fixture", "value": 4, "highlight": False}]},
+    )
+    result = run_invariant_gate([claim], min_n=3, known_names=_ROSTER)
+    assert [v.check for v in result.violations] == ["name-free-text"]
+
+
+def test_clean_institutional_claim_passes_the_text_scan():
+    claim = _claim(unit_of_analysis=UNIT_INSTITUTIONAL, headline="41% of motions were contested")
+    assert run_invariant_gate([claim], min_n=3, known_names=_ROSTER).passed
+
+
+def test_bare_surname_is_not_matched_so_ordinary_words_do_not_block():
+    # "Sample" alone must not trip the gate — a gate that blocks on every
+    # common word gets worked around rather than trusted.
+    claim = _claim(unit_of_analysis=UNIT_INSTITUTIONAL, headline="A sample of 20 motions")
+    assert run_invariant_gate([claim], min_n=3, known_names=_ROSTER).passed
+
+
+def test_individual_claim_may_name_the_person_it_is_about():
+    claim = _claim(
+        unit_of_analysis=UNIT_INDIVIDUAL,
+        named_entities=["Ada Fixture"],
+        entity_resolution=ENTITY_RESOLUTION_CLEAN,
+        n=25,
+        headline="Ada Fixture recused 25 times",
+    )
+    assert run_invariant_gate([claim], min_n=3, known_names=_ROSTER).passed
+
+
+def test_text_scan_is_skipped_when_no_roster_is_supplied():
+    claim = _claim(unit_of_analysis=UNIT_INSTITUTIONAL, headline="Ada Fixture recused 3 times")
+    assert run_invariant_gate([claim], min_n=3).passed
+
+
+# ---------------------------------------------------------------------------
+# usable_roster_names — the real councillors table carries extraction debris,
+# and matching on it blocked every draft on words like "The".
+# ---------------------------------------------------------------------------
+
+def test_roster_filter_drops_debris_rows():
+    debris = {("", "The"), ("", ""), (" ", " "), ("Director", "Gibson, Luke"), ("A", "B")}
+    assert usable_roster_names(debris) == set()
+
+
+def test_roster_filter_keeps_real_names_with_punctuation_and_spaces():
+    real = {("Michael", "Le Page"), ("Dale", "O'Callghan"), ("Brett", "Wood-Gush")}
+    assert usable_roster_names(real) == real
+
+
+def test_debris_roster_entry_cannot_block_ordinary_prose():
+    claim = _claim(
+        unit_of_analysis=UNIT_INSTITUTIONAL,
+        headline="The council contested 41% of motions",
+    )
+    assert run_invariant_gate([claim], min_n=3, known_names={("", "The")}).passed

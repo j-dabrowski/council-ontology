@@ -19,6 +19,7 @@ only — implementation follows `AGENT_DESIGN.md` §6's build order.
 |---|-----------|--------|
 | C1 | Every claim carries its **unit of analysis** from birth; the individual/institutional split is enforced by which data product a claim can enter, never by per-component rendering discipline | Editor pass 1 flags 4, 5, 6 — all failures of hand-enforced UI gating; the 2026-08-06 hardcoded-names incident is the same class |
 | C2 | Deterministic invariants (small-n, entity-resolution status, name-free schemas) are checked by a **scripted gate before any LLM review**; the semantic reviewer only sees drafts that already pass them | 5 of 7 Editor pass-1 blocking flags were mechanically checkable (small-n: 1, 3, 6; gating: 4, 5, 6; identity: 7) |
+| C2a | The gate checks claim **text against the corpus's real roster**, not only the declared `named_entities` — a declaration a generator can fail to set cannot be the sole basis for public-tier promotion | Code review of the build (2026-08-24): tier derivation trusted the declaration, so an interpolated name in a headline would have promoted to public. The 2026-08-06 hardcoded-names incident is the same failure caught late |
 | C3 | A corpus is a **set of document classes** per institution, not one class | Coverage audit F3 — financial-sustainability rows are empty because minutes structurally lack them; annual statements / external audit results are different classes of the same institution |
 | C4 | **Discovery and confirmation are separated by corpus role**: hypotheses are discovered on training corpora; the frozen, pre-registered battery is confirmed on corpora it never trained on | Multiple-comparisons exposure of explore-then-codify-then-run on one corpus; coverage audit R5 |
 | C5 | Named individuals get **right of reply before publication** of any claim about them | Standard journalism verification practice; flag 2 (the mis-singled-out stay-and-vote superlative) would have died at this stage in one email |
@@ -87,7 +88,7 @@ institution #2 exists.)
  └──────────────────────┬──────────────────────────┘
  ┌──────────────────────▼──────────────────────────┐
  │ S7 INVARIANT GATE (C2 — scripted, no LLM)       │──✗ blocks draft; fix
- │   MIN_N · name-free institutional schema ·      │    upstream, re-draft
+ │   MIN_N · name-free institutional schema+TEXT · │    upstream, re-draft
  │   identity-resolution clean bill · superlative  │
  │   tie/denominator checks · tier derivation      │
  └──────────────────────┬──────────────────────────┘
@@ -234,7 +235,7 @@ meant to enable.
 | `Reveal`/drill-down gates as the individual/institutional boundary in JSX | demoted to UX affordance inside the deep surfaces; the boundary itself moves to S7 + product schemas (C1) |
 | Editor (defamation review, catching small-n, gating, identity, language, singling-out) | split: S7 takes the mechanical checks (small-n, gating schema, identity, name-free institutional product); S8 keeps only the semantic ones (language ladder, innocent explanations, singling-out, blended stats) |
 | Fixer (frontend/pipeline/doc modes) + Conductor loop | unchanged in shape; operates on S8 flags only — S7 failures block the draft mechanically and route straight to the owning track without a review chain |
-| component-source name grep before deploys | retained as defence-in-depth for the public surface (S7 proves the data name-free; the grep proves the code adds none back) |
+| component-source name grep before deploys | retained as defence-in-depth for the public surface (S7 proves the data name-free — by schema *and* by scanning claim text against the roster, C2a; the grep proves the code adds none back) |
 | `Investigator_prompt.txt` Part 0 caveats / §0.4 identity splits | S2 corpus profile — machine-readable, consumed by S3 (feasibility), S7 (clean-bill checks), and publishable as the records-quality finding (coverage audit F4) |
 | Dimension 1 per-session domain breadth | replaced by the coverage register (C7): sessions are scored on reducing the register's worst gap |
 | `DATA_ENRICHMENT.md` pattern/instance layers | unchanged; gains the document-class pattern entries from coverage audit R3 |

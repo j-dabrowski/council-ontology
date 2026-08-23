@@ -24,7 +24,9 @@ in the real battery (same deferral as Step 2's tier derivation) — see
 
 from __future__ import annotations
 
+import hashlib
 import json
+import re
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -59,18 +61,72 @@ def load_response_window_days(path: Path = DEFAULT_POLICY_PATH) -> int:
     return days
 
 
+def person_slug(person: str) -> str:
+    """Filesystem-safe, collision-resistant slug for a person's name.
+
+    Every packet is one real person's right-of-reply document, so a slug
+    collision silently destroys one of them. Anything outside [a-z0-9] folds
+    to a single dash, which alone would make "O'Connor, Pauline" and
+    "O'Connor Pauline" collide — and that pair is precisely the split-identity
+    shape this corpus already contains — so every slug carries a short digest
+    of the exact name. A name that reduces to nothing keeps just the digest,
+    so no packet is ever written as a hidden file or escapes `output_dir`
+    via a `/` in the name.
+    """
+    digest = hashlib.sha256(person.encode()).hexdigest()[:8]
+    slug = re.sub(r"[^a-z0-9]+", "-", person.strip().lower()).strip("-")
+    return f"{slug}-{digest}" if slug else f"person-{digest}"
+
+
+def load_sent_ledger(path: Path) -> dict[str, list[str]]:
+    """Which claims each person has already been approached about, keyed by
+    person, valued by `test_id` list. Missing file = nobody approached yet.
+    """
+    if not path.exists():
+        return {}
+    data = json.loads(path.read_text())
+    return {str(k): list(v) for k, v in data.items()}
+
+
+def update_sent_ledger(
+    ledger: dict[str, list[str]], packets: list[ReplyPacket]
+) -> dict[str, list[str]]:
+    """Fold newly-generated packets into the ledger (pure — returns a copy)."""
+    updated = {k: list(v) for k, v in ledger.items()}
+    for packet in packets:
+        seen = updated.setdefault(packet.person, [])
+        for claim in packet.claims:
+            if claim.test_id not in seen:
+                seen.append(claim.test_id)
+    return updated
+
+
 def assemble_reply_packets(
-    claims: list[TestResult], response_window_days: int, generated_at: str
+    claims: list[TestResult],
+    response_window_days: int,
+    generated_at: str,
+    sent_ledger: dict[str, list[str]] | None = None,
 ) -> list[ReplyPacket]:
     """One packet per named person, covering every `individual`-unit claim
-    that names them and hasn't already been sent a reply (`reply is None`).
-    A claim naming more than one person appears in each of their packets.
+    that names them and that they haven't already been approached about.
+
+    Two independent guards, because they cover different lifetimes: `reply
+    is not None` catches a claim already answered in this process, and
+    `sent_ledger` — persisted across runs — catches one a previous run
+    already generated a packet for. Without the ledger the battery is
+    recomputed fresh each run with `reply` always None, so every run would
+    re-emit every packet, and the concrete harm is approaching a real person
+    twice with the same claim. A claim naming more than one person appears
+    in each of their packets.
     """
+    ledger = sent_ledger or {}
     by_person: dict[str, list[TestResult]] = {}
     for c in claims:
         if c.unit_of_analysis != UNIT_INDIVIDUAL or c.reply is not None:
             continue
         for person in c.named_entities:
+            if c.test_id in ledger.get(person, []):
+                continue
             by_person.setdefault(person, []).append(c)
 
     return [

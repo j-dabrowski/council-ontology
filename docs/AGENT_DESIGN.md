@@ -622,3 +622,46 @@ Risk-reduction first, roles last — each step ships value alone:
      does not claim level 1 autonomy is reached, only that the
      infrastructure to reach it (once calibrated) now exists as a one-line
      PR away.
+
+### 2026-08-24 — code review of the completed build (Steps 1–7)
+
+`/code-review` over `5b10369..0540e90` found 8 defects; all fixed in
+`32f09a6` (workflows) and the commit carrying this entry (claim safety).
+Two were blocking and would have failed on first use:
+
+- **`discovery.yml` could never run** — both agent steps used a plain YAML
+  scalar with a trailing backslash, which folds to a space, so `claude`
+  received a literal `" --permission-mode"` argument. Now block scalars.
+- **`maintenance.yml` discarded Fixer's repairs while publishing the data
+  they justified** — only `frontend/public/data` was staged, so a fix to a
+  flagged component died with the runner. Fixer edits now open their own PR
+  (Part 3's uniform rule), and publish is held while that PR is unmerged.
+
+One finding was a **design** defect, not an implementation one, and changed
+what §7/C1 can honestly claim: the gate's name-free check only inspected the
+declared `named_entities`, and tier derivation trusted that same
+declaration, so a generator interpolating a name into a headline would have
+promoted it to the public product. The gate now also scans claim text
+(including chart labels) against the corpus's real councillor roster —
+`INFORMATION_ARCHITECTURE.md` gains C2a for this. Two things surfaced only
+by running it against the real corpus: the councillors table carries
+extraction debris (rows with empty given names, officer titles parsed as
+names) that matched ordinary prose and blocked every draft, so the roster is
+filtered to usable entries first; and the scan deliberately does not match a
+bare surname, because a gate that blocks constantly gets worked around
+rather than trusted.
+
+Also fixed: right-of-reply packets were regenerated every run (the
+`reply is not None` filter could never fire — nothing persisted it), risking
+a duplicate approach to a real person, now closed by a persisted sent
+ledger with `--regenerate` to override; packet filenames are sanitised and
+digest-suffixed, since the corpus's own split-identity pairs
+("O'Connor, Pauline" / "O'Connor Pauline") would otherwise collide and
+silently destroy one person's packet; the register parser now fails loudly
+instead of misdirecting the maintainer when `_BATTERY` is refactored; the
+publish push rebases first; and `discovery.yml`'s job summary no longer
+reports a skipped PR step as a clean no-op run.
+
+Verification: 141 tests pass (17 new, covering every fix including the
+review's exact leak scenario), ruff clean, and `council draft cambridge`
+runs end-to-end producing 1 public-tier and 20 full-tier snapshots.

@@ -8,7 +8,7 @@ reviewable output. A failure blocks the draft mechanically: no Editor call,
 no review chain, no pass count (docs/AGENT_DESIGN.md §3 Q3) — fix the
 generator that produced the violating claim and re-draft.
 
-Three checks, each traceable to a real Editor pass-1 finding
+Four checks, each traceable to a real Editor pass-1 finding
 (docs/investigator/COVERAGE_AUDIT_2026-08-23.md; C2 in
 `INFORMATION_ARCHITECTURE.md`):
 
@@ -17,6 +17,11 @@ Three checks, each traceable to a real Editor pass-1 finding
   derivation) must carry zero `named_entities`. This is what makes "nothing
   tagged public yet" resolve structurally once tier derivation lands,
   instead of depending on hand-discipline in a query or a panel.
+- **name-free text** — the same claim's rendered strings (title, headline,
+  verdict, chart labels) must not contain a real person's name either.
+  `named_entities` is a declaration a generator can simply fail to set, and
+  tier derivation trusts it; without this check "provably name-free" would
+  mean "declared name-free" (see `find_names_in_text`).
 - **MIN_N** — an `individual` or `individual_implicating` claim at or below
   MIN_N underlying records is unshippable regardless of how carefully it's
   framed. Calibrated to Editor's own pass-1 line: a named-individual claim
@@ -46,6 +51,7 @@ mechanism against zero real examples would be speculative (see the
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -62,7 +68,7 @@ DEFAULT_CONFIG_PATH = Path(__file__).resolve().parent.parent / "config" / "invar
 @dataclass
 class Violation:
     test_id: str
-    check: str  # "name-free-schema" | "min-n" | "entity-resolution"
+    check: str  # "name-free-schema" | "name-free-text" | "min-n" | "entity-resolution"
     detail: str
 
 
@@ -86,11 +92,85 @@ def load_min_n(path: Path = DEFAULT_CONFIG_PATH) -> int:
     return min_n
 
 
-def run_invariant_gate(claims: list[TestResult], min_n: int) -> GateResult:
+def _claim_text(c: TestResult) -> str:
+    """Every rendered string a reader could see for this claim, including
+    chart labels — the surfaces a name can actually leak through.
+    """
+    parts = [c.title, c.headline, c.verdict, c.question, c.base_rate or "", c.era or ""]
+    chart = c.chart or {}
+    parts += [str(b.get("label", "")) for b in chart.get("bars", [])]
+    parts += [str(p.get("x", "")) for p in chart.get("points", [])]
+    parts += [str(v) for point in c.series for v in point.values()]
+    return " ".join(parts)
+
+
+# Roster artefacts that would match ordinary prose. The corpus's councillor
+# table carries extraction/dedup debris alongside real people — rows with an
+# empty given name, officer titles parsed as names — and matching on those
+# blocks every draft on words like "The". Real names with apostrophes,
+# hyphens, and spaces (Le Page, O'Callghan, Wood-Gush) must survive this.
+_NON_NAME_WORDS = {"the", "and", "of", "cr", "mayor", "councillor", "council", "director", "ceo"}
+
+
+def usable_roster_names(known_names: set[tuple[str, str]]) -> set[tuple[str, str]]:
+    """Roster entries specific enough to match on without false positives.
+
+    Both parts must be at least two characters and contain a letter, and the
+    family name must not be an ordinary word. A real person dropped here is
+    still reachable through the titled-surname pattern, so the cost of being
+    strict is low; the cost of being loose is a gate nobody can pass.
+    """
+    usable = set()
+    for given, family in known_names:
+        g, f = given.strip(), family.strip()
+        if len(g) < 2 or len(f) < 2:
+            continue
+        if not any(ch.isalpha() for ch in g) or not any(ch.isalpha() for ch in f):
+            continue
+        if f.lower() in _NON_NAME_WORDS or g.lower() in _NON_NAME_WORDS:
+            continue
+        usable.add((g, f))
+    return usable
+
+
+def find_names_in_text(c: TestResult, known_names: set[tuple[str, str]]) -> list[str]:
+    """Real people from the corpus whose name appears in a claim's own text.
+
+    `named_entities` is a *declaration*, and the gate's schema check can only
+    verify a declaration against itself: a generator that interpolates a name
+    into a headline while leaving the declaration at its default would pass
+    it. Since public-tier promotion is derived from that same declaration,
+    the text is what has to be checked to make "provably name-free" true
+    rather than merely asserted (the 2026-08-06 hardcoded-names incident is
+    this failure mode, caught late).
+
+    Matches a full "Given Family" name, or a family name carrying a civic
+    title ("Cr Smith", "Councillor Smith", "Mayor Smith") — the realistic
+    leak shapes. A bare family name is deliberately not matched: surnames
+    like Park or Green collide with ordinary words, and a gate that blocks
+    constantly gets worked around rather than trusted.
+    """
+    text = _claim_text(c)
+    hits = []
+    for given, family in usable_roster_names(known_names):
+        full = rf"\b{re.escape(given)}\s+{re.escape(family)}\b"
+        titled = rf"\b(?:Cr|Cr\.|Councillor|Mayor|Deputy Mayor)\s+{re.escape(family)}\b"
+        if re.search(full, text, re.IGNORECASE) or re.search(titled, text, re.IGNORECASE):
+            hits.append(f"{given} {family}")
+    return sorted(set(hits))
+
+
+def run_invariant_gate(
+    claims: list[TestResult], min_n: int, known_names: set[tuple[str, str]] | None = None
+) -> GateResult:
     """The gate itself. `claims` is the battery a `council draft` run just
     computed. A claim with `data_ok=False` carries no statistic to check —
     it already failed to compute, a different and already-visible condition,
     not a gate violation — so it's skipped.
+
+    `known_names` is the corpus's real (given, family) pairs, used for the
+    text-level name scan. Omitting it runs the schema checks only, which is
+    strictly weaker — callers that can reach the DB should always pass it.
     """
     violations: list[Violation] = []
     for c in claims:
@@ -105,6 +185,17 @@ def run_invariant_gate(claims: list[TestResult], min_n: int) -> GateResult:
                     detail=(
                         f"institutional claim carries named_entities={c.named_entities!r} — "
                         "an institutional-unit claim must be provably name-free"
+                    ),
+                ))
+            leaked = find_names_in_text(c, known_names) if known_names else []
+            if leaked:
+                violations.append(Violation(
+                    test_id=c.test_id,
+                    check="name-free-text",
+                    detail=(
+                        f"institutional claim's own text names {leaked!r} — it declares "
+                        "no named_entities, so tier derivation would promote it to the "
+                        "public product with the name in it"
                     ),
                 ))
             continue
