@@ -52,29 +52,48 @@ after seeing results introduces post-hoc goalpost-moving. The benchmark should s
 - How to score a completed run against those criteria
 - What score constitutes "good enough to freeze"
 
-**The benchmark (agreed 2026-06-27, derived from Cambridge Phase A–K calibration):**
+**The benchmark, current version (rewritten 2026-08-23, `Explorer_prompt.txt`
+v3.0 — see the note directly below the table for what changed and why):**
 
-Seven dimensions, each with a declared threshold. A session passes the benchmark only
-when ALL seven clear their threshold. A failing dimension (not the passing ones) drives
-the next improvement to `Investigator_prompt.txt`.
+Four dimensions, each with a declared threshold. A session passes the benchmark only
+when ALL four clear their threshold. A failing dimension (not the passing ones) drives
+the next improvement to `Explorer_prompt.txt`.
 
 | # | Dimension | Threshold | How to measure |
 |---|-----------|-----------|----------------|
-| 1 | **Domain breadth** | ≥ 5 of the 6 Phase-1 genre domains (A Financial, B Governance, C Integrity, D Transparency, F Effectiveness) must each have ≥ 1 bespoke hypothesis before testing; domain E Strength expected | Count bespoke hypothesis entries by Phase-1 genre in Stage 2 output |
-| 2 | **Stage 1 data survey** | Binary PASS: a structured data profile — table row counts, investigation-critical NULL rates, known corpus gaps, date-span coverage by key table — must exist in scratchpad before the Stage 2 hypothesis list | Check scratchpad for a named profile artifact dated before Stage 2 |
-| 3 | **Structural kill rate** | ≤ 10% of bespoke hypotheses tested in Stage 4 die to structurally missing data (columns that the test requires are absent or 100% NULL) | Count hypotheses classified INFEASIBLE or died to schema/NULL gaps; divide by total bespoke tested; Stage 1 should surface these before Stage 4 |
-| 4 | **Finding rate** | ≥ 25% of bespoke hypotheses tested produce a Finding (built) or an actionable Banked result | Count `INVESTIGATIONS.md` entries classified `[✓]` Finding or `[◐]` Banked with a clear build path; exclude structural kills (those belong to Dim 3); divide by total bespoke tested |
-| 5 | **Evidence completeness** | ≥ 75% of confirmed flagship findings have drill-down data inlined in their snapshot JSON, with ≥ 1 verbatim source quote from `extraction_evidence` per inlined record | Check `frontend/public/data/*.json` for populated drill-down arrays (`declarations`, `awards`, `votes`, `items`, etc.) with a non-empty `quote` field |
-| 6 | **Stage completion** | ≥ 6 of 7 Stages 1–7 produce their defined output (Stage 8 is explicitly permitted to defer) | Binary checklist: Stage 1 profile in scratchpad; Stage 2 numbered hypothesis list; Stage 3 `scorecard.json` updated; Stage 4 `INVESTIGATIONS.md` updated; Stage 5 snapshot JSONs carry drill-down; Stage 6 `tsc + vite build` clean and frontend verified; Stage 7 `overview.json` + `FINDINGS_SUMMARY.md` updated |
-| 7 | **Framing balance** | 100% of confirmed flagship findings carry both the hostile-reader sentence and the promoter sentence, and are published in the NEUTRAL register | Review each flagship panel's text for the mandatory two-sentence pair (Investigator_prompt.txt Phase 4); verify register is NEUTRAL, not pure-CRITIC |
+| 1 | **Register-gap reduction** | ≥ 1 bespoke hypothesis this session explicitly targets a `docs/investigator/coverage_register.json` dimension with verdict EMPTY or THIN that is neither `data_blocked` nor `out_of_scope` | Read the register; check the Stage 1 hypothesis list for ≥ 1 entry naming a matching dimension |
+| 2 | **Structural kill rate** | ≤ 10% of bespoke hypotheses tested in Stage 2 die to structurally missing data (columns that the test requires are absent or 100% NULL) | Count hypotheses classified INFEASIBLE or died to schema/NULL gaps; divide by total bespoke tested; `council profile`'s output (S2) should surface most of these before Stage 2 |
+| 3 | **Finding rate** | ≥ 25% of bespoke hypotheses tested produce a Finding (built) or an actionable Banked result | Count `INVESTIGATIONS.md` entries classified `[✓]` Finding or `[◐]` Banked with a clear build path; exclude structural kills (those belong to Dim 2); divide by total bespoke tested |
+| 4 | **Framing balance** | 100% of confirmed flagship findings carry both the hostile-reader sentence and the promoter sentence, and are published in the NEUTRAL register | Review each flagship write-up for the mandatory two-sentence pair (`Investigator_prompt.txt` Stage-2 write-up discipline); verify register is NEUTRAL, not pure-CRITIC |
 
-**Note (2026-08-20):** domain F (Effectiveness, `Investigator_prompt.txt`
-Part 3.5) was added after all Cambridge calibration below was scored — those
-sessions predate it and cannot be read as having covered it. The next
-investigation session is the first one scored against the 6-domain version
-of Dimension 1.
+**What changed 2026-08-23, and why (`docs/AGENT_DESIGN.md` §3 Q2, §6 Step 5):**
+Explorer's scope narrowed to discovery only — it no longer surveys the
+corpus (S2, `council profile`, is a script now) or builds anything
+(evidence export, panels, synthesis, visuals all left for future S10
+Renderer owners). The old seven-dimension benchmark measured duties that no
+longer belong to this prompt, so three dimensions dropped rather than being
+carried forward as dead weight: **Stage 1 data survey** (the stage itself
+is gone — S2 replaced it), **Evidence completeness** and **Stage
+completion** (both measured build-stage output that Explorer no longer
+produces). **Domain breadth** didn't drop — it *became* **Register-gap
+reduction**: the coverage audit (`COVERAGE_AUDIT_2026-08-23.md`, finding
+F1) found that per-session breadth counting tracked whichever genre a
+session happened to notice (corpus gravity), not the instrument's actual
+gaps; scoring against the register's worst open row instead makes session
+planning cumulative-coverage-aware rather than breadth-for-its-own-sake.
+Structural kill rate, finding rate, and framing balance are unchanged in
+definition, only renumbered and re-pointed at the new stage numbers.
 
-**Cambridge calibration — Phase A–K sessions scored against the benchmark:**
+**Historical note (2026-08-20, pre-dates the above):** domain F
+(Effectiveness, `Investigator_prompt.txt` Part 3.5) was added to the old
+six-domain-breadth check after the Cambridge calibration below was scored —
+those sessions predate it and cannot be read as having covered it. This
+note is kept for the calibration table's own context; domain-breadth
+counting itself no longer exists as a dimension as of the rewrite above.
+
+**Cambridge calibration — Phase A–K sessions scored against the *original*
+seven-dimension benchmark (kept verbatim as history; the current benchmark
+is the four-dimension table above):**
 
 These sessions were exploratory, run without the staged protocol, and spread across
 multiple sessions rather than a single end-to-end run. They are the calibration
@@ -103,98 +122,86 @@ fix both dimensions in a single improvement.
 
 **The improvement loop (now unblocked):**
 
-1. Run a full investigation session following Stages 1–8
-2. Score against the seven dimensions above; record scores in the session header in `INVESTIGATIONS.md`
-3. If all seven ≥ threshold → freeze the protocol version and begin production use on that version
-4. If any dimension < threshold → identify the lowest-scoring dimension, update `Investigator_prompt.txt` to address it, increment the version number, and repeat from step 1
+1. Run a full investigation session following Stages 1–3
+2. Score against the four dimensions above; record scores in the session header in `INVESTIGATIONS.md`
+3. If all four ≥ threshold → freeze the protocol version and begin production use on that version
+4. If any dimension < threshold → identify the lowest-scoring dimension, update `Explorer_prompt.txt` to address it, increment the version number, and repeat from step 1
 
-### Proposed stages
+### Stages (rewritten 2026-08-23 — discovery-only, `docs/AGENT_DESIGN.md` §6 Step 5)
 
-**Stage 1 — Data survey**
-Before forming hypotheses, profile the database: table sizes, date ranges, coverage quality,
-known NULL fields, known extraction gaps. Answer "what can this data actually support?"
-Output: a structured data profile written to the scratchpad.
-Purpose: kills unsupportable hypotheses before they waste test budget (e.g. [latency] was
-killed because application_date and decision_date are 100% NULL — a pre-survey would have
-caught this immediately).
+Three stages remain, renumbered from the original eight. The five dropped
+stages didn't go away — they moved to other owners (see each entry below)
+— so this is the S3-Discovery slice of a bigger flow, not a shrunken
+version of the same job. `Explorer_prompt.txt` v3.0's own preamble and
+Stage 3 carry the operating-layer detail; this section is the stage
+contract shape (inputs / output / stopping condition) matching the pattern
+every other stage in this doc set uses.
 
-**Stage 2 — Hypothesis generation**
-Generate a broad candidate list anchored to recognised governance criteria (Nolan / CIPFA /
-Best-Value). Do not test yet — enumerate first. Each hypothesis should name the table(s) it
-requires and the predicted direction.
-Output: numbered hypothesis list (format: INVESTIGATIONS.md Phase headers).
-Open question: should this happen before or after Stage 1? Surveying first is more efficient
-(prunes impossible hypotheses), but cold hypothesis generation before seeing the data may
-produce more imaginative candidates. Proposed resolution: a lightweight survey (table sizes
-+ known NULL fields) before generation, but deep per-table profiling only on-demand during
-Stage 4 testing.
+**Stage 1 — Hypothesis generation (register-gap seeded)**
+Read `docs/investigator/coverage_register.json` and `council profile`'s
+output (or `data/<council>_profile.json`) first — not a Stage of their own
+anymore, since both are now scripted (S2 profile; the register is a static
+file with its own verifier, `src/analysis/coverage_register.py`). Generate
+a broad candidate list anchored to recognised governance criteria (Nolan /
+CIPFA / Best-Value), with at least one hypothesis explicitly targeting the
+register's worst open (EMPTY/THIN, not `data_blocked`/`out_of_scope`) gap.
+Do not test yet — enumerate first. Each hypothesis should name the
+table(s) it requires and the predicted direction.
+Output: numbered hypothesis list (format: `INVESTIGATIONS.md` Phase headers).
 
-**Stage 3 — Standard battery**
-Run `run_test_battery()` from tests.py. Deterministic — no hypothesis needed, same 23 tests
-every run. Produces the Scorecard. Should run before bespoke investigations so the baseline
-picture is established first.
-Output: scorecard.json.
-
-**Stage 4 — Hypothesis testing**
-For each non-standard hypothesis from Stage 2, write a query, run it, apply the two-tier
-bar (standard test: include regardless; flagship: novel × resident-relevant × surprising),
-and classify as Finding / Null / Banked / Infeasible.
-Save findings immediately to INVESTIGATIONS.md with the standard entry format. Retain
-scratchpad scripts under `scratchpad/`.
+**Stage 2 — Hypothesis testing**
+For each hypothesis from Stage 1, write a query, run it, apply the
+two-tier bar (standard test: include regardless; flagship: novel ×
+resident-relevant × surprising), and classify as Finding / Null / Banked /
+Infeasible. Save findings immediately to `INVESTIGATIONS.md` with the
+standard entry format (n, base rate, era, severity grade, strength +
+superlative check where relevant, hostile-reader and promoter sentences —
+`Investigator_prompt.txt` §4.6, `Explorer_prompt.txt`'s Stage-2 write-up
+discipline). A structural kill also writes to
+`pipeline/DATA_ENRICHMENT.md` per the existing procedure. Retain scratchpad
+scripts under `scratchpad/`. **No build step** — this stage ends at the
+`INVESTIGATIONS.md` entry; turning a Finding into a battery test is S4
+(Refiner), not this stage.
 Output: classified investigation entries, scratchpad scripts.
-Open question: should confirmed findings' evidence be exported here (to a staging file) or
-deferred to Stage 5? Exporting immediately during testing means Stage 5 is just assembly,
-but it adds overhead to each test loop. To be determined by experience.
 
-**Stage 5 — Evidence export**
-For each confirmed Finding, export granular evidence records with verbatim source quotes as
-structured JSON. This feeds the Evidence page drill-downs. Run `council publish` to inline
-the drill-down data into snapshot files.
-Output: updated snapshot JSONs with inlined drill-down data and source quotes.
+**Stage 3 — Self-score and propose**
+Score the session against the four benchmark dimensions above; record in
+the `INVESTIGATIONS.md` session header. If all four pass, note the
+benchmark as cleared. If any fails, draft (don't apply) a targeted,
+minimal `Explorer_prompt.txt` edit addressing the lowest-scoring
+dimension, for a human to review.
+Output: session header scores; a proposed prompt edit, if any dimension failed.
 
-**Stage 6 — Panel and analysis generation**
-For each Finding, produce: chart data, headline, verdict text, valence chip, backTo link.
-Register the panel in the battery (BatteryTestPanel) or as a bespoke component. Confirm
-every panel corresponds to a battery test (no orphan panels — per methodology v2.2).
-Run `council publish cambridge` and verify the frontend renders.
-Output: updated Analysis page. Frontend build clean.
+**Where the other five stages went**, for anyone holding the old numbering
+in their head: old Stage 1 (data survey) → **S2, `council profile`**
+(script, `src/analysis/profile.py`); old Stage 3 (standard battery) →
+**S6, `council draft`** (already scripted — `run_test_battery()` always
+ran there, never inside an Explorer session); old Stages 5–6 (evidence
+export, panel/analysis generation) and old Stage 7 (summary synthesis) →
+future **S10 Renderer** (`docs/AGENT_DESIGN.md` §6 Step 6, not built yet);
+old Stage 8 (visual generation) → the frontend track generally (it was
+never really an Explorer investigation stage — a one-time asset build, not
+counted in the old benchmark's own Stage-completion dimension either).
 
-**Stage 7 — Summary synthesis**
-Once all panels are stable, run a synthesis pass: write the plain-English overview
-(7–8 cross-cutting insights), assign the one-liner verdict, regenerate overview.json.
-Apply the CRITIC / PROMOTER / NEUTRAL review sequence from Investigator_prompt.txt v2.1
-to calibrate framing before publishing.
-Output: updated overview.json, updated Overview page content.
+### Open questions about ordering — resolved by the 2026-08-23 rewrite
 
-**Stage 8 — Visual generation**
-Generate the council boundary map graphic (F1) using geocoded data and boundary GeoJSON.
-This runs last because it depends on the full tender/planning data being finalised.
-Output: SVG/Canvas graphic for Overview page hero.
+The four tensions logged below applied to the old eight-stage design and
+are moot now that Stages 1 (survey), 3 (battery), 5–6 (evidence/panel
+build), and 7 (synthesis) no longer exist in this prompt. Kept as history,
+not live questions:
 
-### Open questions about ordering
-
-The staging above is a first draft. The following tensions need empirical resolution by
-running a full investigation cycle under the protocol and noting where it breaks down:
-
-1. **Browse depth vs efficiency.** Unguided browsing is expensive in tokens. The Stage 1
-   survey should be driven by a fixed checklist (what tables, what counts, what NULL rates,
-   what known gaps), not left to Opus to infer. The checklist itself should be versioned
-   alongside `Investigator_prompt.txt`.
-
-2. **Hypothesis generation before vs after data survey.** See Stage 2 note above. First
-   full run should try survey-first and note any hypotheses that felt artificially constrained
-   by seeing the data profile too early.
-
-3. **When to export evidence.** The current pattern (export during publish, not during testing)
-   means a Finding sits unexported for potentially multiple sessions. An alternative: during
-   Stage 4, Opus writes a structured `evidence_staging/{hypothesis_id}.json` immediately on
-   confirmation, and Stage 5 just assembles these into snapshot files. This keeps evidence
-   closer to the investigation moment but adds schema discipline to Stage 4.
-
-4. **How many hypotheses to generate vs how many to test.** Generating 30 and testing 10 is
-   fine; generating 100 is waste. The right number is probably "all hypotheses that could
-   plausibly clear the two-tier bar given the data profile." Opus should apply the data profile
-   as a filter during generation, not after.
+1. **Browse depth vs efficiency** (old Stage 1 survey checklist design) —
+   moot; the survey is `council profile`, a deterministic script with no
+   token cost per run.
+2. **Hypothesis generation before vs after data survey** — moot in the old
+   framing (there's no in-session survey to order against); resolved in
+   practice by `Explorer_prompt.txt` v3.0's preamble, which reads the
+   profile before Stage 1 unconditionally.
+3. **When to export evidence** — moot; evidence export is a future S10
+   Renderer concern, not this prompt's.
+4. **How many hypotheses to generate vs test** — still live, but now a
+   Stage 1 judgment call rather than an ordering question between two
+   stages that no longer both exist.
 
 ### Protocol document home
 

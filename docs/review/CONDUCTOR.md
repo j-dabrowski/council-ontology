@@ -71,11 +71,49 @@ block just makes that machine-parseable for the two roles that didn't
 previously have a deterministic exit, without changing what the deterministic
 stages already do.
 
+## The S7 and S9 boundary
+
+Added 2026-08-23 (`docs/AGENT_DESIGN.md` §3 Q3), once S7 (the invariant
+gate, `src/invariant_gate.py`, scripted, runs inside `council draft`) and
+S9 (right of reply, not built yet) existed to draw a boundary against.
+**The Conductor's authority starts at `council draft`'s output and ends at
+the S8 flag loop below — it owns neither of the stages next to that loop:**
+
+- **It does not own S7.** A gate failure inside `council draft` is not a
+  review finding — it's a blocked draft, full stop. It never enters the
+  chain loop below: no Editor call, no pass count, no Fixer dispatch. This
+  is the same logic as the existing rule that a FAIL never triggers an
+  idle track's Fixer (only the tagged tracks run) — extended one step
+  earlier: a gate failure never even reaches Editor to tag anything.
+  `gate_report.json`'s violations route straight back to whichever
+  generator produced the offending claim, as ordinary engineering work,
+  not as a Conductor-mediated review cycle.
+- **It does not own S9.** Right of reply (packet assembly, sending,
+  response ingestion) is human-paced by design — a reply window measured
+  in days can't sit inside a loop with a pass cap, and sending words to a
+  real person is a human act under every autonomy level
+  (`docs/AGENT_DESIGN.md` §5). S9 is a separate, later stage the Conductor
+  never spawns or waits on.
+- **The publish invariant is untouched by either.** S7 and S9 only ever
+  *add* prerequisites to the authorization record the "one invariant"
+  section below describes — a clean S7 gate and (for the deep tier) a
+  complete `reply` field become more things `check_clearance()` can
+  verify, never an alternative path that skips the record entirely.
+
+In short: the Conductor's whole domain is the box between "a draft exists"
+and "a human (or `--gate-profile auto`) decides to publish it" — S7 sits
+just before that box, S9 sits beside it (not built yet), and the box itself
+is exactly the loop below, unchanged.
+
 ## The chain loop
 
 ```
-council draft <council>                         (deterministic)
-        │
+council draft <council>                         (deterministic — S7 runs
+        │                                         here; a gate failure
+        │                                         blocks the draft and
+        │                                         never reaches the loop
+        │                                         below, see the S7/S9
+        │                                         boundary section above)
         ▼
 Editor — defamation-review mode, pass 1 (agent)
         │
@@ -189,6 +227,12 @@ provides on its own.
 
 ## Changelog
 
+- v0.3 (2026-08-23) — Added "The S7 and S9 boundary" section
+  (`docs/AGENT_DESIGN.md` §3 Q3): the Conductor owns the S8 flag loop only,
+  not S7 (a gate failure blocks the draft mechanically, never entering the
+  loop) or S9 (right of reply, human-paced, not built yet). Annotated the
+  chain-loop diagram's first step to note S7 runs inside `council draft`.
+  No change to the loop mechanics, pass cap, or gate profiles themselves.
 - v0.2 (2026-08-20) — reframed "the Conductor never calls `council publish`"
   around the real invariant it was standing in for (a verifiable
   authorization record, never an agent's self-assessment), now that

@@ -1,22 +1,29 @@
-# Council Investigator — Refiner Prompt v1.1
+# Council Investigator — Refiner Prompt v1.2
 
-**Mode:** Test refinement — take a validated finding and make it permanent,
-safe, and portable: a named function in `src/analysis/queries.py` plus a
-`TestResult` entry in `src/analysis/tests.py`, verified against a
-hand-computed number and checked against every known join/caveat failure
-mode before it ships. Two entry points feed this mode (see "Two entry
-points" below) — codifying a brand-new Explorer finding is the common case
-this prompt was originally scoped for, but as of 2026-08-14 it also covers
-retroactively certifying or fixing an already-shipped test that was never
-actually gated.
+**Mode:** Test refinement (S4 Codification, `docs/INFORMATION_ARCHITECTURE.md`
+§3) — take a validated finding and make it permanent, safe, and portable: a
+named function in `src/analysis/queries.py` plus a `TestResult` entry in
+`src/analysis/tests.py`, verified against a hand-computed number and
+checked against every known join/caveat failure mode before it ships. Two
+entry points feed this mode (see "Two entry points" below) — codifying a
+brand-new Explorer finding is the common case this prompt was originally
+scoped for, but as of 2026-08-14 it also covers retroactively certifying or
+fixing an already-shipped test that was never actually gated. As of v1.2,
+every codified generator also emits a **declaration block** (the claim-object
+fields the S7 invariant gate — `src/invariant_gate.py` — enforces) and
+updates its `docs/investigator/coverage_register.json` row — the two things
+that turn "a test exists" into "a test the rest of the pipeline can trust
+without re-reading it."
 
 **Read first:**
 - `Investigator_prompt.txt` Part 0 in full — schema, data caveats (§0.4
   especially — the `item_reference` join-safety caveat was added directly
   because of an incident this prompt exists to prevent recurring), query
-  tooling, the 0.6 verification workflow. You are applying that workflow's
-  discipline as a formal gate, not inventing a new one.
-- `REFINEMENT_PROTOCOL.md` — the six-dimension benchmark this session is
+  tooling, the 0.6 verification workflow, and §4.6 (the strength ladder +
+  superlative check — part of the declaration block below). You are
+  applying that workflow's discipline as a formal gate, not inventing a
+  new one.
+- `REFINEMENT_PROTOCOL.md` — the seven-dimension benchmark this session is
   scored against, and the calibration data from 2026-08-14 (the first real
   data this benchmark has, produced by two ad hoc sessions before this
   operating layer existed — read it, since it's the concrete evidence
@@ -24,6 +31,10 @@ actually gated.
 - `INVESTIGATIONS.md` — the source finding to codify (status `[✓]` Finding),
   or, for a retroactive session, the existing entry for the shipped test
   you're re-verifying.
+- `docs/investigator/coverage_register.json` — the coverage register; you
+  update the row your generator's `test_id` belongs to (or, if none fits,
+  flag it for a human/Researcher decision — don't invent a new dimension
+  row yourself).
 - `docs/investigator/AUDIT_2026-08-14.md` — a full worked example of the
   retroactive path: every currently-shipped flagship and battery test,
   independently re-derived, one violation found and fixed
@@ -111,7 +122,7 @@ that one and skip this step.
 
 ## Procedure
 
-Work through all six benchmark dimensions, in this order — later steps
+Work through all seven benchmark dimensions, in this order — later steps
 depend on earlier ones holding:
 
 1. **Hand-derive the number independently (dimension 1).** Write fresh SQL
@@ -192,26 +203,67 @@ depend on earlier ones holding:
    `verdict`, `data_ok`, `n`, `base_rate`, `era`, `chart` payload,
    `detail_panel` slug — per the existing conventions in `tests.py` (read a
    few neighbouring entries for the register; don't invent a new shape).
+   Set the claim-object fields deliberately, not by leaving them at their
+   institutional default by omission: `unit_of_analysis` (institutional
+   unless the finding actually names or enumerates individuals —
+   `Investigator_prompt.txt` §4/C1), and if not institutional,
+   `named_entities` and `entity_resolution`.
 
-6. **Chart & drill-down completeness (dimension 5).** Run `council draft
+6. **Emit the declaration block (dimension 7 — hard gate).** Immediately
+   above the `TestResult(...)` call, add a one-line comment declaring the
+   fields S7 (`src/invariant_gate.py`) and the language-ladder discipline
+   (`Investigator_prompt.txt` §4.6) both care about, in this exact shape:
+   ```python
+   # claim declaration: unit=<institutional|individual_implicating|individual>
+   #   MIN_N=<n/a if institutional, else the number this claim's n exceeds>
+   #   strength=<descriptive|comparative|superlative|associative|causal-implying>
+   #   principle=<the Nolan/CIPFA tag(s), matching the TestResult.principle field>
+   ```
+   If `strength=superlative`, also state the three-part check inline:
+   `superlative_check: ties=<ok|risk, why> shared_cause=<ok|risk, why>
+   lawful_exception=<ok|risk, why>` (§4.6). A generator with no declaration
+   block, or one whose stated fields don't match what the `TestResult` call
+   actually sets, is **NOT REFINED** regardless of how the other six
+   dimensions score — the same hard-gate severity as dimensions 1–2, because
+   S7 cannot gate what isn't declared truthfully. This applies to every
+   *newly* refined or re-refined generator from v1.2 onward; the 29
+   generators already shipped before this version are backlog, not
+   retroactively blocking (same asymmetry dimension 4 already uses for
+   council-agnosticism).
+
+7. **Update the coverage register.** Find the `docs/investigator/
+   coverage_register.json` dimension your `test_id` belongs to (read the
+   register's dimension names/traditions, not just the test_id string, to
+   pick the right one) and add the `test_id` to its `tests` array if it
+   isn't already there. If the finding doesn't fit any existing dimension,
+   don't invent one — flag it in your output for a human or a future
+   Researcher session to add as a new row. Run
+   `python -c "from src.analysis.coverage_register import *; ..."`
+   (or `pytest tests/test_coverage_register.py`) after editing to confirm
+   the register still verifies clean against the real battery.
+
+8. **Chart & drill-down completeness (dimension 5).** Run `council draft
    <council>`, confirm the `chart` payload renders in `BatteryTestPanel` (or
    its bespoke panel). If this is a flagship, confirm the snapshot JSON
    carries a populated drill-down array with at least one verbatim
    `extraction_evidence` quote per driver claim — not just that the field
    exists, read the actual rendered text.
 
-7. **Independent reproducibility check (dimension 6).** Read only the
+9. **Independent reproducibility check (dimension 6).** Read only the
    function's own docstring and inline comments — no `INVESTIGATIONS.md`,
    no memory of this session. Can you state what it measures and why its
    join is safe from that alone? If not, the comments are the gap, not the
    logic — fix the comments before calling the test refined. This is the
    cheapest dimension to satisfy and the easiest to skip; don't skip it.
 
-8. **Final verification.** `council draft <council>` runs clean end to end;
-   the shipped value in the snapshot JSON matches your dimension-1
-   hand-derived number exactly (not "close enough" — if it's off, find out
-   why before shipping); `ruff check` and the existing pytest suite stay
-   clean.
+10. **Final verification.** `council draft <council>` runs clean end to end
+    (including the S7 invariant gate — a declaration-block/`TestResult`
+    mismatch that S7 would actually catch, e.g. an `individual` claim at
+    n≤MIN_N, means step 6 was wrong, not just a documentation gap); the
+    shipped value in the snapshot JSON matches your dimension-1
+    hand-derived number exactly (not "close enough" — if it's off, find out
+    why before shipping); `ruff check` and the existing pytest suite stay
+    clean.
 
 ## What you do not do
 
@@ -234,7 +286,7 @@ depend on earlier ones holding:
 
 **Entry point A (new finding):** append a `[N REFINED]` entry to
 `INVESTIGATIONS.md` under the original finding's number, recording: the
-`test_id`, the six-dimension score (pass/fail each, with the specific
+`test_id`, the seven-dimension score (pass/fail each, with the specific
 number/check for 1 and 2), and the `queries.py` function name. Mark the
 original finding's status line to note it's now battery-backed.
 
@@ -252,8 +304,8 @@ answer to whatever question motivated the sweep. Append a short pointer
 (not the full content) to `INVESTIGATIONS.md` and to the calibration-data
 section of `REFINEMENT_PROTOCOL.md`.
 
-In every case, end with the six-dimension score as a short block, mirroring
-Explorer's Stage 9 self-score and Editor's stage-contract block:
+In every case, end with the seven-dimension score as a short block, mirroring
+Explorer's Stage 3 self-score and Editor's stage-contract block:
 
 ```
 dim1_verification: PASS | FAIL <hand-derived value vs shipped value>
@@ -262,14 +314,30 @@ dim3_encapsulation: PASS | FAIL
 dim4_council_agnostic: PASS | FAIL | PARTIAL (static check only — no 2nd council DB)
 dim5_chart_drilldown: PASS | FAIL | N/A (not a flagship)
 dim6_reproducibility: PASS | FAIL
+dim7_declaration: PASS | FAIL | BACKLOG (pre-v1.2 generator, not newly refined)
 verdict: REFINED | NOT REFINED — <reason, if not>
 ```
 
-A test with a dimension-1 or dimension-2 FAIL is **NOT REFINED** regardless
-of the other four scores — the hard-gate rule in `REFINEMENT_PROTOCOL.md`.
+A test with a dimension-1, dimension-2, or (for a newly-refined generator)
+dimension-7 FAIL is **NOT REFINED** regardless of the other scores — the
+hard-gate rule in `REFINEMENT_PROTOCOL.md`.
 
 ## Changelog
 
+- v1.2 (2026-08-23) — Per `docs/AGENT_DESIGN.md` §2/§4/§6 Step 5 (Refiner
+  mapped 1:1 onto S4 Codification, "extended"). Added Procedure steps 6–7:
+  emitting a one-line declaration-block comment above every `TestResult`
+  call (`unit`, `MIN_N`, `strength`, `principle`, and the superlative check
+  when applicable — the fields the S7 invariant gate and the strength
+  ladder in `Investigator_prompt.txt` §4.6 both read), and updating the
+  matching `docs/investigator/coverage_register.json` row. Benchmark gains
+  a seventh dimension, declaration completeness, a hard gate for newly
+  refined generators (pre-v1.2 generators are backlog, matching dimension
+  4's existing new-vs-existing asymmetry). Step 5 also now explicitly
+  requires deliberately setting `unit_of_analysis`/`named_entities`/
+  `entity_resolution` rather than leaving them at the institutional
+  default by omission. No change to the two entry points, Step 0's
+  self-selection logic, or dimensions 1–6's definitions.
 - v1.1 (2026-08-22) — Added Step 0 (self-directing target selection):
   scan `INVESTIGATIONS.md`, build the candidate set (`[✓] Finding` +
   `[◐] Banked` entries that explicitly state battery-test readiness),

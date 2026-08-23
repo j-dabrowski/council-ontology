@@ -191,7 +191,7 @@ pending-merges; Explorer reads it at Stage 2.
 | File | Becomes |
 |------|---------|
 | `Investigator_prompt.txt` (shared layer) | survives; Part 0's caveats section points at the S2 profile artefact instead of hand-maintained prose; Part 4 gains the strength ladder + superlative-check definitions (they are claim-object law, so they live in the shared layer all roles read) |
-| `Explorer_prompt.txt` v2.6 | v3.0 — drop Stage 1 (consume profile), drop Stages 5–6 (build), reseed Stage 2 from the register; renumber; Stage 9 dimensions per §3 Q2 |
+| `Explorer_prompt.txt` v2.6 | v3.0 — discovery-only, per §2's "keeps" list, which governs this row. Of the current stages: Stage 1 drops (consume the S2 profile), Stage 3 drops (battery verification is S7 assertions + CI), Stages 5–6 drop (build belongs to S10 owners), Stage 7 drops (synthesis is Renderer's), Stage 8 drops (visuals likewise). Keeps Stage 2 (reseeded from the register), Stage 4 (testing, with INVESTIGATIONS.md discipline and enrichment-backlog writes inside it), Stage 9 (self-score, dimensions per §3 Q2); renumber |
 | `Refiner_prompt.txt` v1.1 | v1.2 — declaration block emission + register update step |
 | `Runner_prompt.txt` v1.0 | archived; checklist seeds the S7 assertion list |
 | `Editor_prompt.txt` v0.3 | v0.4 — scope narrowed to the four semantic classes; explicit instruction that S7-covered classes are out of scope |
@@ -396,7 +396,80 @@ Risk-reduction first, roles last — each step ships value alone:
    Researcher (pending-merge row proposals) to the register — all three are
    Step 5.
 5. **Prompt/protocol revisions** (Explorer v3, Refiner v1.2, Editor v0.4,
-   Conductor addition) — now they describe a world that exists.
+   Conductor addition) — now they describe a world that exists. **Done
+   2026-08-23.**
+   - `Investigator_prompt.txt` (shared layer): Part 0 now points at
+     `council profile`'s live output instead of static prose for every
+     number the S2 profile now computes (span, gaps, NULL rates,
+     identity-resolution counts) — the qualitative caveats and
+     join-safety/incident knowledge the profile can't compute stay as
+     prose. New Part 4.6: the claim-object strength ladder
+     (descriptive/comparative/superlative/associative/causal-implying) and
+     the superlative check (ties/shared_cause/lawful_exception) — this
+     directly resolves `EDITOR_PROTOCOL.md`'s previously-open "superlative
+     single-name call-out near the n≤3 floor" question.
+   - `Explorer_prompt.txt` v2.6 → v3.0: discovery-only. Dropped old Stages
+     1 (survey → S2 script), 3 (battery → S6 script), 5–6 (build → future
+     S10), 7 (synthesis → future S10), 8 (visuals → frontend track).
+     Renumbered old Stage 2 (hypothesis generation) → Stage 1, seeded from
+     `coverage_register.json`'s worst open gap instead of raw
+     domain-breadth counting; old Stage 4 (testing) → Stage 2, its
+     publish-mechanics tail rewritten as write-up discipline (no build
+     step), gaining the §4.6 strength/superlative field; old Stage 9
+     (self-score) → Stage 3, benchmark cut from 7 to 4 dimensions
+     (domain breadth → register-gap reduction; survey and both
+     build-completeness dimensions dropped). `EXPLORATION_PROTOCOL.md`
+     rewritten to match — old calibration data and open questions kept as
+     history, explicitly marked moot/historical rather than deleted.
+   - `Refiner_prompt.txt` v1.1 → v1.2: Procedure gains steps declaring the
+     claim-object fields deliberately (step 5) and emitting a one-line
+     declaration-block comment above every `TestResult` call plus updating
+     the matching coverage-register row (steps 6–7, new). Benchmark gains
+     dimension 7 (declaration completeness, hard gate for newly-refined
+     generators; the 29 pre-existing generators are backlog, matching
+     dimension 4's own new-vs-existing asymmetry). `REFINEMENT_PROTOCOL.md`
+     updated to match.
+   - `Editor_prompt.txt` v0.3 → v0.4: new "The S7 boundary" section —
+     narrowed per-claim, not per-file: a claim traceable to `scorecard.json`
+     trusts `gate_report.json` for name-free-schema/MIN_N/entity-resolution
+     (dropped from re-derivation); every other snapshot (~20 files, since
+     tier derivation only covers `scorecard` so far) is checked exactly as
+     before, including small-n and placement. Procedure step 3 rewritten
+     around the four semantic classes (overclaim language via §4.6,
+     innocent-explanation search, singling-out fairness, misleading blended
+     statistics). New score dimension 8: false-positive rate against
+     already-S7-passed claims. `EDITOR_PROTOCOL.md` updated to match, and
+     its open superlative question marked resolved (kept as history, not
+     deleted, since it's the concrete incident that motivated §4.6).
+   - `CONDUCTOR.md`: new "The S7 and S9 boundary" section per §3 Q3 — the
+     Conductor owns the S8 flag loop only; a gate failure never enters it
+     (routes straight back to the generator), and S9 (right of reply,
+     human-paced, not built) is never spawned or waited on. Chain-loop
+     diagram's first step annotated to note S7 runs inside `council draft`.
+   - `docs/MAP.md`: version/dimension-count references to all four rewritten
+     files corrected (Explorer v2.6→v3.0, Refiner v1.0→v1.2 — the v1.0 was
+     already stale pre-rewrite —, seven/six-dimension counts, Stage
+     9→Stage 3). `docs/TESTING.md`'s stale "Editor v0.2, not yet run"
+     reference corrected to v0.4 (also pre-existing staleness, fixed while
+     touching adjacent text).
+   - **Deferred, not done this step:** `Runner_prompt.txt`'s archival (its
+     entry in §4's delta table) and the matching `AGENT_PROMPTS.md`/
+     `MAP.md` roster edits. The delta table bundles "Runner row removed,
+     Renderer rows added" as one `AGENT_PROMPTS.md` edit, and Step 5's own
+     build-order parenthetical names only Explorer/Refiner/Editor/Conductor
+     — Runner isn't listed. Archiving it now would mean either a
+     half-updated `MAP.md` (Runner marked archived there but
+     `AGENT_PROMPTS.md`'s roster still listing it live) or scope-creeping
+     into Step 6's bundled edit. Left fully untouched (still v1.0, still
+     describes the pre-redesign world accurately for what it covers) so
+     nothing is half-consistent; revisit when Renderer lands.
+   - **Not run for real against any of the four rewritten prompts** — this
+     step edited the operating layers and their protocols; it did not spawn
+     an Explorer/Refiner/Editor/Conductor session to exercise them (that's
+     a real investigation/review cycle, a separate, deliberate action from
+     implementing the prompt rewrite itself). The next real session under
+     each prompt is where calibration data against the new benchmarks
+     actually appears.
 6. **Renderer + reply pipeline** — the new audience surfaces, last, on top
    of stable products.
 7. **Workflow wiring (§5)** — the maintenance-run workflow at autonomy

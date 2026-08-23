@@ -18,25 +18,42 @@ workflow" (where this stage sits in the larger pipeline).
 
 ---
 
-## Status: v0.1, untested
+## Status: v0.3, real chains run pre-narrowing; not yet run against v0.4's boundary
 
-There is no calibration data yet — this protocol and the prompt it governs
-have never been run. Treat every number below as a starting point to be
-revised after the first real run, not a settled benchmark. The single most
-important thing a human does after the first run is check whether the
-editor's flags match their own judgment — false negatives (missed real risk)
-are the failure mode that matters; false positives (over-flagging) waste
+Real Conductor-loop chains ran against Editor v0.3 in August 2026 (see the
+open-questions entries below, each citing a real
+`defamation_review_<n>.md`) — the "never been run" framing of this section
+in earlier versions is stale as of those runs. What's genuinely untested:
+v0.4's narrowed scope (the S7 boundary, the four-semantic-class
+recalibration, dimension 8). Treat every threshold below as a starting
+point to be revised once a real chain runs under v0.4, not a settled
+benchmark. The single most important thing a human does after that first
+v0.4 run is check whether the editor's flags match their own judgment —
+false negatives (missed real risk) are the failure mode that matters; false
+positives (over-flagging) waste
 iteration cycles but are safe.
 
 ## Scoring and thresholds
 
-The seven dimensions are defined in `Editor_prompt.txt`'s "Score" output
+The eight dimensions are defined in `Editor_prompt.txt`'s "Score" output
 block, not duplicated here (single source of truth — update the prompt, not
 this doc, when a dimension's definition changes). Today they are all fixed at
 pass/fail thresholds the prompt author (this session) judged reasonable —
-100% on placement, proportionality, framing balance, caveat integration, and
-risk-item re-verification; zero tolerance on small-n exposure; binary on the
-disclaimer.
+100% on placement, proportionality/overclaim language, framing balance,
+caveat integration, and risk-item re-verification; zero tolerance on
+small-n exposure and (added 2026-08-23, per `docs/AGENT_DESIGN.md` §2)
+false positives against claims S7 already passed; binary on the disclaimer.
+
+**Why a false-positive dimension exists (added 2026-08-23):** once S7
+(`src/invariant_gate.py`) gates `scorecard.json` claims mechanically before
+Editor ever runs, Editor re-flagging one of those exact checks (small-n,
+name-free schema, entity-resolution) isn't extra caution — it's the Editor
+failing to use the boundary `Editor_prompt.txt` v0.4 now defines, and it
+wastes a Fixer/Conductor cycle re-fixing something that was never actually
+broken. Prediction to verify at the first post-narrowing run: total flag
+volume drops enough that the 3-pass cap-outs seen in earlier real chains
+stop being the norm (`docs/AGENT_DESIGN.md` §2's own stated prediction) —
+record whether that holds in the calibration data below once it exists.
 
 **These thresholds are explicitly user-adjustable** — nothing here is fixed
 policy. If, after a few real runs, 100%-on-everything proves to reject drafts
@@ -68,12 +85,23 @@ you'd check flag accuracy.
   2026-08-22 (Editor pass 1,
   `data/draft/cambridge/draft_20260822_144521/defamation_review_1.md`): a
   mayoral "least contested" callout named a single councillor at n=5, just
-  above the BLOCKING small-n floor. Not a threshold violation under today's
-  rules — no code change was made for this flag — but worth a human decision
-  on whether superlative single-name call-outs ("most", "least", "longest")
-  warrant a stricter n floor than incidental mentions, since the superlative
-  wording reads as an individual claim even when the underlying n only
-  barely clears the generic floor. Undecided as of this entry.
+  above the BLOCKING small-n floor. Not a threshold violation under the
+  rules at the time — no code change was made for this flag.
+
+  **Resolved 2026-08-23, via `Investigator_prompt.txt` §4.6 (the strength
+  ladder and superlative check).** This flag was exactly the gap it looks
+  like: an n-floor alone can't catch a superlative claim that clears the
+  floor but still singles out one name unfairly (a tie the wording papers
+  over, a shared cause, a lawful exception). §4.6 makes `superlative` its
+  own declared strength level, independent of n, and requires the
+  ties/shared_cause/lawful_exception check whenever it's used — a
+  superlative claim that fails any of the three drops to `comparative`
+  (state the distribution, not the single name) rather than shipping
+  clean. `Editor_prompt.txt` v0.4's Procedure step 3 now checks this
+  explicitly under "overclaim language," independent of whatever n the
+  claim happens to clear. Not retroactively re-run against the 2026-08-22
+  mayoral callout specifically — that's a candidate for the next real
+  Editor run, not something to hand-verify here.
 
 - **`<n>` numbering: per run-directory or per-chain?** — flagged 2026-08-22
   (Editor pass 2's own review, `data/draft/cambridge/draft_20260822_152453/defamation_review_1.md`,
@@ -144,6 +172,14 @@ the editor's flags against a human's independent read of the same draft.
 
 ## Changelog
 
+- v0.3 (2026-08-23) — Recalibrated for `Editor_prompt.txt` v0.4's narrowed
+  scope (`docs/AGENT_DESIGN.md` §2/§6 Step 5): added dimension 8
+  (false-positive rate against S7-already-passed scorecard claims) and
+  documented why it exists. Resolved the "superlative single-name
+  call-outs near the n≤3 floor" open question via the new
+  `Investigator_prompt.txt` §4.6 strength ladder — kept as a resolved
+  entry, not deleted, since it's the concrete incident that motivated
+  §4.6 existing at all.
 - v0.2 (2026-08-10) — split loop/triggering content out to the new
   `docs/review/CONDUCTOR.md` as part of moving Editor and Fixer out of
   `docs/investigator/` into `docs/review/` (they were never investigator-owned

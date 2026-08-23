@@ -218,7 +218,7 @@ council draft <council>        council publish <council>
 `council publish` always has (`src/analysis/queries.py` + `tests.py`), but
 writes to `data/draft/<council>/<run_id>/` — gitignored, never served, never
 part of any commit. This is the stage where the Editor role
-(`docs/review/editor/Editor_prompt.txt`, v0.2, not yet run — see
+(`docs/review/editor/Editor_prompt.txt`, v0.4 — see
 `docs/review/CONDUCTOR.md` for the loop that chains it with the Fixer role)
 reviews the candidate output, and Fixer's track-scoped modes
 (`docs/review/fixer/`) act on whatever it flags. Nothing about drafting is

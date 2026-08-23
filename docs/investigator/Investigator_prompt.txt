@@ -53,18 +53,34 @@ what you have.
 
 ### 0.1 The corpus
 
+**Run `council profile <council>` first (S2, `src/analysis/profile.py`) —
+or read the latest `data/<council>_profile.json` if one already exists.**
+It's a scripted, no-LLM pass over the DB that computes document/date spans,
+a zero-meeting-month gap detector, entity counts, NULL/coverage rates, and
+identity-resolution signals fresh, every run — the corpus-metric numbers in
+this section and in 0.4 below are a snapshot as of when this file was last
+edited by hand, not a live source. Where the two disagree, the profile is
+right; treat the prose here as orientation (what the fields mean, why a
+number matters) and the profile as the number itself.
+
 - **One council: the City of Cambridge, Western Australia.** A small inner-Perth
   metropolitan council (~13 elected members at any time). The full architecture
   supports more councils, but only Cambridge is loaded.
-- **Span: 1995–2026** (31 years of meeting records).
+- **Span: 1995–2026** (31 years of meeting records; current exact range and
+  by-year breakdown: `profile.span`).
 - **580 documents extracted** into the DB: **506 minutes**, 66 agendas, 4 addenda,
-  4 unknown. Minutes are the authoritative political record (votes, outcomes);
-  agendas carry officer *recommendations* but no vote outcomes (the meeting
-  hadn't happened yet).
+  4 unknown (current counts: `profile.span.total_documents` /
+  `by_document_type`). Minutes are the authoritative political record (votes,
+  outcomes); agendas carry officer *recommendations* but no vote outcomes (the
+  meeting hadn't happened yet).
 - **Known corpus gaps** (not recoverable online, confirmed 2026-06-22): 2022
   Jan–Apr + Jun, and 2023 Jan–Apr + Jun–Jul are missing (a council CMS migration
   dropped them). Cambridge also holds no ordinary meeting in January. Treat any
   per-year trend touching 2022–2023 as undercounted, not as a real decline.
+  `profile.span.zero_meeting_months_in_span` reproduces this same shape from
+  the data directly (every zero-meeting month in range, not just these two
+  windows) — check it on a re-extraction or a second council instead of
+  assuming this exact list still applies.
 
 ### 0.2 The database — `data/council.db` (SQLite)
 
@@ -72,12 +88,19 @@ Three ontological layers. Approximate row counts (as of 2026-06-24):
 
 **Semantic layer** (entities):
 - `councils` — the council registry (Cambridge).
-- `councillors` (~400) — every person seen in a vote. **Deduplicated** (was 405,
-  merged to ~400 via `scripts/dedup_councillors.py`); see caveat 0.4.
+- `councillors` (~400 raw rows) — every person seen in a vote. **Deduplicated**
+  (was 405, merged to ~400 via `scripts/dedup_councillors.py`); see caveat 0.4.
+  Note this raw table count is *not* the same number as
+  `profile.identity_resolution.councillor_count` — the profile scopes to
+  councillors reachable via a vote or a term on *this* council (currently
+  ~198), which is the more useful "how many real people served here" figure;
+  the ~400 is closer to "how many name-rows exist in the shared table."
 - `councillor_terms` — ward / role / term dates from Elections WA results.
   **Sparsely populated** — only councillors with imported electoral records have
   terms (1999–2023; 2017 missing; pre-1999 absent). Many councillors have *no*
-  term row. Never assume a missing term means a person didn't serve.
+  term row. Never assume a missing term means a person didn't serve. Current
+  coverage rate (share of active councillors with ≥1 term row):
+  `profile.record_quality.councillor_term_coverage_rate`.
 - `sites` — physical addresses from planning applications (some geocoded to
   lat/lng via `council geocode`).
 
@@ -93,7 +116,9 @@ Three ontological layers. Approximate row counts (as of 2026-06-24):
   councillor_id)`.
 - `planning_applications` (~3,100) — `reference_number`, `status`,
   `estimated_value`, `site_id`, applicant. **`application_date` and
-  `decision_date` are 100% NULL** — processing-latency analysis is impossible on
+  `decision_date` are 100% NULL** (current rates:
+  `profile.record_quality.planning_application_date_null_rate` /
+  `_decision_date_null_rate`) — processing-latency analysis is impossible on
   this corpus; do not attempt it.
 - `community_submissions` — public submissions on DAs (`position` = object/support);
   `submitter_name` is mostly generic placeholders ("Adjoining neighbour"), so
@@ -156,10 +181,14 @@ These have already produced wrong answers. They are not optional reading.
 - **Vote coverage is uneven by year.** Sparse 1995–2003 (tens–hundreds/yr), dense
   2016–2026 (1,000+/yr). The 2022–2023 dip is the *corpus gap* (0.1), not reduced
   council activity. Never read a raw count trend as behaviour without
-  normalising or flagging coverage.
-- **`declared_interest=1` is rare (~600 votes)** and splits by legal type — a
-  declared *impartiality* interest legally permits voting; a *financial* one does
-  not. Always split by `interest_type` before drawing a recusal conclusion.
+  normalising or flagging coverage. `profile.span.meetings_by_year` gives a
+  current per-year meeting count (a coarser proxy than a true per-year vote
+  count, which the profile doesn't compute yet) to sanity-check against.
+- **`declared_interest=1` is rare (~600 votes; current rate:
+  `profile.record_quality.vote_declared_interest_rate`)** and splits by legal
+  type — a declared *impartiality* interest legally permits voting; a
+  *financial* one does not. Always split by `interest_type` before drawing a
+  recusal conclusion.
 - **`interest_declarations.item_reference` is NOT a safe join key on its own —
   not even meeting-scoped.** It's a recycled agenda position (e.g. '6.3',
   '13.3.4'), not a stable matter ID: the same number is reused across
@@ -182,6 +211,11 @@ These have already produced wrong answers. They are not optional reading.
 - **Councillor identity is good but not perfect.** Dedup merged ~84 split
   identities, but a few same-surname / nickname cases remain (e.g. Kate vs
   Catherine Barlow; ambiguous Everett/McKerracher/Steele family-only stubs).
+  `profile.identity_resolution.duplicate_family_name_groups` is a current,
+  coarse "worth checking" count of shared-family-name councillor pairs — not
+  a confirmed split-identity count (a common surname reused by two unrelated
+  people over 31 years produces the same signal), so treat it as a place to
+  look, not a verdict.
   A further, structurally distinct class — a **given/family-name field
   swap between two records** (e.g. "Colin Walker" vs "Walker Colin": the
   same person, same two real name tokens, transposed across two rows) —
@@ -704,6 +738,66 @@ be believed when it does criticise. Calibrate every finding through the CRITIC /
 PROMOTER / NEUTRAL modes (see `Explorer_prompt.txt` Principle 1) and publish in
 NEUTRAL — the read the evidence dictates, weighted to its strength, scathing
 only where the evidence earns it.
+
+### 4.6 The strength ladder and the superlative check (claim-object law)
+
+Added 2026-08-23 (`docs/INFORMATION_ARCHITECTURE.md` §4). Distinct from 4.4's
+severity *grade* (how serious a finding is) and 4.5's positive mirror: this
+is the **language ladder** — how strongly a sentence's *wording* may claim,
+independent of how serious the underlying pattern is. A finding can be a
+low-severity Observation and still be worded at a strength the evidence
+doesn't support (a mild pattern dressed up as "the worst in the chamber"),
+or a genuine Integrity flag stated at the descriptive level the evidence
+actually clears. Every claim in the shared layer (any generator's
+`TestResult`, any Explorer write-up destined for one) declares a `strength`:
+
+1. **descriptive** — states a measurement, no comparison ("recusal rate is
+   24%").
+2. **comparative** — compares two named quantities/eras/groups ("recusal
+   rate fell from 96% to 24%"). Needs the base rate and era (4.4/2.4)
+   either way.
+3. **superlative** — singles out *one* entity as most/least/first/highest/
+   lowest among a group ("the lowest attendance of any sitting
+   councillor"). **Requires the superlative check below.** This is the
+   flag-2 class: the exact shape of the mis-singled-out stay-and-vote flag
+   (docs/AGENT_DESIGN.md's motivating incident) and
+   `EDITOR_PROTOCOL.md`'s open "n=5 mayoral 'least contested'" question —
+   both are superlative wording that outran what a bare n-floor catches.
+4. **associative** — links two patterns without asserting either caused the
+   other ("X's votes align with Y's on 80% of contested items"). Do not
+   let associative wording drift into causal-sounding verbs ("drives",
+   "leads to") — that's a strength violation even if no single word is
+   technically false.
+5. **causal-implying** — wording that states or strongly implies one thing
+   caused another. Per 4.2 (data shows pattern and opportunity, almost
+   never intent), this level is almost never earned by a data finding on
+   this corpus; if you reach for it, you are very likely one step past
+   what the evidence supports — downgrade to associative and say why the
+   causal reading is merely *consistent with*, not established.
+
+**The superlative check** (required whenever `strength = superlative`,
+before the claim ships): three sub-checks, each answerable from the data,
+not assumed —
+- **ties** — is the "most/least" entity actually tied or near-tied with
+  others the wording obscures? ("The lowest of 13" reads very differently
+  when three councillors are within a point of each other than when one
+  is a clear outlier.)
+- **shared_cause** — is there a lawful, shared reason multiple entities
+  would score similarly (e.g. one meeting everyone happened to miss),
+  such that singling out one specific name misattributes a group pattern
+  to an individual?
+- **lawful_exception** — is the "worst" instance actually a lawfully
+  exempted case rather than a genuine outlier? The concrete precedent:
+  a councillor's post-2022 stay-and-vote declarations that cite s.5.69
+  Ministerial approval to participate are a distinct, non-adverse
+  category, not a compliance lapse — including them in a superlative
+  "most frequent stay-and-vote" ranking fabricates the pattern (see
+  `docs/review` BLOCKING flag history, 2026-08-22 pass 1).
+A superlative claim that fails any of the three sub-checks either drops to
+`comparative` (state the distribution, not the single name) or is
+reframed to explicitly account for the tie/shared-cause/exception in the
+same sentence — never shipped as a clean superlative with the caveat
+buried elsewhere (4.3's "caveat integration" rule applies here directly).
 
 ---
 

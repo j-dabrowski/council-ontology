@@ -96,13 +96,20 @@ one shared reference layer, two protocol documents.
   before), and from the 🔭 Research track's human-applied candidates (Part 3.5,
   added 2026-08-20, is the first of the latter, merged directly in design
   conversation before the track's file-review gate existed — see below).
-- `investigator/Explorer_prompt.txt` — **exploration mode** (v2.6): generate and test
-  novel hypotheses; Stage 9 self-scores the session and proposes the next prompt edit.
-- `investigator/Refiner_prompt.txt` — **refinement mode** (v1.0): codify a validated
+- `investigator/Explorer_prompt.txt` — **exploration mode** (v3.0, discovery-only
+  as of 2026-08-23): generate and test novel hypotheses, seeded from the
+  coverage register's worst open gap rather than raw domain-breadth counting;
+  no longer surveys the corpus (consumes `council profile`'s output instead)
+  or builds anything (panels/evidence/synthesis moved to the future Renderer
+  role). Stage 3 self-scores the session against a four-dimension benchmark
+  and proposes the next prompt edit.
+- `investigator/Refiner_prompt.txt` — **refinement mode** (v1.2): codify a validated
   finding into a permanent, council-agnostic entry in `tests.py` / `queries.py` —
-  or retroactively verify/fix an already-shipped test against the six-dimension
-  benchmark (two entry points; the retroactive path is the one with real
-  calibration data so far, see `AUDIT_2026-08-14.md`).
+  or retroactively verify/fix an already-shipped test against the
+  seven-dimension benchmark (two entry points; the retroactive path is the
+  one with real calibration data so far, see `AUDIT_2026-08-14.md`). As of
+  2026-08-23 also emits a declaration block (unit/MIN_N/strength/principle)
+  for the S7 invariant gate and updates the coverage register.
 - `investigator/Runner_prompt.txt` — **production run mode** (v1.0): execute the frozen
   battery, export JSON snapshots, verify the frontend, spot-check for regressions
   against the latest `AUDIT_<date>.md`. No hypothesis generation, no self-scoring;
@@ -111,10 +118,13 @@ one shared reference layer, two protocol documents.
 
 **Protocol documents:**
 - `investigator/EXPLORATION_PROTOCOL.md` — benchmark-gated improvement loop for
-  `Explorer_prompt.txt`: seven dimensions, Cambridge calibration scores, improvement
+  `Explorer_prompt.txt`: four dimensions (rewritten 2026-08-23 — register-gap
+  reduction, structural kill rate, finding rate, framing balance; the original
+  seven-dimension Cambridge calibration is kept as history), improvement
   loop. Explorer prompt is improved until benchmark is cleared, then frozen.
 - `investigator/REFINEMENT_PROTOCOL.md` — benchmark-gated improvement loop for
-  `Refiner_prompt.txt` and the test harness. Six dimensions defined 2026-08-14
+  `Refiner_prompt.txt` and the test harness. Seven dimensions (declaration
+  completeness added 2026-08-23; the original six defined 2026-08-14
   (two hard gates: verification accuracy, caveat/join safety); first calibration
   data recorded.
 
@@ -244,12 +254,12 @@ The non-obvious edges, spelled out:
 | Edge | Direction | What flows |
 |------|-----------|-----------|
 | **Pipeline → Investigator** | substrate | The extracted DB + schema is what the investigator queries. Extraction **caveats** (UPPERCASE enums, minutes-only vs agenda contamination, `item_reference` not meeting-unique) are documented in `Investigator_prompt.txt` Part 0 — change the pipeline and that section must follow. |
-| **Investigator → Pipeline** (`DATA_ENRICHMENT.md`) | backlog | Every structural kill in an Explorer session is written into `pipeline/DATA_ENRICHMENT.md`, with a council-agnostic pattern layer above the corpus-specific instance — *while `data_enrichment_status` in `config/agent_switches.json` reads OPEN* (`Explorer_prompt.txt` v2.6 step 0). Flip that value to FROZEN once the backlog is judged sufficient and Explorer skips the write (its core investigation is unaffected); reading the file (typology cross-reference, Pattern-exists check) still happens either way. That file lives in the pipeline track but is *populated by the investigator* — it's the bridge that turns "we couldn't test X" into a planned re-extraction. |
+| **Investigator → Pipeline** (`DATA_ENRICHMENT.md`) | backlog | Every structural kill in an Explorer session is written into `pipeline/DATA_ENRICHMENT.md`, with a council-agnostic pattern layer above the corpus-specific instance — *while `data_enrichment_status` in `config/agent_switches.json` reads OPEN* (`Explorer_prompt.txt` v3.0 Stage 2 step 0). Flip that value to FROZEN once the backlog is judged sufficient and Explorer skips the write (its core investigation is unaffected); reading the file (typology cross-reference, Pattern-exists check) still happens either way. That file lives in the pipeline track but is *populated by the investigator* — it's the bridge that turns "we couldn't test X" into a planned re-extraction. |
 | **Pipeline → Pipeline** (`DATA_ENRICHMENT.md` → typology stage) — *new 2026-08-20* | self-loop, read | On every new corpus, the typology convergence loop (`council typology <council>`) cross-references its rare-heading/`other_content` aggregation against `DATA_ENRICHMENT.md`'s pattern layer before generating the Level 2 schema-update prompt. Pure text parse, no new LLM call — reuses the aggregation typology already computes. This is what lets schema-gap knowledge compound across corpora instead of only ever being caught reactively, post-extraction. |
 | **Research → Investigator + Pipeline** (→ `pending_merges/` → Part 3 + `DATA_ENRICHMENT.md`) — *new 2026-08-20, gated by default as of v1.2* | taxonomy + pattern growth | A candidate genre from the 🔭 Research track that clears its own four-dimension self-check gets a ready-to-apply file in `research/pending_merges/` (default) for a human to paste into both `Investigator_prompt.txt` Part 3 and `pipeline/DATA_ENRICHMENT.md`'s pattern layer — or, only if a human explicitly declared auto-merge mode at session start, Researcher writes both directly, same session. Council-agnostic — benefits every future corpus, not just whichever one (if any) motivated the research. |
 | **RESEARCH_PROTOCOL.md → Researcher_prompt.txt** — *new 2026-08-20* | governance | Same shape as `EXPLORATION_PROTOCOL.md → Explorer_prompt.txt`: benchmark-gated. Default is file-review (Researcher scores its own session, writes pending-merge files, a human applies them); auto-merge is available only as an explicit per-session opt-in, ending in a stage-contract completion block either way. |
-| **EXPLORATION_PROTOCOL.md → Explorer_prompt.txt** | governance | The exploration protocol is the benchmark-gated plan for iterating the explorer prompt. Stage 9 of each session self-scores against the benchmark and proposes the next edit; a human approves before the version is bumped. |
-| **REFINEMENT_PROTOCOL.md → Refiner_prompt.txt** | governance | The refinement protocol governs how validated findings are codified into permanent battery tests, and (as of 2026-08-14) how already-shipped tests are retroactively verified against the same six-dimension benchmark. |
+| **EXPLORATION_PROTOCOL.md → Explorer_prompt.txt** | governance | The exploration protocol is the benchmark-gated plan for iterating the explorer prompt. Stage 3 of each session self-scores against the benchmark and proposes the next edit; a human approves before the version is bumped. |
+| **REFINEMENT_PROTOCOL.md → Refiner_prompt.txt** | governance | The refinement protocol governs how validated findings are codified into permanent battery tests, and (as of 2026-08-14) how already-shipped tests are retroactively verified against the same seven-dimension benchmark. |
 | **Investigator → Frontend** | findings | Findings in `INVESTIGATIONS.md` become panels via the `INTERACTIVITY.md` recipe; the standard test battery (`src/analysis/tests.py`) feeds the Scorecard; `FINDINGS_SUMMARY.md` feeds the Overview panel. |
 | **Pipeline → Frontend** | data | `council publish` (a pipeline CLI command) exports the static JSON snapshots the panels read; drill-down "receipts" come from the `extraction_evidence` table the pipeline populates. |
 | **Strategy → all** | priorities | `PRIVATE_ASSESSMENT.md` consumes every track's output to rank what matters next (second council, defamation mitigation on named individuals, About/methodology pages). |
