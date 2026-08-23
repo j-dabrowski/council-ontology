@@ -323,16 +323,28 @@ What *is* built now, so nothing has to be re-architected later: every
 snapshot `council draft` produces is tagged in its manifest with a tier —
 `"public"` or `"full"` — via the `SNAPSHOT_TIER` map in `src/cli.py`.
 **Everything defaults to `"full"` unless explicitly listed as `"public"`**,
-so an unlisted or newly-added snapshot is private by default. `council
-publish` copies `"public"`-tier files to `frontend/public/data/` as normal,
-and copies `"full"`-tier files to `data/published_full/<council>/<run_id>/`
-instead — gitignored, and (when run via `publish.yml`) archived to a private
-GCS prefix rather than committed. No snapshot is marked `"public"` yet
-(the actual free/paywalled split — whole panels vs. per-field quote
-redaction — is an open product decision), so today this is a no-op: publish
-still only ever writes to `frontend/public/data/`, because nothing is tagged
-to go anywhere else. The seam exists; nobody has to remember to "turn on"
-gating when the product decision is made.
+so an unlisted snapshot is private by default. `council publish` copies
+`"public"`-tier files to `frontend/public/data/` as normal, and copies
+`"full"`-tier files to `data/published_full/<council>/<run_id>/` instead —
+gitignored, and (when run via `publish.yml`) archived to a private GCS
+prefix rather than committed. The seam exists; nobody has to remember to
+"turn on" gating when the free/paywalled product split (whole panels vs.
+per-field quote redaction) is decided.
+
+**`scorecard` is the one exception to hand-assignment**, and as of the S7
+tier-derivation step (`docs/AGENT_DESIGN.md` §6 Step 2) it's no longer a
+static entry in `SNAPSHOT_TIER` at all: `_tier_of` derives its tier from the
+battery itself via `derive_claim_tier` (`src/invariant_gate.py`) —
+`"public"` iff every claim in the battery is `institutional`-unit (already
+guaranteed name-free by the S7 gate), `"full"` the moment any claim is
+`individual`/`individual_implicating`. Every other snapshot (power,
+recusal, councillors, …) is per-councillor profile data, not a claim
+object yet, so it stays on the static `SNAPSHOT_TIER` map (currently
+empty → `"full"`) until it's represented as claims too. Today the whole
+battery is institutional, so a healthy `council draft` run always derives
+`"public"` for `scorecard` — the first snapshot ever tagged public, and
+the first real (not placeholder) data `council publish` would actually
+copy to `frontend/public/data/`.
 
 ### Placeholder data
 

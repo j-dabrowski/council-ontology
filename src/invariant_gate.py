@@ -26,6 +26,21 @@ Three checks, each traceable to a real Editor pass-1 finding
 - **identity-resolution clean bill** — an `individual` claim needs
   `entity_resolution == "clean"`; an open split means the person behind the
   claim isn't reliably one person yet (the flag-7 class).
+
+Also owns **tier derivation** (§4/§7): the pure function of a claim batch
+that decides whether the snapshot built from it may ship at the
+institutional/public tier, replacing the hand-assigned `SNAPSHOT_TIER`
+map in `src/cli.py` for claim-bearing snapshots. `derive_claim_tier` is
+deliberately whole-batch, not per-claim: a batch is `"public"` only if
+*every* claim in it is `institutional`-unit (already guaranteed name-free
+by the gate above); one `individual`/`individual_implicating` claim drops
+the whole batch to `"full"` rather than shipping a partial, redacted
+version of it. Per-claim redaction (the `individual_implicating`
+"reduced form" described in `INFORMATION_ARCHITECTURE.md` §4 — e.g. a
+distribution without its per-person bars) is real future work, not built
+here: nothing in the current battery needs it yet, and designing that
+mechanism against zero real examples would be speculative (see the
+2026-08-23 Step 2 Build log entry in `docs/AGENT_DESIGN.md`).
 """
 
 from __future__ import annotations
@@ -114,3 +129,19 @@ def run_invariant_gate(claims: list[TestResult], min_n: int) -> GateResult:
             ))
 
     return GateResult(passed=not violations, violations=violations)
+
+
+def derive_claim_tier(claims: list[TestResult]) -> str:
+    """`"public"` iff every claim in the batch is `institutional`-unit (a
+    claim with `data_ok=False` carries no statistic and doesn't count
+    against this, same as the gate above); `"full"` otherwise. Never an
+    authorial choice — a pure function of the claims themselves, called
+    once the S7 gate has already passed (so any `institutional` claim here
+    is already provably name-free).
+    """
+    for c in claims:
+        if not c.data_ok:
+            continue
+        if c.unit_of_analysis != UNIT_INSTITUTIONAL:
+            return "full"
+    return "public"

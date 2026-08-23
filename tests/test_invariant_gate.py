@@ -3,6 +3,8 @@ Unit tests for src/invariant_gate.py — the S7 invariant gate:
   - run_invariant_gate() against a clean battery and against each of the
     three violation classes (name-free schema, MIN_N, entity-resolution)
   - load_min_n() reading the real config/invariants.json
+  - derive_claim_tier() — tier derivation (§4/§7): public iff every claim
+    in the batch is institutional-unit
 
 All plain TestResult objects and plain data — no DB, no CLI invocation.
 """
@@ -18,7 +20,7 @@ from src.analysis.tests import (
     UNIT_INDIVIDUAL_IMPLICATING,
     UNIT_INSTITUTIONAL,
 )
-from src.invariant_gate import load_min_n, run_invariant_gate
+from src.invariant_gate import derive_claim_tier, load_min_n, run_invariant_gate
 
 
 def _claim(**overrides) -> TestResult:
@@ -204,3 +206,43 @@ def test_load_min_n_rejects_negative(tmp_path):
     path.write_text(json.dumps({"min_n": -1}))
     with pytest.raises(ValueError):
         load_min_n(path)
+
+
+# ---------------------------------------------------------------------------
+# derive_claim_tier
+# ---------------------------------------------------------------------------
+
+def test_all_institutional_batch_derives_public():
+    battery = [_claim(test_id="a"), _claim(test_id="b", n=2)]
+    assert derive_claim_tier(battery) == "public"
+
+
+def test_one_individual_implicating_claim_drops_whole_batch_to_full():
+    battery = [
+        _claim(test_id="a"),
+        _claim(test_id="b", unit_of_analysis=UNIT_INDIVIDUAL_IMPLICATING, n=10),
+    ]
+    assert derive_claim_tier(battery) == "full"
+
+
+def test_one_individual_claim_drops_whole_batch_to_full():
+    battery = [
+        _claim(test_id="a"),
+        _claim(
+            test_id="b", unit_of_analysis=UNIT_INDIVIDUAL,
+            named_entities=["Jane Citizen"], n=25, entity_resolution=ENTITY_RESOLUTION_CLEAN,
+        ),
+    ]
+    assert derive_claim_tier(battery) == "full"
+
+
+def test_not_computable_claim_does_not_block_public_tier():
+    battery = [
+        _claim(test_id="a"),
+        _claim(test_id="b", data_ok=False, unit_of_analysis=UNIT_INDIVIDUAL, n=1),
+    ]
+    assert derive_claim_tier(battery) == "public"
+
+
+def test_empty_battery_derives_public():
+    assert derive_claim_tier([]) == "public"

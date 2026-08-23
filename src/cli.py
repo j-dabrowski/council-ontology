@@ -1647,15 +1647,25 @@ def cmd_analyse(args) -> None:
 
 # Every snapshot _generate_snapshots can write, tagged public vs. full-tier.
 # Everything defaults to "full" (private) unless explicitly listed here as
-# "public" — fail-safe direction, so an unlisted or newly-added snapshot is
-# never accidentally exposed. No snapshot is marked "public" yet: the actual
-# free/paywalled split is a product decision that hasn't been made, so
-# `council publish` today still only ever writes to frontend/public/data/
-# because nothing is tagged to go there. See docs/TESTING.md.
+# "public", or (for claim-bearing snapshots — see `_tier_of`) derived from
+# the claims themselves — fail-safe direction either way, so an unlisted or
+# newly-derived-full snapshot is never accidentally exposed. Static entries
+# here are for snapshots with no claim-derivation path of their own; none
+# exist yet, so this stays empty. See docs/TESTING.md.
 SNAPSHOT_TIER: dict[str, str] = {}
 
+# Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
+# tier-derivation rule (src/invariant_gate.py's derive_claim_tier). Only
+# "scorecard" is built directly from TestResult claims today; every other
+# snapshot is per-councillor profile data, out of scope for claim-level tier
+# derivation until it's represented as claim objects too.
+CLAIM_DERIVED_SNAPSHOTS = ("scorecard",)
 
-def _tier_of(name: str) -> str:
+
+def _tier_of(name: str, battery: list | None = None) -> str:
+    if name in CLAIM_DERIVED_SNAPSHOTS and battery is not None:
+        from src.invariant_gate import derive_claim_tier
+        return derive_claim_tier(battery)
     return SNAPSHOT_TIER.get(name, "full")
 
 
@@ -2627,7 +2637,7 @@ def cmd_draft(args) -> None:
         name: hashlib.sha256((output_dir / f"{name}.json").read_bytes()).hexdigest()
         for name in written
     }
-    tiers = {name: _tier_of(name) for name in written}
+    tiers = {name: _tier_of(name, battery) for name in written}
 
     (output_dir / "manifest.json").write_text(_json.dumps({
         "run_id": run_id,

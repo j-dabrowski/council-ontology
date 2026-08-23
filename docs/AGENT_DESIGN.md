@@ -306,7 +306,35 @@ Risk-reduction first, roles last — each step ships value alone:
    claim (n=2, `entity_resolution="open-splits"`) into that same real battery
    trips both the MIN_N and entity-resolution checks. No deviation from spec.
 2. **Tier derivation** onto the existing `public`/`full` rail — makes the
-   institutional product real; first `public`-tagged snapshots.
+   institutional product real; first `public`-tagged snapshots. **Done
+   2026-08-23** — `derive_claim_tier` (`src/invariant_gate.py`) is a pure
+   function of a claim batch: `"public"` iff every claim is
+   `institutional`-unit, `"full"` if any is `individual`/
+   `individual_implicating`. `_tier_of` (`src/cli.py`) now calls it for the
+   `scorecard` snapshot (the only one built from `TestResult` claims today —
+   `CLAIM_DERIVED_SNAPSHOTS`) instead of reading a static `SNAPSHOT_TIER`
+   entry; every other snapshot (per-councillor profile data, not yet claim
+   objects) is unaffected. `tests/test_invariant_gate.py` covers all-clean,
+   one bad claim of each unit, a not-computable claim not counting against
+   the tier, and the empty-battery edge case. Verified against the real
+   Cambridge corpus: `council draft cambridge` now derives `scorecard` as
+   `"public"` (29/29 claims institutional) — the first snapshot ever tagged
+   public; splicing one well-formed (gate-passing, n=25, entity_resolution
+   clean) `individual` claim into that same real battery drops it back to
+   `"full"`, confirming tier derivation is a real, independent check and not
+   just a restatement of the S7 gate. Did not run `council publish` for
+   real — that copies bytes into the git-tracked, Vercel-served
+   `frontend/public/data/`, a separate publish-authorization decision this
+   step doesn't make on its own.
+   **Deviation (scoping, not a spec conflict):** `derive_claim_tier` is
+   whole-batch, not per-claim — one non-institutional claim drops the
+   entire `scorecard` snapshot to `"full"` rather than shipping a filtered
+   institutional subset. §4's "reduced form" per-claim redaction for
+   `individual_implicating` claims (e.g. a distribution without its
+   per-person bars) is real future work, not built here: no claim in the
+   current battery needs it, and designing the redaction mechanism against
+   zero real examples would be speculative. Revisit once a generator
+   actually produces a non-institutional claim.
 3. **S2 `council profile`** — unblocks the Explorer/Refiner prompt edits.
 4. **Coverage register file + verifier** — the audit grid becomes data.
 5. **Prompt/protocol revisions** (Explorer v3, Refiner v1.2, Editor v0.4,
