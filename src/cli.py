@@ -1310,6 +1310,27 @@ def cmd_validate(args) -> None:
     run(args)
 
 
+def _cmd_agent_prompt(prompt_name: str, label: str, **placeholders: str) -> None:
+    """Shared body for `explore` / `refine` / `render`: load a
+    docs/agent_prompts/<prompt_name>.txt (filling any placeholders) and run
+    it as a real `claude -p` session, via scripts/conductor_loop.py's
+    load_prompt/run_claude — the same billing-safe (subscription auth only,
+    ANTHROPIC_API_KEY stripped) subprocess call the Conductor loop itself
+    uses, kept as one copy rather than a second implementation drifting out
+    of sync (see that module's own docstring).
+    """
+    import subprocess as _subprocess
+
+    from scripts.conductor_loop import load_prompt, run_claude
+
+    prompt = load_prompt(prompt_name, **placeholders)
+    try:
+        run_claude(prompt, label)
+    except _subprocess.CalledProcessError as exc:
+        console.print(f"[red]{label} failed (exit {exc.returncode}): {exc.cmd}[/red]")
+        sys.exit(2)
+
+
 def cmd_profile(args) -> None:
     """S2 corpus profile (docs/INFORMATION_ARCHITECTURE.md §3): a scripted,
     no-LLM pass over the already-extracted corpus — NULL rates, document/date
@@ -3152,6 +3173,26 @@ def main() -> None:
     p_profile.add_argument("council", choices=list(COUNCILS))
     p_profile.set_defaults(func=cmd_profile)
 
+    # explore (S3: Explorer — real `claude -p` session, generate/test hypotheses)
+    p_explore = sub.add_parser(
+        "explore",
+        help="S3: Explorer — generate and test novel hypotheses (docs/AGENT_DESIGN.md "
+             "§2). Self-directing, no council argument — reads Investigator_prompt.txt "
+             "Part 0 for corpus/scope. TRAINING corpora only. A real `claude -p` "
+             "session (real time, real usage), not a script — docs/agent_prompts/explorer.txt",
+    )
+    p_explore.set_defaults(func=lambda a: _cmd_agent_prompt("explorer", "Explorer"))
+
+    # refine (S4: Refiner — real `claude -p` session, codify a validated finding)
+    p_refine = sub.add_parser(
+        "refine",
+        help="S4: Refiner — codify the oldest eligible validated finding in "
+             "INVESTIGATIONS.md into the permanent battery (docs/AGENT_DESIGN.md §2). "
+             "Self-directing as of v1.1 — Step 0 picks its own target, no council "
+             "argument. A real `claude -p` session — docs/agent_prompts/refiner.txt",
+    )
+    p_refine.set_defaults(func=lambda a: _cmd_agent_prompt("refiner", "Refiner"))
+
     # reply-packets (S9 right of reply — packet assembly)
     p_reply = sub.add_parser(
         "reply-packets",
@@ -3167,6 +3208,41 @@ def main() -> None:
              "about the same claim.",
     )
     p_reply.set_defaults(func=cmd_reply_packets)
+
+    # render (S10: Renderer — real `claude -p` session, two modes)
+    p_render = sub.add_parser(
+        "render",
+        help="S10: Renderer — plain_language mode (institutional product -> resident "
+             "summary) or synthesis mode (deep product -> cross-claim prose), over a "
+             "draft that has already cleared S7/S8 (docs/AGENT_DESIGN.md §2). Neither "
+             "mode is self-directing about which draft to render. Not yet wired into "
+             "any workflow (no calibration data). A real `claude -p` session — "
+             "docs/agent_prompts/renderer.txt",
+    )
+    p_render.add_argument("mode", choices=["plain_language", "synthesis"])
+    p_render.add_argument("council", choices=list(COUNCILS))
+    p_render.add_argument(
+        "run_id",
+        help="the data/draft/<council>/<run_id> directory to render (from `council draft`)",
+    )
+
+    def _cmd_render(a):
+        draft_dir = Path("data/draft") / a.council / a.run_id
+        if not draft_dir.exists():
+            console.print(f"[red]No draft directory at {draft_dir}[/red]")
+            sys.exit(1)
+        if not (draft_dir / "manifest.json").exists():
+            console.print(
+                f"[yellow]Warning: {draft_dir} has no manifest.json — the S7 gate "
+                "never passed on this draft (or it hasn't been re-drafted since a "
+                "prior blocked run). Rendering it anyway is on you.[/yellow]"
+            )
+        _cmd_agent_prompt(
+            "renderer", f"Renderer [{a.mode}], {a.council}/{a.run_id}",
+            mode=a.mode, council=a.council, run_id=a.run_id,
+        )
+
+    p_render.set_defaults(func=_cmd_render)
 
     # batch-collect
     p_batch_collect = sub.add_parser(
@@ -3472,6 +3548,42 @@ def main() -> None:
     )
     p_draft.add_argument("council", choices=list(COUNCILS))
     p_draft.set_defaults(func=cmd_draft)
+
+    # editor-loop (S8: scripted Editor/Fixer review loop — the Conductor role, scripted)
+    p_loop = sub.add_parser(
+        "editor-loop",
+        help="S8: scripted draft -> Editor -> Fixer review loop (docs/AGENT_DESIGN.md "
+             "§2, scripts/conductor_loop.py) — real `claude -p` calls for Editor and "
+             "any flagged Fixer track(s); never calls `council publish` itself. Stops "
+             "at a clean PASS or a pass-cap/BLOCKED escalation and prints what to run "
+             "next.",
+    )
+    p_loop.add_argument("council", choices=list(COUNCILS))
+    p_loop.add_argument(
+        "--max-passes", type=int, default=None, dest="max_passes",
+        help="override conductor_max_passes from config/agent_switches.json",
+    )
+    p_loop.add_argument(
+        "--dry-run", action="store_true", dest="dry_run",
+        help="print the plan and exit — no draft, no `claude` calls, no cost",
+    )
+
+    def _cmd_loop(a):
+        import subprocess as _subprocess
+
+        from scripts.conductor_loop import load_max_passes, run_conductor_loop
+
+        max_passes = a.max_passes if a.max_passes is not None else load_max_passes()
+        try:
+            sys.exit(run_conductor_loop(a.council, max_passes, a.dry_run))
+        except _subprocess.CalledProcessError as exc:
+            console.print(f"[red]A step in the loop failed (exit {exc.returncode}): {exc.cmd}[/red]")
+            sys.exit(2)
+        except RuntimeError as exc:
+            console.print(f"[red]Loop error: {exc}[/red]")
+            sys.exit(2)
+
+    p_loop.set_defaults(func=_cmd_loop)
 
     # publish
     p_publish = sub.add_parser(

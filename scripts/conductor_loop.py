@@ -77,7 +77,13 @@ ALLOWED_TOOLS = "Read,Edit,Write,Bash,Grep,Glob"
 AGENT_PROMPTS_DIR = ROOT / "docs" / "agent_prompts"
 
 
-def _load_prompt(name: str, **placeholders: str) -> str:
+def load_prompt(name: str, **placeholders: str) -> str:
+    """Loads docs/agent_prompts/<name>.txt and fills any `<placeholder>`
+    tokens. Public (no leading underscore) because `src/cli.py`'s `explore`
+    /`refine`/`render` commands import this directly, alongside `run_claude`
+    below, so there stays exactly one copy of "how to invoke a `claude -p`
+    prompt" in this repo rather than a second one drifting out of sync.
+    """
     text = (AGENT_PROMPTS_DIR / f"{name}.txt").read_text()
     for key, value in placeholders.items():
         text = text.replace(f"<{key}>", value)
@@ -222,7 +228,7 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
         run_id = run_draft(council)
         draft_dir = DATA_DRAFT / council / run_id
 
-        editor_prompt = _load_prompt("editor", council=council, run_id=run_id)
+        editor_prompt = load_prompt("editor", council=council, run_id=run_id)
         run_claude(editor_prompt, f"Editor, pass {pass_num}, run {run_id}")
 
         record = latest_review_record(draft_dir)
@@ -265,7 +271,7 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
             # Conductor's chain-wide pass_num -- passing the latter in
             # here is exactly the bug this fixed (see EDITOR_PROTOCOL.md's
             # "<n> numbering: per run-directory or per-chain?").
-            fixer_prompt = _load_prompt("fixer", council=council, run_id=run_id, track=track)
+            fixer_prompt = load_prompt("fixer", council=council, run_id=run_id, track=track)
             run_claude(fixer_prompt, f"Fixer [{track}], pass {pass_num}, run {run_id}")
             fix_reports.append(latest_fix_report(draft_dir, track))
 
