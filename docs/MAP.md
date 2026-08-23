@@ -128,6 +128,15 @@ one shared reference layer, two protocol documents.
   between taxonomy and battery, and seeds the redesign's coverage register.
   Git-tracked (names no individuals — allow-listed in `.gitignore`, unlike
   the other investigation records).
+- `investigator/coverage_register.json` — the audit's grid as data
+  (`docs/AGENT_DESIGN.md` §6 Step 4): one row per dimension, the `test_id`s
+  that cover it, a DENSE/MODERATE/THIN/EMPTY verdict plus `data_blocked`/
+  `out_of_scope` flags. `src/analysis/coverage_register.py`'s
+  `verify_register()` cross-checks it against the real battery's test_ids
+  (statically parsed from `tests.py`, no DB) — `tests/test_coverage_register.py`
+  runs this on every test run, so the register can't silently drift from
+  what's actually shipped. Not yet read by Explorer or updated by
+  Refiner/Researcher — that wiring is Step 5.
 
 **Loop (Exploration):** run Explorer prompt → append to INVESTIGATIONS → Stage 9
 self-score → if below threshold, propose edit to `Explorer_prompt.txt` and bump

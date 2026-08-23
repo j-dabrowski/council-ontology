@@ -1,0 +1,182 @@
+{
+  "source": "docs/investigator/COVERAGE_AUDIT_2026-08-23.md",
+  "note": "The audit's 16-dimension grid, as data (docs/AGENT_DESIGN.md §3 Q5, C7). `verdict` is the density tier (DENSE|MODERATE|THIN|EMPTY); `data_blocked` and `out_of_scope` are separate flags so a compound label like 'EMPTY + DATA-BLOCKED' or 'MODERATE / partly DATA-BLOCKED' in the audit's prose becomes two clean fields instead of a string to parse. `tests` lists real `test_id`s from src/analysis/tests.py, verified by src/analysis/coverage_register.py's verify_register() (tests/test_coverage_register.py runs it in CI on every push). `hypotheses` are INVESTIGATIONS.md entry numbers (informational only — not machine-checked; that file is gitignored). Updated by: Refiner on codification, Researcher via pending-merges proposing new rows, read by Explorer at Stage 2 (both integrations are docs/AGENT_DESIGN.md §6 Step 5, not built yet).",
+  "dimensions": [
+    {
+      "id": 1,
+      "name": "Conflict-of-interest management (declare → recuse → manage)",
+      "tradition": "OAG · Nolan Integrity/Objectivity · Part 3.3",
+      "tests": ["conflict.recusal_management", "conflict.recusal_trend", "conflict.delegate_body_conflict"],
+      "hypotheses": [1, 19, 23, 31, 34, 41],
+      "verdict": "DENSE",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": ""
+    },
+    {
+      "id": 2,
+      "name": "Procurement integrity (threshold-gaming, supplier capture, decider–supplier links)",
+      "tradition": "OAG (its first LG performance audit) · ICAC/IBAC grammar · Part 3.3",
+      "tests": ["procurement.concentration", "procurement.threshold_gaming", "procurement.incumbency", "procurement.decider_supplier_conflict", "procurement.single_source"],
+      "hypotheses": [2, 15, 26, 35, 42],
+      "verdict": "DENSE",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "Notably two-sided: four converging clean nulls are published as supportive credits. procurement.single_source is a placeholder generator (always data_ok=false on this corpus) not listed in the audit's own prose table."
+    },
+    {
+      "id": 3,
+      "name": "Transparency / confidentiality use",
+      "tradition": "Part 3.4 · Nolan Openness · CIPFA G",
+      "tests": ["transparency.confidential_share", "transparency.confidential_tender_size", "transparency.confidential_topics"],
+      "hypotheses": [9, 25, 30, 36, 44, 49],
+      "verdict": "DENSE",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": ""
+    },
+    {
+      "id": 4,
+      "name": "Power structure & factional capture",
+      "tradition": "Perth Inquiry root-cause genre · Part 3.2 · Carpenter/Moss capture",
+      "tests": ["governance.power_spread", "governance.chair_capture", "governance.durable_faction", "governance.oversight_body_capture", "governance.unanimity_trend"],
+      "hypotheses": [5, 11, 18, 21, 27, 28, 45, 48],
+      "verdict": "DENSE",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": ""
+    },
+    {
+      "id": 5,
+      "name": "Elected-vs-administrative locus (principal–agent, officer capture, delegation)",
+      "tradition": "Principal–agent · Part 3.2 \"visible contest is theatre\" · Golden Triangle",
+      "tests": ["governance.officer_ratification"],
+      "hypotheses": [17, 22, 32, 33, 43],
+      "verdict": "MODERATE",
+      "data_blocked": true,
+      "out_of_scope": false,
+      "notes": "One shipped test; the deeper questions ([32] committee-vs-chamber, [43] CEO-era discontinuity) died structurally — the corpus sees the chamber, not the administration, a hard limit of minutes as a source."
+    },
+    {
+      "id": 6,
+      "name": "Chamber renewal & incumbency",
+      "tradition": "Part 3.2 · descriptive",
+      "tests": ["governance.incumbency", "governance.freshman_effect", "governance.election_cycle", "governance.attendance"],
+      "hypotheses": [8, 10, 16, 45],
+      "verdict": "MODERATE",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "Mostly neutral/descriptive — appropriate for this dimension."
+    },
+    {
+      "id": 7,
+      "name": "Citizen-input responsiveness (questions, deputations, petitions, objections)",
+      "tradition": "McCubbins/Schwartz fire-alarm · CIPFA B",
+      "tests": ["engagement.question_responsiveness", "engagement.deputation_dissent", "engagement.participation", "planning.objection_responsiveness"],
+      "hypotheses": [3, 6, 7, 12, 13, 37, 38, 40],
+      "verdict": "MODERATE",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "The only fire-alarm channel in an otherwise pure police-patrol battery; petition outcomes ([38]) are data-blocked at the hypothesis level (no register row of its own — tracked in pipeline/DATA_ENRICHMENT.md)."
+    },
+    {
+      "id": 8,
+      "name": "Planning fairness (applicant favouritism, big-dollar leniency)",
+      "tradition": "ICAC favouritism risk · Nolan Objectivity",
+      "tests": ["planning.big_dollar_leniency", "planning.repeat_applicant"],
+      "hypotheses": [14, 20],
+      "verdict": "MODERATE",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "Clean nulls, shipped as such."
+    },
+    {
+      "id": 9,
+      "name": "Economy / value-for-money (spending discipline, timing, waste)",
+      "tradition": "ISSAI 300 economy/efficiency · OAG financial audits · Part 3.1",
+      "tests": ["finance.eoy_spending"],
+      "hypotheses": [4, 29, 47],
+      "verdict": "THIN",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "One test, all nulls; the corpus records decisions to spend, not costs or unit prices."
+    },
+    {
+      "id": 10,
+      "name": "Financial sustainability (reserves, debt, structural balance, capitalisation dependency)",
+      "tradition": "The core of the intervention literature (Caller report; s.114 wave) · Part 3.1/3.6/3.7/3.9",
+      "tests": ["finance.reserve_trajectory"],
+      "hypotheses": [24],
+      "verdict": "EMPTY",
+      "data_blocked": true,
+      "out_of_scope": false,
+      "notes": "Headline finding (F2/F3): reserve/debt trajectories aren't reliably in minutes — they live in annual financial statements, budgets, and OAG results, a different document class from the same institution. finance.reserve_trajectory is a placeholder generator (always data_ok=false on this corpus), not a real signal yet. [24] parked."
+    },
+    {
+      "id": 11,
+      "name": "Programme effectiveness (did declared interventions achieve their stated purpose?)",
+      "tradition": "ISSAI 300 effectiveness · UK VFM arrangements duty · CIPFA C/D · Part 3.5",
+      "tests": [],
+      "hypotheses": [46],
+      "verdict": "EMPTY",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "In progress — taxonomy (3.5) and Dimension 1 domain F already exist; [46] is a first attempt (Session 11), methodology needs tightening; no shipped test yet."
+    },
+    {
+      "id": 12,
+      "name": "Gifts, benefits & post-separation relationships",
+      "tradition": "OAG audited exactly this, LG-wide · ICAC",
+      "tests": [],
+      "hypotheses": [],
+      "verdict": "EMPTY",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "Likely partly data-blocked (gift registers are usually separate documents), but acceptances/hospitality do surface in minutes — a hypothesis seed costs one Explorer slot to establish whether Cambridge's do."
+    },
+    {
+      "id": 13,
+      "name": "Records & recordkeeping quality",
+      "tradition": "OAG (a full LG performance audit topic) · VAGO/IBAC \"poor records are themselves an indicator\"",
+      "tests": [],
+      "hypotheses": [49],
+      "verdict": "THIN",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "Reframe opportunity (F4): the pipeline's own extraction caveats (split identities, NULL rates, missing values — now computed by council profile / src/analysis/profile.py, docs/AGENT_DESIGN.md §6 Step 3) are currently internal apologies; under this dimension they're a publishable finding about the council's records."
+    },
+    {
+      "id": 14,
+      "name": "Distributive equity (do benefits/attention track power or geography?)",
+      "tradition": "Distributive-politics literature · Nolan Selflessness",
+      "tests": [],
+      "hypotheses": [42],
+      "verdict": "EMPTY",
+      "data_blocked": false,
+      "out_of_scope": false,
+      "notes": "Plausibly feasible: planning applications and works tenders carry locations. The strongest layman-relevant empty row — \"does my end of the district get anything?\""
+    },
+    {
+      "id": 15,
+      "name": "Asset management",
+      "tradition": "OAG LG audit topic",
+      "tests": [],
+      "hypotheses": [],
+      "verdict": "EMPTY",
+      "data_blocked": true,
+      "out_of_scope": false,
+      "notes": "Valuations/renewals live in annual statements, not minutes."
+    },
+    {
+      "id": 16,
+      "name": "Service performance (are the services any good?)",
+      "tradition": "Best Value · resident experience",
+      "tests": [],
+      "hypotheses": [],
+      "verdict": "EMPTY",
+      "data_blocked": false,
+      "out_of_scope": true,
+      "notes": "Needs data external to any document corpus. Named as a scope boundary, not silently absent (coverage audit Recommendation 2)."
+    }
+  ]
+}

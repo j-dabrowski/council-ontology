@@ -39,8 +39,17 @@ elsewhere says to.
   signals (with-votes/with-terms/with-neither, duplicate family names),
   including that two councils sharing one DB never leak into each other's
   profile, from `src/analysis/profile.py`.
+- **`test_coverage_register.py`** — the S4 coverage register verifier:
+  `extract_shipped_test_ids()` against synthetic source (both call shapes
+  the real file uses), `verify_register()` catching each drift direction,
+  and — the actual always-on check — the real
+  `docs/investigator/coverage_register.json` against the real battery in
+  `src/analysis/tests.py`, which fails the moment a battery test is added,
+  renamed, or removed without updating the register. From
+  `src/analysis/coverage_register.py`.
 
-All of these test **pure functions or hermetic DB logic** — same inputs
+All of these test **pure functions or hermetic DB/source-parsing logic** —
+same inputs
 always produce the same outputs, no network/filesystem side effects
 (`test_extractor.py`'s and `test_profile.py`'s DB tests use an in-memory
 SQLite engine created fresh per test, which is

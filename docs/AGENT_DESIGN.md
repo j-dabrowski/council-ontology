@@ -365,6 +365,36 @@ Risk-reduction first, roles last — each step ships value alone:
    recurring no-January-meeting pattern, without either being hardcoded
    anywhere in the script. No deviation from spec.
 4. **Coverage register file + verifier** — the audit grid becomes data.
+   **Done 2026-08-23** — `docs/investigator/coverage_register.json`
+   transcribes the audit's 16-dimension grid: id, name, tradition, `tests`
+   (real `test_id`s), `hypotheses` (INVESTIGATIONS.md numbers, informational
+   only), `verdict` (DENSE/MODERATE/THIN/EMPTY), and `data_blocked`/
+   `out_of_scope` booleans replacing the audit's compound prose labels
+   ("EMPTY + DATA-BLOCKED", "MODERATE / partly DATA-BLOCKED") with two clean
+   fields. `src/analysis/coverage_register.py`'s `verify_register()` is the
+   verifier; `extract_shipped_test_ids()` gets the real, current test_ids by
+   statically AST-parsing `tests.py`'s source (no DB, no `run_test_battery`
+   call) — deliberately hermetic since no formal "generator declaration
+   block" exists yet for it to read instead (that's Step 5's job, per §2's
+   Refiner section). `tests/test_coverage_register.py` (11 tests) covers
+   both call shapes on synthetic source, both drift directions on synthetic
+   registers, and — the real, always-on check — the actual register against
+   the actual battery, which now runs in `pytest tests/` on every push.
+   **Scoping decision, not a deviation:** built the verifier as a pytest
+   test rather than a separate `council coverage-verify` command. Q5 says "a
+   CI script cross-checks it" — a test that runs automatically on every push
+   is a stronger, more reliable form of that than a manual command someone
+   has to remember to run, and TESTING.md's no-DB-in-required-CI rule is
+   satisfied for free since the AST approach never touches `council.db`.
+   Verified against the real files: extraction finds all 29 shipped
+   test_ids (27 real generators plus `procurement.single_source` and
+   `finance.reserve_trajectory`, two permanently-not-computable placeholders
+   the audit's own prose table didn't enumerate); `verify_register` against
+   the real register returns zero problems — every dimension's tests exist,
+   every shipped test_id is claimed by exactly one dimension. Did not wire
+   Explorer (Stage 2 reads) or Refiner (updates on codification) or
+   Researcher (pending-merge row proposals) to the register — all three are
+   Step 5.
 5. **Prompt/protocol revisions** (Explorer v3, Refiner v1.2, Editor v0.4,
    Conductor addition) — now they describe a world that exists.
 6. **Renderer + reply pipeline** — the new audience surfaces, last, on top
