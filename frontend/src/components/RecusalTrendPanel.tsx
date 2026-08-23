@@ -7,8 +7,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
-import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
-import { CouncillorLink } from "./CouncillorModal";
+import { DrillDown, SourceQuote } from "./DrillDown";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
 const ERA_LABEL: Record<string, string> = {
@@ -140,8 +139,6 @@ export function RecusalTrendPanel() {
     impartiality_n: byTE[era].impartiality_n ?? 0,
   }));
 
-  const topDriver = data.drivers[0];
-
   return (
     <Card
       title="Declared, Then Stayed — the Quiet Collapse of Recusal"
@@ -173,12 +170,12 @@ export function RecusalTrendPanel() {
           {data.financial_inquiry_pct}%→{data.financial_post_pct}%
         </span>
         <span className="objection-callout-text">
-          The fall isn't just a shift to softer interests. Even on <strong>financial conflicts</strong> —
-          where the law <em>requires</em> a member to leave the room — recusal dropped from{" "}
-          <strong>{data.financial_inquiry_pct}%</strong> during the state-appointed Authorised Inquiry to{" "}
-          <strong>{data.financial_post_pct}%</strong> after it
-          (n={data.financial_post_n}, directional). Compliance tightened while Cambridge was under
-          scrutiny, then let go once the inquiry lifted.
+          Even on <strong>financial conflicts</strong> — where the law <em>requires</em> a member to
+          leave the room — recusal held at <strong>{data.financial_inquiry_pct}%</strong> during the
+          state-appointed Authorised Inquiry and <strong>{data.financial_post_pct}%</strong> after it.
+          The only post-2022 financial-conflict declaration on record was a compliant step-out
+          (n={data.financial_post_n}) — too few to assess a trend either way on financial conflicts
+          alone.
         </span>
       </div>
 
@@ -253,17 +250,13 @@ export function RecusalTrendPanel() {
       <p className="chart-note">
         A hostile reader would say: "recusal fell only because declarations shifted to <em>impartiality</em>
         interests, where the law lets you stay and vote." True in part — impartiality declarations did
-        balloon. But the collapse shows up <em>within</em> the must-leave categories too: financial recusal
-        {" "}went {data.financial_inquiry_pct}% → {data.financial_post_pct}%
-        and proximity fell after the Inquiry as well. Faded bars are n&lt;20 (directional). Must-leave totals:
-        pre {data.must_leave_pre_n}, Inquiry {data.must_leave_inquiry_n}, post {data.must_leave_post_n}.
+        balloon. But the collapse shows up <em>within</em> the must-leave categories too: proximity
+        recusal fell from {byTE.inquiry.proximity}% to {byTE.post.proximity}% after the Inquiry
+        (n={byTE.inquiry.proximity_n}→{byTE.post.proximity_n}). Financial conflicts alone can't show a
+        trend either way — there was only one post-2022 financial declaration on record
+        (n={data.financial_post_n}). Faded bars are n&lt;20 (directional). Must-leave totals: pre{" "}
+        {data.must_leave_pre_n}, Inquiry {data.must_leave_inquiry_n}, post {data.must_leave_post_n}.
         {" "}Declaration→vote matched at item level (item reference ↔ agenda item).
-        {topDriver && (
-          <> <Reveal label="who drove this, post-2022">
-            Post-2022, the most frequent stay-and-vote on a serious conflict is{" "}
-            <CouncillorLink name={topDriver.name} /> ({topDriver.stayed}/{topDriver.total}).
-          </Reveal></>
-        )}
       </p>
     </Card>
   );

@@ -2252,6 +2252,7 @@ def _generate_snapshots(session, council_id: int, output_dir: Path, generated_at
             {"name": d.name, "stayed": d.stayed, "total": d.total}
             for d in rct.drivers
         ],
+        "ministerial_approved_post_n": rct.ministerial_approved_post_n,
     })
 
     # public-question responsiveness: are residents' questions answered in the
@@ -2415,7 +2416,7 @@ def _generate_snapshots(session, council_id: int, output_dir: Path, generated_at
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (
         Councillor as _CllrX, CouncillorTerm as _CTX,
-        Motion as _MotX, Meeting as _MeetX,
+        Motion as _MotX, Meeting as _MeetX, Vote,
     )
     from sqlalchemy import func as _func_x
 
@@ -2464,14 +2465,47 @@ def _generate_snapshots(session, council_id: int, output_dir: Path, generated_at
         if _role not in _roles_x[_n]:
             _roles_x[_n].append(_role)
 
-    _cllr_profiles: dict[str, dict] = {}
+    # Candidate names: the union of tenure/power/recusal profiles, not just
+    # councillor_terms rows — councillor_terms (electoral-commission data) is
+    # incomplete for 8 councillors with real vote/dissent/recusal history
+    # (confirmed 2026-08-23, defamation review pass 1 BLOCKING flag 2: e.g.
+    # Kate McKerracher, Ian Steele — both named in gated PowerPanel callouts
+    # whose click-through silently failed because they had no by_name entry).
+    # Slugs still come from a councillor_terms join where available, backed
+    # by a votes-based fallback for names councillor_terms misses.
+    _slug_map: dict[str, str] = {}
     for _gn, _fn, _slug in (
         session.query(_CllrX.given_name, _CllrX.family_name, _CllrX.slug)
         .join(_CTX, _CllrX.id == _CTX.councillor_id)
         .filter(_CTX.council_id == council_id)
         .distinct().all()
     ):
-        _name = f"{_gn or ''} {_fn or ''}".strip()
+        _slug_map[f"{_gn or ''} {_fn or ''}".strip()] = _slug
+    for _gn, _fn, _slug in (
+        session.query(_CllrX.given_name, _CllrX.family_name, _CllrX.slug)
+        .join(Vote, _CllrX.id == Vote.councillor_id)
+        .join(_MotX, Vote.motion_id == _MotX.id)
+        .join(_MeetX, _MotX.meeting_id == _MeetX.id)
+        .filter(_MeetX.council_id == council_id)
+        .distinct().all()
+    ):
+        _slug_map.setdefault(f"{_gn or ''} {_fn or ''}".strip(), _slug)
+
+    # Also union in the alignment vote pool (`rows`, built above for
+    # alignment.json) — confirmed 2026-08-23, defamation review pass 3
+    # BLOCKING flag 1: five of the six individuals named in
+    # AlignmentHeatmap.tsx's always-visible pairs note (Robert Powell, David
+    # King, Erica MacRae, Kevin O'Connor, Rob Fredericks) had no by_name
+    # entry, the same click-through-silently-fails failure mode already
+    # fixed once for PowerPanel by this same eligibility widening. `rows` is
+    # already filtered to the real-name/has-activity set (voting_alignment_
+    # matrix excludes malformed extraction stubs), so no extra filtering is
+    # needed here.
+    _alignment_names = {n.strip() for r in rows for n in (r.councillor_a, r.councillor_b)}
+    _cllr_names = set(_tenure_map) | set(_power_map) | set(_conflict_map) | _alignment_names
+    _cllr_profiles: dict[str, dict] = {}
+    for _name in _cllr_names:
+        _slug = _slug_map.get(_name)
         _tp = _tenure_map.get(_name)
         _pp = _power_map.get(_name)
         _cp = _conflict_map.get(_name)

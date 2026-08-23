@@ -119,11 +119,11 @@ export function SponsorshipNetworkPanel() {
       </div>
       <div className="objection-callout">
         <span className="objection-callout-text">
-          In a chamber where <strong>{data.oldguard_unanimous_pct}%</strong> of carried motions passed
-          with no dissent, the recorded vote can't tell allies apart. But councillors who sponsor each
-          other's motions far above chance also vote together far more than the rest — so sponsorship
-          surfaces real working structure. This is an <strong>Observation</strong>: backing an ally's
-          motion is ordinary politics, not impropriety.
+          In the {data.oldguard_label} era, when <strong>{data.oldguard_unanimous_pct}%</strong> of
+          carried motions passed with no dissent, the recorded vote couldn't tell allies apart. But
+          councillors who sponsor each other's motions far above chance also vote together far more
+          than the rest — so sponsorship surfaces real working structure. This is an{" "}
+          <strong>Observation</strong>: backing an ally's motion is ordinary politics, not impropriety.
         </span>
       </div>
 
@@ -182,7 +182,10 @@ export function SponsorshipNetworkPanel() {
         densest sponsorship cluster in 30 years. But it is <em>not</em> a single voting bloc: several of the
         strongest ties are <span style={{ color: KIND_COLOR.procedural }}>procedural</span> — members who
         sponsored deep into the network yet voted against those same colleagues on divisive items.
-        "Old guard" describes a working establishment, not a unified faction.
+        "Old guard" describes a working establishment, not a unified faction. Severity: Observation ·
+        n={data.oldguard_nodes.filter((n) => n.in_core).length} core councillors,{" "}
+        {data.oldguard_edges.length} sponsorship ties, {data.oldguard_label} · maps to CIPFA principle
+        B (how the chamber conducts its business).
       </p>
 
       {/* ── Part 3 — structural history ── */}

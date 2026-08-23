@@ -26,8 +26,7 @@ export function OverviewPanel() {
       body: (
         <>Four independent panels pivot on the 2018–21 Authorised Inquiry. Stepping out
         of serious conflicts rose to {d.recusal_inquiry_pct}% under scrutiny then
-        collapsed to {d.recusal_post_pct}% afterwards (financial conflicts:{" "}
-        {d.financial_inquiry_pct}% → {d.financial_post_pct}%); confidential business
+        collapsed to {d.recusal_post_pct}% afterwards; confidential business
         spiked from {d.confidential_pre_pct}% to {d.confidential_peak_pct}% in{" "}
         {d.confidential_peak_year} then receded; and public questions "taken on notice"
         rather than answered live tripled from {d.pq_pre_pct}% to {d.pq_inquiry_pct}%,

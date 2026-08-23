@@ -39,24 +39,28 @@ function DeclarationRow({ d }: { d: DeclarationDetail }) {
 // and vote on and can therefore mask (or invert) a real mandatory-conflict
 // compliance picture. See docs/review — BLOCKING flag, 2026-08-11 pass 2.
 //
+// Councillors resting on <=3 must-leave declarations are excluded from this
+// chart entirely (see SMALL_N_FLOOR below) rather than colour-graded, so this
+// function is only ever called on profiles that already clear that floor.
 // - null (zero must-leave declarations on record) -> grey, no compliance
 //   colour applies at all.
-// - non-null but resting on <=3 must-leave declarations -> a distinct
-//   "too small to grade" violet band, not the confident green/amber/red
-//   scale. A 2/2 or 1/1 record is a real number but not enough evidence to
-//   assert a stable rate — colouring it confidently green would just be the
-//   same proportionality defect in the opposite direction.
-// - >3 must-leave declarations -> the ordinary green/lime/amber/red scale,
-//   now keyed to the must-leave-only rate instead of the blended one.
+// - otherwise -> the ordinary green/lime/amber/red scale.
 function recusalColor(p: RecusalProfile): string {
   const r = p.must_leave_recusal_rate;
   if (r === null) return "#94a3b8"; // grey — zero must-leave declarations
-  if (p.must_leave_declared <= 3) return "#a78bfa"; // violet — n too small to colour-grade
   if (r >= 0.6) return "#22c55e";
   if (r >= 0.3) return "#84cc16";
   if (r >= 0.1) return "#f59e0b";
   return "#f87171";
 }
+
+// A named, legally-mandatory recusal rate computed from 3 or fewer records is
+// not defensible regardless of framing — a single misattributed declaration
+// (extraction error) can flip the whole rate for that person. See docs/review,
+// BLOCKING flag, 2026-08-22 pass 1. Below this floor, a councillor is excluded
+// from the named per-councillor breakdown entirely rather than shown with a
+// caveat colour.
+const SMALL_N_FLOOR = 3;
 
 const CustomTooltip = ({ active, payload }: {
   active?: boolean;
@@ -65,7 +69,6 @@ const CustomTooltip = ({ active, payload }: {
   if (!active || !payload?.length) return null;
   const d = payload[0].payload;
   const stayed = d.declared_votes - d.recused;
-  const smallN = d.must_leave_recusal_rate !== null && d.must_leave_declared <= 3;
   return (
     <div className="tooltip">
       <p className="tooltip-title">{d.name}{d.is_active ? " ●" : ""}</p>
@@ -74,7 +77,6 @@ const CustomTooltip = ({ active, payload }: {
           <>
             Must-leave conflicts: <strong>{d.must_leave_recused}/{d.must_leave_declared}</strong>
             {" "}({Math.round(d.must_leave_recusal_rate * 100)}%)
-            {smallN ? " — too few to colour-grade" : ""}
           </>
         ) : (
           "No must-leave (financial/proximity) declarations on record"
@@ -127,8 +129,7 @@ export function ConflictRecusalPanel() {
     if (p.must_leave_recusal_rate === null) {
       return `${p.declarations.length} on record · no must-leave conflicts on record · ${blended}`;
     }
-    const smallN = p.must_leave_declared <= 3;
-    const mustLeave = `must-leave conflicts: ${p.must_leave_recused}/${p.must_leave_declared} (${Math.round(p.must_leave_recusal_rate * 100)}%)${smallN ? " — n too small to colour-grade" : ""}`;
+    const mustLeave = `must-leave conflicts: ${p.must_leave_recused}/${p.must_leave_declared} (${Math.round(p.must_leave_recusal_rate * 100)}%)`;
     return `${p.declarations.length} on record · ${mustLeave} · ${blended}`;
   };
 
@@ -145,7 +146,14 @@ export function ConflictRecusalPanel() {
       gradePct: +((p.must_leave_recusal_rate ?? p.recusal_rate) * 100).toFixed(0),
     }));
 
-  const chartHeight = Math.max(320, chartData.length * 30);
+  // The named per-councillor breakdown excludes anyone whose must-leave rate
+  // rests on <=SMALL_N_FLOOR records — see the note above recusalColor().
+  const namedChartData = chartData.filter(
+    (p) => p.must_leave_recusal_rate === null || p.must_leave_declared > SMALL_N_FLOOR
+  );
+  const smallNExcluded = chartData.length - namedChartData.length;
+
+  const chartHeight = Math.max(320, namedChartData.length * 30);
 
   // How much more likely is a recusal once an interest is declared?
   const factor = data.baseline_recusal_pct > 0
@@ -197,10 +205,12 @@ export function ConflictRecusalPanel() {
         <span className="objection-callout-diff">{factor ? `${factor}×` : "—"}</span>
         <span className="objection-callout-text">
           Declaring an interest makes a councillor about <strong>{factor}× more likely</strong> to
-          recuse — yet they still stay in the chamber and vote roughly{" "}
-          <strong>three times out of four</strong>. And when they do vote, they side against the
-          motion <em>less</em> often than usual ({data.declared_against_pct}% vs{" "}
-          {data.baseline_against_pct}%): a declared-interest vote leans toward letting the matter through.
+          recuse ({data.declared_recusal_pct}% vs {data.baseline_recusal_pct}% baseline, n=
+          {data.declared_total.toLocaleString()}/{data.baseline_total.toLocaleString()}) — yet they
+          still stay in the chamber and vote roughly <strong>three times out of four</strong>. And
+          when they do vote, they side against the motion <em>less</em> often than usual (
+          {data.declared_against_pct}% vs {data.baseline_against_pct}%): a declared-interest vote
+          leans toward letting the matter through.
         </span>
       </div>
 
@@ -230,7 +240,7 @@ export function ConflictRecusalPanel() {
         </p>
         <ResponsiveContainer width="100%" height={chartHeight}>
           <BarChart
-            data={chartData}
+            data={namedChartData}
             layout="vertical"
             margin={{ top: 4, right: 48, bottom: 4, left: 92 }}
           >
@@ -254,7 +264,7 @@ export function ConflictRecusalPanel() {
               cursor="pointer"
               onClick={(entry: { name?: string }) => entry?.name && setSelected(entry.name)}
             >
-              {chartData.map((entry, i) => (
+              {namedChartData.map((entry, i) => (
                 <Cell key={i} fill={recusalColor(entry)} />
               ))}
             </Bar>
@@ -284,12 +294,14 @@ export function ConflictRecusalPanel() {
           blended rate purely out of lawful "impartiality" declarations they are entitled to stay and
           vote on. Green = usually steps out on a mandatory conflict; amber/red = usually stays and
           votes on one; <strong>grey = no must-leave declarations on record</strong> — only lawful
-          "impartiality" ones, so no compliance colour applies;{" "}
-          <strong>violet = a must-leave rate exists but on 3 or fewer mandatory declarations</strong> —
-          too small a sample to colour-grade with confidence, shown for reference only (click through
-          for the exact count). The spread among the confidently-graded bars is stark: some
-          councillors recuse on the clear majority of their mandatory conflicts, others have declared
-          one dozens of times and never once left the chamber.
+          "impartiality" ones, so no compliance colour applies. {smallNExcluded > 0 && (
+            <>{smallNExcluded} further councillor{smallNExcluded === 1 ? "" : "s"} with{" "}
+            {SMALL_N_FLOOR} or fewer must-leave declarations on record{" "}
+            {smallNExcluded === 1 ? "is" : "are"} not shown by name here — too small a sample to
+            attribute a legally-mandatory compliance rate to one person. </>
+          )}The spread among the shown bars is stark: some councillors recuse on the clear majority
+          of their mandatory conflicts, others have declared one dozens of times and never once left
+          the chamber.
         </p>
       </Reveal>
 

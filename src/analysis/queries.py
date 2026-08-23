@@ -458,6 +458,43 @@ class InterestSummary:
     top_topics: list[str]
 
 
+import re as _re_interests
+
+# A declared-interest row always needs a councillor_id (the schema has no
+# separate officer entity — see InterestDeclaration in src/models/ontology.py),
+# so extraction attaches a council officer's own declaration to a fabricated
+# "councillor" row named after their title/role instead. These aren't a
+# duplicate-identity dedup case (scripts/dedup_councillors.py's passes all key
+# off votes/terms, and these rows have neither) — they're not councillors at
+# all. Verified against the full corpus (2026-08-23, defamation review pass 1
+# BLOCKING flag 1.3): matches exactly the 14 rows where the officer's title
+# itself landed in the name field, and no real councillor — it does not by
+# itself verify the corpus's full officer population (pass 2 found three
+# more, whose actual names were extracted correctly; see the second,
+# independent exclusion below).
+_OFFICER_TITLE_RE = _re_interests.compile(
+    r"^(CEO|Chief Executive(?:\s+Officer)?|Acting Chief Executive(?:\s+Officer)?|"
+    r"(?:Acting\s+)?Director|(?:Acting\s+)?(?:Executive\s+)?Manager)\b",
+    _re_interests.IGNORECASE,
+)
+
+# The title regex only catches the case where the officer's title landed in
+# the extracted name field itself. It misses officers whose actual personal
+# name was extracted correctly (e.g. "CEO John Giorgi" -> given_name="John",
+# family_name="Giorgi") — those rows still have zero votes and zero
+# councillor_terms, the same non-councillor signal `scripts/
+# dedup_councillors.py` treats as authoritative elsewhere, so it's applied
+# here as a second, independent exclusion (defamation review pass 2 BLOCKING
+# flag 1 — hand-verified against council.db 2026-08-23: this drops exactly
+# the three confirmed officers — councillor_id 248 "John Giorgi" n=32, 211
+# "Ian Birch" n=8, 401 "Cam Robbins" n=5 — plus a handful of already-regex-
+# caught title rows (no change) and several total<=3 stubs that read as
+# thin-but-real councillors rather than officers; excluding them from this
+# one chart is defamation-safe either way since it drops an unattributed row
+# rather than misattributing one — whether they're real split-identity
+# fragments worth a dedup merge is a separate data-completeness question).
+
+
 def interest_declarations_summary(
     session: Session,
     council_id: int,
@@ -494,12 +531,30 @@ def interest_declarations_summary(
     if not totals:
         return []
 
-    # Councillor names
+    # Councillor names — excluding council-officer rows (see _OFFICER_TITLE_RE
+    # and the zero-votes/zero-terms exclusion just above it)
     cids = list(totals.keys())
     name_rows = session.query(Councillor.id, Councillor.given_name, Councillor.family_name).filter(
         Councillor.id.in_(cids)
     ).all()
-    names = {cid: f"{g} {f}".strip() for cid, g, f in name_rows}
+    has_votes = {
+        cid for (cid,) in session.query(Vote.councillor_id.distinct()).filter(
+            Vote.councillor_id.in_(cids)
+        ).all()
+    }
+    has_terms = {
+        cid for (cid,) in session.query(CouncillorTerm.councillor_id.distinct()).filter(
+            CouncillorTerm.councillor_id.in_(cids)
+        ).all()
+    }
+    names = {
+        cid: f"{g} {f}".strip() for cid, g, f in name_rows
+        if not (_OFFICER_TITLE_RE.match(g or "") or _OFFICER_TITLE_RE.match(f or ""))
+        and (cid in has_votes or cid in has_terms)
+    }
+    totals = {cid: n for cid, n in totals.items() if cid in names}
+    if not totals:
+        return []
 
     # Top motion topics where each councillor declared (via meeting join → motions)
     # Approximation: tags from all motions in meetings where this councillor declared
@@ -773,6 +828,22 @@ class VotingAlignment:
     agreement_rate: float
 
 
+# The alignment matrix is built directly from Vote rows, so it isn't caught
+# by the has-votes/has-terms non-councillor exclusion above (these rows have
+# votes — that's the whole problem). Instead it needs the malformed-record
+# signal `scripts/dedup_councillors.py` already treats as authoritative for
+# "not a real name, not yet merged": given_name left empty (a family-only
+# orphan stub — Pass 2/5's own bad-record shape) or family_name a bare
+# extraction placeholder token (that script's own PLACEHOLDERS set). Verified
+# against the full corpus (2026-08-23, defamation review pass 3 BLOCKING flag
+# 1): drops exactly the "The" (councillor_id 288, given_name empty) and
+# "Shannon Unknown" (councillor_id 16, family_name="Unknown") rows the review
+# found sitting in the always-visible grid alongside real, profiled
+# councillors, plus several zero-vote stubs of the same shape that were never
+# reachable through this query anyway.
+_ALIGNMENT_PLACEHOLDER_SURNAMES = ("unknown", "null", "none", "n/a", "name")
+
+
 def voting_alignment_matrix(
     session: Session,
     council_id: int,
@@ -798,6 +869,11 @@ def voting_alignment_matrix(
         .join(Meeting, Motion.meeting_id == Meeting.id)
         .where(Meeting.council_id == council_id)
         .where(Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]))
+        .where(func.trim(func.coalesce(Councillor.given_name, "")) != "")
+        .where(
+            func.lower(func.trim(func.coalesce(Councillor.family_name, "")))
+            .notin_(_ALIGNMENT_PLACEHOLDER_SURNAMES)
+        )
     )
     stmt = _year_filters(stmt, Meeting, from_year, to_year)
     rows = session.execute(stmt).all()
@@ -3102,6 +3178,19 @@ def _recusal_era(year: int) -> str:
     return "post"
 
 
+def _ministerial_approved(what: str | None, quote: str | None) -> bool:
+    """True if a must-leave declaration cites s.5.69 LGA 1995 Ministerial
+    approval to participate despite the interest — a lawful, disclosed
+    exception, not a compliance lapse. Every other must-leave declaration in
+    this corpus cites the standard disclose-and-leave provision, s.5.65,
+    instead — the section number alone reliably tells the two apart (see
+    docs/review, BLOCKING flag "Most frequent stay-and-vote", 2026-08-22
+    pass 1: four councillors' single post-2022 stay-and-vote, all on the
+    same s.5.69-approved item, were being ranked as an individual
+    compliance-lapse pattern)."""
+    return "5.69" in f"{what or ''} {quote or ''}"
+
+
 @dataclass
 class RecusalDeclarationDetail:
     """One item-linked declaration behind an era×type cell, for the drill-down."""
@@ -3161,6 +3250,19 @@ class RecusalTrendStats:
     by_type_era: list[RecusalTypeEra]
     by_year: list[RecusalYearPoint]
     drivers: list[RecusalDriver]
+    # post-2022 must-leave stays excluded from `drivers` because the
+    # declaration itself cites s.5.69 Ministerial approval — a distinct,
+    # non-adverse category, not a compliance lapse (see `_ministerial_approved`)
+    #
+    # Shipped to recusal.json ahead of any frontend consumer: pass 1's
+    # (2026-08-22) BLOCKING fix removed RecusalTrendPanel's top-driver
+    # rendering entirely rather than making it Ministerial-approval-aware, so
+    # this field is currently unread. Its intended consumer is a future
+    # tie-aware, Ministerial-approval-aware driver callout in that panel
+    # (frontend track) — the plumbing was kept because recomputing it later
+    # would mean re-deriving the same s.5.69 split, not because it's expected
+    # to stay unused (see docs/review, pass 2 ADVISORY flag, 2026-08-22).
+    ministerial_approved_post_n: int = 0
 
 
 def recusal_compliance_trend(
@@ -3188,8 +3290,10 @@ def recusal_compliance_trend(
     te: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])  # [declared, recused]
     # must-leave by year
     ml_year: dict[int, list[int]] = defaultdict(lambda: [0, 0])
-    # post-2022 must-leave drivers (stayed and voted)
+    # post-2022 must-leave drivers (stayed and voted, excluding s.5.69
+    # Ministerial-approved participation — see `_ministerial_approved`)
     drv: dict[str, list[int]] = defaultdict(lambda: [0, 0])  # [stayed, total]
+    ministerial_approved_post_n = 0
     # raw declaration rows behind each (type, era) cell, for the drill-down
     te_rows: dict[tuple[str, str], list[tuple]] = defaultdict(list)
 
@@ -3208,9 +3312,12 @@ def recusal_compliance_trend(
             if rec:
                 ml_year[row.year][1] += 1
             if row.year >= 2022:
-                drv[row.name][1] += 1
-                if not rec:
-                    drv[row.name][0] += 1
+                if _ministerial_approved(row.what, row.quote):
+                    ministerial_approved_post_n += 1
+                else:
+                    drv[row.name][1] += 1
+                    if not rec:
+                        drv[row.name][0] += 1
 
     # one representative minute quote per declaration behind a cell
     _CELL_CAP = 60
@@ -3310,6 +3417,7 @@ def recusal_compliance_trend(
         by_type_era=by_type_era,
         by_year=by_year,
         drivers=drivers,
+        ministerial_approved_post_n=ministerial_approved_post_n,
     )
 
 

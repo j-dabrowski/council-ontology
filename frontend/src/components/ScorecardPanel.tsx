@@ -1,5 +1,5 @@
 import { useData } from "../hooks/useData";
-import { api, ScorecardData, ScorecardTest, Valence } from "../api";
+import { api, ScorecardData, ScorecardTest, Valence, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { ValenceChip } from "./ValenceChip";
 
@@ -7,7 +7,37 @@ import { ValenceChip } from "./ValenceChip";
 // (Panels aren't individually anchored yet, so this is a best-effort scroll.)
 const VALENCE_ORDER: Record<Valence, number> = { critical: 0, neutral: 1, supportive: 2 };
 
-function TestRow({ t }: { t: ScorecardTest }) {
+// Structural guardrail: a test's headline/verdict must never carry a named
+// individual through this always-visible slot unnoticed — any valence, not
+// just critical, since a supportive-valence test about the council can still
+// contain an unflattering clause about one person (see docs/review, BLOCKING
+// flag 4, 2026-08-22 pass 1). A hit is redacted in the rendered output itself
+// (not just logged) — a console-only warning is invisible to anyone without
+// devtools open, which is exactly the audience this guards.
+function findNamedCouncillorsInText(text: string, councillorNames: string[]): string[] {
+  return councillorNames.filter((name) => {
+    const last = name.trim().split(/\s+/).slice(-1)[0];
+    return last.length > 2 && text.includes(last);
+  });
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function redactNamedCouncillors(text: string, names: string[]): string {
+  if (!names.length) return text;
+  const alternatives = names.flatMap((name) => {
+    const last = name.trim().split(/\s+/).slice(-1)[0];
+    return [escapeRegExp(name), escapeRegExp(last)];
+  });
+  const pattern = new RegExp(alternatives.join("|"), "g");
+  return text.replace(pattern, "[named individual — flagged for review]");
+}
+
+function TestRow({ t, flaggedNames }: { t: ScorecardTest; flaggedNames?: string[] }) {
+  const headline = flaggedNames ? redactNamedCouncillors(t.headline, flaggedNames) : t.headline;
+  const verdict = flaggedNames ? redactNamedCouncillors(t.verdict, flaggedNames) : t.verdict;
   return (
     <div
       className={`sc-row sc-${t.valence}${t.data_ok ? "" : " sc-nodata"}`}
@@ -21,8 +51,13 @@ function TestRow({ t }: { t: ScorecardTest }) {
           <span className="sc-row-title">{t.title}</span>
           <span className="sc-row-grade">{t.grade}</span>
         </div>
-        <div className="sc-row-headline">{t.headline}</div>
-        <div className="sc-row-verdict">{t.verdict}</div>
+        {flaggedNames && (
+          <div className="sc-row-guardrail">
+            ⚠ Named-individual claim flagged for editorial review — redacted pending sign-off
+          </div>
+        )}
+        <div className="sc-row-headline">{headline}</div>
+        <div className="sc-row-verdict">{verdict}</div>
         <div className="sc-row-meta">
           <span className="sc-genre">{t.genre}</span>
           <span className="sc-principle">{t.principle}</span>
@@ -39,9 +74,26 @@ function TestRow({ t }: { t: ScorecardTest }) {
 
 export function ScorecardPanel() {
   const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
+  const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
   const s = data.summary;
+
+  const flagged = new Map<string, string[]>();
+  if (cllrData) {
+    const names = Object.keys(cllrData.by_name);
+    for (const t of data.tests) {
+      const hits = findNamedCouncillorsInText(`${t.headline} ${t.verdict}`, names);
+      if (hits.length) {
+        flagged.set(t.test_id, hits);
+        console.error(
+          `[scorecard guardrail] ${t.valence}-valence test "${t.test_id}" names ` +
+          `${hits.join(", ")} in its headline/verdict — redacted in the rendered output ` +
+          `pending review; see docs/review/editor/Editor_prompt.txt`
+        );
+      }
+    }
+  }
 
   // Assign each test to exactly one genre family (first match wins), then sort
   // each family critical → neutral → supportive.
@@ -102,7 +154,7 @@ export function ScorecardPanel() {
       {groups.map((g) => (
         <div key={g.name} className="sc-group">
           <p className="section-heading">{g.name}</p>
-          {g.tests.map((t) => <TestRow key={t.test_id} t={t} />)}
+          {g.tests.map((t) => <TestRow key={t.test_id} t={t} flaggedNames={flagged.get(t.test_id)} />)}
         </div>
       ))}
 

@@ -183,6 +183,12 @@ function ProfileModal({ profile, onClose }: { profile: CouncillorProfile; onClos
                   {profile.recusal_rate != null && ` (${Math.round(profile.recusal_rate * 100)}%)`}
                 </span>
               </div>
+              <p className="cllr-meta">
+                Blends every declared-interest type — legally-mandatory ("must
+                leave") conflicts and lawful "impartiality" interests a
+                councillor is entitled to stay and vote on — see the "must
+                leave" tag on each row below for which is which.
+              </p>
               {profile.declarations.map((d, i) => {
                 const t = d.interest_type ?? "other";
                 return (

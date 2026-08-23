@@ -28,8 +28,6 @@ export function AlignmentHeatmap() {
   pairs.forEach((p) => { nameSet.add(p.name_a); nameSet.add(p.name_b); });
   const names = [...nameSet];
 
-  const lastName = (n: string) => n.split(" ").slice(-1)[0] || n;
-
   // 100% pairs, computed from data.pairs at render time — never hardcoded.
   // Same reasoning as SponsorshipNetworkPanel's topAlliances and PowerPanel's
   // mostProlific/mostEffective: the chart-note must hold for any dataset this
@@ -93,7 +91,7 @@ export function AlignmentHeatmap() {
             100% pairs ({pairs100.length}): {pairs100.map((p, i) => (
               <span key={`${p.name_a}|${p.name_b}`}>
                 {i > 0 && ", "}
-                {lastName(p.name_a)}/{lastName(p.name_b)}
+                {p.name_a}/{p.name_b} (n={p.shared_votes})
               </span>
             ))} — tightest sub-blocs in an already near-unanimous chamber.{" "}
           </>

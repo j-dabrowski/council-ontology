@@ -3,13 +3,41 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, ReferenceLine, LabelList,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ScorecardData, ScorecardTest, TestChart } from "../api";
+import { api, ScorecardData, ScorecardTest, TestChart, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 
 const VALENCE_FILL: Record<string, string> = {
   supportive: "#4ade80", neutral: "#60a5fa", critical: "#f87171",
 };
 const HIGHLIGHT_FILL = "#fbbf24";
+
+// Structural guardrail: a test's headline/verdict must never carry a named
+// individual through this always-visible slot unnoticed — any valence, not
+// just critical, since a supportive-valence test about the council can still
+// contain an unflattering clause about one person (see docs/review, BLOCKING
+// flag 4, 2026-08-22 pass 1). A hit is redacted in the rendered output itself
+// (not just logged) — a console-only warning is invisible to anyone without
+// devtools open, which is exactly the audience this guards.
+function findNamedCouncillorsInText(text: string, councillorNames: string[]): string[] {
+  return councillorNames.filter((name) => {
+    const last = name.trim().split(/\s+/).slice(-1)[0];
+    return last.length > 2 && text.includes(last);
+  });
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function redactNamedCouncillors(text: string, names: string[]): string {
+  if (!names.length) return text;
+  const alternatives = names.flatMap((name) => {
+    const last = name.trim().split(/\s+/).slice(-1)[0];
+    return [escapeRegExp(name), escapeRegExp(last)];
+  });
+  const pattern = new RegExp(alternatives.join("|"), "g");
+  return text.replace(pattern, "[named individual — flagged for review]");
+}
 
 function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
   const base = VALENCE_FILL[valence] ?? "#60a5fa";
@@ -76,10 +104,28 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
  */
 export function BatteryTestPanel({ testId }: { testId: string }) {
   const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
+  const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
   const t: ScorecardTest | undefined = data.tests.find((x) => x.test_id === testId);
   if (!t) return <ErrorCard msg={`test ${testId} not found`} />;
+
+  let flaggedNames: string[] = [];
+  if (cllrData) {
+    flaggedNames = findNamedCouncillorsInText(
+      `${t.headline} ${t.verdict}`,
+      Object.keys(cllrData.by_name)
+    );
+    if (flaggedNames.length) {
+      console.error(
+        `[scorecard guardrail] ${t.valence}-valence test "${t.test_id}" names ` +
+        `${flaggedNames.join(", ")} in its headline/verdict — redacted in the rendered output ` +
+        `pending review; see docs/review/editor/Editor_prompt.txt`
+      );
+    }
+  }
+  const headline = flaggedNames.length ? redactNamedCouncillors(t.headline, flaggedNames) : t.headline;
+  const verdict = flaggedNames.length ? redactNamedCouncillors(t.verdict, flaggedNames) : t.verdict;
 
   return (
     <Card
@@ -88,9 +134,14 @@ export function BatteryTestPanel({ testId }: { testId: string }) {
       valence={t.valence}
       backTo={t.detail_panel ? `sc-${t.detail_panel}` : undefined}
     >
+      {flaggedNames.length > 0 && (
+        <div className="sc-row-guardrail">
+          ⚠ Named-individual claim flagged for editorial review — redacted pending sign-off
+        </div>
+      )}
       <div className={`bt-headline bt-${t.valence}`}>
         <span className="bt-grade">{t.grade}</span>
-        <span className="bt-headline-text">{t.headline}</span>
+        <span className="bt-headline-text">{headline}</span>
       </div>
 
       {t.data_ok && t.chart ? (
@@ -101,7 +152,7 @@ export function BatteryTestPanel({ testId }: { testId: string }) {
         </div>
       )}
 
-      <p className="chart-note">{t.verdict}</p>
+      <p className="chart-note">{verdict}</p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{t.genre}</span>
         {" · "}{t.principle}

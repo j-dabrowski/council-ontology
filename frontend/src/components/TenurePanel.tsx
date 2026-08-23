@@ -30,14 +30,18 @@ export function TenurePanel() {
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
-  const leaders = data.profiles.slice(0, 12).map((p) => ({
+  // Sorted here rather than trusted from the backend, so a future ordering
+  // change on the pipeline side can't silently misattribute "longest serving"
+  // to the wrong name. See docs/review, ADVISORY flag, 2026-08-22 pass 1.
+  const byTenureDesc = [...data.profiles].sort((a, b) => b.years - a.years);
+  const leaders = byTenureDesc.slice(0, 12).map((p) => ({
     ...p,
     shortName: p.name,
   }));
   const leaderHeight = Math.max(300, leaders.length * 28);
 
   const longServers = data.histogram["15y+"] ?? 0;
-  const top = data.profiles[0];
+  const top = byTenureDesc[0];
 
   const hist = HIST_ORDER.map((k) => ({ bucket: k, count: data.histogram[k] ?? 0 }));
 

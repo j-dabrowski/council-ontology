@@ -142,6 +142,12 @@ def _tender_rows(session: Session, council_id: int):
 def _t_recusal_overall(session, council_id, pc) -> TestResult:
     s = pc.get("conflict") or conflict_recusal_stats(session, council_id)
     stay = round(100 - s.declared_recusal_pct, 1)
+    # Computed the same way ConflictRecusalPanel.tsx derives its own headline
+    # factor (guarded division against the same two fields), rather than a
+    # literal string — confirmed 2026-08-23, defamation review pass 3
+    # advisory flag: the two had drifted (hardcoded "~80x" vs. the panel's
+    # live 83x for this draft's data).
+    factor = round(s.declared_recusal_pct / s.baseline_recusal_pct) if s.baseline_recusal_pct > 0 else 0
     return TestResult(
         test_id="conflict.recusal_management",
         title="Do councillors step out when they declare a conflict?",
@@ -150,7 +156,7 @@ def _t_recusal_overall(session, council_id, pc) -> TestResult:
         question="When an interest is declared, is it *managed* — i.e. does the member recuse?",
         valence=CRITICAL,
         grade=G_CONCERN,
-        headline=f"Declaring lifts recusal ~80×, but members still stay and vote {stay}% of the time",
+        headline=f"Declaring lifts recusal {factor}×, but members still stay and vote {stay}% of the time",
         verdict="Disclosure works at the first step; the identify–disclose–manage chain breaks at the manage limb.",
         n=s.declared_total,
         base_rate=f"{s.baseline_recusal_pct}% recuse on a normal vote",
@@ -172,7 +178,9 @@ def _t_recusal_trend(session, council_id, pc) -> TestResult:
         headline=(f"Must-leave recusal rose to {r.must_leave_inquiry_pct}% during the Inquiry, "
                   f"then fell to {r.must_leave_post_pct}% after"),
         verdict=("Survives its own promoter: even within financial conflicts (leaving is mandatory) "
-                 f"recusal fell {r.financial_inquiry_pct}%→{r.financial_post_pct}%."),
+                 f"recusal held at {r.financial_inquiry_pct}%→{r.financial_post_pct}% — the only "
+                 f"post-2022 financial declaration on record (n={r.financial_post_n}) is too few "
+                 "to assess a trend either way."),
         n=r.must_leave_pre_n + r.must_leave_inquiry_n + r.must_leave_post_n,
         base_rate="leaving is legally mandatory for financial/proximity interests",
         era="pre-2018 / 2018–21 / post-2022",
@@ -352,8 +360,6 @@ def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
     gap = round(r.appointee_win_rate - r.non_appointee_win_rate, 1)
     lo = min((p.win_rate for p in r.profiles), default=None)
     hi = max((p.win_rate for p in r.profiles), default=None)
-    loser = min(r.profiles, key=lambda p: p.win_rate) if r.profiles else None
-    winner = max(r.profiles, key=lambda p: p.win_rate) if r.profiles else None
     chart = _bars(
         [("Appointees", r.appointee_win_rate), ("Non-appointees", r.non_appointee_win_rate)],
         unit="%",
@@ -374,11 +380,10 @@ def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
                   f"{gap} pp gap, statistically indistinguishable"),
         verdict=(f"No self-appointment of the powerful to watch themselves: the oversight-body "
                  f"appointee list's win-rate spread ({lo}–{hi}%) runs almost the full range of "
-                 f"the chamber, and includes both {winner.name} ({winner.win_rate}%, its most "
-                 f"consistent winner among appointees) and {loser.name} ({loser.win_rate}%, "
-                 f"n={loser.n} — one of the corpus's most frequent dissenters). CIPFA-A's internal "
-                 f"audit/oversight-function principle is met on this reading; era-pooled across "
-                 f"31 years, so a modern-era shift could still hide in the aggregate."),
+                 f"the chamber, from its most consistent winners among appointees down to some "
+                 f"of the corpus's most frequent dissenters. CIPFA-A's internal audit/oversight-"
+                 f"function principle is met on this reading; era-pooled across 31 years, so a "
+                 f"modern-era shift could still hide in the aggregate."),
         n=r.appointee_n + r.non_appointee_n,
         base_rate=f"non-appointee win rate {r.non_appointee_win_rate}% (n={r.non_appointee_n})",
         era="1995–2026, era-pooled",

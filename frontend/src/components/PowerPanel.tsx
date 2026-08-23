@@ -107,9 +107,11 @@ export function PowerPanel() {
     .filter((p) => p.dissent_n > 0)
     .sort((a, b) => b.dissent_n - a.dissent_n);
   const mostProlific = byDissentN[0] ?? null;
-  const mostEffective = [...data.profiles]
+  const effectivenessRanked = [...data.profiles]
     .filter((p) => p.dissent_effectiveness !== null && p.name !== mostProlific?.name)
-    .sort((a, b) => (b.dissent_effectiveness ?? 0) - (a.dissent_effectiveness ?? 0))[0] ?? null;
+    .sort((a, b) => (b.dissent_effectiveness ?? 0) - (a.dissent_effectiveness ?? 0));
+  const mostEffective = effectivenessRanked[0] ?? null;
+  const runnerUpEffective = effectivenessRanked[1] ?? null;
 
   // Dissent effectiveness scatter (only councillors with enough AGAINST votes).
   const eff = data.profiles
@@ -150,13 +152,17 @@ export function PowerPanel() {
     >
       <div className="planning-hero-row">
         <div className="planning-stat">
-          <span className="planning-stat-num planning-stat-peak">{pct(topWinner.win_rate)}</span>
-          <span className="planning-stat-label">top win rate (<CouncillorLink name={topWinner.name} />)</span>
+          <Reveal label="top win rate">
+            <span className="planning-stat-num planning-stat-peak">{pct(topWinner.win_rate)}</span>
+            <span className="planning-stat-label">top win rate (<CouncillorLink name={topWinner.name} />)</span>
+          </Reveal>
         </div>
         <div className="planning-stat-divider" />
         <div className="planning-stat">
-          <span className="planning-stat-num planning-stat-recent">{pct(bottom.win_rate)}</span>
-          <span className="planning-stat-label">most outvoted (<CouncillorLink name={bottom.name} />)</span>
+          <Reveal label="most outvoted">
+            <span className="planning-stat-num planning-stat-recent">{pct(bottom.win_rate)}</span>
+            <span className="planning-stat-label">most outvoted (<CouncillorLink name={bottom.name} />)</span>
+          </Reveal>
         </div>
         <div className="planning-stat-divider" />
         <div className="planning-stat">
@@ -177,7 +183,14 @@ export function PowerPanel() {
               {mostEffective && (
                 <> <strong><CouncillorLink name={mostEffective.name} /></strong> dissents far less
                 often but converts <strong>{pct(mostEffective.dissent_effectiveness ?? 0)}</strong> of
-                objections into losses — same chamber, very different leverage.</>
+                objections into losses
+                {runnerUpEffective ? (
+                  <> — only narrowly ahead of the next-most-effective dissenter at{" "}
+                  <strong>{pct(runnerUpEffective.dissent_effectiveness ?? 0)}</strong>, a gap thin
+                  enough to flip with one more term's data.</>
+                ) : (
+                  <>, same chamber, very different leverage.</>
+                )}</>
               )}
             </Reveal>
           </span>
@@ -297,7 +310,7 @@ export function PowerPanel() {
         A hostile reader would say: however contested a vote looks on paper, the same handful of
         councillors win most of the time, so "debate" is theatre for a fixed majority — win rates
         span as wide as {pct(topWinner.win_rate)} down to {pct(bottom.win_rate)}, and{" "}
-        {losers.length} sitting councillors have lost more contested votes than they've won. In the
+        {losers.length} councillors have lost more contested votes than they've won. In the
         council's defence: that spread resets every election rather than calcifying around one
         clique — the term-by-term chart above shows real churn in who's on top — and dissent is not
         merely symbolic: {pct(fail)} of contested motions actually fail, so objecting carries real

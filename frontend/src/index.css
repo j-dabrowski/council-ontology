@@ -1303,6 +1303,8 @@ a:hover { text-decoration: underline; }
 .sc-row-meta .sc-genre  { color: var(--genre); }
 .sc-row-meta .sc-detail { color: var(--link);  }
 .sc-row.sc-nodata { opacity: 0.66; }
+.sc-row-guardrail { margin-top: 5px; font-size: 10.5px; font-weight: 600; color: var(--sc-bad-n);
+  border: 1px solid var(--sc-bad-bd); border-radius: 4px; padding: 3px 7px; display: inline-block; }
 .sc-row.sc-supportive { box-shadow: inset 3px 0 0 -1px var(--sc-ok-sh); }
 .sc-row.sc-critical   { box-shadow: inset 3px 0 0 -1px var(--sc-bad-sh); }
 .sc-row.sc-supportive .sc-row-grade { color: var(--sc-ok-n);  }

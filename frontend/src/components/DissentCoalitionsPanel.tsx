@@ -5,6 +5,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { Reveal } from "./DrillDown";
 
 export function DissentCoalitionsPanel() {
   const { data, loading, error } = useData(() => api.dissent());
@@ -33,38 +34,45 @@ export function DissentCoalitionsPanel() {
       subtitle="Who voted against the same carried motions · what topics split the chamber"
       valence="neutral"
     >
-      {topCoalition && (
-        <div className="coalition-hero">
-          <span className="coalition-count">{topCoalition.shared_dissent}</span>
-          <span className="coalition-text">
-            times <strong>{topCoalition.name_a.split(" ").slice(-1)[0]}</strong> &amp;{" "}
-            <strong>{topCoalition.name_b.split(" ").slice(-1)[0]}</strong> voted against
-            the same carried motion — the chamber's tightest opposition bloc
-          </span>
-        </div>
-      )}
+      <Reveal label="see the tightest opposition pairs, by name">
+        {topCoalition && (
+          <div className="coalition-hero">
+            <span className="coalition-count">{topCoalition.shared_dissent}</span>
+            <span className="coalition-text">
+              times <strong>{topCoalition.name_a.split(" ").slice(-1)[0]}</strong> &amp;{" "}
+              <strong>{topCoalition.name_b.split(" ").slice(-1)[0]}</strong> voted against
+              the same carried motion — the chamber's tightest opposition pairing
+            </span>
+          </div>
+        )}
 
-      <h3 className="section-heading">Top opposition pairs</h3>
-      <table className="exception-table">
-        <thead>
-          <tr>
-            <th>Councillor A</th>
-            <th>Councillor B</th>
-            <th style={{ textAlign: "right" }}>Shared dissent votes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.coalitions.slice(0, 10).map((c, i) => (
-            <tr key={i}>
-              <td>{c.name_a}</td>
-              <td>{c.name_b}</td>
-              <td style={{ textAlign: "right", color: "#f59e0b", fontWeight: 600 }}>
-                {c.shared_dissent}
-              </td>
+        <h3 className="section-heading">Top opposition pairs</h3>
+        <table className="exception-table">
+          <thead>
+            <tr>
+              <th>Councillor A</th>
+              <th>Councillor B</th>
+              <th style={{ textAlign: "right" }}>Shared dissent votes</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {data.coalitions.slice(0, 10).map((c, i) => (
+              <tr key={i}>
+                <td>{c.name_a}</td>
+                <td>{c.name_b}</td>
+                <td style={{ textAlign: "right", color: "#f59e0b", fontWeight: 600 }}>
+                  {c.shared_dissent}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="chart-note">
+          "Shared dissent votes" counts co-occurrence — both councillors voting against the same
+          carried motion — not established coordination between them; "bloc"/"pairing" here describes
+          a voting pattern, not a claim that the two acted in concert.
+        </p>
+      </Reveal>
 
       <h3 className="section-heading" style={{ marginTop: 24 }}>
         Most contested topics
