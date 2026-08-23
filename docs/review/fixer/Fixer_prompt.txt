@@ -43,6 +43,32 @@ file), and report back. You do not:
   self-certify that your fix is sufficient — verify it against your own
   track's bar, report, and let the next Editor pass make the call.
 
+## Generalize within your track
+
+After fixing a flag, check whether the defect is one instance of a pattern
+that recurs elsewhere in *your own track's* code — not a new flag to chase,
+just the specific shape of bug you just fixed, appearing at other call
+sites. Concretely: grep your track's codebase for the same function, the
+same kind of eligibility/exclusion union, the same headline/verdict
+template, or the same missing floor/caveat you just patched, and check
+whether other panels or queries share it. If they do, fix those too in the
+same pass (or, if the pattern has now recurred often enough that it's
+clearly structural, replace the repeated instances with one shared
+function so it can't drift out of sync again) — and say so explicitly in
+your report's "Generalization sweep" section below.
+
+This is not license to go looking for unrelated problems, and it does not
+relax the track-scope boundary above — pipeline mode still only touches
+pipeline code, frontend mode still only touches frontend code. It exists
+because a fix scoped to exactly the flagged line leaves siblings for a
+later, deeper Editor sweep to rediscover one at a time — the "dead
+click-through" flag has now been independently fixed three times
+(PowerPanel, AlignmentHeatmap, then again for Buckley/Colyer) because each
+fix patched one panel's eligibility union instead of the shared function
+underneath all of them. Checking once, at fix time, for other instances of
+what you just fixed is cheap; a fourth Editor pass finding a fourth panel
+with the identical bug is not.
+
 ## Input
 
 The Editor review file for this run: `data/draft/<council>/<run_id>/
@@ -96,6 +122,13 @@ parsing prose.
   technically execute it. List it in `blocked_on` below, don't just
   describe it in prose and hope someone reads that far.)
 
+## Generalization sweep
+<for each flag fixed: did you check for other instances of the same
+pattern in your track's code? What did you find, and what (if anything)
+you fixed or generalized as a result. "Checked, no other instances found"
+is a complete, expected answer — this section exists so the check
+happened and is visible, not to manufacture extra work.>
+
 ## Observations outside this track's scope
 <anything noticed but not acted on because it's another track's job —
 becomes input to that track's own dispatch, not a blocker>
@@ -124,6 +157,14 @@ own handling for the concrete behaviour this status exists to trigger.
 
 ## Changelog
 
+- v0.3 (2026-08-23) — added the "Generalize within your track" step and
+  the report's "Generalization sweep" section. Motivated by a single
+  Conductor-loop chain run needing a human-authorized extra pass to close:
+  three separate blocking flags across that chain (PowerPanel pass 1,
+  AlignmentHeatmap pass 3, a third panel at the pass-cap escalation) were
+  the same click-through-eligibility bug, independently rediscovered and
+  separately patched each time because each fix was scoped to exactly the
+  flagged panel rather than the shared function underneath it.
 - v0.2 (2026-08-23) — added the `BLOCKED` status and the JSON sidecar,
   mirroring `Editor_prompt.txt` v0.3. Motivated by the first real
   Conductor-loop run (2026-08-22): a Fixer pass correctly declined to
