@@ -348,6 +348,19 @@ Full typology written to `data/cambridge_typology_review.txt`. Quality scores sa
 3. Update `inventory_prompt.txt` based on the printed instructions
 4. Repeat until `other_content_rate ≤ 20%`, then do a full re-run before Level 2 schema work
 
+**Scripted alternative:** `council inventory-loop cambridge` runs this exact recipe end to end — steps 1/2/4 scripted, step 3 dispatched as a real `claude -p` call using the same generated instructions. `--dry-run` costs nothing.
+
+```bash
+council inventory-loop cambridge --dry-run
+council inventory-loop cambridge --limit 20 --max-passes 5
+```
+
+Standalone step 3 alone (used internally by the loop, or on its own):
+
+```bash
+council inventory-refine cambridge
+```
+
 #### `council sample cambridge`
 **Level 3a:** Selects a stratified 15–20 doc sample from the census and Level 1 flags. Stratifies by era, size bucket, meeting type, and outliers. Saves canonical selection to `data/{council}_sample.json`.
 
@@ -372,13 +385,28 @@ council extract-sample cambridge --max-chars full   # multi-chunk: extract entir
 - **Inventory agreement** — extracted counts vs Level 1 inventory counts
 - **Keyword gap rate** — MOVED/CARRIED/DA/DECLARATION etc. not covered by any quote
 
-Writes `data/sample_validation/report.txt` and `paraphrase_report.txt`. This is the gate before running at scale.
+Writes `data/sample_validation/report.txt`, `paraphrase_report.txt`, and `summary.json` (the same four target checks as one structured verdict). This is the gate before running at scale.
 
 Pass `--max-chars` matching whatever was used for `extract-sample`.
 
 ```bash
 council validate-sample cambridge
 council validate-sample cambridge --max-chars full
+```
+
+**Iteration loop:** extract the sample, validate, read `report.txt`'s INTERPRETATION section, hand-edit `system_prompt.txt` (or `agenda_system_prompt.txt` for agendas), re-extract, repeat until quote completeness >80%, paraphrase <30%, coverage >5%, keyword gap <25%.
+
+**Scripted alternative:** `council extraction-loop cambridge` runs this recipe end to end — extract/validate/threshold-check scripted, the prompt edit dispatched as a real `claude -p` call reading the exact same INTERPRETATION text. `--dry-run` costs nothing; a real run bills at extraction-tier pricing (not the cheap Haiku inventory calls).
+
+```bash
+council extraction-loop cambridge --dry-run
+council extraction-loop cambridge --max-passes 5
+```
+
+Standalone (used internally by the loop, or on its own):
+
+```bash
+council extraction-refine cambridge
 ```
 
 **Cambridge baselines (18 docs, 2026-05-31):** completeness 95.0% / paraphrase 4.3% / coverage 22.9% / keyword gap 9.3% — 14 PASS, 4 REVIEW, 0 FAIL.

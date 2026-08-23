@@ -34,6 +34,55 @@ note for the incident this was written from and the rule it sets.
   copy the prompt to your clipboard to paste into an already-running
   session: `cat docs/agent_prompts/<role>.txt | pbcopy` (macOS).
 
+## Pipeline (inventory-refine / extraction-refine — new 2026-08-24)
+
+The two prompt-convergence loops `docs/pipeline/PIPELINE.md` has always
+documented as a manual recipe (run, check a quality metric, hand-edit a
+prompt file, repeat) — same shape as Editor/Fixer's review loop, so
+scripted the same way (`scripts/inventory_loop.py`/`extraction_loop.py`
+compose standalone commands rather than dispatching privately, mirroring
+`conductor_loop.py`). The prompt-editing step in each is the one piece
+that still needs an agent; everything around it (run, measure, check
+against the target, decide whether to keep iterating) is scripted.
+
+**Inventory refine — apply the improvement instructions `council typology`
+just generated.**
+```bash
+council inventory-refine cambridge
+```
+No-ops (no `claude` call, no cost) if `other_content_rate` is already at or
+below the 20% target. `council inventory-loop cambridge` calls this
+internally, once per pass — this exists standalone for re-running just this
+step, or debugging it in isolation. No simple raw-form equivalent here
+unlike Editor/Fixer/Renderer above: `docs/agent_prompts/inventory_refine.txt`'s
+one placeholder (`<instructions>`) is filled with freshly-generated
+multi-paragraph analysis, not a fixed token, so the CLI command is the
+only practical way to run this one.
+
+**Extraction refine — apply the issue diagnosis `council validate-sample`
+just wrote to `report.txt`.**
+```bash
+council extraction-refine cambridge
+```
+No-ops if `data/sample_validation/summary.json` says `converged: true`.
+`council extraction-loop cambridge` calls this internally, once per pass —
+standalone for the same reasons as inventory-refine above. Raw form
+(`docs/agent_prompts/extraction_refine.txt` has no placeholders — it
+points the session at `report.txt` directly rather than substituting its
+content):
+```bash
+claude -p "$(cat docs/agent_prompts/extraction_refine.txt)" \
+  --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+```
+
+**The loops themselves are scripted, not agent roles** —
+`council inventory-loop cambridge [--limit N] [--max-passes N] [--dry-run]`
+and `council extraction-loop cambridge [--max-passes N] [--dry-run]`. Real
+API calls once run for real (cheap/Haiku for inventory, extraction-tier
+for extraction) — `--dry-run` costs nothing. See
+`docs/pipeline/PIPELINE.md`'s "Iteration loop" sections (Level 1 and
+Level 3) for the full recipe each one automates.
+
 ## Investigator (2 active modes, one shared reference layer)
 
 **Explorer — generate and test novel hypotheses.**

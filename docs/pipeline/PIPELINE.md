@@ -947,6 +947,20 @@ Run once (then iterate) across ALL documents. One small Haiku call per document.
 
 Quality scores are saved to `data/inventory_quality/` for trend tracking (`council typology cambridge --history`).
 
+**Scripted alternative** (2026-08-24, `scripts/inventory_loop.py`): `council
+inventory-loop cambridge` runs this exact recipe — steps 1/2/4/5/6 are
+scripted (shelling out to `council inventory`/`council typology`, reading
+`other_content_rate` back from `data/inventory_quality/latest_<council>.json`
+rather than parsing the printed report); step 3 (writing the actual prompt
+edit) is `council inventory-refine cambridge`, a real `claude -p` call
+using the exact instructions `council typology` already generates — the
+same text a human currently pastes by hand, not a new prompt written for
+this. Once the sample converges, the loop confirms at full-corpus scale
+before reporting PASS. `--dry-run` costs nothing; a real run makes cheap
+(Haiku) API calls. Both `inventory-refine` and `inventory-loop` are also
+independently runnable — the loop composes them, it doesn't wrap a private
+copy of either.
+
 ### Output
 - Per-document inventory with expected entity counts from the LLM's perspective.
 - Cross-reference with Level 0 keyword counts. Flag documents where Level 0 and Level 1 disagree significantly (e.g. Level 0 found 12 MOVED keywords but Level 1 says 6 motions).
@@ -1092,6 +1106,21 @@ Level 3 is split into three substages with dedicated CLI commands.
 - **Note on `char_offset` in DB**: `extraction_evidence.char_offset` is a best-effort
   convenience stored at save time via verbatim `text.find()`. It is not used here.
   All matching is recomputed from the live PDF text at validation time.
+- Also writes `data/sample_validation/summary.json` — the same four target checks
+  (and the `report.txt` INTERPRETATION text) as one structured verdict, so a script
+  can read "did this converge" without parsing prose.
+
+**Iteration loop.** The manual recipe — extract the sample, validate, read
+report.txt's INTERPRETATION section, hand-edit `system_prompt.txt`
+(or `agenda_system_prompt.txt`), re-extract, repeat until all four targets
+hold — has a **scripted alternative** (2026-08-24, `scripts/extraction_loop.py`):
+`council extraction-loop cambridge` runs it end to end, composed entirely
+from `council extract-sample`/`validate-sample`/`extraction-refine` (never
+a private duplicate of any of them — `extraction-refine` and the loop are
+both independently runnable). The prompt edit itself is a real `claude -p`
+call reading the exact same INTERPRETATION text a human would; `--dry-run`
+costs nothing, a real run bills at extraction-tier pricing (not the cheap
+Haiku inventory calls).
 
 ### Actual results (Cambridge, 2026-05-31, 18 docs) — final baselines after --max-chars full
 - Quote completeness: **95.0%** (target >80%) ✓

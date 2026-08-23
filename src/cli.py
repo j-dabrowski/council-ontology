@@ -3117,6 +3117,73 @@ def main() -> None:
                             help="Analyse only the N most-recently-updated inventory files")
     p_typology.set_defaults(func=cmd_typology)
 
+    # inventory-refine (apply the inventory-improvement instructions council
+    # typology just generated — the manual "paste into Claude Code" step)
+    p_inv_refine = sub.add_parser(
+        "inventory-refine",
+        help="Level 1 loop, standalone: apply the improvement instructions "
+             "`council typology` generated (edits inventory_prompt.txt + "
+             "DocumentInventory, bumps PROMPT_VERSION). `council "
+             "inventory-loop` calls this internally, once per pass. A real "
+             "`claude -p` session — docs/agent_prompts/inventory_refine.txt",
+    )
+    p_inv_refine.add_argument("council", choices=list(COUNCILS))
+    p_inv_refine.add_argument("--limit", "-n", type=int, default=None, metavar="N",
+                              help="Same --limit typology should analyse against (sample iterations)")
+
+    def _cmd_inventory_refine(a):
+        from scripts.inventory_typology import QUALITY_THRESHOLD, compute_improvement_prompt
+        quality, instructions = compute_improvement_prompt(a.council, limit=a.limit)
+        if not quality:
+            console.print(f"[red]No inventory data — run `council inventory {a.council}` first.[/red]")
+            sys.exit(1)
+        if instructions is None:
+            console.print(
+                f"[green]Nothing to refine — other_content_rate "
+                f"{quality['other_content_pct']}% is already at or below the "
+                f"{int(QUALITY_THRESHOLD * 100)}% threshold.[/green]"
+            )
+            return
+        _cmd_agent_prompt("inventory_refine", f"Inventory refine, {a.council}", instructions=instructions)
+
+    p_inv_refine.set_defaults(func=_cmd_inventory_refine)
+
+    # inventory-loop (Level 1: scripted iteration loop, composed entirely
+    # from council inventory / typology / inventory-refine)
+    p_inv_loop = sub.add_parser(
+        "inventory-loop",
+        help="Level 1: scripted inventory-improvement loop — run, check "
+             "other_content_rate, refine, repeat until <=20%% on a sample, "
+             "then confirm at full-corpus scale (scripts/inventory_loop.py, "
+             "docs/pipeline/PIPELINE.md's 'Iteration loop'). Composed "
+             "entirely from council inventory/typology/inventory-refine, "
+             "not a private dispatch. Real (cheap) API calls.",
+    )
+    p_inv_loop.add_argument("council", choices=list(COUNCILS))
+    p_inv_loop.add_argument("--limit", type=int, default=None, metavar="N",
+                            help="sample size for iteration passes (default: 20)")
+    p_inv_loop.add_argument("--max-passes", type=int, default=None, dest="max_passes",
+                            help="default: 5")
+    p_inv_loop.add_argument("--dry-run", action="store_true", dest="dry_run",
+                            help="print the plan and exit — no API calls, no cost")
+
+    def _cmd_inventory_loop(a):
+        import subprocess as _subprocess
+
+        from scripts.inventory_loop import DEFAULT_LIMIT, run_inventory_loop
+        limit = a.limit if a.limit is not None else DEFAULT_LIMIT
+        max_passes = a.max_passes if a.max_passes is not None else 5
+        try:
+            sys.exit(run_inventory_loop(a.council, limit, max_passes, a.dry_run))
+        except _subprocess.CalledProcessError as exc:
+            console.print(f"[red]A step in the loop failed (exit {exc.returncode}): {exc.cmd}[/red]")
+            sys.exit(2)
+        except RuntimeError as exc:
+            console.print(f"[red]Loop error: {exc}[/red]")
+            sys.exit(2)
+
+    p_inv_loop.set_defaults(func=_cmd_inventory_loop)
+
     # sample
     p_sample = sub.add_parser("sample", help="Level 3a: select a stratified 15-20 doc sample; saves to data/{council}_sample.json (scripts/stratified_sample.py)")
     p_sample.add_argument("council", choices=list(COUNCILS))
@@ -3148,6 +3215,73 @@ def main() -> None:
                                    dest="max_chars",
                                    help=f"Coverage denominator cap (default: {_DMC3}). Use 'full' when extraction was run with --max-chars full.")
     p_validate_sample.set_defaults(func=cmd_validate_sample)
+
+    # extraction-refine (apply the INTERPRETATION diagnosis council
+    # validate-sample just wrote — the manual "edit system_prompt.txt" step)
+    p_ext_refine = sub.add_parser(
+        "extraction-refine",
+        help="Level 3 loop, standalone: apply the issue diagnosis "
+             "`council validate-sample` wrote to report.txt (edits "
+             "system_prompt.txt / agenda_system_prompt.txt). `council "
+             "extraction-loop` calls this internally, once per pass. A "
+             "real `claude -p` session — "
+             "docs/agent_prompts/extraction_refine.txt",
+    )
+    p_ext_refine.add_argument("council", choices=list(COUNCILS))
+
+    def _cmd_extraction_refine(a):
+        import json as _json
+
+        from scripts.validate_sample import VALIDATION_DIR
+        summary_path = VALIDATION_DIR / "summary.json"
+        if not summary_path.exists():
+            console.print(f"[red]No {summary_path} — run `council validate-sample {a.council}` first.[/red]")
+            sys.exit(1)
+        verdict = _json.loads(summary_path.read_text())
+        if verdict["converged"]:
+            console.print(
+                "[green]Nothing to refine — all four metrics are within target "
+                f"({verdict['passes']} PASS / {verdict['reviews']} REVIEW / "
+                f"{verdict['fails']} FAIL, n={verdict['n']}).[/green]"
+            )
+            return
+        _cmd_agent_prompt("extraction_refine", f"Extraction refine, {a.council}")
+
+    p_ext_refine.set_defaults(func=_cmd_extraction_refine)
+
+    # extraction-loop (Level 3: scripted iteration loop, composed entirely
+    # from council extract-sample / validate-sample / extraction-refine)
+    p_ext_loop = sub.add_parser(
+        "extraction-loop",
+        help="Level 3: scripted sample extraction-improvement loop — "
+             "extract, validate, check all four metrics against target, "
+             "refine, repeat until converged or the pass cap "
+             "(scripts/extraction_loop.py, docs/pipeline/PIPELINE.md's "
+             "extraction convergence loop). Composed entirely from council "
+             "extract-sample/validate-sample/extraction-refine, not a "
+             "private dispatch. Real API calls (extraction-tier pricing).",
+    )
+    p_ext_loop.add_argument("council", choices=list(COUNCILS))
+    p_ext_loop.add_argument("--max-passes", type=int, default=None, dest="max_passes",
+                            help="default: 5")
+    p_ext_loop.add_argument("--dry-run", action="store_true", dest="dry_run",
+                            help="print the plan and exit — no API calls, no cost")
+
+    def _cmd_extraction_loop(a):
+        import subprocess as _subprocess
+
+        from scripts.extraction_loop import run_extraction_loop
+        max_passes = a.max_passes if a.max_passes is not None else 5
+        try:
+            sys.exit(run_extraction_loop(a.council, max_passes, a.dry_run))
+        except _subprocess.CalledProcessError as exc:
+            console.print(f"[red]A step in the loop failed (exit {exc.returncode}): {exc.cmd}[/red]")
+            sys.exit(2)
+        except RuntimeError as exc:
+            console.print(f"[red]Loop error: {exc}[/red]")
+            sys.exit(2)
+
+    p_ext_loop.set_defaults(func=_cmd_extraction_loop)
 
     # validate
     from src.extraction.extractor import DEFAULT_MAX_CHARS as _DMC4

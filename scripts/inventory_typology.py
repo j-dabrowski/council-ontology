@@ -677,6 +677,27 @@ def _generate_extraction_prompt(ok: list[dict], quality: dict, output_path: Path
 # Main
 # ---------------------------------------------------------------------------
 
+def compute_improvement_prompt(council_key: str, limit: int | None = None) -> tuple[dict, str | None]:
+    """The quality dict plus the inventory-improvement instructions, or
+    `None` for the second value if `other_content_rate` is already at or
+    below `QUALITY_THRESHOLD` — the same computation `run()` does, factored
+    out so `council inventory-refine`/`inventory-loop` can call it directly
+    rather than parsing console output or the human-facing report file.
+    Side-effect-free: does not write the quality file or the report.
+    """
+    records = load_inventories(limit=limit)
+    ok = [r for r in records if r.get("status") == "ok"]
+    if not ok:
+        return {}, None
+    all_paths = [p for p in INVENTORIES_DIR.glob("*.json") if p.name != "summary.json"]
+    quality = _compute_quality(ok)
+    if quality["other_content_rate"] <= QUALITY_THRESHOLD:
+        return quality, None
+    output_path = OUTPUT_DIR / f"{council_key}_typology_review.txt"
+    prompt_text = _generate_schema_prompt(ok, output_path, corpus_size=len(all_paths))
+    return quality, prompt_text
+
+
 def run(args) -> None:
     council_key: str = args.council
     quiet: bool = getattr(args, "quiet", False)

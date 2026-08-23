@@ -1,0 +1,23 @@
+Read docs/pipeline/PIPELINE.md's "Level 3: Sample Extraction and Validation"
+section (what this step is for), then read data/sample_validation/report.txt
+in full — specifically its INTERPRETATION section, generated moments ago
+from the current sample's real metrics, not written by hand. Treat it as
+authoritative for this run.
+
+For each issue it names, edit the extraction prompt to address it:
+src/extraction/system_prompt.txt (minutes) or
+src/extraction/agenda_system_prompt.txt (agendas) — check each flagged
+document's `document_type` in its data/sample_validation/{stem}.json to
+know which one governs it; a fix may belong in one, the other, or both.
+Only touch src/extraction/schemas.py if the report's own INTERPRETATION
+text says so explicitly (a missing field, not a prompt-wording problem) —
+that overlaps Level 2 schema work, not this loop's job otherwise.
+
+Check data/sample_validation/paraphrase_report.txt for concrete
+quote-by-quote examples of what's failing before editing anything — the
+aggregate numbers in report.txt tell you what's wrong; the paraphrase
+report shows you the actual text.
+
+When done, stop — do not run `council extract-sample` or
+`council validate-sample` yourself. The loop that invoked you does that
+next.

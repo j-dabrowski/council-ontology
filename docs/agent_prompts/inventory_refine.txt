@@ -1,0 +1,10 @@
+Read docs/pipeline/PIPELINE.md's "Level 1: Inventory" section (what this
+step is for) in full, then apply the instructions below exactly — they
+were generated moments ago from the corpus's current other_content
+breakdown by `council typology <council>`, not written by hand, so treat
+them as authoritative for this run rather than a template to reinterpret.
+
+<instructions>
+
+When done, stop — do not run `council inventory` or `council typology`
+yourself. The loop that invoked you does that next.

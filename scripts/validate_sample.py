@@ -52,6 +52,111 @@ VALIDATION_DIR = DATA_DIR / "sample_validation"
 
 STATUS_STYLE = {"PASS": "green", "REVIEW": "yellow", "FAIL": "red"}
 
+# The four stated targets (also printed in the report header) — kept as
+# named constants so compute_verdict()'s "converged" check and the report's
+# own printed target lines can never drift apart. Inventory agreement is
+# computed and displayed but deliberately not gated here, matching
+# src/validation/core.py's determine_status(), which doesn't gate on it
+# either — this loop's exit condition is exactly as strict as what already
+# decides PASS/REVIEW/FAIL everywhere else in the system, not a new,
+# stricter bar invented just for the loop.
+TARGET_COMPLETENESS = 0.80   # >
+TARGET_PARAPHRASE = 0.30     # <
+TARGET_COVERAGE = 0.05       # >
+TARGET_KEYWORD_GAP = 0.25    # <
+
+
+def compute_verdict(results: list[dict]) -> dict:
+    """Aggregate metrics, per-metric issue diagnoses, and a `converged`
+    verdict — the single source of truth `_write_report()` below and
+    `council extraction-refine`/`extraction-loop` both read, so a report
+    that prints "within targets" and a loop that decides whether to keep
+    iterating can never disagree.
+
+    Issue thresholds match the *targets* exactly (not a looser, separate
+    "is this bad enough to explain" cutoff) — a metric that fails its own
+    stated target always gets a diagnosis, so `extraction-refine` always
+    has something concrete to read whenever `converged` is False.
+    """
+    valid = [r for r in results if "error" not in r]
+    fails = sum(1 for r in valid if r.get("status") == "FAIL")
+    if not valid:
+        return {
+            "n": 0, "avg_completeness": None, "avg_paraphrase": None,
+            "avg_coverage": None, "avg_keyword_gap": None,
+            "passes": 0, "reviews": 0, "fails": fails, "issues": [],
+            "converged": False,
+        }
+
+    avg_para = sum(r["quotes"]["paraphrase_rate"] for r in valid) / len(valid)
+    avg_cov = sum(r["coverage_ratio"] for r in valid) / len(valid)
+    avg_gap = sum(r["keyword_gap"]["gap_rate"] for r in valid) / len(valid)
+    avg_cmpl = sum(r.get("quote_completeness", {}).get("completeness_rate", 1.0) for r in valid) / len(valid)
+    passes = sum(1 for r in valid if r["status"] == "PASS")
+    reviews = sum(1 for r in valid if r["status"] == "REVIEW")
+
+    issues: list[str] = []
+    if avg_cmpl < 0.50:
+        issues.append(
+            f"LOW QUOTE COMPLETENESS ({avg_cmpl*100:.0f}%)\n"
+            "  More than half the extracted entities have no source quote in extraction_evidence.\n"
+            "  This means the model is extracting content but silently dropping the PROVENANCE RULE.\n"
+            "  Check missing_by_table in per-doc JSON to see which entity types are worst.\n"
+            "  Fix: strengthen the PROVENANCE RULE in system_prompt.txt; ensure source_quotes\n"
+            "  appears in the OUTPUT SCHEMA block for every entity type."
+        )
+    elif avg_cmpl < TARGET_COMPLETENESS:
+        issues.append(
+            f"MODERATE QUOTE COMPLETENESS ({avg_cmpl*100:.0f}%)\n"
+            "  Some extracted entities have no source quote. Check missing_by_table in per-doc\n"
+            "  JSON to identify which entity types are missing provenance most often."
+        )
+    if avg_para >= TARGET_PARAPHRASE:
+        issues.append(
+            f"HIGH PARAPHRASE RATE ({avg_para*100:.0f}%)\n"
+            "  The model's source quotes cannot be found in the source text even after\n"
+            "  whitespace normalisation — it is paraphrasing or condensing rather than\n"
+            "  quoting. Fix: strengthen the PROVENANCE RULE in system_prompt.txt."
+        )
+    if avg_cov <= TARGET_COVERAGE:
+        issues.append(
+            f"LOW COVERAGE RATIO ({avg_cov*100:.2f}%)\n"
+            "  Too little of the source text is spanned by matched quotes. This is usually\n"
+            "  a downstream effect of a high paraphrase rate: unmatched quotes contribute\n"
+            "  nothing to coverage. Reducing the paraphrase rate should raise coverage."
+        )
+    if avg_gap >= TARGET_KEYWORD_GAP:
+        issues.append(
+            f"HIGH KEYWORD GAP RATE ({avg_gap*100:.0f}%)\n"
+            "  Entity-signalling keywords (MOVED, CARRIED, DA, etc.) appear in source text\n"
+            "  but are not spanned by any matched quote. This means either:\n"
+            "  (a) entities are being missed entirely (extraction gap), or\n"
+            "  (b) they are extracted but with paraphrased quotes (covered by paraphrase fix).\n"
+            "  Check per-doc gap_examples in sample_validation/*.json to distinguish."
+        )
+    if fails > 0 and not issues:
+        issues.append(
+            f"{fails} DOCUMENT(S) IN FAIL STATUS\n"
+            "  Aggregate metrics are within target, but at least one document individually\n"
+            "  failed (see the per-file table). Check its per-doc JSON directly — an\n"
+            "  aggregate average can hide one badly-extracted document."
+        )
+
+    converged = (
+        avg_cmpl > TARGET_COMPLETENESS
+        and avg_para < TARGET_PARAPHRASE
+        and avg_cov > TARGET_COVERAGE
+        and avg_gap < TARGET_KEYWORD_GAP
+        and fails == 0
+    )
+
+    return {
+        "n": len(valid), "avg_completeness": avg_cmpl, "avg_paraphrase": avg_para,
+        "avg_coverage": avg_cov, "avg_keyword_gap": avg_gap,
+        "passes": passes, "reviews": reviews, "fails": fails, "issues": issues,
+        "converged": converged,
+    }
+
 
 # ---------------------------------------------------------------------------
 # Output
@@ -184,80 +289,35 @@ def _write_report(results: list[dict], council: str, sample: dict) -> None:
 
     lines.append("")
 
+    verdict = compute_verdict(results)
     valid = [r for r in results if "error" not in r]
-    if valid:
-        avg_para = sum(r["quotes"]["paraphrase_rate"] for r in valid) / len(valid)
-        avg_cov = sum(r["coverage_ratio"] for r in valid) / len(valid)
-        avg_gap = sum(r["keyword_gap"]["gap_rate"] for r in valid) / len(valid)
-        avg_cmpl = sum(r.get("quote_completeness", {}).get("completeness_rate", 1.0) for r in valid) / len(valid)
-        passes = sum(1 for r in valid if r["status"] == "PASS")
-        reviews = sum(1 for r in valid if r["status"] == "REVIEW")
-        fails = sum(1 for r in valid if r["status"] == "FAIL")
-
+    if verdict["n"]:
         lines += [
-            f"AGGREGATE (n={len(valid)})",
+            f"AGGREGATE (n={verdict['n']})",
             "---------",
-            f"  Quote completeness: {avg_cmpl*100:.1f}%  (target >80%)",
-            f"  Paraphrase rate:    {avg_para*100:.1f}%  (target <30%)",
-            f"  Coverage ratio:     {avg_cov*100:.2f}%  (target >5%)",
-            f"  Keyword gap rate:   {avg_gap*100:.1f}%  (target <25%)",
-            f"  Status:             {passes} PASS / {reviews} REVIEW / {fails} FAIL",
+            f"  Quote completeness: {verdict['avg_completeness']*100:.1f}%  (target >80%)",
+            f"  Paraphrase rate:    {verdict['avg_paraphrase']*100:.1f}%  (target <30%)",
+            f"  Coverage ratio:     {verdict['avg_coverage']*100:.2f}%  (target >5%)",
+            f"  Keyword gap rate:   {verdict['avg_keyword_gap']*100:.1f}%  (target <25%)",
+            f"  Status:             {verdict['passes']} PASS / {verdict['reviews']} REVIEW / {verdict['fails']} FAIL",
             "",
         ]
 
-        issues: list[str] = []
-        if avg_cmpl < 0.50:
-            issues.append(
-                f"LOW QUOTE COMPLETENESS ({avg_cmpl*100:.0f}%)\n"
-                "  More than half the extracted entities have no source quote in extraction_evidence.\n"
-                "  This means the model is extracting content but silently dropping the PROVENANCE RULE.\n"
-                "  Check missing_by_table in per-doc JSON to see which entity types are worst.\n"
-                "  Fix: strengthen the PROVENANCE RULE in system_prompt.txt; ensure source_quotes\n"
-                "  appears in the OUTPUT SCHEMA block for every entity type."
-            )
-        elif avg_cmpl < 0.80:
-            issues.append(
-                f"MODERATE QUOTE COMPLETENESS ({avg_cmpl*100:.0f}%)\n"
-                "  Some extracted entities have no source quote. Check missing_by_table in per-doc\n"
-                "  JSON to identify which entity types are missing provenance most often."
-            )
-        if avg_para >= 0.50:
-            issues.append(
-                f"HIGH PARAPHRASE RATE ({avg_para*100:.0f}%)\n"
-                "  More than half the model's source quotes cannot be found in the source text\n"
-                "  even after whitespace normalisation. The model is paraphrasing or condensing\n"
-                "  rather than quoting. Fix: strengthen the PROVENANCE RULE in system_prompt.txt."
-            )
-        if avg_cov < 0.03:
-            issues.append(
-                f"LOW COVERAGE RATIO ({avg_cov*100:.2f}%)\n"
-                "  Very little of the source text is spanned by matched quotes. This is usually\n"
-                "  a downstream effect of a high paraphrase rate: unmatched quotes contribute\n"
-                "  nothing to coverage. Reducing the paraphrase rate should raise coverage."
-            )
-        if avg_gap >= 0.40:
-            issues.append(
-                f"HIGH KEYWORD GAP RATE ({avg_gap*100:.0f}%)\n"
-                "  Many entity-signalling keywords (MOVED, CARRIED, DA, etc.) appear in source\n"
-                "  text but are not spanned by any matched quote. This means either:\n"
-                "  (a) entities are being missed entirely (extraction gap), or\n"
-                "  (b) they are extracted but with paraphrased quotes (covered by paraphrase fix).\n"
-                "  Check per-doc gap_examples in sample_validation/*.json to distinguish."
-            )
-
-        if issues:
+        if verdict["issues"]:
             lines.append("INTERPRETATION")
             lines.append("--------------")
-            for issue in issues:
+            for issue in verdict["issues"]:
                 lines.append(issue)
                 lines.append("")
             lines.append("NEXT STEPS")
             lines.append("----------")
-            lines.append("  1. Fix the identified issues in system_prompt.txt (and/or schemas.py).")
+            lines.append("  1. Fix the identified issues in system_prompt.txt (and/or schemas.py) —")
+            lines.append("     or run: council extraction-refine cambridge")
             lines.append("  2. Re-run: council extract-sample cambridge")
             lines.append("  3. Re-run: council validate-sample cambridge")
             lines.append("  Repeat until paraphrase <30%, coverage >5%, keyword gap <25%.")
             lines.append("  Then proceed to Level 4: confidence metrics and full batch extraction.")
+            lines.append("  (Or run: council extraction-loop cambridge — scripts the whole cycle.)")
         else:
             lines += [
                 "NEXT STEPS",
@@ -404,9 +464,18 @@ def run(args) -> None:
     _write_report(results, council, sample)
     _write_paraphrase_report(results, council, sample)
 
+    # Structured verdict, read back by `council extraction-refine`/
+    # `extraction-loop` rather than parsing report.txt — same "read
+    # structured state, not console output" pattern as
+    # data/inventory_quality/latest_<council>.json for the inventory loop.
+    (VALIDATION_DIR / "summary.json").write_text(
+        json.dumps(compute_verdict(results), indent=2)
+    )
+
     console.print(f"\n[dim]Per-doc JSON:        {VALIDATION_DIR}/*.json[/dim]")
     console.print(f"[dim]Summary:             {VALIDATION_DIR}/report.txt[/dim]")
     console.print(f"[dim]Paraphrase detail:   {VALIDATION_DIR}/paraphrase_report.txt[/dim]")
+    console.print(f"[dim]Structured verdict:  {VALIDATION_DIR}/summary.json[/dim]")
 
 
 def main() -> None:
