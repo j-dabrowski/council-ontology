@@ -18,7 +18,7 @@ workflow" (where this stage sits in the larger pipeline).
 
 ---
 
-## Status: v0.3, real chains run pre-narrowing; not yet run against v0.4's boundary
+## Status: Editor is v0.4; real chains so far ran pre-narrowing, against v0.3
 
 Real Conductor-loop chains ran against Editor v0.3 in August 2026 (see the
 open-questions entries below, each citing a real

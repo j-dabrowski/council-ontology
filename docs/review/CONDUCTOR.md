@@ -75,7 +75,8 @@ stages already do.
 
 Added 2026-08-23 (`docs/AGENT_DESIGN.md` §3 Q3), once S7 (the invariant
 gate, `src/invariant_gate.py`, scripted, runs inside `council draft`) and
-S9 (right of reply, not built yet) existed to draw a boundary against.
+S9 (right of reply, `src/reply_packets.py`, `council reply-packets
+<council>`) existed to draw a boundary against.
 **The Conductor's authority starts at `council draft`'s output and ends at
 the S8 flag loop below — it owns neither of the stages next to that loop:**
 
@@ -102,8 +103,8 @@ the S8 flag loop below — it owns neither of the stages next to that loop:**
 
 In short: the Conductor's whole domain is the box between "a draft exists"
 and "a human (or `--gate-profile auto`) decides to publish it" — S7 sits
-just before that box, S9 sits beside it (not built yet), and the box itself
-is exactly the loop below, unchanged.
+just before that box, S9 sits beside it, and the box itself is exactly the
+loop below, unchanged.
 
 ## The chain loop
 

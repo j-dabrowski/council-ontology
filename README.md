@@ -61,8 +61,19 @@ council minutes site
    council analyse          ← query helpers for cross-meeting analysis
         │
         ▼
-   council draft            ← generate candidate JSON snapshots to data/draft/
-                              for review (investigator + Editor)
+   council explore          ← Explorer: generate/test novel hypotheses
+   council refine           ← Refiner: codify a validated finding into
+                              the permanent, council-agnostic test battery
+        │
+        ▼
+   council draft            ← generate candidate JSON snapshots to data/draft/,
+                              gated by the S7 invariant gate (scripted — small-n,
+                              unnamed claims, unresolved identities all block here)
+        │
+        ▼
+   council editor-loop      ← Editor reviews the draft for everything the S7
+                              gate can't catch mechanically; Fixer acts on
+                              whatever it flags; loops until PASS or escalation
         │
         ▼
    council publish          ← the gate: copy a *reviewed* draft into
@@ -71,6 +82,11 @@ council minutes site
                               re-validated Editor PASS record, depending on
                               --gate-profile)
 ```
+
+(`council reply-packets` and `council render` are two further stages — right
+of reply for any named-individual claim, and audience-facing rendering —
+documented in the CLI reference below; omitted above to keep this diagram to
+the critical path every draft actually goes through.)
 
 ---
 
@@ -460,6 +476,24 @@ council profile cambridge
 
 Writes `data/{council}_profile.json` (gitignored, refreshed every run) and prints a summary.
 
+#### `council explore`
+**S3 discovery:** Explorer generates and tests novel hypotheses against the extracted corpus — a real Claude session (real time, real usage), not a script. Self-directing: no council argument, reads `docs/investigator/Investigator_prompt.txt` Part 0 for scope, seeds itself from the coverage register's worst open gap. Ends with a self-score against `docs/investigator/EXPLORATION_PROTOCOL.md`.
+
+```bash
+council explore
+```
+
+Findings are appended to `docs/investigator/INVESTIGATIONS.md` (gitignored — names real people).
+
+#### `council refine`
+**S4 codification:** Refiner turns a validated Explorer finding into a permanent, council-agnostic entry in `src/analysis/tests.py` / `queries.py`, plus a declaration block (unit of analysis, minimum sample size, principle) the S7 invariant gate enforces. Self-directing — picks the oldest not-yet-refined eligible candidate from `INVESTIGATIONS.md` itself. A real Claude session, not a script.
+
+```bash
+council refine
+```
+
+---
+
 #### `council analyse cambridge <query>`
 Analysis queries against the extracted database.
 
@@ -500,11 +534,32 @@ a recognised-criterion mapping, a supportive/neutral/critical valence, and a cha
 payload. Adding a test there makes it run on every council and appear as a panel
 automatically.
 
-This is where the Editor role reviews output, and Fixer's track-scoped modes
-act on whatever it flags (`docs/review/`) — nothing here is public until
-`council publish` says so. To view a draft in the real dashboard while
-reviewing it, see "Previewing a draft before it's published" in the
-Dashboard section above.
+Before `manifest.json` is written, the **S7 invariant gate** runs over the battery, scripted, no LLM (`src/invariant_gate.py`) — a claim naming someone without declaring it, resting on too small a sample, or naming someone whose identity isn't cleanly resolved blocks the draft immediately, before Editor ever sees it. This is where the Editor role reviews everything else — overclaim language, missing context, unfair singling-out — and Fixer's track-scoped modes act on whatever it flags (`docs/review/`) — nothing here is public until `council publish` says so. To view a draft in the real dashboard while reviewing it, see "Previewing a draft before it's published" in the Dashboard section above.
+
+---
+
+#### `council editor-loop cambridge [--max-passes N] [--dry-run]`
+**S8:** the scripted draft → Editor → Fixer review loop — draft, review, apply any flagged fixes, repeat up to the pass cap. Real `claude -p` calls for Editor's and Fixer's own judgment; the pass-counting and dispatch-by-track mechanics are scripted. Never calls `council publish` itself; stops at a clean PASS or an escalation and prints what to run next. `--dry-run` prints the plan and makes no `claude` calls — free to run.
+
+```bash
+council editor-loop cambridge --dry-run
+council editor-loop cambridge --max-passes 3
+```
+
+#### `council reply-packets cambridge [--regenerate]`
+**S9 right of reply:** assembles one packet per named person, covering every claim about them that hasn't already been sent (tracked in a persisted `sent_ledger.json` — a rerun never re-approaches the same person about the same claim unless `--regenerate` is passed). Scripted, no LLM — never sends anything itself.
+
+```bash
+council reply-packets cambridge
+```
+
+#### `council render <mode> <council> <run_id>`
+**S10:** Renderer turns an already-reviewed draft into an audience-facing product — `plain_language` mode (institutional data → resident-facing summary) or `synthesis` mode (deep product → cross-claim prose). A real Claude session. Not yet wired into any automated workflow, and not yet run for real — this is the only way to run it today.
+
+```bash
+council render plain_language cambridge draft_20260805_120000
+council render synthesis cambridge draft_20260805_120000
+```
 
 ---
 
@@ -738,6 +793,23 @@ data/
 | 6 | Audit | Human audit on random sample, ground-truthing the validation metrics | Free | **Tooling done**; human review pending |
 
 See `docs/pipeline/PIPELINE.md` for the detailed plan, build log, and dependency graph.
+
+---
+
+## Investigator, review, and render pipeline
+
+| Stage | Role | What | Cost | Status |
+|-------|------|------|------|--------|
+| S2 | Profile | Corpus profile — NULL rates, spans, identity-resolution state | Free | **Built** |
+| S3 | Explorer | Hypothesis discovery, tested on training corpora | Claude Code session | **Built**, discovery-only as of v3.0 |
+| S4 | Refiner | Codify a validated finding into the permanent battery | Claude Code session | **Built**, v1.2 |
+| S6/S7 | Draft + gate | Frozen battery run; scripted invariant gate (name-free, MIN_N, identity) | Free | **Built** |
+| S8 | Editor + Fixer | Semantic review (4 classes) + track-scoped fix loop | Claude Code session | **Built**; first real run 2026-08-24 (FAIL, escalated on a human merge decision) |
+| S9 | Right of reply | Packet assembly for individual-unit claims | Free | **Built**; never sent for real |
+| S10 | Renderer | Plain-language / synthesis rendering of a reviewed draft | Claude Code session | **Built**; never run for real (no calibration data) |
+| — | Publish | Human-gated copy into the public site | Free | **Built** |
+
+See `docs/INFORMATION_ARCHITECTURE.md` and `docs/AGENT_DESIGN.md` for the detailed flow and design rationale.
 
 ---
 

@@ -34,20 +34,36 @@ note for the incident this was written from and the rule it sets.
   copy the prompt to your clipboard to paste into an already-running
   session: `cat docs/agent_prompts/<role>.txt | pbcopy` (macOS).
 
-## Investigator (3 modes, one shared reference layer)
+## Investigator (2 active modes, one shared reference layer)
 
 **Explorer — generate and test novel hypotheses.**
+```bash
+council explore
+```
+A thin CLI wrapper (`src/cli.py`) around exactly the command below — reuses
+`load_prompt`/`run_claude` from `scripts/conductor_loop.py`, so there's one
+implementation of "invoke a `claude -p` prompt," not two. No `council`
+argument: the prompt has no `<council>` placeholder and self-directs from
+`Investigator_prompt.txt` Part 0. Prefer this locally; `discovery.yml`
+(CI) calls the raw form directly, shown here for reference and for the
+"interactive, local" clipboard path above:
 ```bash
 claude -p "$(cat docs/agent_prompts/explorer.txt)" \
   --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
 ```
-Self-directing already: Explorer always generates fresh hypotheses from the
-Phase 1 genre taxonomy and the current DB state, never needs a target
-named. Ends with a Stage 9 self-score against `EXPLORATION_PROTOCOL.md`; if
-any benchmark dimension fails, it proposes (but does not apply) a prompt
-edit for a human to review.
+Self-directing already: Explorer always generates fresh hypotheses,
+seeded from the coverage register's worst open gap (v3.0, discovery-only
+as of 2026-08-23), never needs a target named. Ends with a Stage 3
+self-score against `EXPLORATION_PROTOCOL.md`; if any benchmark dimension
+fails, it proposes (but does not apply) a prompt edit for a human to
+review.
 
 **Refiner — codify a validated finding into the permanent battery.**
+```bash
+council refine
+```
+Same wrapper shape as Explorer — no `council` argument, prefer this
+locally; `discovery.yml` (CI, `refine=true`) calls the raw form:
 ```bash
 claude -p "$(cat docs/agent_prompts/refiner.txt)" \
   --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
@@ -57,7 +73,9 @@ itself, picks the oldest not-yet-`REFINED` eligible candidate (FIFO), and
 exits with a clean `NOTHING QUEUED` stage-contract block if nothing
 qualifies — never idles or guesses. Before v1.1 this required a
 human-named hypothesis in the prompt itself; that's now the file's job, not
-the caller's.
+the caller's. As of v1.2 (2026-08-23) also emits the declaration block
+(unit/MIN_N/strength/principle) the S7 invariant gate enforces, and
+updates `coverage_register.json`.
 
 **Runner — retired 2026-08-23** (`docs/AGENT_DESIGN.md` §2, §6 Step 6).
 Its duties are all scripted now: battery execution and snapshot export are
@@ -139,14 +157,29 @@ when you deliberately want one Fixer pass outside the loop.
 
 ## Renderer (S10, two modes, one shared layer — new 2026-08-23)
 
-`docs/agent_prompts/renderer.txt` has three placeholders (`<mode>`,
-`<council>`, `<run_id>`) — fill all three with `sed` before invoking, same
-pattern as Fixer above. Neither mode is self-directing about *which* draft
-to render. Both modes read a draft that's already cleared S7/S8 (and, for
-synthesis mode's `individual`-unit claims, S9) — see
-`docs/render/Renderer_prompt.txt` for what each mode may and may not do.
+Neither mode is self-directing about *which* draft to render. Both modes
+read a draft that's already cleared S7/S8 (and, for synthesis mode's
+`individual`-unit claims, S9) — see `docs/render/Renderer_prompt.txt` for
+what each mode may and may not do.
 
 **Plain-language mode — institutional product → resident-facing summary.**
+```bash
+council render plain_language cambridge draft_20260822_120000
+```
+Checks the draft directory exists (fails fast if not) and warns — without
+blocking — if `manifest.json` is missing, meaning the S7 gate never
+passed on that draft.
+
+**Synthesis mode — deep product → cross-claim prose (the FINDINGS_SUMMARY /
+Overview successor).**
+```bash
+council render synthesis cambridge draft_20260822_120000
+```
+Both are thin CLI wrappers around the same `load_prompt`/`run_claude`
+pattern as Explorer/Refiner above. `docs/agent_prompts/renderer.txt` has
+three placeholders (`<mode>`, `<council>`, `<run_id>`) that the wrapper
+fills; the equivalent raw form (useful for the "interactive, local"
+clipboard path, or if invoking outside the CLI):
 ```bash
 claude -p "$(sed \
     -e "s/<mode>/plain_language/g" \
@@ -155,19 +188,9 @@ claude -p "$(sed \
     docs/agent_prompts/renderer.txt)" \
   --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
 ```
-
-**Synthesis mode — deep product → cross-claim prose (the FINDINGS_SUMMARY /
-Overview successor).**
-```bash
-claude -p "$(sed \
-    -e "s/<mode>/synthesis/g" \
-    -e "s/<council>/cambridge/g" \
-    -e "s/<run_id>/draft_20260822_120000/g" \
-    docs/agent_prompts/renderer.txt)" \
-  --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
-```
-Never run for real yet — no calibration data exists
-(`docs/render/RENDERER_PROTOCOL.md`).
+Not yet wired into any workflow, and never run for real — no calibration
+data exists (`docs/render/RENDERER_PROTOCOL.md`). The CLI wrapper exists
+so a human can run it by hand today; that's not the same as CI running it.
 
 ## Running any of these via GitHub Actions
 
@@ -235,16 +258,22 @@ answer). See `AUTOMATION_ARCHITECTURE.md` Part 3 for the full workflow
 shape this drops into (branch creation before the call, commit/PR after).
 
 **The draft → Editor → Fixer loop specifically has a scripted
-alternative to the Conductor command above: `scripts/conductor_loop.py`.**
-It reads Editor's machine-readable `defamation_review_<n>.json` sidecar
-directly and handles the pass-counting/dispatch-by-track mechanically,
-calling `claude -p` only for Editor's and Fixer's own judgment calls —
-see that script's own docstring for why this is a legitimate replacement
-for an agent-driven loop specifically (Editor's verdict is already
-structured data) and not a shortcut around the parts that still need
-real judgment. It applies the same `ANTHROPIC_API_KEY`-stripping
-discipline as this section, and never calls `council publish`, same as
-Conductor itself.
+alternative to the Conductor command above: `scripts/conductor_loop.py`,
+with its own CLI wrapper:**
+```bash
+council editor-loop cambridge --max-passes 3
+```
+`--dry-run` prints the plan (council, pass cap) and exits — no draft, no
+`claude` calls, no cost — useful to check the invocation before spending
+anything. It reads Editor's machine-readable `defamation_review_<n>.json`
+sidecar directly and handles the pass-counting/dispatch-by-track
+mechanically, calling `claude -p` only for Editor's and Fixer's own
+judgment calls — see that script's own docstring for why this is a
+legitimate replacement for an agent-driven loop specifically (Editor's
+verdict is already structured data) and not a shortcut around the parts
+that still need real judgment. It applies the same
+`ANTHROPIC_API_KEY`-stripping discipline as this section, and never calls
+`council publish`, same as Conductor itself.
 
 **`scripts/conductor_loop.py` is exactly what `.github/workflows/
 maintenance.yml` runs** (added `docs/AGENT_DESIGN.md` §6 Step 7,

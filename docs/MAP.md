@@ -1,6 +1,6 @@
 # Documentation Map
 
-**Start here.** This project is run as four loosely-coupled sub-projects ("tracks").
+**Start here.** This project is run as five loosely-coupled sub-projects ("tracks").
 Each track has its own docs, its own iteration loop, and its own state of completion.
 This file maps every doc to its track and — more importantly — shows **how the tracks
 feed each other**. Read this first in a fresh session, then open the track you're working in.
@@ -83,7 +83,7 @@ Not owned by one track — gates all of them:
   Until the build lands, the *current-state* docs below remain accurate;
   these two describe the target.
 
-## The four tracks
+## The five tracks
 
 ### 🛠 Pipeline — *mostly frozen*
 Turns council-minutes PDFs into a structured, auditable SQLite database.
@@ -295,8 +295,8 @@ The non-obvious edges, spelled out:
 | noting a reusable **cross-corpus** pattern (not just this corpus's gap) | `pipeline/DATA_ENRICHMENT.md` — pattern layer, above the instance; read automatically by the next corpus's typology stage |
 | proposing a new failure/effectiveness genre from real-world precedent | `research/Researcher_prompt.txt` (run) — writes a ready-to-apply file to `research/pending_merges/` when a candidate clears its own 4-dimension check (default; you then paste it into `investigator/Investigator_prompt.txt` Part 3 and `pipeline/DATA_ENRICHMENT.md` yourself), or self-merges directly only if you explicitly ran it in auto-merge mode; `research/PRECEDENT_BANK.md` is the resulting audit log |
 | improving the researcher prompt | `research/RESEARCH_PROTOCOL.md` (benchmark) → bump `research/Researcher_prompt.txt` |
-| running an exploration session (new hypotheses) | `investigator/Explorer_prompt.txt` (run) → `investigator/INVESTIGATIONS.md` (record) |
-| codifying a finding into the test battery | `investigator/Refiner_prompt.txt` (run) → `src/analysis/tests.py` + `queries.py` |
+| running an exploration session (new hypotheses) | `council explore` (`investigator/Explorer_prompt.txt` underneath) → `investigator/INVESTIGATIONS.md` (record) |
+| codifying a finding into the test battery | `council refine` (`investigator/Refiner_prompt.txt` underneath) → `src/analysis/tests.py` + `queries.py` |
 | running the frozen battery in production | `council draft <council>` — scripted; Runner is archived, this was always its whole job under the hood |
 | improving the exploration prompt | `investigator/EXPLORATION_PROTOCOL.md` (benchmark) → bump `Explorer_prompt.txt` |
 | improving the refinement prompt / harness | `investigator/REFINEMENT_PROTOCOL.md` (benchmark) → bump `Refiner_prompt.txt` |
@@ -305,9 +305,9 @@ The non-obvious edges, spelled out:
 | improving the editor prompt | `review/editor/EDITOR_PROTOCOL.md` (benchmark) → bump `Editor_prompt.txt` |
 | fixing a flagged claim (frontend/pipeline/doc) | `review/fixer/<track>_mode.txt` (run) — only the track(s) the editor tagged |
 | adding a fourth fixer track | `review/fixer/FIXER_PROTOCOL.md` — additive by design, see "Adding a fourth mode" |
-| chaining editor + fixer, or asking what happens after a FAIL | `review/CONDUCTOR.md` — the loop, the pass cap, the one rule (never calls `council publish`) |
+| chaining editor + fixer, or asking what happens after a FAIL | `review/CONDUCTOR.md` — the loop, the pass cap, the one rule (never calls `council publish`); `council editor-loop <council>` runs the scripted version (`scripts/conductor_loop.py`) |
 | assembling right-of-reply packets for a named-individual claim | `council reply-packets <council>` (script, `src/reply_packets.py`) — never sends anything; a human sends the output |
-| rendering a claim for residents or writing cross-claim synthesis | `render/Renderer_prompt.txt` (shared layer) + `render/plain_language_mode.txt` or `render/synthesis_mode.txt` (run) |
+| rendering a claim for residents or writing cross-claim synthesis | `council render plain_language <council> <run_id>` or `council render synthesis <council> <run_id>` (`render/Renderer_prompt.txt` + the mode file underneath) |
 | improving the renderer prompt | `render/RENDERER_PROTOCOL.md` (benchmark) → bump `Renderer_prompt.txt` or the relevant mode file |
 | planning the end-to-end order to run all stages (CLI + agents) for a new corpus | `pipeline/PIPELINE.md` ("Longer term → Corpus onboarding order") — design sketch, not built; first-corpus vs subsequent-corpus sequencing |
 | planning for many-council, recurring/scheduled operation (after onboarding) | `pipeline/PIPELINE.md` ("Longer term → Production scale") — design sketch, not built; cross-referenced from `review/CONDUCTOR.md` |

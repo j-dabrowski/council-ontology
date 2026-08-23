@@ -99,7 +99,7 @@ served site itself).
 | S7 invariant gate | n/a — always runs, inside `council draft`, no separate trigger | the battery `council draft` just computed | `gate_report.json`; blocks the draft on failure | wherever `council draft` runs (GCS `drafts/`) — same location, not a separate stage in this table |
 | **`council draft`** | manual `workflow_dispatch` (existing `draft.yml`) → **also built:** the first step of `maintenance.yml`'s loop | `council.db` (GCS), current `queries.py`/`tests.py` (git checkout) | `data/draft/<run_id>/*.json` (S7 gate report included) | **GCS** (`drafts/`) — existing, unchanged |
 | **Editor** (defamation review) | **built:** `workflow_dispatch` (`maintenance.yml`, via `scripts/conductor_loop.py` — the scripted loop mechanics, still a real `claude -p` call for Editor's own judgment) | a draft directory (GCS) + `Investigator_prompt.txt` Part 4 (git) + `PRIVATE_ASSESSMENT.md` (gitignored, local-only — see Part 3 note) | `defamation_review_<n>.md` + `.json` sidecar | **GCS**, written into the same draft directory |
-| **Fixer** (3 modes, dispatched on FAIL) | **built:** same `maintenance.yml` run, dispatched by `conductor_loop.py` per Editor's tagged tracks | Editor's flagged issues + the relevant track's files | edits to `frontend/src/`, `src/`, or doc files | **git** — committed directly on the runner within the same job (not yet a PR — see Part 3's note on this workflow's own scope) |
+| **Fixer** (3 modes, dispatched on FAIL) | **built:** same `maintenance.yml` run, dispatched by `conductor_loop.py` per Editor's tagged tracks | Editor's flagged issues + the relevant track's files | edits to `frontend/src/`, `src/`, or doc files | **git, via its own PR** on any real change (never `frontend/public/data/`, which stays `council publish`'s direct-commit path) — see Part 3's Flow D note; publish is held while that PR is open |
 | **`council publish`** | always manual (`--confirm`), OR **built, opt-in:** `maintenance.yml`'s `publish=true` input (`--gate-profile auto`) | one specific draft dir (GCS or local, depending on trigger), hash-verified | `frontend/public/data/*.json` | **git**, direct commit (existing behaviour, unchanged — see Part 3) |
 | Renderer (plain-language / synthesis, `docs/AGENT_DESIGN.md` §6 Step 6) | manual only — not wired into any workflow | a draft directory (institutional or deep product) | `plain_language_summary.md` / `deep_synthesis.md` in the draft directory | not GCS-uploaded by any workflow yet; no calibration data exists for either mode (`RENDERER_PROTOCOL.md`), so wiring it into `maintenance.yml` is deliberately deferred, not forgotten |
 | **Vercel deploy** | automatic on push to `main` touching `frontend/` | `frontend/public/data/` + `frontend/src/` (git) | the live site | **Vercel** — already fully automatic, no change |
@@ -330,21 +330,35 @@ updates (a preview draft for the reviewer, checked out against the PR's own
 branch — see the `ref`-aware `draft.yml` design) are both consistent with
 the rule, not exceptions to it: nothing here ever touches a tracked file.
 
-**Flow D (Editor + Fixer) — no PR possible (no git file) for the review
-itself, but the loop mechanics are now built and CI-wired
-(`maintenance.yml`, `workflow_dispatch` only, never scheduled yet).**
-`PIPELINE.md`'s "Production scale" section framed the right resolution
-before this was built — "the likely resolution isn't removing the human,
-it's shrinking what the human has to do per cycle" — and that's exactly
-what `scripts/conductor_loop.py` does: pass-counting and dispatch-by-track
-are scripted (no judgment in that gap), while Editor's own review and
-Fixer's own fix stay real `claude -p` calls. What `maintenance.yml`
-deliberately does **not** do is auto-publish or schedule itself — both are
-gated behind explicit conditions, not removed altogether:
+**Flow D (Editor + Fixer) — Editor's own review still writes no git file
+(no PR possible for that part), but the loop mechanics are now built and
+CI-wired (`maintenance.yml`, `workflow_dispatch` only, never scheduled
+yet), and a Fixer repair now follows the uniform rule like everything
+else.** `PIPELINE.md`'s "Production scale" section framed the right
+resolution before this was built — "the likely resolution isn't removing
+the human, it's shrinking what the human has to do per cycle" — and
+that's exactly what `scripts/conductor_loop.py` does: pass-counting and
+dispatch-by-track are scripted (no judgment in that gap), while Editor's
+own review and Fixer's own fix stay real `claude -p` calls. Whenever
+Fixer actually changes a git-tracked file (source, prompts, docs — never
+`frontend/public/data`, which is `council publish`'s own output, not a
+Fixer repair) `maintenance.yml`'s "Capture Fixer's source edits into a
+PR" step opens one, per this uniform rule, exactly like Refiner's Flow B —
+first built as a direct-commit shortcut, corrected the same day a code
+review of the build caught it discarding real repairs (logged in
+`CICD_DECISIONS.md`'s 2026-08-24 entry, which also records the
+alternatives considered). What `maintenance.yml` deliberately does
+**not** do is auto-publish or schedule itself — both are gated behind
+explicit conditions, not removed altogether:
 
-- **Publish** is an opt-in `publish=true` dispatch input (default false).
-  A human dispatching the workflow with `publish=true` is still a
-  deliberate act each time — the gate is "not automatic," not "impossible."
+- **Publish** is an opt-in `publish=true` dispatch input (default false),
+  **and** is held automatically whenever the run just opened a Fixer-repair
+  PR, regardless of that input — publishing refreshed data against the
+  exact code Editor just flagged would defeat the review that produced
+  the fix. The job summary always prints the exact `council publish`
+  command to run by hand once that PR merges. A human dispatching with
+  `publish=true` on a run with no pending fix is still a deliberate act
+  each time — the gate is "not automatic," not "impossible."
 - **Scheduling** is a commented-out `cron:` block in `maintenance.yml`
   itself, with an **activation checklist** stated both there and here
   (single source of intent, kept in sync manually — update both if the
@@ -373,11 +387,7 @@ This is the same reasoning `CONDUCTOR.md` already states in general: don't
 automate a dispatch policy nobody has run yet. The difference from the
 pre-2026-08-23 state is that "run yet" now means "run via
 `workflow_dispatch`, which is real infrastructure a human can dispatch
-today" — not "build the infrastructure later, once trust exists." Fixer's
-edits inside this flow commit directly on the runner within the same job
-(not yet their own PR, unlike Refiner's Flow B) — a further scoping
-simplification versus a fully PR-gated Fixer, logged here rather than
-silently decided.
+today" — not "build the infrastructure later, once trust exists."
 
 **Flow E (`council publish`) — the one open question this rule raises,
 flagged rather than decided here.** This is the one stage that *does* write
@@ -466,18 +476,15 @@ the concrete gate rather than a restated principle here.
   through GCS on every run (overwriting, no versioning) as of this update,
   which is the simplest thing that works, not a considered answer to this
   question.
-- **New, not yet resolved: Fixer's edits aren't PR-gated inside
-  `maintenance.yml`.** They commit directly on the runner within the same
-  job that dispatched them (see Flow D's note in Part 3) — a real gap
-  against the uniform "every git-tracked change gets its own PR" rule this
-  doc states at the top. Left this way because the whole point of the
-  Editor/Fixer loop is to converge on a clean draft *before* a human looks
-  at anything (the PR-worthy artifact is the final clean draft plus
-  Editor's PASS record, not each intermediate Fixer round) — but that's a
-  judgment call made once, while building this, not a principled
-  resolution of the tension with Part 3's stated rule. Revisit if a
-  Fixer-introduced regression ever needs to be bisected after the fact and
-  the lack of intermediate commits/PRs turns out to matter in practice.
+- **Closed 2026-08-24 — Fixer's edits are now PR-gated inside
+  `maintenance.yml`.** Built as a direct-commit-on-the-runner shortcut,
+  matching the reasoning above about converging on a clean draft before a
+  human looks at anything — but a code review of the redesign build caught
+  the actual consequence the same day: the edits died with the runner
+  while the data they justified was published, since only
+  `frontend/public/data/` was ever staged. See Flow D's note in Part 3 for
+  the fix (a Fixer-repairs PR, publish held while it's open) and
+  `CICD_DECISIONS.md`'s 2026-08-24 entry for the alternatives weighed.
 - **New, not yet resolved: `discovery.yml` doesn't support a standalone
   Refiner-only dispatch.** See Flow B's note in Part 3 — a real, logged
   gap versus the original design, not forgotten.

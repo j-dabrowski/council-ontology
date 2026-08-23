@@ -30,9 +30,15 @@ elsewhere says to.
 - **`test_publish_gate.py`** — `check_clearance()` (both gate profiles),
   `load_draft_manifest()`, `verify_draft_integrity()`, from `src/publish_gate.py`.
 - **`test_invariant_gate.py`** — the S7 invariant gate: `run_invariant_gate()`
-  against a clean battery and each violation class (name-free schema, MIN_N,
+  against a clean battery and each violation class (name-free schema,
+  name-free text — including a name hidden in a chart label — MIN_N,
   entity-resolution), `derive_claim_tier()`, and `load_min_n()`, from
-  `src/invariant_gate.py`.
+  `src/invariant_gate.py`. Also `usable_roster_names()` against a synthetic
+  roster containing the extraction-debris shapes the real councillors table
+  carries (an empty given name, an officer title parsed as a name), so the
+  gate can't be re-broken by exactly the false-positive storm a code review
+  of the build caught against the real corpus (a debris row matching
+  ordinary prose and blocking every draft).
 - **`test_profile.py`** — the S2 corpus profile: span (document counts, date
   range, zero-meeting-month gap detection), council-scoped entity counts,
   NULL/coverage rates, vote-choice distribution, and identity-resolution
@@ -52,7 +58,15 @@ elsewhere says to.
   reply on file; a claim naming two people appears in both packets;
   `individual_implicating` claims are out of scope), template rendering,
   `attach_reply()`/`non_response_text()`, and `load_response_window_days()`,
-  from `src/reply_packets.py`.
+  from `src/reply_packets.py`. Also `person_slug()` (collision-resistant
+  filenames — this corpus's own split-identity pairs, e.g. "O'Connor,
+  Pauline" / "O'Connor Pauline", would otherwise fold to the same slug and
+  silently overwrite one person's packet) and the persisted `sent_ledger`
+  (`load_sent_ledger`/`update_sent_ledger`) that makes the "no reply on
+  file" scoping actually hold across separate `council reply-packets` runs,
+  not just within one — the in-process `reply` field alone can't, since the
+  battery is recomputed fresh every run. `--regenerate` bypasses the ledger
+  deliberately, for the rare case a packet needs re-sending.
 
 All of these test **pure functions or hermetic DB/source-parsing logic** —
 same inputs
@@ -233,13 +247,22 @@ as needed.
 
 Before `manifest.json` is written, `council draft` runs the **S7 invariant
 gate** (`src/invariant_gate.py`, `docs/INFORMATION_ARCHITECTURE.md` §3) over
-the battery it just computed — scripted, no LLM. It checks three claim-object
+the battery it just computed — scripted, no LLM. It checks four claim-object
 invariants (`unit_of_analysis`, `named_entities`, `entity_resolution`, `n` on
 `TestResult`, `src/analysis/tests.py`): an `institutional`-unit claim must
-carry zero `named_entities`; an `individual`/`individual_implicating` claim
-needs `n` above `MIN_N` (`config/invariants.json`, calibrated to Editor's own
-n ≤ 3 BLOCKING line); an `individual` claim needs `entity_resolution ==
-"clean"`. A failure writes `gate_report.json` into the draft directory,
+carry zero `named_entities` (the **name-free schema** check) *and* its own
+rendered text — title, headline, verdict, chart labels — must not contain a
+real person's name either (the **name-free text** check, `find_names_in_text`
+against the corpus's real councillor roster, filtered to usable entries by
+`usable_roster_names` so extraction debris like an empty given name can't
+match ordinary prose); an `individual`/`individual_implicating` claim needs
+`n` above `MIN_N` (`config/invariants.json`, calibrated to Editor's own n ≤ 3
+BLOCKING line); an `individual` claim needs `entity_resolution == "clean"`.
+The text check exists because `named_entities` is a declaration a generator
+could fail to set — without it, tier derivation (below) would trust that
+declaration alone, and a name interpolated into a headline could reach the
+public product (a code-review finding against the redesign build,
+2026-08-24). A failure writes `gate_report.json` into the draft directory,
 prints the violations, and exits non-zero **without** writing
 `manifest.json` — so `council publish` structurally cannot find that run.
 This never reaches Editor or the Conductor loop: a gate failure is a blocked
@@ -247,9 +270,10 @@ draft routed straight back to whichever generator produced the violating
 claim, not a review finding. A pass also writes `gate_report.json` (with
 `"passed": true`, empty `violations`), so every draft carries a gate record
 either way. All current battery tests are `institutional`-unit with no
-`named_entities`, so a healthy `council draft` run always clears this gate
-today; the individual/individual_implicating checks exist for whichever
-future generator (Refiner-authored) produces a per-person claim.
+`named_entities` and no name in their own text, so a healthy `council draft`
+run always clears this gate today; the individual/individual_implicating
+checks exist for whichever future generator (Refiner-authored) produces a
+per-person claim.
 
 **Reviewing a draft against the actual site, locally.** A reviewer needs to
 see the draft rendered by the real panels, not just read raw JSON — but
@@ -604,7 +628,13 @@ gate (inside `council draft`) → the Editor/Fixer loop
 (`scripts/conductor_loop.py`) → optionally `council publish
 --gate-profile auto`, behind an explicit `publish=true` opt-in (default
 **false**). This is the first CI wiring for Editor/Fixer at all — previously
-human-run locally only. `workflow_dispatch` only today; the file carries a
+human-run locally only (`council editor-loop <council>` is the same script's
+CLI wrapper, for running the loop by hand outside CI). If Fixer changes any
+git-tracked file while closing an Editor flag, that change opens its own PR
+(`frontend/public/data/` excepted — that stays `council publish`'s direct
+commit) and **publish is held until that PR merges**, regardless of the
+`publish=true` input — refreshed data must never ship against the exact code
+Editor just flagged. `workflow_dispatch` only today; the file carries a
 commented-out `schedule:` block and its own activation checklist (also in
 `AUTOMATION_ARCHITECTURE.md` Part 3) — do not uncomment it until every item
 is checked in `EDITOR_PROTOCOL.md`'s calibration log, and even then it's a
@@ -613,6 +643,7 @@ deliberate PR from the project owner, not something to flip casually.
 ```bash
 gh workflow run maintenance.yml                    # loop only, no publish
 gh workflow run maintenance.yml -f publish=true     # also publish on a clean PASS
+council editor-loop cambridge --dry-run             # same loop, run locally, no cost
 ```
 
 Both need the same `CLAUDE_CODE_OAUTH_TOKEN` secret and GCP OIDC Variables
