@@ -1310,6 +1310,75 @@ def cmd_validate(args) -> None:
     run(args)
 
 
+def cmd_profile(args) -> None:
+    """S2 corpus profile (docs/INFORMATION_ARCHITECTURE.md §3): a scripted,
+    no-LLM pass over the already-extracted corpus — NULL rates, document/date
+    spans, identity-resolution state, record-quality metrics — as one
+    machine-readable document. Writes data/<council>_profile.json (gitignored,
+    refreshed on every run, like census/typology) and prints a summary.
+    """
+    import json as _json
+    from datetime import datetime, timezone
+
+    from src.analysis.profile import compute_corpus_profile, profile_to_dict
+    from src.analysis.queries import get_council_by_name
+    from src.storage.database import init_db, make_session_factory
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    short_name = COUNCILS[key]["short_name"]
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+    profile = compute_corpus_profile(session, council_obj.id, key, generated_at)
+    session.close()
+
+    output_path = Path("data") / f"{key}_profile.json"
+    output_path.write_text(_json.dumps(profile_to_dict(profile), indent=2))
+
+    console.print(Panel(f"Corpus profile → [bold]{output_path}[/bold]", style="blue"))
+
+    span = profile.span
+    console.print(
+        f"[bold]{span.total_documents}[/bold] documents "
+        f"{span.date_min} → {span.date_max}  ({span.by_document_type})"
+    )
+    if span.zero_meeting_months_in_span:
+        console.print(
+            f"[yellow]{len(span.zero_meeting_months_in_span)} zero-meeting month(s) in span "
+            f"— candidate corpus gap(s)[/yellow]"
+        )
+
+    ec = profile.entity_counts
+    console.print(
+        f"councillors={ec.councillors}  motions={ec.motions}  votes={ec.votes}  "
+        f"planning_applications={ec.planning_applications}  tenders={ec.tenders}"
+    )
+
+    ir = profile.identity_resolution
+    if ir.with_neither:
+        console.print(
+            f"[yellow]{ir.with_neither} councillor row(s) with zero votes and zero terms "
+            "— may not be real councillors[/yellow]"
+        )
+    if ir.duplicate_family_name_groups:
+        console.print(
+            f"[yellow]{ir.duplicate_family_name_groups} family name(s) shared by >1 councillor "
+            "— worth checking for a split identity, not a confirmed one[/yellow]"
+        )
+
+    rq = profile.record_quality
+    console.print(f"[dim]vote choice distribution: {rq.vote_choice_distribution}[/dim]")
+
+
 def cmd_analyse(args) -> None:
     from src.analysis.queries import (
         budget_by_year,
@@ -2982,6 +3051,15 @@ def main() -> None:
     p_validate.add_argument("--force", action="store_true",
                             help="Re-validate even if data/validation/{stem}.json already exists")
     p_validate.set_defaults(func=cmd_validate)
+
+    # profile (S2 corpus profile)
+    p_profile = sub.add_parser(
+        "profile",
+        help="S2: corpus profile — NULL rates, spans, identity-resolution state, "
+             "record-quality metrics as one machine-readable document (src/analysis/profile.py)",
+    )
+    p_profile.add_argument("council", choices=list(COUNCILS))
+    p_profile.set_defaults(func=cmd_profile)
 
     # batch-collect
     p_batch_collect = sub.add_parser(

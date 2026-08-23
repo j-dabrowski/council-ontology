@@ -336,6 +336,34 @@ Risk-reduction first, roles last — each step ships value alone:
    zero real examples would be speculative. Revisit once a generator
    actually produces a non-institutional claim.
 3. **S2 `council profile`** — unblocks the Explorer/Refiner prompt edits.
+   **Done 2026-08-23** — `compute_corpus_profile` (`src/analysis/profile.py`)
+   computes one machine-readable document, council-agnostic (keyed off the
+   ontology's own tables/columns, no Cambridge-specific content): span
+   (document counts by type, date range, and a zero-meeting-month gap
+   detector computed from the data, not a hand-maintained gap list),
+   entity_counts (council-scoped row counts across every entity table),
+   record_quality (NULL/coverage rates on the fields Part 0 already flags as
+   structurally sparse, vote-choice distribution, tender confidentiality),
+   and identity_resolution (with-votes/with-terms/with-neither, and a
+   duplicate-family-name heuristic explicitly labeled "worth checking, not
+   confirmed"). `council profile <council>` (`src/cli.py`, between
+   `validate` and `analyse`) writes `data/<council>_profile.json`
+   (gitignored, refreshed each run — added to `.gitignore`) and prints a
+   summary. `tests/test_profile.py` (13 tests, in-memory SQLite) covers span
+   gap detection, council-scoped counts, each null-rate/coverage
+   calculation, the no-rows-gives-None (not division-by-zero) case, and
+   that two councils sharing one DB never leak into each other's profile.
+   Did not wire this into S3/S4/S7/S8 consumption or rewrite
+   `Investigator_prompt.txt` Part 0 to point at it — both are explicitly
+   Step 5's job ("Prompt/protocol revisions"), not this step's.
+   Verified against the real Cambridge corpus: `council profile cambridge`
+   reproduces, from data alone, several caveats Part 0 currently states by
+   hand — `planning_application_date_null_rate` / `_decision_date_null_rate`
+   both 1.0 (matches "100% NULL"), `councillor_term_coverage_rate` 0.167
+   (matches "sparsely populated"), and `zero_meeting_months_in_span`
+   surfacing the documented 2022/2023 CMS-migration gap months plus the
+   recurring no-January-meeting pattern, without either being hardcoded
+   anywhere in the script. No deviation from spec.
 4. **Coverage register file + verifier** — the audit grid becomes data.
 5. **Prompt/protocol revisions** (Explorer v3, Refiner v1.2, Editor v0.4,
    Conductor addition) — now they describe a world that exists.

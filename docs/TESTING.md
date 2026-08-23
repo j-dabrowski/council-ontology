@@ -16,7 +16,7 @@ elsewhere says to.
 
 ## What's tested, and why
 
-`tests/` has two files:
+`tests/` has:
 
 - **`test_extractor.py`** — the extraction/storage layer: `_resolve_offset`
   (finds a quote's character offset in source text) and `save_extraction`
@@ -31,11 +31,19 @@ elsewhere says to.
   `load_draft_manifest()`, `verify_draft_integrity()`, from `src/publish_gate.py`.
 - **`test_invariant_gate.py`** — the S7 invariant gate: `run_invariant_gate()`
   against a clean battery and each violation class (name-free schema, MIN_N,
-  entity-resolution), and `load_min_n()`, from `src/invariant_gate.py`.
+  entity-resolution), `derive_claim_tier()`, and `load_min_n()`, from
+  `src/invariant_gate.py`.
+- **`test_profile.py`** — the S2 corpus profile: span (document counts, date
+  range, zero-meeting-month gap detection), council-scoped entity counts,
+  NULL/coverage rates, vote-choice distribution, and identity-resolution
+  signals (with-votes/with-terms/with-neither, duplicate family names),
+  including that two councils sharing one DB never leak into each other's
+  profile, from `src/analysis/profile.py`.
 
-Both files test **pure functions only** — same inputs always produce the
-same outputs, no network/DB/filesystem side effects (`test_extractor.py`'s
-DB tests use an in-memory SQLite engine created fresh per test, which is
+All of these test **pure functions or hermetic DB logic** — same inputs
+always produce the same outputs, no network/filesystem side effects
+(`test_extractor.py`'s and `test_profile.py`'s DB tests use an in-memory
+SQLite engine created fresh per test, which is
 still deterministic and hermetic). Nothing in `tests/` requires
 `ANTHROPIC_API_KEY` or hits the network. That's a deliberate boundary, not
 an oversight — see "Why no LLM calls in CI" below.

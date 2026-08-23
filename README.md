@@ -53,6 +53,11 @@ council minutes site
                               the source PDFs — ground-truths the metrics above
         │
         ▼
+   council profile          ← Corpus profile: NULL rates, document/date spans,
+                              identity-resolution state, record-quality metrics
+                              as one machine-readable document
+        │
+        ▼
    council analyse          ← query helpers for cross-meeting analysis
         │
         ▼
@@ -445,6 +450,15 @@ council costs --from-year 2020
 council costs --max-chars full
 council costs --show                  # print last saved estimate
 ```
+
+#### `council profile cambridge`
+**S2 corpus profile:** a scripted, no-LLM pass over the already-extracted corpus — document/date spans (including a zero-meeting-month gap detector), entity row counts, NULL/coverage rates on the fields already known to be structurally sparse (planning application dates, `councillor_terms`), vote-choice distribution, and identity-resolution signals (councillors with no vote/term activity on this council, family names shared by more than one councillor id — a "worth checking" heuristic, not a confirmed split). One machine-readable document, replacing hand-maintained corpus caveats with something computed fresh each run.
+
+```bash
+council profile cambridge
+```
+
+Writes `data/{council}_profile.json` (gitignored, refreshed every run) and prints a summary.
 
 #### `council analyse cambridge <query>`
 Analysis queries against the extracted database.
