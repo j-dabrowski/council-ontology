@@ -326,6 +326,44 @@ report from real use).
 
 ---
 
+## 2026-08-24 — A maintenance run holds publish when Fixer has touched source
+
+**Decision:** in `maintenance.yml`, any git-tracked change the Editor/Fixer
+loop makes outside `frontend/public/data` opens its own PR, and the publish
+step is skipped while that PR exists. Publishing then happens by hand once
+it merges (the job summary prints the exact command). Surfaced by the
+2026-08-24 code review of the redesign build: the workflow as first written
+staged only `frontend/public/data`, so Fixer's repairs died with the runner
+while the data they justified was published — the deployed frontend would
+have kept rendering an Editor-flagged component against fresh data.
+
+**Alternatives considered:**
+- *Publish anyway, let the fixes PR land later.* Keeps a maintenance run
+  fully autonomous even when Fixer intervenes, which is the whole point of
+  autonomy level 1. Rejected: it publishes into a known-flagged surface and
+  relies on a human merging promptly to close a window the Editor opened
+  deliberately.
+- *Commit Fixer's edits directly to `main` alongside the snapshots.* One
+  commit, no held publish, no PR to chase. Rejected: it pushes unreviewed
+  agent code edits straight to `main`, against
+  `AUTOMATION_ARCHITECTURE.md` Part 3's uniform rule (a git-tracked change
+  opens a PR, never a direct commit) — the rule exists precisely for
+  changes an agent authored.
+- *Fail the whole run when Fixer edits source.* Loud, but throws away a
+  perfectly good draft and the review work that produced it.
+
+**Trade-off:** a maintenance run that needed any repair will not
+auto-publish, even at autonomy level 1 — so the cadence of unattended
+publishing is bounded by how often Editor finds nothing, not by the
+schedule. Accepted knowingly: the alternative is publishing data whose
+accompanying fix is still in review, which is the exact pairing the review
+stage exists to prevent. Revisit if real runs show Fixer intervening so
+often that the held-publish path becomes the norm rather than the
+exception — that would be evidence about Editor calibration (the
+`maintenance.yml` activation checklist) rather than a reason to loosen this.
+
+---
+
 ## Open decisions (not yet made / not yet built, as of 2026-08-22)
 
 Logged now, before they're decided, specifically so the eventual entry can
