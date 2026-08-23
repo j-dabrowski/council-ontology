@@ -538,8 +538,22 @@ Before `manifest.json` is written, the **S7 invariant gate** runs over the batte
 
 ---
 
+#### `council editor cambridge <run_id>`
+**S8, standalone:** defamation-reviews one draft, no Fixer/re-draft loop attached. `council editor-loop` below calls this exact command internally, once per pass — this exists on its own for re-reviewing a draft without re-drafting it, or debugging Editor in isolation.
+
+```bash
+council editor cambridge draft_20260805_120000
+```
+
+#### `council fixer <track> cambridge <run_id>`
+**Standalone:** acts on one track's (`frontend` / `pipeline` / `doc`) flagged issues from the highest-numbered `defamation_review_<n>` in a draft directory, no loop attached. `council editor-loop` calls this exact command internally, once per flagged track — this exists on its own for re-running one track's fix, or debugging a mode in isolation.
+
+```bash
+council fixer frontend cambridge draft_20260805_120000
+```
+
 #### `council editor-loop cambridge [--max-passes N] [--dry-run]`
-**S8:** the scripted draft → Editor → Fixer review loop — draft, review, apply any flagged fixes, repeat up to the pass cap. Real `claude -p` calls for Editor's and Fixer's own judgment; the pass-counting and dispatch-by-track mechanics are scripted. Never calls `council publish` itself; stops at a clean PASS or an escalation and prints what to run next. `--dry-run` prints the plan and makes no `claude` calls — free to run.
+**S8:** the scripted draft → Editor → Fixer review loop — draft, review, apply any flagged fixes, repeat up to the pass cap. Composed entirely from the standalone commands above (`council draft`, `council editor`, `council fixer`) rather than a private, duplicated dispatch — every stage this loop drives is independently runnable through the same command a human would use. The pass-counting and dispatch-by-track mechanics are scripted; Editor's and Fixer's own judgment calls, one hop inside those commands, are real `claude -p` sessions. Never calls `council publish` itself; stops at a clean PASS or an escalation and prints what to run next. `--dry-run` prints the plan and makes no `claude` calls — free to run.
 
 ```bash
 council editor-loop cambridge --dry-run
