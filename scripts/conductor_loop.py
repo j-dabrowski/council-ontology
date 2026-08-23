@@ -13,9 +13,13 @@ specifically so code can trust the verdict without parsing prose
 (Editor_prompt.txt v0.3). What still needs an agent is Editor's own
 review (real judgment: is this claim defensible) and Fixer's own fix
 (real judgment: how do I fix it) -- those two invocations are still real
-`claude -p` calls. Everything *between* them -- did it pass, which
-track(s) got flagged, have we hit the cap -- is exactly the kind of
-thing this script does instead of an LLM.
+`claude -p` calls, dispatched the same way `run_draft()` below dispatches
+`council draft`: by shelling out to `council editor` / `council fixer`
+(`run_editor`/`run_fixer`), the same standalone commands a human could
+run by hand, not a private, duplicated implementation of "how do I run
+Editor" that only this script has. Everything *between* those calls --
+did it pass, which track(s) got flagged, have we hit the cap -- is
+exactly the kind of thing this script does instead of an LLM.
 
 The one invariant carries over unchanged and is enforced here the same
 way CONDUCTOR.md states it: this script NEVER calls `council publish`,
@@ -218,6 +222,25 @@ def escalate(council: str, run_id: str, record: dict, max_passes: int) -> None:
     print(f"{'=' * 70}\n")
 
 
+def run_editor(council: str, run_id: str, pass_num: int) -> None:
+    """Shells out to `council editor` — the same standalone command a human
+    could run by hand — rather than dispatching the `claude -p` call inline.
+    Mirrors run_draft()'s subprocess pattern above: this loop is built out
+    of the same CLI entry points a person could call individually, so every
+    step it takes is independently runnable, even though in practice this
+    loop is what calls them almost all the time.
+    """
+    print(f"\n>>> Editor, pass {pass_num}, run {run_id}")
+    subprocess.run(["council", "editor", council, run_id], check=True, cwd=ROOT)
+
+
+def run_fixer(track: str, council: str, run_id: str, pass_num: int) -> None:
+    """Shells out to `council fixer` — see run_editor's docstring above;
+    the same reasoning applies."""
+    print(f"\n>>> Fixer [{track}], pass {pass_num}, run {run_id}")
+    subprocess.run(["council", "fixer", track, council, run_id], check=True, cwd=ROOT)
+
+
 def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
     if dry_run:
         print(f"[DRY RUN] Would run the loop for {council!r}, up to {max_passes} passes.")
@@ -228,8 +251,7 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
         run_id = run_draft(council)
         draft_dir = DATA_DRAFT / council / run_id
 
-        editor_prompt = load_prompt("editor", council=council, run_id=run_id)
-        run_claude(editor_prompt, f"Editor, pass {pass_num}, run {run_id}")
+        run_editor(council, run_id, pass_num)
 
         record = latest_review_record(draft_dir)
         if record["run_id"] != run_id:
@@ -271,8 +293,7 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
             # Conductor's chain-wide pass_num -- passing the latter in
             # here is exactly the bug this fixed (see EDITOR_PROTOCOL.md's
             # "<n> numbering: per run-directory or per-chain?").
-            fixer_prompt = load_prompt("fixer", council=council, run_id=run_id, track=track)
-            run_claude(fixer_prompt, f"Fixer [{track}], pass {pass_num}, run {run_id}")
+            run_fixer(track, council, run_id, pass_num)
             fix_reports.append(latest_fix_report(draft_dir, track))
 
         # Run every dispatched track before checking, not stop-on-first-BLOCKED:

@@ -1311,13 +1311,17 @@ def cmd_validate(args) -> None:
 
 
 def _cmd_agent_prompt(prompt_name: str, label: str, **placeholders: str) -> None:
-    """Shared body for `explore` / `refine` / `render`: load a
-    docs/agent_prompts/<prompt_name>.txt (filling any placeholders) and run
-    it as a real `claude -p` session, via scripts/conductor_loop.py's
-    load_prompt/run_claude — the same billing-safe (subscription auth only,
-    ANTHROPIC_API_KEY stripped) subprocess call the Conductor loop itself
-    uses, kept as one copy rather than a second implementation drifting out
-    of sync (see that module's own docstring).
+    """Shared body for `explore` / `refine` / `render` / `editor` / `fixer`:
+    load a docs/agent_prompts/<prompt_name>.txt (filling any placeholders)
+    and run it as a real `claude -p` session, via
+    scripts/conductor_loop.py's load_prompt/run_claude — the same
+    billing-safe (subscription auth only, ANTHROPIC_API_KEY stripped)
+    subprocess call, kept as one copy rather than a second implementation
+    drifting out of sync (see that module's own docstring). `council
+    editor-loop` calls `council editor`/`council fixer` as its own
+    subprocesses rather than calling this function directly — every step
+    the loop takes is independently runnable through the same CLI entry
+    point a human would use.
     """
     import subprocess as _subprocess
 
@@ -3243,6 +3247,65 @@ def main() -> None:
         )
 
     p_render.set_defaults(func=_cmd_render)
+
+    # editor (S8: defamation-review a specific draft, no loop)
+    p_editor = sub.add_parser(
+        "editor",
+        help="S8: Editor — defamation-review one draft, no Fixer/re-draft loop "
+             "attached. `council editor-loop` is what you want for the normal "
+             "case (it calls this same command internally, per pass); this "
+             "exists standalone for re-reviewing a draft without re-drafting "
+             "it, or debugging Editor in isolation. A real `claude -p` "
+             "session — docs/agent_prompts/editor.txt",
+    )
+    p_editor.add_argument("council", choices=list(COUNCILS))
+    p_editor.add_argument(
+        "run_id",
+        help="the data/draft/<council>/<run_id> directory to review",
+    )
+
+    def _cmd_editor(a):
+        draft_dir = Path("data/draft") / a.council / a.run_id
+        if not draft_dir.exists():
+            console.print(f"[red]No draft directory at {draft_dir}[/red]")
+            sys.exit(1)
+        _cmd_agent_prompt(
+            "editor", f"Editor, {a.council}/{a.run_id}",
+            council=a.council, run_id=a.run_id,
+        )
+
+    p_editor.set_defaults(func=_cmd_editor)
+
+    # fixer (act on one Fixer track's flagged issues, no loop)
+    p_fixer = sub.add_parser(
+        "fixer",
+        help="Fixer — act on one track's (frontend/pipeline/doc) flagged "
+             "issues from the highest-numbered defamation_review_<n> in a "
+             "draft directory; no loop attached. `council editor-loop` calls "
+             "this same command internally per flagged track; this exists "
+             "standalone for re-running one track's fix, or debugging a "
+             "mode in isolation. A real `claude -p` session — "
+             "docs/agent_prompts/fixer.txt",
+    )
+    from scripts.conductor_loop import VALID_TRACKS as _VALID_TRACKS
+    p_fixer.add_argument("track", choices=sorted(_VALID_TRACKS))
+    p_fixer.add_argument("council", choices=list(COUNCILS))
+    p_fixer.add_argument(
+        "run_id",
+        help="the data/draft/<council>/<run_id> directory holding the review to act on",
+    )
+
+    def _cmd_fixer(a):
+        draft_dir = Path("data/draft") / a.council / a.run_id
+        if not draft_dir.exists():
+            console.print(f"[red]No draft directory at {draft_dir}[/red]")
+            sys.exit(1)
+        _cmd_agent_prompt(
+            "fixer", f"Fixer [{a.track}], {a.council}/{a.run_id}",
+            track=a.track, council=a.council, run_id=a.run_id,
+        )
+
+    p_fixer.set_defaults(func=_cmd_fixer)
 
     # batch-collect
     p_batch_collect = sub.add_parser(

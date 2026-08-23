@@ -120,8 +120,14 @@ scripted alternative to this command** — see the note under "Running any
 of these via GitHub Actions" below.
 
 **Editor alone — defamation-review a specific draft, without the loop.**
-`docs/agent_prompts/editor.txt` has two placeholders (`<council>`,
-`<run_id>`) — fill both with `sed` before invoking:
+```bash
+council editor cambridge draft_20260822_120000
+```
+`council editor-loop` is what you want in the normal case — it calls this
+exact command internally, once per pass, so this exists standalone for
+re-reviewing a draft without re-drafting it, or debugging Editor in
+isolation. Equivalent raw form (`docs/agent_prompts/editor.txt` has two
+placeholders, `<council>`/`<run_id>`, that the wrapper fills):
 ```bash
 claude -p "$(sed \
     -e "s/<council>/cambridge/g" \
@@ -129,21 +135,23 @@ claude -p "$(sed \
     docs/agent_prompts/editor.txt)" \
   --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
 ```
-Use this only when you deliberately want a single review pass with no
-Fixer/re-draft loop attached — normally the Conductor command above is what
-you want, since it already dispatches Editor as its first step.
 
 **Fixer (frontend / pipeline / doc modes) — apply Editor's tagged flags.**
 Not really a standalone, context-free invocation — a Fixer mode only does
 something meaningful when it's acting on a specific Editor FAIL's tagged
 flags, which is inherently per-call, not a fixed string.
-`docs/agent_prompts/fixer.txt` has three placeholders (`<track>`,
-`<council>`, `<run_id>`) — no pass number, deliberately: Fixer finds its
-review file by listing the draft directory (Editor's own `<n>` there is
-directory-scoped, always `_1` under this design's one-draft-per-pass
+```bash
+council fixer frontend cambridge draft_20260822_120000
+```
+`council editor-loop` calls this exact command internally, once per
+flagged track — this exists standalone for re-running one track's fix, or
+debugging a mode in isolation. No pass number, deliberately: Fixer finds
+its review file by listing the draft directory (Editor's own `<n>` there
+is directory-scoped, always `_1` under this design's one-draft-per-pass
 architecture, not the Conductor's chain-wide pass count — see
-`EDITOR_PROTOCOL.md`'s "`<n>` numbering" entry for the incident this
-was fixed from). Fill the three real placeholders before invoking:
+`EDITOR_PROTOCOL.md`'s "`<n>` numbering" entry for the incident this was
+fixed from). Equivalent raw form (`docs/agent_prompts/fixer.txt` has three
+placeholders, `<track>`/`<council>`/`<run_id>`, that the wrapper fills):
 ```bash
 claude -p "$(sed \
     -e "s/<track>/frontend/g" \
@@ -152,8 +160,6 @@ claude -p "$(sed \
     docs/agent_prompts/fixer.txt)" \
   --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
 ```
-Normally the Conductor dispatches this automatically — run it by hand only
-when you deliberately want one Fixer pass outside the loop.
 
 ## Renderer (S10, two modes, one shared layer — new 2026-08-23)
 
@@ -267,13 +273,17 @@ council editor-loop cambridge --max-passes 3
 `claude` calls, no cost — useful to check the invocation before spending
 anything. It reads Editor's machine-readable `defamation_review_<n>.json`
 sidecar directly and handles the pass-counting/dispatch-by-track
-mechanically, calling `claude -p` only for Editor's and Fixer's own
-judgment calls — see that script's own docstring for why this is a
-legitimate replacement for an agent-driven loop specifically (Editor's
-verdict is already structured data) and not a shortcut around the parts
-that still need real judgment. It applies the same
-`ANTHROPIC_API_KEY`-stripping discipline as this section, and never calls
-`council publish`, same as Conductor itself.
+mechanically, dispatching every stage — `council draft`, `council editor`,
+`council fixer` — by shelling out to that exact standalone command, the
+same one a human would run by hand, rather than a private duplicate of
+"how do I invoke this role." The two that need real judgment (Editor's
+review, Fixer's fix) reach a real `claude -p` call one hop inside those
+commands — see that script's own docstring for why this is a legitimate
+replacement for an agent-driven loop specifically (Editor's verdict is
+already structured data) and not a shortcut around the parts that still
+need real judgment. It applies the same `ANTHROPIC_API_KEY`-stripping
+discipline as this section, and never calls `council publish`, same as
+Conductor itself.
 
 **`scripts/conductor_loop.py` is exactly what `.github/workflows/
 maintenance.yml` runs** (added `docs/AGENT_DESIGN.md` §6 Step 7,
