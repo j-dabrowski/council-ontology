@@ -71,14 +71,17 @@ export function OverviewPanel() {
     },
     {
       n: 4,
-      title: "Entrenchment renews itself",
+      title: "Long service is common — not one self-renewing dynasty",
       stat: `${d.tenure_top_years} yrs`,
       statLabel: "longest-serving councillor",
       body: (
         <>Median service is {d.tenure_median_years} years and{" "}
         {d.tenure_15plus} councillors served 15+. The 2000s "old guard" sponsorship
-        clique recruited the very members who then dominated the next two decades
-        before fragmenting in 2008. The establishment reproduces itself.</>
+        cluster (see the sponsorship panel below) overlaps with only a minority of
+        the councillors who went on to dominate tenure and influence over the next
+        two decades — a partial, descriptive pattern, not a proven succession
+        pipeline, and the cluster itself fragmented by 2008 with no comparably
+        durable bloc forming since.</>
       ),
       principle: "CIPFA · principle A",
     },
@@ -167,7 +170,7 @@ export function OverviewPanel() {
         </p>
         <p className="overview-oneliner">
           A council that governs by consensus and runs a clean-tested money record, but
-          conceals a durable power structure behind near-unanimous votes, lets
+          conceals an uneven power structure behind near-unanimous votes, lets
           conflict-declaration decay into formality — and behaved best only while someone
           was watching.
         </p>

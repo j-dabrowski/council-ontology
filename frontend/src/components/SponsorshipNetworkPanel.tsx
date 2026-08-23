@@ -154,9 +154,11 @@ export function SponsorshipNetworkPanel() {
           <p className="section-heading" style={{ marginTop: 18 }}>
             …but seconding isn't always support — the "courtesy second"
           </p>
-          <div className="spon-edge-list">
-            {data.procedural.map((e, i) => <EdgeRow key={i} e={e} denom={maxAllyLift} />)}
-          </div>
+          <Reveal label={`the ${data.procedural.length} pairs whose seconding looks procedural, not endorsing`}>
+            <div className="spon-edge-list">
+              {data.procedural.map((e, i) => <EdgeRow key={i} e={e} denom={maxAllyLift} />)}
+            </div>
+          </Reveal>
           <p className="chart-note">
             These pairs <em>also</em> sponsor each other heavily, yet vote <strong>oppositely</strong> on most
             divisive items (agreement at or below the {base}% base rate). Seconding is partly a procedural

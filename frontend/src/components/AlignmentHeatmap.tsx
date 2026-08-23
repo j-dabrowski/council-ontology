@@ -1,6 +1,7 @@
 import { useData } from "../hooks/useData";
 import { api, AlignmentPair } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { Reveal } from "./DrillDown";
 
 function rateColor(rate: number) {
   // 100% = deep green, 95% = mid green, <90% = yellow
@@ -87,16 +88,16 @@ export function AlignmentHeatmap() {
       </div>
       <p className="chart-note">
         {pairs100.length > 0 && (
-          <>
-            100% pairs ({pairs100.length}): {pairs100.map((p, i) => (
+          <> <Reveal label={`the ${pairs100.length} pairs who agreed on every shared vote`}>
+            {pairs100.map((p, i) => (
               <span key={`${p.name_a}|${p.name_b}`}>
                 {i > 0 && ", "}
                 {p.name_a}/{p.name_b} (n={p.shared_votes})
               </span>
-            ))} — tightest sub-blocs in an already near-unanimous chamber.{" "}
-          </>
+            ))} — tightest sub-blocs in an already near-unanimous chamber.
+          </Reveal></>
         )}
-        Hover cells for shared vote count.
+        {" "}Hover cells for shared vote count.
       </p>
     </Card>
   );

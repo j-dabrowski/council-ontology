@@ -1672,6 +1672,27 @@ def _enum_str(v) -> str | None:
     return getattr(v, "value", str(v))
 
 
+import re as _re_recusal
+
+_LEFT_MEETING_RE = _re_recusal.compile(r"\bleft the (?:meeting|room)\b", _re_recusal.IGNORECASE)
+
+
+def _actually_stepped_out(choice, quote: str | None) -> bool:
+    """True if the councillor was not actually present to cast `choice`.
+
+    `Vote.choice` is normally ground truth for "did they step out," but a
+    handful of records carry a recorded FOR/AGAINST vote whose own linked
+    declaration quote states outright that the councillor left the meeting
+    before the item was decided — a direct contradiction between two fields
+    of the same extracted record (verified against council.db, 2026-08-23
+    defamation review pass 1 BLOCKING flag 1: O'Connor, Bradley, Barlow,
+    Grinceri all carry at least one such record). The quote wins.
+    """
+    if choice == VoteChoice.ABSENT:
+        return True
+    return bool(quote and _LEFT_MEETING_RE.search(quote))
+
+
 @dataclass
 class LinkedDeclaredVote:
     """One declared-interest VOTE, linked to its matching declaration (if any).
@@ -1746,7 +1767,14 @@ def _linked_declared_votes(
         if iref:
             decl_by_key[(cid, mid, iref)] = (did, itype, desc)
 
-    # one representative minute quote per declaration
+    # All minute quotes per declaration, concatenated — a single declaration
+    # is often extracted across more than one evidence row (e.g. the
+    # announcement line and a separate "left the meeting at HH:MM" sentence),
+    # and keeping only the first (the previous `setdefault` behaviour) could
+    # silently drop the one sentence that contradicts a mis-recorded vote
+    # choice. See _actually_stepped_out and 2026-08-23 defamation review
+    # pass 1 BLOCKING flag 1 (Bradley's DV10.69 has exactly this shape: the
+    # "left the meeting" evidence row exists but wasn't the first one returned).
     quote_by_decl: dict[int, str] = {}
     if decl_ids:
         for did, q in (
@@ -1757,7 +1785,7 @@ def _linked_declared_votes(
                 ExtractionEvidence.quote_text.isnot(None),
             )
         ):
-            quote_by_decl.setdefault(did, q)
+            quote_by_decl[did] = f"{quote_by_decl[did]} {q}" if did in quote_by_decl else q
 
     out: list[LinkedDeclaredVote] = []
     for cid, choice, vote_desc, item_no, title, mid, mdate, given, family in vq:
@@ -1797,7 +1825,7 @@ def _populate_declaration_details(session, council_id, profiles, from_year, to_y
     by_councillor: dict[int, list[DeclarationDetail]] = {cid: [] for cid in ids}
     for row in linked:
         must_leave = row.interest_type in {"financial", "proximity"}
-        if row.choice == VoteChoice.ABSENT:
+        if _actually_stepped_out(row.choice, row.quote):
             action = "Stepped out"
         elif row.choice == VoteChoice.AGAINST:
             action = "Stayed — voted against"
@@ -1908,12 +1936,20 @@ def conflict_recusal_stats(
     # Must-leave split, computed from the same per-declaration `must_leave` flag
     # already attached above (financial/proximity vs. impartiality/other) — not a
     # fresh SQL join, so it can't disagree with what the drill-down shows.
+    # `recused`/`recusal_rate` (blended, set above from `prof_q`) are likewise
+    # overridden here from `p.declarations` rather than left as `prof_q`'s raw
+    # Vote.choice==ABSENT count — `prof_q` cannot see the quote-text override
+    # `_actually_stepped_out` applies, so it would silently disagree with the
+    # drill-down list a reader can click into (2026-08-23 defamation review
+    # pass 1 BLOCKING flag 1).
     for p in profiles:
         ml_declared = sum(1 for d in p.declarations if d.must_leave)
         ml_recused = sum(1 for d in p.declarations if d.must_leave and d.action == "Stepped out")
         p.must_leave_declared = ml_declared
         p.must_leave_recused = ml_recused
         p.must_leave_recusal_rate = round(ml_recused / ml_declared, 4) if ml_declared else None
+        p.recused = sum(1 for d in p.declarations if d.action == "Stepped out")
+        p.recusal_rate = round(p.recused / p.declared_votes, 4) if p.declared_votes else 0.0
 
     return ConflictRecusalStats(
         declared_total=d_total,
@@ -3283,9 +3319,6 @@ def recusal_compliance_trend(
 
     linked = _linked_declared_votes(session, council_id)
 
-    def _recused(choice) -> bool:
-        return choice == VoteChoice.ABSENT
-
     # by type x era
     te: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])  # [declared, recused]
     # must-leave by year
@@ -3302,7 +3335,7 @@ def recusal_compliance_trend(
             continue
         t = row.interest_type or "other"
         era = _recusal_era(row.year)
-        rec = _recused(row.choice)
+        rec = _actually_stepped_out(row.choice, row.quote)
         te[(t, era)][0] += 1
         if rec:
             te[(t, era)][1] += 1
@@ -3319,7 +3352,8 @@ def recusal_compliance_trend(
                     if not rec:
                         drv[row.name][0] += 1
 
-    # one representative minute quote per declaration behind a cell
+    # All minute quotes per declaration behind a cell, concatenated — see the
+    # matching fix and comment in `_linked_declared_votes`.
     _CELL_CAP = 60
     all_dids = [r[0] for rows in te_rows.values() for r in sorted(
         rows, key=lambda x: x[5] or "", reverse=True)[:_CELL_CAP] if r[0] is not None]
@@ -3333,7 +3367,7 @@ def recusal_compliance_trend(
                 ExtractionEvidence.quote_text.isnot(None),
             )
         ):
-            quote_by_decl.setdefault(did, q)
+            quote_by_decl[did] = f"{quote_by_decl[did]} {q}" if did in quote_by_decl else q
 
     def _cell_details(rows) -> list[RecusalDeclarationDetail]:
         rows = sorted(rows, key=lambda x: x[5] or "", reverse=True)[:_CELL_CAP]

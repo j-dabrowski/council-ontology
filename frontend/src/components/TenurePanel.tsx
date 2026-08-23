@@ -6,6 +6,7 @@ import { useData } from "../hooks/useData";
 import { api, TenureProfile } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
+import { Reveal } from "./DrillDown";
 
 const HIST_ORDER = ["<2y", "2-5y", "5-10y", "10-15y", "15y+"];
 
@@ -54,8 +55,10 @@ export function TenurePanel() {
     >
       <div className="planning-hero-row">
         <div className="planning-stat">
-          <span className="planning-stat-num planning-stat-peak">{top?.years}y</span>
-          <span className="planning-stat-label">longest serving ({top && <CouncillorLink name={top.name} />})</span>
+          <Reveal label="longest serving">
+            <span className="planning-stat-num planning-stat-peak">{top?.years}y</span>
+            <span className="planning-stat-label">longest serving ({top && <CouncillorLink name={top.name} />})</span>
+          </Reveal>
         </div>
         <div className="planning-stat-divider" />
         <div className="planning-stat">
@@ -73,8 +76,13 @@ export function TenurePanel() {
         <span className="objection-callout-diff">{longServers}/{data.n_councillors}</span>
         <span className="objection-callout-text">
           of councillors with a real voting record have sat for <strong>15 years or more</strong> —
-          the chamber is dominated by long-servers, not newcomers. {top && <CouncillorLink name={top.name} />} has been voting on
-          Cambridge matters for over <strong>{Math.floor(top?.years ?? 0)} years</strong>.
+          the chamber is dominated by long-servers, not newcomers.{" "}
+          {top && (
+            <Reveal label="who has served longest">
+              <CouncillorLink name={top.name} /> has been voting on
+              Cambridge matters for over <strong>{Math.floor(top?.years ?? 0)} years</strong>.
+            </Reveal>
+          )}
         </span>
       </div>
 

@@ -147,9 +147,13 @@ export function MayoralAgendaPanel() {
         {mostContested && leastContested && mostContested.name !== leastContested.name && (
           <> <Reveal label="the most- and least-contested mayoralties">
             it is concentrated in <CouncillorLink name={mostContested.name} />'s
-            term ({mostContested.contest_pct}% contested), while{" "}
+            term ({mostContested.contest_pct}% contested, n={mostContested.contested} of{" "}
+            {mostContested.carried} carried), while{" "}
             <CouncillorLink name={leastContested.name} />'s motions passed almost as quietly as the
-            backbench ({leastContested.contest_pct}%).
+            backbench ({leastContested.contest_pct}%, n={leastContested.contested} of{" "}
+            {leastContested.carried} carried) — on a base this small, one differently-classified
+            vote would move the "least-contested" ranking materially, so read it as directional,
+            not a robust superlative.
           </Reveal></>
         )}
       </p>
