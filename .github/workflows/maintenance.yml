@@ -1,0 +1,188 @@
+name: Maintenance
+
+# The maintenance run (docs/AGENT_DESIGN.md §5, docs/AUTOMATION_ARCHITECTURE.md):
+# council draft -> S7 invariant gate (inside council draft) -> Editor/Fixer
+# loop (scripts/conductor_loop.py) -> optionally council publish. This is
+# the first CI wiring for Editor/Fixer at all — previously "human-run
+# locally, not yet in CI" (AUTOMATION_ARCHITECTURE.md's old Flow D row).
+#
+# Deliberately does NOT include the DB-update pipeline (scrape/extract/
+# dedup — AUTOMATION_ARCHITECTURE.md Flow 0) or Renderer. Both remain
+# design sketches, not wired here — see that doc's Part 2 table and this
+# workflow's own activation checklist below for why.
+#
+# publish=true is an explicit opt-in, off by default: the design's own
+# precondition for autonomous publish (docs/AGENT_DESIGN.md §5, "Editor's
+# narrowed scope has calibration data") is not yet met — Editor v0.4 has
+# never completed a real PASS/FAIL cycle as of this workflow's creation
+# (2026-08-23). Setting publish=true before that data exists is a conscious
+# override, not the safe default; the workflow does not refuse it (a human
+# dispatching this by hand is a deliberate act either way), but it never
+# happens on its own.
+#
+# --- Scheduling: commented out on purpose. Uncomment only once ALL of the
+# activation checklist below is true. Flipping this is a one-line PR, not
+# a rebuild — see AUTOMATION_ARCHITECTURE.md Part 3 (Flow D) for the fuller
+# reasoning and who signs off.
+#
+# Activation checklist (all required, tracked in EDITOR_PROTOCOL.md's
+# calibration log — do not uncomment until every box is literally checked
+# there, not just believed true):
+#   [ ] >= 3 real Editor v0.4 PASS/FAIL cycles have completed via this
+#       workflow (workflow_dispatch), reviewed by a human against this
+#       repo's own judgment of the same draft
+#   [ ] Editor's false-positive dimension (EDITOR_PROTOCOL.md, added
+#       2026-08-23) has real data, not just the pre-narrowing prediction
+#   [ ] zero missed real risks (false negatives) across those cycles —
+#       the one failure mode that matters, per EDITOR_PROTOCOL.md
+#   [ ] a human (the project owner) has explicitly signed off on the
+#       calibration data in a PR that uncomments the schedule block
+#
+# on:
+#   schedule:
+#     - cron: "0 3 * * 1"  # weekly, Monday 03:00 UTC — placeholder cadence,
+#                          # revisit once real run duration/cost is known
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: >-
+          Auto-publish on a clean PASS (council publish --gate-profile
+          auto). Default false — see this file's header comment for why
+          this isn't the safe default yet. A deliberate per-dispatch
+          override, not a setting to leave on.
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # only used if publish=true and a PASS is reached
+  id-token: write    # required to mint the OIDC token that authenticates to GCP
+
+jobs:
+  maintenance:
+    name: Draft, review, and (optionally) publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -e .
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - id: auth
+        name: Authenticate to GCP (OIDC, no long-lived key)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download council.db from GCS
+        run: |
+          mkdir -p data
+          gcloud storage cp "gs://${{ vars.GCP_BUCKET }}/council.db" data/council.db
+
+      - name: Run the draft -> Editor -> Fixer loop
+        id: loop
+        run: |
+          set +e
+          python scripts/conductor_loop.py cambridge
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          # 0 (PASS) and 1 (escalation) are both normal loop outcomes a
+          # human reviews via the job summary, not infra failures — only
+          # anything else (2 = genuine script error; anything unexpected)
+          # should turn this step, and the job, red. See the "Fail the
+          # job..." step below for where 2 actually gets enforced; this
+          # step itself always exits 0 so later steps can inspect the
+          # real code via steps.loop.outputs.exit_code.
+          exit 0
+        env:
+          # Subscription auth only — never ANTHROPIC_API_KEY. See
+          # scripts/conductor_loop.py's own docstring ("Billing") and
+          # docs/AGENT_PROMPTS.md's GitHub Actions section for why.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Locate the final draft directory
+        id: draft
+        run: |
+          # conductor_loop.py may re-draft several times (one per pass);
+          # the last one created is the one whose verdict decided the
+          # loop's outcome. Same glob-not-parse-stdout approach draft.yml
+          # already uses.
+          draft_dir=$(ls -dt data/draft/cambridge/*/ | head -1)
+          echo "path=${draft_dir%/}" >> "$GITHUB_OUTPUT"
+          echo "run_id=$(basename "${draft_dir%/}")" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the final draft to GCS (for the record, every outcome)
+        run: |
+          gcloud storage cp -r "${{ steps.draft.outputs.path }}" "gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/"
+
+      - name: Publish (only if the loop passed and publish=true was requested)
+        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true
+        run: |
+          council publish cambridge \
+            --from-draft "${{ steps.draft.outputs.path }}" \
+            --gate-profile auto
+
+      - name: Commit refreshed public-tier snapshots (only if publish ran)
+        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data
+          if git diff --cached --quiet; then
+            echo "No change in published snapshots — nothing to commit."
+            exit 0
+          fi
+          git commit -m "Publish refreshed snapshots (maintenance workflow, run ${{ github.run_id }})"
+          git push
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### Maintenance run — cambridge"
+            echo ""
+            echo "Draft: \`gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/${{ steps.draft.outputs.run_id }}/\`"
+            echo ""
+            if [ "${{ steps.loop.outputs.exit_code }}" = "0" ]; then
+              if [ "${{ inputs.publish }}" = "true" ]; then
+                echo "**Loop PASSED — publish step ran (see the Publish step above for the result).**"
+              else
+                echo "**Loop PASSED. Not published (publish=false).** Publish by hand with:"
+                echo ""
+                echo '```'
+                echo "council publish cambridge --from-draft ${{ steps.draft.outputs.path }} --gate-profile auto"
+                echo "# or, to vouch for it yourself instead of trusting Editor's auto record:"
+                echo "council publish cambridge --from-draft ${{ steps.draft.outputs.path }} --confirm \"<reviewer note>\""
+                echo '```'
+              fi
+            elif [ "${{ steps.loop.outputs.exit_code }}" = "1" ]; then
+              echo "**Escalated** — a pass-cap was hit with blocking flags still open, or a"
+              echo "Fixer track reported BLOCKED (correctly declined a decision that isn't"
+              echo "its to make). Expected loop behaviour, not an infra failure — see the"
+              echo "\"Run the draft -> Editor -> Fixer loop\" step's log for the specifics."
+              echo "No publish attempted."
+            else
+              echo "**Loop errored (exit ${{ steps.loop.outputs.exit_code }})** — a genuine"
+              echo "script/subprocess failure, not a normal escalation. See the loop step's"
+              echo "log. This job is marked failed."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Fail the job if the loop errored (not just escalated)
+        if: steps.loop.outputs.exit_code != '0' && steps.loop.outputs.exit_code != '1'
+        run: |
+          echo "conductor_loop.py exited ${{ steps.loop.outputs.exit_code }} — not a normal"
+          echo "PASS (0) or escalation (1). Treating this as a real failure."
+          exit 1

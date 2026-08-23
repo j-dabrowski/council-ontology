@@ -562,14 +562,64 @@ rather than a second, separate credential story. This workflow's shape
 exist for the scraper/extractor/investigator, "run `council publish`"
 becomes "authenticate via OIDC, trigger the Cloud Run Job, wait, download
 its output" instead of running directly on the GitHub runner — same
-interface, swapped internals. Also the natural home for a later headless
-Conductor (`docs/review/CONDUCTOR.md`) once Editor/Fixer are calibrated
-enough to automate: same trigger pattern, dispatching Editor and Fixer
-instead of a human doing it interactively, escalating to a human (plausibly
-via GitHub Issues — no new infra needed) at the pass cap. It's also the
-likely home for the paywalled full-tier serving layer described above —
-same OIDC story, an authenticated endpoint reading from
-`gs://$BUCKET/published/full/` instead of a static file.
+interface, swapped internals. It's also the likely home for the paywalled
+full-tier serving layer described above — same OIDC story, an
+authenticated endpoint reading from `gs://$BUCKET/published/full/` instead
+of a static file.
+
+**The headless-Conductor idea two paragraphs up is now built** —
+`maintenance.yml`, below — not just described as a future possibility.
+
+## Discovery & maintenance workflows
+
+Two more workflows, added `docs/AGENT_DESIGN.md` §6 Step 7 (2026-08-23),
+extending the draft/publish story above into the review and investigation
+tracks. Full design context — what each does and doesn't cover, the
+activation checklist that gates scheduling `maintenance.yml` — lives in
+`docs/AUTOMATION_ARCHITECTURE.md` Part 3; this section is the quick
+reference, same relationship `draft.yml`/`publish.yml` have to that doc's
+Flow C/E.
+
+**`discovery.yml`** — Flow A/B: Explorer, optionally chaining Refiner in
+the same run (`refine=true` input). `workflow_dispatch` only, and
+*permanently* so by design (`docs/AGENT_DESIGN.md` §5) — discovery changes
+the instrument itself, so it's always a deliberate trigger, never a
+schedule. Round-trips `docs/investigator/INVESTIGATIONS.md` through GCS
+(`investigations/INVESTIGATIONS.md` — it never touches git, same reason
+it's gitignored locally: named individuals, risk-adjacent framing). Opens
+a PR with whatever git-tracked files changed (`scratchpad/*.py`, prompt
+calibration-log edits, `queries.py`/`tests.py` from a chained Refiner) plus
+a body pointing at the GCS findings path — a simplified stand-in for the
+machine-generated hypothesis-summary `AUTOMATION_ARCHITECTURE.md`
+originally specified (no role has a structured session-summary contract to
+extract that from yet).
+
+```bash
+gh workflow run discovery.yml
+gh workflow run discovery.yml -f refine=true
+```
+
+**`maintenance.yml`** — Flow C/D(+E): `council draft` → the S7 invariant
+gate (inside `council draft`) → the Editor/Fixer loop
+(`scripts/conductor_loop.py`) → optionally `council publish
+--gate-profile auto`, behind an explicit `publish=true` opt-in (default
+**false**). This is the first CI wiring for Editor/Fixer at all — previously
+human-run locally only. `workflow_dispatch` only today; the file carries a
+commented-out `schedule:` block and its own activation checklist (also in
+`AUTOMATION_ARCHITECTURE.md` Part 3) — do not uncomment it until every item
+is checked in `EDITOR_PROTOCOL.md`'s calibration log, and even then it's a
+deliberate PR from the project owner, not something to flip casually.
+
+```bash
+gh workflow run maintenance.yml                    # loop only, no publish
+gh workflow run maintenance.yml -f publish=true     # also publish on a clean PASS
+```
+
+Both need the same `CLAUDE_CODE_OAUTH_TOKEN` secret and GCP OIDC Variables
+as everything else in this file — see `docs/AGENT_PROMPTS.md`'s "Running
+any of these via GitHub Actions" section for the install/auth mechanics,
+which these two follow exactly (subscription auth only, `ANTHROPIC_API_KEY`
+never used).
 
 ## Adding coverage
 

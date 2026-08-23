@@ -1,0 +1,167 @@
+name: Discovery
+
+# The discovery run (docs/AGENT_DESIGN.md §5, AUTOMATION_ARCHITECTURE.md
+# Flow A/B): Explorer (S3, TRAINING corpora only), optionally chaining
+# straight into Refiner (S4) in the same run per Part 4's one-PR-per-run
+# rule. workflow_dispatch only, deliberately never scheduled — discovery
+# changes the instrument, and the coverage register (not the calendar)
+# says when that's worth doing (docs/AGENT_DESIGN.md §5's own reasoning,
+# which is why this file — unlike maintenance.yml — carries no commented
+# cron block at all: there is no activation condition to wait for, the
+# design says this stays dispatch-only permanently).
+#
+# INVESTIGATIONS.md never touches git (AUTOMATION_ARCHITECTURE.md Part 1 —
+# it names real individuals with risk-adjacent framing, same reason it's
+# gitignored locally). It round-trips through GCS instead:
+# investigations/INVESTIGATIONS.md, downloaded before the run and
+# re-uploaded after, regardless of outcome.
+#
+# Simplification versus AUTOMATION_ARCHITECTURE.md Part 3's full design:
+# that doc describes the PR carrying "a machine-generated summary —
+# hypothesis numbers, status, headline classification." Extracting that
+# reliably from a freeform `claude -p` session's own output isn't solved
+# anywhere in this codebase yet (no role has a structured "session
+# summary" contract for this). This workflow ships the honest, simpler
+# version instead: the PR lists which git-tracked files changed (the real
+# diff) and points at the GCS path for the findings themselves, never
+# attempting to restate or summarize the risk-bearing prose. Revisit once
+# a role's stage contract grows a machine-readable session-summary field.
+on:
+  workflow_dispatch:
+    inputs:
+      refine:
+        description: >-
+          Chain a Refiner pass onto this same run if Explorer finds
+          something worth codifying (Part 4's one-PR-per-run chaining).
+          Default false — Explorer-only unless you explicitly ask for more.
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write   # required to mint the OIDC token that authenticates to GCP
+
+jobs:
+  discovery:
+    name: Explorer (+ optionally Refiner)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Python dependencies
+        run: pip install -e .
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - id: auth
+        name: Authenticate to GCP (OIDC, no long-lived key)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Download council.db and INVESTIGATIONS.md from GCS
+        run: |
+          mkdir -p data
+          gcloud storage cp "gs://${{ vars.GCP_BUCKET }}/council.db" data/council.db
+          gcloud storage cp "gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md" \
+            docs/investigator/INVESTIGATIONS.md
+
+      - name: Create the run's branch
+        id: branch
+        run: |
+          branch="discovery/$(date -u +%Y%m%d-%H%M%S)"
+          git checkout -b "$branch"
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Run Explorer
+        run: claude -p "$(cat docs/agent_prompts/explorer.txt)" \
+          --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+        env:
+          # Subscription auth only — never ANTHROPIC_API_KEY, same
+          # discipline as scripts/conductor_loop.py and docs/AGENT_PROMPTS.md.
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Run Refiner (only if refine=true)
+        if: inputs.refine == true
+        run: claude -p "$(cat docs/agent_prompts/refiner.txt)" \
+          --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Upload INVESTIGATIONS.md back to GCS (regardless of outcome)
+        if: always()
+        run: |
+          gcloud storage cp docs/investigator/INVESTIGATIONS.md \
+            "gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md"
+
+      - name: Commit git-tracked changes and open a PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # INVESTIGATIONS.md is gitignored — never staged here, GCS only.
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No git-tracked change (scratchpad script, prompt edit, "
+            echo "or code) resulted from this run — nothing to open a PR "
+            echo "for. Findings (if any) are still in GCS, see the job "
+            echo "summary step below."
+            echo "opened=false" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          # Capture the changed-files list from the index before committing —
+          # actions/checkout defaults to a shallow (depth-1) clone, so a
+          # post-commit `git diff HEAD~1 HEAD` isn't reliable (the parent
+          # commit's full object may not be fetched); `--cached` only needs
+          # the current HEAD and the index, both always present.
+          changed=$(git diff --cached --name-only)
+          git commit -m "Discovery run ${{ github.run_id }} (workflow_dispatch)"
+          git push -u origin "${{ steps.branch.outputs.name }}"
+          pr_body=$(cat <<EOF
+          Discovery run (Explorer$([ "${{ inputs.refine }}" = "true" ] && echo " + Refiner"))
+          via \`workflow_dispatch\`, run ${{ github.run_id }}.
+
+          **Git-tracked files changed:**
+          \`\`\`
+          $changed
+          \`\`\`
+
+          **Findings (\`INVESTIGATIONS.md\`, never committed to git — see
+          docs/AUTOMATION_ARCHITECTURE.md Part 1):**
+          \`gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md\`
+
+          Review the diff above plus the GCS findings before merging. This
+          PR summary deliberately never restates risk-bearing prose about
+          named individuals — see the header comment in this workflow file.
+          EOF
+          )
+          gh pr create --title "Discovery run ${{ github.run_id }}" --body "$pr_body"
+          echo "opened=true" >> "$GITHUB_ENV"
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### Discovery run"
+            echo ""
+            echo "Findings: \`gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md\`"
+            if [ "$opened" = "true" ]; then
+              echo ""
+              echo "PR opened from \`${{ steps.branch.outputs.name }}\`."
+            else
+              echo ""
+              echo "No git-tracked change — no PR opened."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -246,6 +246,16 @@ real judgment. It applies the same `ANTHROPIC_API_KEY`-stripping
 discipline as this section, and never calls `council publish`, same as
 Conductor itself.
 
+**`scripts/conductor_loop.py` is exactly what `.github/workflows/
+maintenance.yml` runs** (added `docs/AGENT_DESIGN.md` §6 Step 7,
+2026-08-23) — a real, `workflow_dispatch`-only CI wiring of this section's
+pattern, not just a documented possibility. `.github/workflows/
+discovery.yml` is the same for Explorer(+Refiner) — see
+`docs/TESTING.md`'s "Discovery & maintenance workflows" for the quick
+reference and `AUTOMATION_ARCHITECTURE.md` Part 3 for the full design,
+including what each workflow deliberately doesn't do yet (auto-publish,
+scheduling, a standalone Refiner-only dispatch, PR-gated Fixer edits).
+
 ## What's still manual (not a queued command — a human action)
 
 **`council publish`** — never run by Conductor, Editor, or any agent under

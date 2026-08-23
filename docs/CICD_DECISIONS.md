@@ -267,6 +267,65 @@ matter, without introducing a deploy workflow file to maintain.
 
 ---
 
+## 2026-08-23 — Two new workflows, `workflow_dispatch` only; scheduling gated behind a written activation checklist, not a decision made now
+
+**Decision:** built `discovery.yml` (Flow A/B — Explorer, optionally
+chaining Refiner) and `maintenance.yml` (Flow C/D — `council draft` → the
+Editor/Fixer loop via `scripts/conductor_loop.py` → optionally `council
+publish --gate-profile auto`), per `docs/AGENT_DESIGN.md` §6 Step 7. Both
+are real, mergeable-if-desired workflow files, not stubs. Neither runs on
+a schedule. `discovery.yml` never will, by design (`docs/AGENT_DESIGN.md`
+§5 — discovery changes the instrument, so it stays a deliberate trigger
+permanently). `maintenance.yml` carries a commented-out `cron:` block
+directly above its `workflow_dispatch` trigger, with an explicit
+activation checklist stated in the file itself (four conditions, all
+tracked in `EDITOR_PROTOCOL.md`'s calibration log — see
+`AUTOMATION_ARCHITECTURE.md` Part 3, Flow D, for the checklist verbatim)
+and `maintenance.yml`'s `publish=true` input defaults to **false** for the
+same reason.
+
+**Alternatives considered:**
+1. Build the workflows without the commented-out cron block at all,
+   leaving scheduling as a documented future step. Rejected (explicit
+   project-owner direction, mid-session): a commented block with a
+   written activation condition makes turning on scheduling a one-line PR
+   later, and makes the precondition legible in the file a future session
+   would actually read, not only in a doc that file doesn't reference at
+   read-time.
+2. Build the full maintenance run exactly as `docs/AGENT_DESIGN.md` §5
+   describes it (including Flow 0 — scrape/extract/dedup) in this same
+   step. Rejected: Flow 0 is a substantially larger, still partially
+   undecided piece of infrastructure (GCS staging/promotion, a typology
+   convergence loop, real extraction API cost) that predates this redesign
+   and isn't really about "Renderer + reply pipeline... workflow wiring"
+   specifically — S2 profile is the only redesign-specific piece Flow 0
+   would need, and it's a one-line addition whenever Flow 0 itself gets
+   built. Left as a design sketch, unchanged.
+3. Wire Editor's auto-publish (`publish=true`) as the default once the
+   loop reaches a clean PASS. Rejected: `docs/AGENT_DESIGN.md` §5's own
+   stated precondition for autonomous publish (Editor calibration data)
+   isn't met — Editor v0.4 has never completed a real PASS/FAIL cycle as
+   of this decision. Defaulting to publish would mean the first real use
+   of this workflow could autonomously publish on unproven judgment.
+
+**Trade-off / why:** the alternative to a written, in-file checklist is an
+implicit "someone will remember to check before enabling this" — exactly
+the failure mode `docs/investigator/Investigator_prompt.txt` §0.5's "state
+hygiene" rule already exists to prevent for a different kind of
+out-of-band state. A checklist inside the workflow file itself means a
+future session (human or agent) deciding whether to uncomment the
+schedule reads the condition in the same file it's about to change, not a
+separate doc it has to already know to consult. The cost is a small
+duplication (the checklist appears in both `maintenance.yml` and
+`AUTOMATION_ARCHITECTURE.md`) — accepted deliberately, flagged in both
+places as needing to stay in sync manually, rather than a single source
+that's one file away from the point of action.
+
+**Still true as of 2026-08-23** (same day — no runs yet, so nothing to
+report from real use).
+
+---
+
 ## Open decisions (not yet made / not yet built, as of 2026-08-22)
 
 Logged now, before they're decided, specifically so the eventual entry can

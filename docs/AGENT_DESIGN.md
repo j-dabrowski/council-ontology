@@ -540,4 +540,85 @@ Risk-reduction first, roles last — each step ships value alone:
    level 1 (institutional tier end-to-end), then level 2 once the reply
    pipeline exists; the discovery-run workflow is just
    `AUTOMATION_ARCHITECTURE.md`'s Flow A/B on the new prompts and needs no
-   new machinery.
+   new machinery. **Done 2026-08-23, at a deliberately narrower scope than
+   "level 1" implies — see the scoping decision below.**
+
+   Before starting, this step's scope was checked with the project owner
+   directly (not inferred): building real, `workflow_dispatch`-only
+   workflow YAML was authorized explicitly, but level 1's actual
+   *autonomy* (a schedule that fires unattended) was not, since Editor
+   v0.4 has zero real calibration cycles — the design's own stated
+   precondition for level 1 (§5: "Editor's narrowed scope has calibration
+   data") isn't met yet. The user separately directed two specific
+   requirements mid-session: the cron trigger must exist as a
+   commented-out block directly above `workflow_dispatch`, stating the
+   activation condition in the file itself; and this doc must record the
+   activation checklist as verifiable conditions, not vibes.
+
+   - **`.github/workflows/discovery.yml`** — Flow A/B: Explorer, optionally
+     chaining Refiner (`refine=true` input) in the same run. Rounds
+     `INVESTIGATIONS.md` through GCS (`investigations/`, never git — Part
+     1's rule). Opens a PR with git-tracked changes + a body pointing at
+     the GCS findings path — a logged simplification of
+     `AUTOMATION_ARCHITECTURE.md`'s original "machine-generated
+     hypothesis-summary" spec, since no role has a structured
+     session-summary contract to extract that from yet. `workflow_dispatch`
+     only, permanently (§5: discovery changes the instrument, the register
+     says when, not the calendar) — no cron block at all, commented or
+     otherwise.
+   - **`.github/workflows/maintenance.yml`** — Flow C/D(+E): `council draft`
+     (S7 runs inside it) → the Editor/Fixer loop
+     (`scripts/conductor_loop.py`, already existed, first CI wiring for
+     Editor/Fixer at all) → optionally `council publish --gate-profile
+     auto`, behind a `publish=true` input defaulting to **false**. Carries
+     a commented-out `schedule: cron:` block directly above
+     `workflow_dispatch`, with a four-item activation checklist stated in
+     the file's own header comment (≥3 real Editor v0.4 PASS/FAIL cycles
+     via this workflow, independently human-reviewed; real false-positive
+     dimension data; zero missed real risks; explicit project-owner
+     sign-off via the PR that uncomments it) — mirrored, not duplicated
+     without cross-reference, in `AUTOMATION_ARCHITECTURE.md` Part 3's
+     Flow D section and `docs/CICD_DECISIONS.md`'s 2026-08-23 entry.
+   - **Validation, since neither workflow can actually be run from here:**
+     every step's shell script extracted from the parsed YAML (with
+     `${{ }}` expressions substituted, matching what bash actually
+     receives at runtime) and checked with `bash -n` — caught and fixed a
+     real bug this way (a shallow-clone-incompatible `git diff HEAD~1
+     HEAD`, replaced with a pre-commit `git diff --cached --name-only`
+     capture) and a second one (a bare apostrophe inside an unquoted
+     heredoc breaking bash's parser — confirmed with a minimal, isolated
+     repro before concluding it was real, not a test artifact; fixed by
+     rewording the one affected sentence). Both `.yml` files also
+     round-tripped through `yaml.safe_load` cleanly.
+   - **`AUTOMATION_ARCHITECTURE.md`** updated per the delta table:
+     Part 2's stage table re-mapped (Runner row removed; S2 profile, S7
+     gate, and Renderer rows added, each marked built/not-built precisely
+     rather than uniformly "design sketch"); Part 3's Flow A/B/D/E prose
+     and diagram updated to state what's built, what's simplified versus
+     the original spec, and what's a newly-logged gap (no standalone
+     Refiner-only dispatch; Fixer's edits aren't PR-gated inside
+     `maintenance.yml`); Part 5's schedule-vs-dispatch question closed via
+     §5's two-run-type structure, with the activation checklist recorded
+     there too. The doc's own status line changed from "design sketch, not
+     built" to "partially built," naming exactly which parts.
+   - **`docs/TESTING.md`** gained a "Discovery & maintenance workflows"
+     section (mirroring the existing draft/publish one) and a correction —
+     it used to describe a headless Conductor as a future possibility in
+     the same paragraph that's now describing `maintenance.yml` as a
+     real thing. **`docs/AGENT_PROMPTS.md`** cross-references both new
+     workflows from its existing `conductor_loop.py` paragraph.
+     **`docs/CICD_DECISIONS.md`** gained a dated entry logging the three
+     real alternatives considered (no cron placeholder at all; building
+     Flow 0 in this same step; defaulting `publish=true`) and why each was
+     rejected.
+   - **Explicitly not done, matching the authorized scope:** Flow 0 (the
+     DB-update/scrape/extract pipeline) remains a design sketch — larger,
+     partially undecided infrastructure that predates this redesign and
+     isn't specific to "Renderer + reply pipeline... workflow wiring."
+     Renderer isn't wired into either workflow (zero calibration data for
+     either mode). No standalone Refiner-only dispatch. Fixer's edits
+     inside `maintenance.yml` commit directly on the runner, not their own
+     PR. The `schedule:` block stays commented in both files — this step
+     does not claim level 1 autonomy is reached, only that the
+     infrastructure to reach it (once calibrated) now exists as a one-line
+     PR away.

@@ -2,18 +2,25 @@
 
 Cross-cutting infra doc (see `MAP.md`) — not owned by one track, since it
 maps the full path from a manually-updated database through every agent
-role to the live Vercel site. **Design sketch, not built** (same status as
-`pipeline/PIPELINE.md`'s "Production scale" section, which this doc extends
-into the investigator/review tracks that section doesn't cover — read that
-section first for the scrape/extract half of the automation story; this doc
-picks up from `council.db` existing in GCS onward). Nothing described here
-has been implemented; this is the plan, written down before building it, the
-same discipline every other design-sketch section in this project follows.
+role to the live Vercel site. **Partially built as of 2026-08-23**
+(`docs/AGENT_DESIGN.md` §6 Step 7): Flow A (Explorer, optionally chaining
+Refiner) and Flows C+D (`council draft` → the Editor/Fixer loop) are real,
+`workflow_dispatch`-only GitHub Actions workflows (`discovery.yml`,
+`maintenance.yml`) — see Part 3 for exactly what each covers and, just as
+importantly, what it deliberately doesn't yet. **Flow 0 (the DB-update
+pipeline — scrape/extract/dedup) remains a design sketch, not built** —
+same status as `pipeline/PIPELINE.md`'s "Production scale" section, which
+this doc extends into the investigator/review tracks that section doesn't
+cover; read that section first for the scrape/extract half of the
+automation story. Neither built workflow runs on a schedule yet — both are
+deliberately dispatch-only until their own stated activation conditions
+are met (Part 3).
 
-**Companion docs, not duplicates:** `docs/TESTING.md` documents the two
-workflows that already exist (`draft.yml`, `publish.yml`) and the GCP
-one-time setup; `docs/AGENT_PROMPTS.md` holds the fixed prompt string for
-each role; `docs/CICD_DECISIONS.md` logs *why* each infra choice was made,
+**Companion docs, not duplicates:** `docs/TESTING.md` documents the
+workflows that already exist (`draft.yml`, `publish.yml`, and — as of this
+update — `discovery.yml`, `maintenance.yml`) and the GCP one-time setup;
+`docs/AGENT_PROMPTS.md` holds the fixed prompt string for each role;
+`docs/CICD_DECISIONS.md` logs *why* each infra choice was made,
 chronologically. This doc is the *map* — what goes where, in what order,
 gated how — that ties those three together and fills the gap none of them
 individually cover.
@@ -33,7 +40,7 @@ comment stating exactly why: investigator *output* docs (`INVESTIGATIONS.md`,
 retroactive audits, session syntheses) "name real individuals with
 risk-adjacent framing... matching the risk `PRIVATE_ASSESSMENT.md`
 documents." The *prompt files* (`Investigator_prompt.txt`,
-`Explorer_prompt.txt`, `Refiner_prompt.txt`, `Runner_prompt.txt`) are
+`Explorer_prompt.txt`, `Refiner_prompt.txt`) are
 untouched by that rule for a simpler reason — they're `.txt`, not `.md`, so
 the glob never matches them. That's not an accident either: prompt files are
 methodology (how to investigate), always safe to publish; `INVESTIGATIONS.md`
@@ -84,15 +91,17 @@ served site itself).
 
 | Stage | Trigger (today → proposed) | Reads | Writes | Location |
 |---|---|---|---|---|
-| **Scrape/census/inventory/extract** (`README.md`'s pipeline table) | manual → scheduled cron (`PIPELINE.md` "Production scale") | council website, `data/council.db` | `data/council.db` (updated in place) | **today:** local, then uploaded to GCS by hand (`gcloud storage cp`). **proposed (Flow 0):** candidate DB uploaded to a *staged* GCS path + a git-trackable summary opens a PR — see Part 3 |
-| **dedup / build-relationships / geocode** | manual (`council dedup`, etc.) → part of the same scheduled Flow 0 run | `data/council.db` | `data/council.db` (in place) | same as above — staged GCS path, promoted only once Flow 0's PR is merged |
-| **Explorer** (generate/test hypotheses) | manual → `workflow_dispatch`/scheduled | `council.db` (GCS), `INVESTIGATIONS.md` (GCS), `Investigator_prompt.txt` + `Explorer_prompt.txt` (git) | appends to `INVESTIGATIONS.md`; new `scratchpad/*.py` scripts; calibration-log entries in `Explorer_prompt.txt` | `INVESTIGATIONS.md` → **GCS** (re-upload); `scratchpad/*.py` + `Explorer_prompt.txt` edits → **git** (already-tracked file types, see Part 1) |
-| **Refiner** (codify a finding) | manual → `workflow_dispatch` | same as Explorer, plus `REFINEMENT_PROTOCOL.md` (git) | edits `src/analysis/queries.py` + `tests.py` (code); appends to `INVESTIGATIONS.md` | code → **git, via a PR** (see Part 3); `INVESTIGATIONS.md` → GCS |
-| **Runner** (frozen battery, no hypotheses) | manual → `workflow_dispatch` | `council.db` (GCS), `tests.py` (git) | a verification report; no code changes | report → GCS or PR body (low-stakes, informational) |
-| **`council draft`** | manual `workflow_dispatch` (existing `draft.yml`) → proposed: also auto on relevant merges/PRs (Part 3) | `council.db` (GCS), current `queries.py`/`tests.py` (git checkout) | `data/draft/<run_id>/*.json` | **GCS** (`drafts/`) — existing, unchanged |
-| **Editor** (defamation review) | today: human-run locally, not yet in CI | a draft directory (GCS) + `Investigator_prompt.txt` Part 4 (git) + `PRIVATE_ASSESSMENT.md` (gitignored, local-only — see Part 3 note) | `defamation_review_<n>.md` + `.json` sidecar | **GCS**, written into the same draft directory |
-| **Fixer** (3 modes, dispatched on FAIL) | today: human-run; chained by Conductor | Editor's flagged issues + the relevant track's files | edits to `frontend/src/`, `src/`, or doc files | **git**, same PR discipline as Refiner (it's still a code/content change) |
-| **`council publish`** | always manual (`--confirm` or validated `--gate-profile auto`) | one specific draft dir (GCS), hash-verified | `frontend/public/data/*.json` | **git**, direct commit (existing behaviour, unchanged — see Part 3) |
+| **Scrape/census/inventory/extract** (`README.md`'s pipeline table) | manual → scheduled cron (`PIPELINE.md` "Production scale") | council website, `data/council.db` | `data/council.db` (updated in place) | **today:** local, then uploaded to GCS by hand (`gcloud storage cp`). **proposed (Flow 0):** candidate DB uploaded to a *staged* GCS path + a git-trackable summary opens a PR — see Part 3. Still not built (unchanged by the 2026-08-23 redesign) |
+| **dedup / build-relationships / geocode** | manual (`council dedup`, etc.) → part of the same scheduled Flow 0 run | `data/council.db` | `data/council.db` (in place) | same as above — staged GCS path, promoted only once Flow 0's PR is merged. Still not built |
+| **`council profile`** (S2 corpus profile, `docs/AGENT_DESIGN.md` §6 Step 3) | manual → part of a future Flow 0 run, once built | `council.db` (GCS) | `data/<council>_profile.json` | not yet wired into any workflow — Flow 0 doesn't exist to wire it into. Scripted (no LLM), so wiring it in is a small addition whenever Flow 0 is built, not new machinery of its own |
+| **Explorer** (generate/test hypotheses) | manual/GCS round-trip → **built:** `workflow_dispatch` (`discovery.yml`), never scheduled by design (`docs/AGENT_DESIGN.md` §5 — discovery changes the instrument, the register says when, not the calendar) | `council.db` (GCS), `INVESTIGATIONS.md` (GCS), `Investigator_prompt.txt` + `Explorer_prompt.txt` (git) | appends to `INVESTIGATIONS.md`; new `scratchpad/*.py` scripts; calibration-log entries in `Explorer_prompt.txt` | `INVESTIGATIONS.md` → **GCS** (re-upload); `scratchpad/*.py` + `Explorer_prompt.txt` edits → **git** (already-tracked file types, see Part 1) |
+| **Refiner** (codify a finding) | **built:** same `discovery.yml` run, chained when `refine=true` (Part 4's one-PR-per-run rule) | same as Explorer, plus `REFINEMENT_PROTOCOL.md` (git) | edits `src/analysis/queries.py` + `tests.py` (code); declaration block + coverage-register update (v1.2); appends to `INVESTIGATIONS.md` | code + `coverage_register.json` → **git, via the same PR as Explorer** when chained (see Part 3); `INVESTIGATIONS.md` → GCS |
+| S7 invariant gate | n/a — always runs, inside `council draft`, no separate trigger | the battery `council draft` just computed | `gate_report.json`; blocks the draft on failure | wherever `council draft` runs (GCS `drafts/`) — same location, not a separate stage in this table |
+| **`council draft`** | manual `workflow_dispatch` (existing `draft.yml`) → **also built:** the first step of `maintenance.yml`'s loop | `council.db` (GCS), current `queries.py`/`tests.py` (git checkout) | `data/draft/<run_id>/*.json` (S7 gate report included) | **GCS** (`drafts/`) — existing, unchanged |
+| **Editor** (defamation review) | **built:** `workflow_dispatch` (`maintenance.yml`, via `scripts/conductor_loop.py` — the scripted loop mechanics, still a real `claude -p` call for Editor's own judgment) | a draft directory (GCS) + `Investigator_prompt.txt` Part 4 (git) + `PRIVATE_ASSESSMENT.md` (gitignored, local-only — see Part 3 note) | `defamation_review_<n>.md` + `.json` sidecar | **GCS**, written into the same draft directory |
+| **Fixer** (3 modes, dispatched on FAIL) | **built:** same `maintenance.yml` run, dispatched by `conductor_loop.py` per Editor's tagged tracks | Editor's flagged issues + the relevant track's files | edits to `frontend/src/`, `src/`, or doc files | **git** — committed directly on the runner within the same job (not yet a PR — see Part 3's note on this workflow's own scope) |
+| **`council publish`** | always manual (`--confirm`), OR **built, opt-in:** `maintenance.yml`'s `publish=true` input (`--gate-profile auto`) | one specific draft dir (GCS or local, depending on trigger), hash-verified | `frontend/public/data/*.json` | **git**, direct commit (existing behaviour, unchanged — see Part 3) |
+| Renderer (plain-language / synthesis, `docs/AGENT_DESIGN.md` §6 Step 6) | manual only — not wired into any workflow | a draft directory (institutional or deep product) | `plain_language_summary.md` / `deep_synthesis.md` in the draft directory | not GCS-uploaded by any workflow yet; no calibration data exists for either mode (`RENDERER_PROTOCOL.md`), so wiring it into `maintenance.yml` is deliberately deferred, not forgotten |
 | **Vercel deploy** | automatic on push to `main` touching `frontend/` | `frontend/public/data/` + `frontend/src/` (git) | the live site | **Vercel** — already fully automatic, no change |
 
 ---
@@ -183,51 +192,65 @@ ran Explorer, its output lands in that run's one PR alongside Explorer's,
 not a second one.** Read both before assuming which applies.
 
 ```
- FLOW A — Explorer / Runner (report only)
- ──────────────────────────────────────────────────────────────────
+ FLOW A — Explorer (report only)              [BUILT: discovery.yml,
+ ──────────────────────────────────────        workflow_dispatch only]
  council.db (GCS) + INVESTIGATIONS.md (GCS)
         │
    Explorer appends findings to INVESTIGATIONS.md (GCS — stays out
    of git, see the note below) + writes scratchpad/*.py (git)
         │
         ▼
-   opens a PR: the scratchpad scripts, plus a machine-generated
-   SUMMARY — hypothesis numbers, status (Finding/Null/Banked), headline
-   classification, and the GCS path — never the verbatim findings prose
+   opens a PR: the scratchpad scripts + git-tracked changes, plus a
+   PR body listing what git files changed and the GCS findings path
+   (see the simplification note in Part 3's Flow A/B section below —
+   discovery.yml's PR body is not yet the machine-parsed hypothesis-
+   number/status summary this paragraph originally specified)
         │
         ▼
-   GATE: you read the summary + scripts, merge — this merge is also
-   the recommended eligibility signal for Refiner (see below)
+   GATE: you read the diff + PR body, merge
 
 
- FLOW B — Refiner (changes CODE)
- ──────────────────────────────────────────────────────────────────
- council.db (GCS) + INVESTIGATIONS.md (GCS) + Refiner_prompt.txt (git)
+ FLOW B — Refiner (changes CODE)              [BUILT: same discovery.yml
+ ──────────────────────────────────────        run, only when refine=true
+ council.db (GCS) + INVESTIGATIONS.md (GCS)     is set on dispatch]
+   + Refiner_prompt.txt (git)
         │
-   edits src/analysis/queries.py + tests.py; appends to
-   INVESTIGATIONS.md (GCS)
-        │
-        ▼
-   opens a PR (branch: refiner/<slug>) with the code diff + Refiner's
-   own six-dimension score block
+   edits src/analysis/queries.py + tests.py; declaration block +
+   coverage_register.json update (v1.2); appends to INVESTIGATIONS.md
         │
         ▼
-   GATE: you read the diff + score block, merge
+   lands in the SAME PR as Flow A above (Part 4's one-PR-per-run rule)
+   — not a separately-triggered run in the built version; a
+   standalone "Refiner only, against an older merged Explorer
+   finding" dispatch isn't wired yet (Refiner_prompt.txt's own Step 0
+   self-selection still works fine run locally/interactively for
+   that case)
+        │
+        ▼
+   GATE: you read the diff + Refiner's seven-dimension score block, merge
         │
         ▼
    merge to main → triggers FLOW C automatically (push to main,
-   paths: src/analysis/**)
+   paths: src/analysis/**) — NOT YET WIRED: draft.yml is
+   workflow_dispatch only today, no push-triggered auto-draft exists
 
 
  FLOW C — council draft            FLOW D — Editor (+ Fixer)
- ──────────────────────            ──────────────────────
- writes only to GCS (drafts/)      writes only to GCS (the review
- — no git file touched, so         sidecar, inside the draft dir)
- the branch/PR rule doesn't        — same reasoning, no git file,
- apply; runs automatically         no PR possible or needed. Kept
-                                   human-run for now (see reasoning
-                                   below) — PASS writes the sidecar,
-                                   which unblocks FLOW E.
+ ──────────────────────            ──────────────────────    [BUILT:
+ writes only to GCS (drafts/)      writes only to GCS (the review     maintenance.yml,
+ — no git file touched, so         sidecar, inside the draft dir)     workflow_dispatch
+ the branch/PR rule doesn't        — same reasoning, no git file,     only]
+ apply; runs automatically         no PR possible or needed. Now
+ as maintenance.yml's first        wired via scripts/conductor_loop.py
+ step (in addition to the          inside maintenance.yml — still a
+ existing standalone draft.yml)    real `claude -p` call for Editor's
+                                   and Fixer's own judgment, the LOOP
+                                   MECHANICS (pass counting, dispatch-
+                                   by-track) are scripted. PASS writes
+                                   the sidecar, which unblocks FLOW E.
+                                   Fixer's edits commit directly on the
+                                   runner within the job — not yet a
+                                   separate PR (see the note below).
 
 
  FLOW E — council publish                    FLOW F — Vercel
@@ -240,7 +263,12 @@ not a second one.** Read both before assuming which applies.
  --confirm or a validated Editor
  PASS record) rather than switching
  to a branch+PR — open question,
- see the note below
+ see the note below. NOW REACHABLE
+ from maintenance.yml too, behind
+ an explicit publish=true opt-in
+ (default false — see that
+ workflow's own activation
+ checklist)
 ```
 
 **Flow 0 (the DB-update pipeline) — PR-gated, sequenced before the agents
@@ -252,31 +280,48 @@ reads `council.db` as an input, so it should never run against a DB update
 that's still sitting in an unmerged PR — Flow A/B's trigger is the
 promotion job completing, not the scheduled job itself.
 
-**Flow A (Explorer/Runner) — PR-gated, with a summary standing in for the
-verbatim findings.** `INVESTIGATIONS.md` stays in GCS regardless of this
-rule — not an exception to it, a separate constraint that was already true
-before this design (see Part 1: it names real individuals with
-risk-adjacent framing, and a PR is exactly as public as a merged file,
-closed or not). The PR carries the git-safe artifacts (`scratchpad/*.py`)
-plus a machine-generated summary — hypothesis numbers, status, headline
-classification, GCS path — everything short of the risk-bearing prose
-itself. Worth wiring the merge of that PR into Refiner's Step 0 as an
-eligibility check *for later, separately-triggered Refiner runs* (see Part
-4 for why this doesn't apply when Refiner chains directly off Explorer in
-the same run) — a hypothesis nobody's acknowledged yet doesn't get picked
-up for codification by a future run. That gives "merge the PR" real teeth
-for investigation work too, not just a formality around low-stakes content.
+**Flow A (Explorer) — PR-gated, with a summary standing in for the
+verbatim findings. Built (`discovery.yml`, `workflow_dispatch` only, never
+scheduled — see `docs/AGENT_DESIGN.md` §5's reasoning for why this stays
+permanently dispatch-only, unlike Flow D below).** `INVESTIGATIONS.md`
+stays in GCS regardless of this rule — not an exception to it, a separate
+constraint that was already true before this design (see Part 1: it names
+real individuals with risk-adjacent framing, and a PR is exactly as public
+as a merged file, closed or not). The PR carries the git-safe artifacts
+(`scratchpad/*.py`) plus a PR body — **the built version is a
+simplification of what this paragraph originally specified**: it lists
+which git-tracked files changed and points at the GCS findings path,
+rather than a machine-generated hypothesis-number/status/headline-
+classification summary. No role in this pipeline has a structured
+"session summary" stage-contract field to extract that from yet — building
+one is real, separate future work, not done here (`discovery.yml`'s own
+header comment logs this same note). Worth wiring the merge of that PR
+into Refiner's Step 0 as an eligibility check *for later, separately-
+triggered Refiner runs* (see Part 4 for why this doesn't apply when
+Refiner chains directly off Explorer in the same run) — not done yet
+either; today's built version doesn't support a standalone,
+Refiner-only dispatch at all (see Flow B below).
 
-**Flow B (Refiner — changes code) — PR-gated.** This flow changes the
-logic that decides what every future battery result *is*. Refiner's own
-dimension 1–2 hard gates already do real, independent verification before
-proposing a change — but per this project's stated invariant everywhere
-else (`CONDUCTOR.md`: "never any single agent's self-assessment"), that
-verification is Refiner checking its own homework, not a second party
-checking it. A human reading the diff plus the six-dimension score block is
-the second party — the smallest, cheapest form real review can take, since
-Refiner's own verification is already done for the reviewer to check rather
-than redo, not a bureaucratic add-on.
+**Flow B (Refiner — changes code) — PR-gated. Built, but narrower than
+originally specified: only as a same-run chain off Explorer
+(`discovery.yml`'s `refine=true` input), never a standalone,
+separately-triggered dispatch.** This flow changes the logic that decides
+what every future battery result *is*. Refiner's own dimension 1–2 (and,
+as of v1.2, dimension 7) hard gates already do real, independent
+verification before proposing a change — but per this project's stated
+invariant everywhere else (`CONDUCTOR.md`: "never any single agent's
+self-assessment"), that verification is Refiner checking its own homework,
+not a second party checking it. A human reading the diff plus the
+seven-dimension score block is the second party — the smallest, cheapest
+form real review can take, since Refiner's own verification is already
+done for the reviewer to check rather than redo, not a bureaucratic
+add-on. **Gap versus the original design:** a human wanting to codify an
+older, already-merged Explorer finding without re-running Explorer has no
+workflow for that yet — `Refiner_prompt.txt`'s own Step 0 self-selection
+still works for it locally/interactively, just not through
+`workflow_dispatch`. Worth a small `discovery.yml` addition (a
+`refiner_only` input that skips the Explorer step) if this gap turns out
+to matter in practice; not built speculatively ahead of that.
 
 **Flow C (`council draft`) — no PR, because there's no git file change to
 gate.** `draft.yml` writes only to GCS. Auto-triggering it on `push: main,
@@ -285,21 +330,54 @@ updates (a preview draft for the reviewer, checked out against the PR's own
 branch — see the `ref`-aware `draft.yml` design) are both consistent with
 the rule, not exceptions to it: nothing here ever touches a tracked file.
 
-**Flow D (Editor) — no PR possible (no git file), and kept human-run
-regardless.** Two concrete reasons, not caution for its own sake:
-`PIPELINE.md`'s own "Production scale" section reaches the same conclusion
-independently — "the likely resolution isn't removing the human, it's
-shrinking what the human has to do per cycle." First, this is the stage
-that exists because of a documented MODERATE-to-HIGH defamation exposure
-(`PRIVATE_ASSESSMENT.md`) — the only stage whose entire job is catching
-that risk before it becomes public. Second, it has never run to completion
-successfully even once as of this writing (`REVIEW.md`'s status note) —
-zero calibration data exists yet on how reliable it is. `CONDUCTOR.md`
-already states the general principle for this exact situation: automating
-a dispatch policy nobody has run yet just moves the unproven part somewhere
-harder to inspect. Once Editor has a real track record — several genuine
-PASS/FAIL cycles, ideally across more than one draft — revisiting this is
-reasonable, not before.
+**Flow D (Editor + Fixer) — no PR possible (no git file) for the review
+itself, but the loop mechanics are now built and CI-wired
+(`maintenance.yml`, `workflow_dispatch` only, never scheduled yet).**
+`PIPELINE.md`'s "Production scale" section framed the right resolution
+before this was built — "the likely resolution isn't removing the human,
+it's shrinking what the human has to do per cycle" — and that's exactly
+what `scripts/conductor_loop.py` does: pass-counting and dispatch-by-track
+are scripted (no judgment in that gap), while Editor's own review and
+Fixer's own fix stay real `claude -p` calls. What `maintenance.yml`
+deliberately does **not** do is auto-publish or schedule itself — both are
+gated behind explicit conditions, not removed altogether:
+
+- **Publish** is an opt-in `publish=true` dispatch input (default false).
+  A human dispatching the workflow with `publish=true` is still a
+  deliberate act each time — the gate is "not automatic," not "impossible."
+- **Scheduling** is a commented-out `cron:` block in `maintenance.yml`
+  itself, with an **activation checklist** stated both there and here
+  (single source of intent, kept in sync manually — update both if the
+  checklist changes):
+
+  1. ≥ 3 real Editor v0.4 PASS/FAIL cycles have completed via
+     `maintenance.yml` (`workflow_dispatch`), each independently reviewed
+     by a human against their own judgment of the same draft.
+  2. Editor's false-positive dimension (`EDITOR_PROTOCOL.md`, added
+     2026-08-23 alongside the S7 narrowing) has real calibration data,
+     not just the pre-narrowing prediction that flag volume would drop.
+  3. Zero missed real risks (false negatives) across those cycles — per
+     `EDITOR_PROTOCOL.md`, this is the one failure mode that actually
+     matters; false positives are safe, just wasteful.
+  4. The project owner has explicitly signed off on that calibration data
+     in the PR that uncomments the `cron:` block — not a self-certified
+     "looks calibrated enough," a real, separate review of the evidence.
+
+  **Who flips it:** the project owner, via a PR that uncomments the
+  `cron:` block in `maintenance.yml` once all four boxes are checked in
+  `EDITOR_PROTOCOL.md`'s calibration log — a one-line change once the
+  evidence exists, not a rebuild. No one else (including a future
+  Conductor-adjacent agent session) should uncomment it unprompted.
+
+This is the same reasoning `CONDUCTOR.md` already states in general: don't
+automate a dispatch policy nobody has run yet. The difference from the
+pre-2026-08-23 state is that "run yet" now means "run via
+`workflow_dispatch`, which is real infrastructure a human can dispatch
+today" — not "build the infrastructure later, once trust exists." Fixer's
+edits inside this flow commit directly on the runner within the same job
+(not yet their own PR, unlike Refiner's Flow B) — a further scoping
+simplification versus a fully PR-gated Fixer, logged here rather than
+silently decided.
 
 **Flow E (`council publish`) — the one open question this rule raises,
 flagged rather than decided here.** This is the one stage that *does* write
@@ -311,7 +389,11 @@ specific, already-reviewed draft rather than relying on a human reading a
 diff. Whether that existing mechanism should be kept as-is, or replaced
 with a branch+PR for full consistency with the uniform rule, is worth a
 deliberate answer rather than silently picking one — noted here as open,
-not resolved.
+not resolved. **Now reachable from `maintenance.yml` too** (in addition to
+the existing standalone `publish.yml`), behind the `publish=true` opt-in
+input described in Flow D's activation-checklist note above — the
+mechanism itself (hash-verified integrity + `--gate-profile auto`) is
+unchanged, only a second caller was added.
 
 **Flow F (Vercel) — already fully automatic, no git write of its own.** No
 change.
@@ -326,7 +408,7 @@ run executes Explorer, finds something worth codifying, and continues
 straight into Refiner in the same job, both stages' output accumulates on
 the one branch that run created and lands in the one PR it opens:
 `scratchpad/*.py` + the findings summary from Explorer, and the
-`queries.py`/`tests.py` diff + six-dimension score block from Refiner,
+`queries.py`/`tests.py` diff + seven-dimension score block from Refiner,
 reviewed together as one story — "found X, codified it into Y" — instead
 of split across two PRs a reviewer has to cross-reference.
 
@@ -352,15 +434,50 @@ other. The rule is "one branch per run," not "one branch per role" *or*
 
 ## Part 5 — What's still open, not resolved by this doc
 
-- **Whether Explorer/Refiner run on `workflow_dispatch` or a schedule** — the same
-  "reflects a decision, not the passage of time" question `draft.yml`
-  already answered one way for drafting; investigation work is arguably
-  closer to "the passage of time is exactly when there's new corpus data
-  to look at" than drafting is, but that's a decision to make deliberately,
-  not a default to fall into.
+**Closed 2026-08-23 — schedule vs. dispatch for Explorer/Refiner vs.
+maintenance.** `docs/AGENT_DESIGN.md` §5 answers this structurally, not
+just as a project-specific call: there are two *kinds* of run, not one
+question repeated per role.
+
+- **Discovery** (Explorer, optionally chained Refiner — `discovery.yml`) is
+  `workflow_dispatch` *permanently*, never scheduled. It changes the
+  instrument itself, and the coverage register — not the calendar — says
+  when that's worth doing; "new corpus data exists" is a maintenance-run
+  trigger, not a discovery one.
+- **Maintenance** (`council draft` → S7 → Editor/Fixer → optionally publish
+  — `maintenance.yml`) is the one where "the passage of time is exactly
+  when there's new corpus data to look at" actually applies, so it's the
+  one built with a schedule *slot* — commented out, gated behind the
+  activation checklist in Part 3's Flow D section, not decided open-endedly
+  here.
+
+This closes the question this bullet used to leave open; see Part 3 for
+the concrete gate rather than a restated principle here.
+
 - **The exact CI mechanics** (Claude Code CLI install/auth, permission
   flags) — covered in `docs/AGENT_PROMPTS.md`'s GitHub Actions section, not
-  duplicated here.
+  duplicated here. `discovery.yml`/`maintenance.yml` follow that section's
+  patterns exactly (subscription auth via `CLAUDE_CODE_OAUTH_TOKEN`, never
+  `ANTHROPIC_API_KEY`).
 - **GCS backup/versioning shape** for `investigations/` and `backups/` —
   same open questions `CICD_DECISIONS.md`'s 2026-08-22 entry already logs
-  for `council.db` backups; likely the same answer applies to both.
+  for `council.db` backups; likely the same answer applies to both. Still
+  open — `discovery.yml` round-trips `investigations/INVESTIGATIONS.md`
+  through GCS on every run (overwriting, no versioning) as of this update,
+  which is the simplest thing that works, not a considered answer to this
+  question.
+- **New, not yet resolved: Fixer's edits aren't PR-gated inside
+  `maintenance.yml`.** They commit directly on the runner within the same
+  job that dispatched them (see Flow D's note in Part 3) — a real gap
+  against the uniform "every git-tracked change gets its own PR" rule this
+  doc states at the top. Left this way because the whole point of the
+  Editor/Fixer loop is to converge on a clean draft *before* a human looks
+  at anything (the PR-worthy artifact is the final clean draft plus
+  Editor's PASS record, not each intermediate Fixer round) — but that's a
+  judgment call made once, while building this, not a principled
+  resolution of the tension with Part 3's stated rule. Revisit if a
+  Fixer-introduced regression ever needs to be bisected after the fact and
+  the lack of intermediate commits/PRs turns out to matter in practice.
+- **New, not yet resolved: `discovery.yml` doesn't support a standalone
+  Refiner-only dispatch.** See Flow B's note in Part 3 — a real, logged
+  gap versus the original design, not forgotten.
