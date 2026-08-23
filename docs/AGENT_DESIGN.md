@@ -289,7 +289,22 @@ Risk-reduction first, roles last — each step ships value alone:
 1. **S7 invariant gate** + claim-object fields it needs (`unit_of_analysis`,
    `n` enforcement, `named_entities`, `entity_resolution`) — closes the
    largest live exposure (the flag-1/3/5/6/7 classes) before anything else
-   moves.
+   moves. **Done 2026-08-23** — `TestResult` (`src/analysis/tests.py`) gained
+   the three fields plus their vocabulary constants (`UNIT_INSTITUTIONAL` /
+   `UNIT_INDIVIDUAL_IMPLICATING` / `UNIT_INDIVIDUAL`,
+   `ENTITY_RESOLUTION_CLEAN` / `_OPEN_SPLITS`); `src/invariant_gate.py`
+   implements the three checks (name-free institutional schema, MIN_N,
+   entity-resolution clean bill), reading `MIN_N` from `config/invariants.json`
+   (calibrated to Editor's own n ≤ 3 BLOCKING line); `council draft` runs it
+   between battery computation and `manifest.json`, writing `gate_report.json`
+   either way and exiting non-zero with no manifest on failure — see
+   `docs/TESTING.md`'s "Draft & publish workflow". `tests/test_invariant_gate.py`
+   covers a clean battery, each of the three violation classes individually,
+   and a mixed battery that fails on one bad claim among clean ones. Verified
+   against the real Cambridge corpus: `council draft cambridge` (29 claims,
+   all `institutional`) clears the gate; splicing one synthetic `individual`
+   claim (n=2, `entity_resolution="open-splits"`) into that same real battery
+   trips both the MIN_N and entity-resolution checks. No deviation from spec.
 2. **Tier derivation** onto the existing `public`/`full` rail — makes the
    institutional product real; first `public`-tagged snapshots.
 3. **S2 `council profile`** — unblocks the Explorer/Refiner prompt edits.

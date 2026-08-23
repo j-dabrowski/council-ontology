@@ -1659,10 +1659,13 @@ def _tier_of(name: str) -> str:
     return SNAPSHOT_TIER.get(name, "full")
 
 
-def _generate_snapshots(session, council_id: int, output_dir: Path, generated_at: str) -> list[str]:
+def _generate_snapshots(
+    session, council_id: int, output_dir: Path, generated_at: str
+) -> tuple[list[str], list]:
     """Run the full analysis + standard test battery and write one JSON file
     per dashboard snapshot into output_dir. Returns the list of snapshot
-    names written (in write order).
+    names written (in write order) and the battery itself (the claim objects
+    the S7 invariant gate checks — src/invariant_gate.py).
 
     Pure generation — no knowledge of where output_dir sits (draft staging
     vs. a public directory) and no git/gate logic. Called by `council draft`;
@@ -2549,7 +2552,7 @@ def _generate_snapshots(session, council_id: int, output_dir: Path, generated_at
         }
     _write("councillors", {"by_name": _cllr_profiles})
 
-    return written
+    return written, battery
 
 
 def cmd_draft(args) -> None:
@@ -2585,8 +2588,40 @@ def cmd_draft(args) -> None:
         sys.exit(1)
     council_id = council_obj.id
 
-    written = _generate_snapshots(session, council_id, output_dir, generated_at)
+    written, battery = _generate_snapshots(session, council_id, output_dir, generated_at)
     session.close()
+
+    # S7 invariant gate (docs/INFORMATION_ARCHITECTURE.md §3, C2) — scripted,
+    # runs on every draft, before a manifest exists. A failure blocks the
+    # draft mechanically: no manifest.json means `council publish` cannot
+    # find this run at all (see src/publish_gate.py), and no Editor call —
+    # a gate failure is a blocked draft, not a review finding
+    # (docs/AGENT_DESIGN.md §3 Q3).
+    from dataclasses import asdict as _asdict
+
+    from src.invariant_gate import load_min_n, run_invariant_gate
+    gate = run_invariant_gate(battery, min_n=load_min_n())
+    (output_dir / "gate_report.json").write_text(_json.dumps({
+        "run_id": run_id,
+        "council": key,
+        "generated_at": generated_at,
+        "passed": gate.passed,
+        "violations": [_asdict(v) for v in gate.violations],
+    }, indent=2))
+
+    if not gate.passed:
+        lines = "\n".join(
+            f"  · [{v.test_id}] {v.check}: {v.detail}" for v in gate.violations
+        )
+        console.print(Panel(
+            f"[red]✗ S7 invariant gate blocked this draft[/red]\n\n{lines}\n\n"
+            f"[dim]Gate report: {output_dir / 'gate_report.json'}. No manifest.json was "
+            "written, so `council publish` cannot find this run. Fix the generator that "
+            "produced the violating claim and re-draft — this never reaches Editor or "
+            "the review chain.[/dim]",
+            style="red",
+        ))
+        sys.exit(1)
 
     file_hashes = {
         name: hashlib.sha256((output_dir / f"{name}.json").read_bytes()).hexdigest()

@@ -27,6 +27,11 @@ elsewhere says to.
   (`_classify_quotes`, `compute_paraphrase_rate`, `compute_coverage`,
   `compute_inventory_agreement`, `compute_keyword_gaps`), all from
   `src/validation/core.py`.
+- **`test_publish_gate.py`** — `check_clearance()` (both gate profiles),
+  `load_draft_manifest()`, `verify_draft_integrity()`, from `src/publish_gate.py`.
+- **`test_invariant_gate.py`** — the S7 invariant gate: `run_invariant_gate()`
+  against a clean battery and each violation class (name-free schema, MIN_N,
+  entity-resolution), and `load_min_n()`, from `src/invariant_gate.py`.
 
 Both files test **pure functions only** — same inputs always produce the
 same outputs, no network/DB/filesystem side effects (`test_extractor.py`'s
@@ -202,6 +207,26 @@ reviews the candidate output, and Fixer's track-scoped modes
 (`docs/review/fixer/`) act on whatever it flags. Nothing about drafting is
 risky: it never touches git or the public directory, so it can run as often
 as needed.
+
+Before `manifest.json` is written, `council draft` runs the **S7 invariant
+gate** (`src/invariant_gate.py`, `docs/INFORMATION_ARCHITECTURE.md` §3) over
+the battery it just computed — scripted, no LLM. It checks three claim-object
+invariants (`unit_of_analysis`, `named_entities`, `entity_resolution`, `n` on
+`TestResult`, `src/analysis/tests.py`): an `institutional`-unit claim must
+carry zero `named_entities`; an `individual`/`individual_implicating` claim
+needs `n` above `MIN_N` (`config/invariants.json`, calibrated to Editor's own
+n ≤ 3 BLOCKING line); an `individual` claim needs `entity_resolution ==
+"clean"`. A failure writes `gate_report.json` into the draft directory,
+prints the violations, and exits non-zero **without** writing
+`manifest.json` — so `council publish` structurally cannot find that run.
+This never reaches Editor or the Conductor loop: a gate failure is a blocked
+draft routed straight back to whichever generator produced the violating
+claim, not a review finding. A pass also writes `gate_report.json` (with
+`"passed": true`, empty `violations`), so every draft carries a gate record
+either way. All current battery tests are `institutional`-unit with no
+`named_entities`, so a healthy `council draft` run always clears this gate
+today; the individual/individual_implicating checks exist for whichever
+future generator (Refiner-authored) produces a per-person claim.
 
 **Reviewing a draft against the actual site, locally.** A reviewer needs to
 see the draft rendered by the real panels, not just read raw JSON — but

@@ -71,6 +71,22 @@ G_CONCERN = "Governance concern"
 G_INTEGRITY = "Integrity flag"
 G_NODATA = "Not computable on this corpus"
 
+# unit of analysis (docs/INFORMATION_ARCHITECTURE.md §4, C1) — the field the
+# S7 invariant gate (src/invariant_gate.py) and eventual tier derivation gate
+# on. Every existing battery test is UNIT_INSTITUTIONAL (an aggregate over
+# the whole chamber, no person recoverable) — none currently names, charts,
+# or enumerates an individual.
+UNIT_INSTITUTIONAL = "institutional"                    # no person recoverable
+UNIT_INDIVIDUAL_IMPLICATING = "individual_implicating"  # aggregate by construction, but a
+                                                          # person is enumerable/inferable
+                                                          # (per-person charts, small-N cells)
+UNIT_INDIVIDUAL = "individual"                           # a claim about named person(s)
+
+# entity-resolution state (§4, flag-7 class) — only meaningful for
+# UNIT_INDIVIDUAL claims; the S7 gate requires "clean" before one may ship.
+ENTITY_RESOLUTION_CLEAN = "clean"
+ENTITY_RESOLUTION_OPEN_SPLITS = "open-splits"
+
 
 @dataclass
 class TestResult:
@@ -87,6 +103,12 @@ class TestResult:
     n: int | None = None
     base_rate: str | None = None
     era: str | None = None
+    # claim-object fields the S7 invariant gate checks (§4, C1) — default to
+    # the institutional/clean baseline every current battery test satisfies;
+    # a generator only sets these when it actually produces a per-person claim.
+    unit_of_analysis: str = UNIT_INSTITUTIONAL
+    named_entities: list[str] = field(default_factory=list)  # empty iff institutional
+    entity_resolution: str = ENTITY_RESOLUTION_CLEAN  # clean | open-splits (individual claims only)
     detail_panel: str | None = None  # snapshot/anchor slug of the panel for this test
     series: list[dict] = field(default_factory=list)  # optional sparkline payload
     # Optional chart payload rendered by the generic BatteryTestPanel for tests that
