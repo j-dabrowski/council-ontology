@@ -57,6 +57,7 @@ on:
 
 permissions:
   contents: write   # only used if publish=true and a PASS is reached
+  pull-requests: write   # the Fixer-repairs PR, opened whenever the loop edits source
   id-token: write    # required to mint the OIDC token that authenticates to GCP
 
 jobs:
@@ -127,15 +128,69 @@ jobs:
         run: |
           gcloud storage cp -r "${{ steps.draft.outputs.path }}" "gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/"
 
-      - name: Publish (only if the loop passed and publish=true was requested)
-        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true
+      - name: Capture Fixer's source edits into a PR
+        id: fixes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # Everything EXCEPT frontend/public/data: that directory is the
+          # publish step's own output (Flow E), not a Fixer repair, and it
+          # keeps its existing direct-commit path. Anything else changed on
+          # this runner is Fixer acting on an Editor flag — source, prompts,
+          # or docs — and must reach a human, per AUTOMATION_ARCHITECTURE.md
+          # Part 3's uniform rule (a git-tracked change opens a PR, never a
+          # direct commit to main). Without this the edits died with the
+          # runner while the data they justified got published.
+          git add -A -- . ':!frontend/public/data'
+          if git diff --cached --quiet; then
+            echo "No source change from the loop — Fixer either wasn't"
+            echo "dispatched or had nothing to repair."
+            echo "opened=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          changed=$(git diff --cached --name-only)
+          branch="maintenance-fixes/$(date -u +%Y%m%d-%H%M%S)"
+          git checkout -b "$branch"
+          git commit -m "Fixer repairs from maintenance run ${{ github.run_id }}"
+          git push -u origin "$branch"
+          pr_body=$(cat <<EOF
+          Fixer edits from maintenance run ${{ github.run_id }}, made while
+          closing Editor flags on draft \`${{ steps.draft.outputs.run_id }}\`.
+
+          **Files changed:**
+          \`\`\`
+          $changed
+          \`\`\`
+
+          Review alongside the draft in GCS:
+          \`gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/${{ steps.draft.outputs.run_id }}/\`
+
+          This summary deliberately never restates risk-bearing prose about
+          named individuals — the diff and the draft carry the specifics.
+          EOF
+          )
+          gh pr create --title "Fixer repairs from maintenance run ${{ github.run_id }}" --body "$pr_body"
+          echo "opened=true" >> "$GITHUB_OUTPUT"
+          # Return to the base branch so a publish (if it runs) commits
+          # where it always did, not onto the fixes branch.
+          git checkout -
+
+      - name: Publish (only if the loop passed, publish=true, and no fix is pending)
+        # The third condition is the point: if Fixer had to change source to
+        # reach PASS, that fix is sitting in an unmerged PR, so publishing now
+        # would ship refreshed data against the unfixed code the Editor
+        # flagged. Publish by hand once the fixes PR merges — the job summary
+        # prints the exact command.
+        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true && steps.fixes.outputs.opened != 'true'
         run: |
           council publish cambridge \
             --from-draft "${{ steps.draft.outputs.path }}" \
             --gate-profile auto
 
       - name: Commit refreshed public-tier snapshots (only if publish ran)
-        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true
+        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true && steps.fixes.outputs.opened != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -145,7 +200,12 @@ jobs:
             exit 0
           fi
           git commit -m "Publish refreshed snapshots (maintenance workflow, run ${{ github.run_id }})"
-          git push
+          # The loop above can run for many minutes (up to three Editor/Fixer
+          # passes), so main may have moved. Rebase before pushing: a rejected
+          # push here would fail the job *after* council publish already ran,
+          # losing the record of a publish that actually happened.
+          git pull --rebase origin "${{ github.ref_name }}"
+          git push origin "HEAD:${{ github.ref_name }}"
 
       - name: Job summary
         if: always()
@@ -155,11 +215,18 @@ jobs:
             echo ""
             echo "Draft: \`gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/${{ steps.draft.outputs.run_id }}/\`"
             echo ""
+            if [ "${{ steps.fixes.outputs.opened }}" = "true" ]; then
+              echo "**Fixer changed source to close Editor flags — PR opened.**"
+              echo "Publishing is held until that PR merges, so refreshed data"
+              echo "never ships against the code the Editor flagged."
+              echo ""
+            fi
             if [ "${{ steps.loop.outputs.exit_code }}" = "0" ]; then
-              if [ "${{ inputs.publish }}" = "true" ]; then
+              if [ "${{ inputs.publish }}" = "true" ] && [ "${{ steps.fixes.outputs.opened }}" != "true" ]; then
                 echo "**Loop PASSED — publish step ran (see the Publish step above for the result).**"
               else
-                echo "**Loop PASSED. Not published (publish=false).** Publish by hand with:"
+                echo "**Loop PASSED. Not published** (publish=false, or held pending"
+                echo "the Fixer PR above). Publish by hand with:"
                 echo ""
                 echo '```'
                 echo "council publish cambridge --from-draft ${{ steps.draft.outputs.path }} --gate-profile auto"

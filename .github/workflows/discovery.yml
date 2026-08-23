@@ -85,8 +85,13 @@ jobs:
           echo "name=$branch" >> "$GITHUB_OUTPUT"
 
       - name: Run Explorer
-        run: claude -p "$(cat docs/agent_prompts/explorer.txt)" \
-          --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+        # Block scalar, not a plain one: a plain `run:` folds its newline to a
+        # space, so the trailing backslash would escape that space instead of
+        # continuing the line, and claude would receive a literal " --permission-mode"
+        # argument. Same shape as maintenance.yml and draft.yml.
+        run: |
+          claude -p "$(cat docs/agent_prompts/explorer.txt)" \
+            --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
         env:
           # Subscription auth only — never ANTHROPIC_API_KEY, same
           # discipline as scripts/conductor_loop.py and docs/AGENT_PROMPTS.md.
@@ -94,8 +99,9 @@ jobs:
 
       - name: Run Refiner (only if refine=true)
         if: inputs.refine == true
-        run: claude -p "$(cat docs/agent_prompts/refiner.txt)" \
-          --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+        run: |
+          claude -p "$(cat docs/agent_prompts/refiner.txt)" \
+            --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
@@ -106,6 +112,7 @@ jobs:
             "gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md"
 
       - name: Commit git-tracked changes and open a PR
+        id: pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -157,11 +164,17 @@ jobs:
             echo "### Discovery run"
             echo ""
             echo "Findings: \`gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md\`"
-            if [ "$opened" = "true" ]; then
-              echo ""
+            echo ""
+            # Check the PR step's own outcome first: if it was skipped or failed,
+            # $opened is simply unset, and reporting that as "no change" would
+            # dress a failed run up as a clean no-op.
+            if [ "${{ steps.pr.outcome }}" != "success" ]; then
+              echo "**PR step did not complete** (outcome: \`${{ steps.pr.outcome }}\`)."
+              echo "Any git-tracked changes from this run are still only on the"
+              echo "runner — check the step logs before re-dispatching."
+            elif [ "$opened" = "true" ]; then
               echo "PR opened from \`${{ steps.branch.outputs.name }}\`."
             else
-              echo ""
               echo "No git-tracked change — no PR opened."
             fi
           } >> "$GITHUB_STEP_SUMMARY"
