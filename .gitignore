@@ -79,3 +79,5 @@ docs/strategy/
 docs/investigator/*.md
 !docs/investigator/EXPLORATION_PROTOCOL.md
 !docs/investigator/REFINEMENT_PROTOCOL.md
+# design artefact, names no individuals — safe to track, unlike the output docs above
+!docs/investigator/COVERAGE_AUDIT_2026-08-23.md

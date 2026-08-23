@@ -55,6 +55,17 @@ Not owned by one track — gates all of them:
   applied across the DB-update pipeline and every agent role. Extends
   `pipeline/PIPELINE.md`'s "Production scale" section into the
   investigator/review tracks that section doesn't cover.
+- `INFORMATION_ARCHITECTURE.md` + `AGENT_DESIGN.md` — the 2026-08-23
+  top-down redesign (accepted, not built): the general-engine/domain-pack
+  split, the S1–S10 information flow, the claim object with its
+  unit-of-analysis field, tier derivation (institutional vs deep product),
+  the scripted invariant gate ahead of a narrowed Editor, right of reply,
+  and the corpus-role discovery/confirmation split — then the stage-by-stage
+  owner assignment derived from that flow (Runner retired, Renderer added,
+  autonomy ladder for scheduled operation, build order). Grounded in
+  `investigator/COVERAGE_AUDIT_2026-08-23.md` (see the investigator track).
+  Until the build lands, the *current-state* docs below remain accurate;
+  these two describe the target.
 
 ## The four tracks
 
@@ -111,6 +122,12 @@ one shared reference layer, two protocol documents.
 - `investigator/INVESTIGATIONS.md` — the detective's notebook; every hypothesis,
   finding, and honest null, by session/phase. Session headers record benchmark scores.
 - `investigator/FINDINGS_SUMMARY.md` — the prose synthesis across all findings.
+- `investigator/COVERAGE_AUDIT_2026-08-23.md` — one-off audit of cumulative
+  battery/hypothesis coverage against external oversight frameworks (WA OAG
+  program, ISSAI 300, patrol/fire-alarm); found the survivorship gap lives
+  between taxonomy and battery, and seeds the redesign's coverage register.
+  Git-tracked (names no individuals — allow-listed in `.gitignore`, unlike
+  the other investigation records).
 
 **Loop (Exploration):** run Explorer prompt → append to INVESTIGATIONS → Stage 9
 self-score → if below threshold, propose edit to `Explorer_prompt.txt` and bump
@@ -253,6 +270,7 @@ The non-obvious edges, spelled out:
 | chaining editor + fixer, or asking what happens after a FAIL | `review/CONDUCTOR.md` — the loop, the pass cap, the one rule (never calls `council publish`) |
 | planning the end-to-end order to run all stages (CLI + agents) for a new corpus | `pipeline/PIPELINE.md` ("Longer term → Corpus onboarding order") — design sketch, not built; first-corpus vs subsequent-corpus sequencing |
 | planning for many-council, recurring/scheduled operation (after onboarding) | `pipeline/PIPELINE.md` ("Longer term → Production scale") — design sketch, not built; cross-referenced from `review/CONDUCTOR.md` |
+| implementing (or revising) the 2026-08-23 top-down redesign — claim object, invariant gate, tier products, role changes | `INFORMATION_ARCHITECTURE.md` (the flow) + `AGENT_DESIGN.md` (owners, file deltas, §6 build order) — read the coverage audit row above them first |
 | building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX |
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |
 | weighing risk, funding, or direction | `strategy/PRIVATE_ASSESSMENT.md` |
