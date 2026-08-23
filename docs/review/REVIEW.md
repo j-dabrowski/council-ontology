@@ -15,7 +15,7 @@ mode-specific operating layers).
 
 | Role | Modes today | Home |
 |------|-------------|------|
-| **Investigator** | Explorer / Refiner / Runner | `docs/investigator/` (unchanged — genuinely track-owned) |
+| **Investigator** | Explorer / Refiner (Runner archived 2026-08-23) | `docs/investigator/` (unchanged — genuinely track-owned) |
 | **Editor** | defamation-review | `docs/review/editor/` |
 | **Fixer** | frontend / pipeline / doc | `docs/review/fixer/` |
 

@@ -1,4 +1,28 @@
-# Council Investigator — Runner Prompt v1.0
+# Council Investigator — Runner Prompt v1.0 — ARCHIVED 2026-08-23
+
+**This mode is retired, not deleted** (`docs/AGENT_DESIGN.md` §2, §6 Step
+6). Kept for the historical record and because its checklist below seeded
+the S7 invariant-gate assertion list (`src/invariant_gate.py`) — do not
+invoke this prompt for new work; there is no `docs/agent_prompts/runner.txt`
+any more.
+
+**Why it's retired.** Every one of Runner's duties turned out to be a
+script the moment S7 existed, not a role that needed judgment: battery
+execution and snapshot export were always `council draft` under the hood;
+the regression spot-check (step 4 below) is now the S7 invariant gate plus
+the existing pytest suite, both running on every `council draft` for free;
+"a clean run is input to the human publish decision" is now the draft
+manifest + `gate_report.json`, which `check_clearance()`
+(`src/publish_gate.py`) already consumes directly. What made Runner a
+*role* rather than just "run the script" was standing between a script and
+a human gate, deciding whether a number's movement was expected — with S7
+mechanically checking the claim-object invariants and CI checking
+everything else, there was no judgment left in that gap to justify an LLM
+session.
+
+**Original content preserved below, unedited, for reference:**
+
+---
 
 **Mode:** Production run — execute the frozen standard battery against a
 council DB, export JSON snapshots, verify the frontend renders, and run a
@@ -109,6 +133,9 @@ next: "ready for human review" (CLEAN) | "escalate to human — investigate via 
 
 ## Changelog
 
+- ARCHIVED (2026-08-23) — retired per `docs/AGENT_DESIGN.md` §2/§6 Step 6;
+  see the archive note at the top of this file for why. No content below
+  this point was edited.
 - v1.0 (2026-08-14) — first real operating layer, replacing the stub, same
   day as `Refiner_prompt.txt` v1.0. Two substantive changes from the stub:
   (1) made explicit that `council publish` is a human-authorized step Runner

@@ -254,8 +254,8 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
 
 - **Corpus onboarding order — first corpus vs subsequent (design sketch, not
   built as an automated chain — see `docs/DISCOVERY_LOOP_DESIGN.md`).** The
-  stages exist (CLI commands + three agent roles: Researcher, Explorer/
-  Refiner/Runner, Editor/Fixer) but nothing sequences them yet. This is the
+  stages exist (CLI commands + agent roles: Researcher, Explorer/Refiner,
+  Editor/Fixer) but nothing sequences them yet. This is the
   order that minimises LLM spend, worked out 2026-08-20 — a human (or
   eventually a harness) runs each to completion before starting the next.
   This is a **one-time-per-council onboarding sequence**, distinct from and
@@ -303,16 +303,18 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
      schema; corpus-specific quirks are still possible.
   4. Full extraction.
   5. dedup/relationships/geocode.
-  6. **Runner before Explorer.** `tests.py`'s battery is already
-     council-agnostic and frozen — Runner executes it deterministically
-     (SQL only, no hypothesis generation, close to free) and produces an
-     immediate cross-council scorecard (base rates against peer councils
-     only become possible once a second corpus exists). Don't spend
-     an expensive Explorer session re-deriving standard governance tests
-     this council already has coded answers for.
+  6. **`council draft` before Explorer.** `tests.py`'s battery is already
+     council-agnostic and frozen — running it (script, SQL only, no
+     hypothesis generation, close to free; this was Runner's whole job
+     before that role was archived in favour of the plain `council draft`
+     call it always reduced to) produces an immediate cross-council
+     scorecard (base rates against peer councils only become possible once
+     a second corpus exists). Don't spend an expensive Explorer session
+     re-deriving standard governance tests this council already has coded
+     answers for.
   7. **Then Explorer**, scoped to what's actually novel about this council,
-     informed by what Runner already showed. Structural kills still log to
-     `DATA_ENRICHMENT.md`, compounding further for the next corpus.
+     informed by what that scorecard already showed. Structural kills still
+     log to `DATA_ENRICHMENT.md`, compounding further for the next corpus.
   8. Refiner codifies anything new; review; human publish.
 
 - **Production scale — periodic multi-council scraping (design sketch, not built).**

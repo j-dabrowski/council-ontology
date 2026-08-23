@@ -471,7 +471,71 @@ Risk-reduction first, roles last — each step ships value alone:
      each prompt is where calibration data against the new benchmarks
      actually appears.
 6. **Renderer + reply pipeline** — the new audience surfaces, last, on top
-   of stable products.
+   of stable products. **Done 2026-08-23.**
+   - **S9 reply pipeline (script):** `TestResult` (`src/analysis/tests.py`)
+     gained a `reply` field (`sent_at`/`response`/`declined`, `None` until
+     a packet is sent). `src/reply_packets.py`: `assemble_reply_packets()`
+     groups every `unit=individual` claim with `reply=None` by the person
+     it names (a claim naming two people appears in both packets;
+     `individual_implicating` is explicitly out of scope, matching Step
+     2's own deferral of per-claim redaction), `render_packet_template()`
+     renders the fixed template (claims, n/base-rate/era, response window,
+     how responses are published), `attach_reply()`/`non_response_text()`
+     record what happened afterward. `response_window_days` (14) lives in
+     new `config/reply_policy.json`, not a magic number. `council
+     reply-packets <council>` (`src/cli.py`) runs the battery fresh and
+     writes packets to `data/reply_packets/<council>/<run_id>/` — never
+     sends anything; that stays a human act at every autonomy level, per
+     §3 Q4. `tests/test_reply_packets.py` (16 tests) covers grouping,
+     scope (individual vs individual_implicating vs already-replied),
+     multi-person claims, template content, and the reply-state helpers.
+     Verified against the real Cambridge corpus: `council reply-packets
+     cambridge` produces 0 packets (correct — 29/29 claims institutional);
+     splicing one synthetic `individual` claim into that same real battery
+     produces exactly 1 packet with the right person and content.
+   - **S10 Renderer (prompt role):** new `docs/render/` — `Renderer_prompt.txt`
+     (shared layer: role, what-you-don't-do, input/output shape, mirroring
+     Investigator's/Fixer's shared-layer pattern), `plain_language_mode.txt`
+     (institutional product → resident summary; safe by construction since
+     the input is person-free) and `synthesis_mode.txt` (deep product →
+     cross-claim prose, the `FINDINGS_SUMMARY.md`/Overview successor;
+     enforces the reply-completeness gate — an `individual`-unit claim with
+     `reply: None` never renders in any form). `RENDERER_PROTOCOL.md`: five
+     fidelity dimensions shared by both modes (no unsourced claims, no
+     dropped caveats, denominator/uncertainty preservation, strength-ladder
+     fidelity, NEUTRAL register) plus two synthesis-only (reply-completeness
+     as a hard gate, inherited framing balance) — the sixth instance of the
+     established protocol pattern, per §2's own framing. Both modes write
+     draft prose into the draft directory for human review, never touch
+     `frontend/` or `council publish` directly. New
+     `docs/agent_prompts/renderer.txt` + `AGENT_PROMPTS.md` entry
+     (three-placeholder `sed` pattern, matching Fixer's). Never run — no
+     calibration data exists for either mode yet.
+   - **Runner archival (deferred from Step 5, done here):**
+     `Runner_prompt.txt` marked archived in place (content preserved
+     verbatim below the archive note, matching Editor/Fixer's own
+     "archived, not deleted" precedent); `docs/agent_prompts/runner.txt`
+     deleted (no invocation command for a retired role);
+     `AGENT_PROMPTS.md`'s roster updated (Runner entry replaced with an
+     archival note, Renderer section added) in the one bundled edit the
+     delta table's `AGENT_PROMPTS.md` row called for. Swept every other
+     live (non-changelog, non-historical) "Runner" reference across the
+     doc tree — `Investigator_prompt.txt`, `Refiner_prompt.txt`,
+     `MAP.md` (several spots, including the "Where do I add X?" table and
+     the Exploration/Refinement loop descriptions, which also still said
+     "Stage 9" — fixed to Stage 3 while touching adjacent text),
+     `REVIEW.md`, `pipeline/PIPELINE.md`'s onboarding-order design sketch —
+     and updated each to point at `council draft` (the script Runner's
+     duties reduced to) instead. Left `AUTOMATION_ARCHITECTURE.md` and
+     `DISCOVERY_LOOP_DESIGN.md` untouched — both are explicitly Step 7's
+     job (`AUTOMATION_ARCHITECTURE.md`'s own delta-table row says "updated
+     on acceptance" alongside the workflow wiring, not this step) or
+     outside any step's explicit scope.
+   - **Not done:** no code wiring for Renderer itself (it's a pure LLM
+     role, same as Explorer/Refiner/Editor — no `council render` command
+     exists, matching the established pattern of zero CLI integration for
+     any prompt-only role). No real session run against either Renderer
+     mode or `council reply-packets` beyond the demonstrations above.
 7. **Workflow wiring (§5)** — the maintenance-run workflow at autonomy
    level 1 (institutional tier end-to-end), then level 2 once the reply
    pipeline exists; the discovery-run workflow is just

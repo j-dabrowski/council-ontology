@@ -1,7 +1,8 @@
 # Agent Prompts — Fixed Invocation Commands
 
 Cross-cutting infra doc (see `MAP.md`) — not owned by one track, since it
-indexes every agent role across all four. The actual prompt text for each
+indexes every agent role across the tracks and the cross-cutting review/
+render stages. The actual prompt text for each
 role lives in its own file under `docs/agent_prompts/` — same pattern this
 project already uses for every mode prompt (`Investigator_prompt.txt`,
 `Refiner_prompt.txt`, etc. are all separate `.txt` files, never inlined
@@ -58,17 +59,14 @@ qualifies — never idles or guesses. Before v1.1 this required a
 human-named hypothesis in the prompt itself; that's now the file's job, not
 the caller's.
 
-**Runner — execute the frozen battery in production (no hypothesis work).**
-```bash
-claude -p "$(cat docs/agent_prompts/runner.txt)" \
-  --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
-```
-`docs/agent_prompts/runner.txt`'s own reading order pulls in
-`src/analysis/tests.py`, the most recent `AUDIT_<date>.md` (or
-`INVESTIGATIONS.md` as fallback), and `REFINEMENT_PROTOCOL.md` for
-context — not repeated here, same principle as above. Targets whichever
-council(s) `src/cli.py`'s `COUNCILS` dict lists; name one explicitly once a
-second council exists and you want just one run.
+**Runner — retired 2026-08-23** (`docs/AGENT_DESIGN.md` §2, §6 Step 6).
+Its duties are all scripted now: battery execution and snapshot export are
+`council draft`; regression spot-checks are the S7 invariant gate plus CI;
+"clean run as input to the human publish decision" is the draft manifest +
+`gate_report.json`, which the publish gate already consumes.
+`docs/investigator/Runner_prompt.txt` is archived, not deleted, and
+`docs/agent_prompts/runner.txt` removed — there is no invocation command
+for this role any more.
 
 ## Research (council-agnostic, no per-corpus cadence)
 
@@ -138,6 +136,38 @@ claude -p "$(sed \
 ```
 Normally the Conductor dispatches this automatically — run it by hand only
 when you deliberately want one Fixer pass outside the loop.
+
+## Renderer (S10, two modes, one shared layer — new 2026-08-23)
+
+`docs/agent_prompts/renderer.txt` has three placeholders (`<mode>`,
+`<council>`, `<run_id>`) — fill all three with `sed` before invoking, same
+pattern as Fixer above. Neither mode is self-directing about *which* draft
+to render. Both modes read a draft that's already cleared S7/S8 (and, for
+synthesis mode's `individual`-unit claims, S9) — see
+`docs/render/Renderer_prompt.txt` for what each mode may and may not do.
+
+**Plain-language mode — institutional product → resident-facing summary.**
+```bash
+claude -p "$(sed \
+    -e "s/<mode>/plain_language/g" \
+    -e "s/<council>/cambridge/g" \
+    -e "s/<run_id>/draft_20260822_120000/g" \
+    docs/agent_prompts/renderer.txt)" \
+  --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+```
+
+**Synthesis mode — deep product → cross-claim prose (the FINDINGS_SUMMARY /
+Overview successor).**
+```bash
+claude -p "$(sed \
+    -e "s/<mode>/synthesis/g" \
+    -e "s/<council>/cambridge/g" \
+    -e "s/<run_id>/draft_20260822_120000/g" \
+    docs/agent_prompts/renderer.txt)" \
+  --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+```
+Never run for real yet — no calibration data exists
+(`docs/render/RENDERER_PROTOCOL.md`).
 
 ## Running any of these via GitHub Actions
 

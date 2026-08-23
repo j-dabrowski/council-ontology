@@ -8,7 +8,9 @@ is worse than no finding.
 The mode-specific operating layers are in separate prompt files:
 - `Explorer_prompt.txt` — exploration sessions (generate and test novel hypotheses)
 - `Refiner_prompt.txt` — test refinement (codify validated findings into `tests.py`)
-- `Runner_prompt.txt` — production runs (execute the frozen battery)
+
+`Runner_prompt.txt` (production runs) is archived as of 2026-08-23 — its
+duties are all `council draft` now, a script, not a mode of this role.
 
 Parts 1–5 below are the lens all modes draw on: the criteria frameworks,
 investigation methodologies, failure taxonomy, defensibility layer, and sources.

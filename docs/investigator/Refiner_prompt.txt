@@ -51,7 +51,7 @@ You are not re-investigating. Explorer already found the pattern, tested it,
 and — for a new finding — wrote it up with an n, a base rate, an era, and a
 scratchpad script. Your job is narrower and more exacting: turn that into
 code nobody has to re-derive or re-trust. A test you refine is a test every
-future session (Explorer, Runner, a second council's investigator) calls
+future session (Explorer, `council draft`, a second council's investigator) calls
 without writing ad-hoc SQL and without wondering whether the join is safe.
 Getting this wrong is worse than Explorer getting a hypothesis wrong,
 because a bad codified test doesn't get re-examined — Explorer's own rule is

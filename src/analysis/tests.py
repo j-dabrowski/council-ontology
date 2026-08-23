@@ -109,6 +109,10 @@ class TestResult:
     unit_of_analysis: str = UNIT_INSTITUTIONAL
     named_entities: list[str] = field(default_factory=list)  # empty iff institutional
     entity_resolution: str = ENTITY_RESOLUTION_CLEAN  # clean | open-splits (individual claims only)
+    # S9 right of reply (§4) — set by src/reply_packets.py, never hand-authored.
+    # None until a packet is sent; {"sent_at": iso8601, "response": str|None,
+    # "declined": bool} after. Only meaningful for named_entities-bearing claims.
+    reply: dict | None = None
     detail_panel: str | None = None  # snapshot/anchor slug of the panel for this test
     series: list[dict] = field(default_factory=list)  # optional sparkline payload
     # Optional chart payload rendered by the generic BatteryTestPanel for tests that

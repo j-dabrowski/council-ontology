@@ -1379,6 +1379,71 @@ def cmd_profile(args) -> None:
     console.print(f"[dim]vote choice distribution: {rq.vote_choice_distribution}[/dim]")
 
 
+def cmd_reply_packets(args) -> None:
+    """S9 right of reply — packet assembly (docs/INFORMATION_ARCHITECTURE.md
+    §3, src/reply_packets.py). Scripted: runs the battery fresh, groups every
+    `individual`-unit claim with no reply on file by the person it names, and
+    writes one packet per person to data/reply_packets/<council>/<run_id>/ for
+    a human to send. Never sends anything itself. Today the battery is 100%
+    institutional-unit, so a healthy run always produces zero packets — that's
+    the correct, honest result, not a bug.
+    """
+    import json as _json
+    from datetime import datetime, timezone
+
+    from src.analysis.queries import get_council_by_name
+    from src.analysis.tests import run_test_battery
+    from src.reply_packets import assemble_reply_packets, load_response_window_days, render_packet_template
+    from src.storage.database import init_db, make_session_factory
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    short_name = COUNCILS[key]["short_name"]
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+
+    battery = run_test_battery(session, council_obj.id)
+    session.close()
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+    packets = assemble_reply_packets(battery, load_response_window_days(), generated_at)
+
+    run_id = f"reply_{datetime.now(timezone.utc):%Y%m%d_%H%M%S}"
+    output_dir = Path("data/reply_packets") / key / run_id
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    for packet in packets:
+        slug = packet.person.strip().lower().replace(" ", "-")
+        (output_dir / f"{slug}.md").write_text(render_packet_template(packet))
+
+    (output_dir / "manifest.json").write_text(_json.dumps({
+        "run_id": run_id,
+        "council": key,
+        "generated_at": generated_at,
+        "packets": [p.person for p in packets],
+    }, indent=2))
+
+    if packets:
+        console.print(Panel(
+            f"[green]✓[/green] {len(packets)} reply packet(s) → {output_dir}\n"
+            "[dim]A human sends these — this command never does.[/dim]",
+            style="green",
+        ))
+    else:
+        console.print(Panel(
+            f"0 reply packets — no `individual`-unit claim in this battery names anyone "
+            f"(manifest written to {output_dir} regardless, for the record).",
+            style="blue",
+        ))
+
+
 def cmd_analyse(args) -> None:
     from src.analysis.queries import (
         budget_by_year,
@@ -3060,6 +3125,15 @@ def main() -> None:
     )
     p_profile.add_argument("council", choices=list(COUNCILS))
     p_profile.set_defaults(func=cmd_profile)
+
+    # reply-packets (S9 right of reply — packet assembly)
+    p_reply = sub.add_parser(
+        "reply-packets",
+        help="S9: assemble right-of-reply packets for every individual-unit claim "
+             "with no reply on file (src/reply_packets.py) — never sends anything",
+    )
+    p_reply.add_argument("council", choices=list(COUNCILS))
+    p_reply.set_defaults(func=cmd_reply_packets)
 
     # batch-collect
     p_batch_collect = sub.add_parser(

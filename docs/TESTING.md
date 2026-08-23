@@ -47,6 +47,12 @@ elsewhere says to.
   `src/analysis/tests.py`, which fails the moment a battery test is added,
   renamed, or removed without updating the register. From
   `src/analysis/coverage_register.py`.
+- **`test_reply_packets.py`** — S9 right-of-reply packet assembly:
+  grouping by named person (scoped to `unit=individual` claims with no
+  reply on file; a claim naming two people appears in both packets;
+  `individual_implicating` claims are out of scope), template rendering,
+  `attach_reply()`/`non_response_text()`, and `load_response_window_days()`,
+  from `src/reply_packets.py`.
 
 All of these test **pure functions or hermetic DB/source-parsing logic** —
 same inputs

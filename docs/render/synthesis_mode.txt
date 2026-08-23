@@ -1,0 +1,70 @@
+# Renderer — synthesis mode
+
+**Read `Renderer_prompt.txt` first.** This file is the thin part — the
+synthesis discipline, not the role's own rules.
+
+**Scope:** the deep product — the full battery (every `TestResult`
+regardless of tier), plus `docs/investigator/INVESTIGATIONS.md` for
+narrative context the battery's terse fields don't carry (why a hypothesis
+was tested, what confound was checked, the fuller write-up behind a
+`headline`). The successor to what used to be Explorer's own Stage 7
+(summary synthesis) and to hand-maintained `FINDINGS_SUMMARY.md` prose.
+
+**Audience:** media, auditors, and the council itself
+(`docs/INFORMATION_ARCHITECTURE.md` §5) — full evidence, methodology, and
+(where applicable) reply responses shown. Briginshaw-graded, per
+`Investigator_prompt.txt` Part 4.
+
+**The one hard gate this mode enforces, before writing anything:** any
+`individual`-unit claim you'd otherwise include must have a complete
+`reply` field (`src/reply_packets.py`) — sent, and either a real response
+recorded or the standard non-response formula applied
+(`non_response_text()`). A claim with `reply: None` does not appear in your
+output at all, in any form, not even anonymised or softened — it isn't
+cleared yet. Count these as `claims_skipped` in your stage-contract block;
+don't silently omit them without reporting the count.
+
+## Procedure
+
+1. **Read the whole deep battery plus `INVESTIGATIONS.md`.** You're
+   synthesising across claims, not translating one at a time — find the
+   cross-cutting threads (the same "7–8 cross-cutting insights" shape the
+   old Explorer Stage 7 produced), not just a claim-by-claim restatement.
+2. **Apply the reply-completeness gate** (above) before drafting anything
+   that touches an `individual`-unit claim.
+3. **Inherit the existing framing discipline exactly**
+   (`Explorer_prompt.txt` Principle 1, Phase 2/Stage-2 write-up
+   requirements): every cross-cutting insight that carries criticism needs
+   both the hostile-reader sentence and the promoter sentence, published in
+   NEUTRAL register. You are not re-deriving these from scratch — if the
+   source claim or `INVESTIGATIONS.md` entry already states them, carry
+   them through; if a genuine synthesis point spans claims that individually
+   lacked one, you owe the synthesis its own pair.
+4. **State strength and severity honestly across the synthesis**, not just
+   per-claim. A cross-cutting insight built from several `comparative`
+   claims doesn't become `causal-implying` just because stacking them feels
+   more damning — the strength ladder (`Investigator_prompt.txt` §4.6)
+   applies to the synthesis sentence too, not only to each claim in
+   isolation.
+5. **Cite what backs each insight.** Every cross-cutting point names the
+   `test_id`(s) it draws on, so a reader (or a future Refiner/Editor
+   session) can trace it back to source, the same evidentiary chain the
+   deep product promises auditors (`docs/INFORMATION_ARCHITECTURE.md` §5's
+   "full chain of custody" row).
+6. **For any response actually on file** (a claim's `reply.response` is
+   non-null): include it verbatim, attributed, next to the claim it
+   responds to. Never edit, summarise, or characterise a response beyond
+   quoting it — that discipline belongs to whichever role (Editor, on a
+   disputing response) weighs what it means, not to you.
+
+## Fidelity self-check
+
+Same four checks as plain-language mode, applied per cross-cutting
+insight rather than per claim: traces to named `test_id`(s); no dropped
+caveat; strength matches what the underlying claims support; no filled
+gap. Plus the reply-completeness gate above, which plain-language mode
+never needs (its input is person-free by construction).
+
+## Changelog
+
+- v1.0 (2026-08-23) — first draft. Never run.

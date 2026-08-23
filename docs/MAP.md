@@ -9,11 +9,13 @@ feed each other**. Read this first in a fresh session, then open the track you'r
 > `docs/MAP.md` (this file) is the internal index. The prompts that run on the LLM
 > are **runtime artifacts**, not docs: `src/extraction/*.txt` (extraction),
 > `docs/investigator/Investigator_prompt.txt` + `Explorer_prompt.txt` /
-> `Refiner_prompt.txt` / `Runner_prompt.txt` (investigation — three modes, one
-> shared reference layer), `docs/review/editor/Editor_prompt.txt` +
+> `Refiner_prompt.txt` (investigation — two active modes, one shared
+> reference layer; `Runner_prompt.txt` is archived), `docs/review/editor/Editor_prompt.txt` +
 > `docs/review/fixer/Fixer_prompt.txt` + its three `*_mode.txt` files
 > (post-draft review/fix — two more roles, same shared-layer-plus-modes shape),
-> and `docs/research/Researcher_prompt.txt` (precedent research — grows the
+> `docs/render/Renderer_prompt.txt` + its two `*_mode.txt` files
+> (S10 audience rendering — same shape again, never run yet), and
+> `docs/research/Researcher_prompt.txt` (precedent research — grows the
 > Investigator's Part 3 taxonomy; council-agnostic, not corpus-gated).
 
 ---
@@ -38,9 +40,23 @@ Not owned by one track — gates all of them:
   (`review/CONDUCTOR.md`). Start at `review/REVIEW.md`. Untested as of
   2026-08-10 — see that file's status note before treating any of it as
   calibrated.
+- `render/` — the S10 audience-rendering stage, after a claim has cleared
+  S7/S8 (and S9, for any named-individual claim): **Renderer**, two modes
+  (plain-language: institutional product → resident-facing summary;
+  synthesis: deep product → cross-claim prose, the `FINDINGS_SUMMARY.md` /
+  Overview successor) on one shared layer, same shape as Investigator and
+  Fixer. Start at `render/Renderer_prompt.txt`; benchmark in
+  `render/RENDERER_PROTOCOL.md`. New 2026-08-23, never run — no calibration
+  data yet.
+- `src/reply_packets.py` — S9 right of reply, packet assembly (scripted, no
+  LLM): groups every `individual`-unit claim with no reply on file by the
+  person it names, renders a fixed template, writes it for a human to send
+  (`council reply-packets <council>`). Never sends anything itself. Today
+  the battery is 100% `institutional`-unit, so a healthy run always
+  produces zero packets.
 - `AGENT_PROMPTS.md` — the fixed, ready-to-run invocation command for every
-  agent role across all tracks (Explorer/Refiner/Runner, Researcher,
-  Conductor/Editor/Fixer) — no per-call customization for the self-directing
+  agent role across all tracks (Explorer/Refiner, Researcher,
+  Conductor/Editor/Fixer, Renderer) — no per-call customization for the self-directing
   roles, so the same command works for a human starting a session or a
   future scheduled/programmatic caller. The prompt *text* itself lives one
   level down, in `agent_prompts/<role>.txt` (same pattern as every mode
@@ -91,7 +107,8 @@ one shared reference layer, two protocol documents.
 **Prompt files (runtime artefacts — not docs; iterated, never freely edited mid-run):**
 - `investigator/Investigator_prompt.txt` — **shared reference layer** (Parts 0–5):
   schema, data caveats, query tooling, criteria frameworks, failure taxonomy,
-  defensibility. Read by all three modes before doing anything. Part 3 (the failure
+  defensibility. Read by both modes before doing anything (Runner, the third
+  mode, is archived — see below). Part 3 (the failure
   taxonomy) now grows two ways: from this project's own corpus investigations (as
   before), and from the 🔭 Research track's human-applied candidates (Part 3.5,
   added 2026-08-20, is the first of the latter, merged directly in design
@@ -110,11 +127,12 @@ one shared reference layer, two protocol documents.
   one with real calibration data so far, see `AUDIT_2026-08-14.md`). As of
   2026-08-23 also emits a declaration block (unit/MIN_N/strength/principle)
   for the S7 invariant gate and updates the coverage register.
-- `investigator/Runner_prompt.txt` — **production run mode** (v1.0): execute the frozen
-  battery, export JSON snapshots, verify the frontend, spot-check for regressions
-  against the latest `AUDIT_<date>.md`. No hypothesis generation, no self-scoring;
-  never calls `council publish` itself — a clean run is input to the human
-  publish decision, not a substitute for it.
+- `investigator/Runner_prompt.txt` — **ARCHIVED 2026-08-23** (`AGENT_DESIGN.md`
+  §2/§6 Step 6). Its duties were all scripted the moment S7 existed: battery
+  execution/export is `council draft`; regression spot-checks are the S7
+  invariant gate plus CI; "clean run as input to the human publish decision"
+  is the draft manifest + `gate_report.json`. Kept for the historical record;
+  no invocation command exists for it any more (`AGENT_PROMPTS.md`).
 
 **Protocol documents:**
 - `investigator/EXPLORATION_PROTOCOL.md` — benchmark-gated improvement loop for
@@ -148,12 +166,13 @@ one shared reference layer, two protocol documents.
   what's actually shipped. Not yet read by Explorer or updated by
   Refiner/Researcher — that wiring is Step 5.
 
-**Loop (Exploration):** run Explorer prompt → append to INVESTIGATIONS → Stage 9
+**Loop (Exploration):** run Explorer prompt → append to INVESTIGATIONS → Stage 3
 self-score → if below threshold, propose edit to `Explorer_prompt.txt` and bump
 version; if at threshold, freeze Explorer and hand off to Refiner.
 **Loop (Refinement):** run Refiner prompt → verify test against hand-computed number
 → score against refinement benchmark → if below threshold, improve `Refiner_prompt.txt`;
-if at threshold, freeze and use Runner for production.
+if at threshold, freeze and use `council draft` for production (scripted — Runner,
+which used to stand in this spot, is archived).
 
 ### 🔭 Research — *new, council-agnostic, not corpus-gated*
 Grows the investigator's failure/effectiveness taxonomy from real-world AU/UK
@@ -278,15 +297,18 @@ The non-obvious edges, spelled out:
 | improving the researcher prompt | `research/RESEARCH_PROTOCOL.md` (benchmark) → bump `research/Researcher_prompt.txt` |
 | running an exploration session (new hypotheses) | `investigator/Explorer_prompt.txt` (run) → `investigator/INVESTIGATIONS.md` (record) |
 | codifying a finding into the test battery | `investigator/Refiner_prompt.txt` (run) → `src/analysis/tests.py` + `queries.py` |
-| running the frozen battery in production | `investigator/Runner_prompt.txt` |
+| running the frozen battery in production | `council draft <council>` — scripted; Runner is archived, this was always its whole job under the hood |
 | improving the exploration prompt | `investigator/EXPLORATION_PROTOCOL.md` (benchmark) → bump `Explorer_prompt.txt` |
 | improving the refinement prompt / harness | `investigator/REFINEMENT_PROTOCOL.md` (benchmark) → bump `Refiner_prompt.txt` |
-| writing up cross-cutting conclusions | `investigator/FINDINGS_SUMMARY.md` |
+| writing up cross-cutting conclusions | `investigator/FINDINGS_SUMMARY.md` (current, hand-maintained) — or `render/synthesis_mode.txt` (run) once Renderer has real calibration data |
 | reviewing a draft for defamation exposure | `review/editor/Editor_prompt.txt` (run) → writes `data/draft/<council>/<run_id>/defamation_review_<n>.md` |
 | improving the editor prompt | `review/editor/EDITOR_PROTOCOL.md` (benchmark) → bump `Editor_prompt.txt` |
 | fixing a flagged claim (frontend/pipeline/doc) | `review/fixer/<track>_mode.txt` (run) — only the track(s) the editor tagged |
 | adding a fourth fixer track | `review/fixer/FIXER_PROTOCOL.md` — additive by design, see "Adding a fourth mode" |
 | chaining editor + fixer, or asking what happens after a FAIL | `review/CONDUCTOR.md` — the loop, the pass cap, the one rule (never calls `council publish`) |
+| assembling right-of-reply packets for a named-individual claim | `council reply-packets <council>` (script, `src/reply_packets.py`) — never sends anything; a human sends the output |
+| rendering a claim for residents or writing cross-claim synthesis | `render/Renderer_prompt.txt` (shared layer) + `render/plain_language_mode.txt` or `render/synthesis_mode.txt` (run) |
+| improving the renderer prompt | `render/RENDERER_PROTOCOL.md` (benchmark) → bump `Renderer_prompt.txt` or the relevant mode file |
 | planning the end-to-end order to run all stages (CLI + agents) for a new corpus | `pipeline/PIPELINE.md` ("Longer term → Corpus onboarding order") — design sketch, not built; first-corpus vs subsequent-corpus sequencing |
 | planning for many-council, recurring/scheduled operation (after onboarding) | `pipeline/PIPELINE.md` ("Longer term → Production scale") — design sketch, not built; cross-referenced from `review/CONDUCTOR.md` |
 | implementing (or revising) the 2026-08-23 top-down redesign — claim object, invariant gate, tier products, role changes | `INFORMATION_ARCHITECTURE.md` (the flow) + `AGENT_DESIGN.md` (owners, file deltas, §6 build order) — read the coverage audit row above them first |

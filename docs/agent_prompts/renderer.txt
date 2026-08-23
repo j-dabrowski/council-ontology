@@ -1,0 +1,8 @@
+Read docs/investigator/Investigator_prompt.txt Parts 1-4 (the criteria
+frameworks, defensibility layer, and the strength ladder in §4.6 every
+claim already carries), then docs/render/RENDERER_PROTOCOL.md, then
+docs/render/Renderer_prompt.txt (shared layer) and
+docs/render/<mode>_mode.txt (your specific mode, plain_language or
+synthesis) as your operating mode. Render the draft in
+data/draft/<council>/<run_id>/ per your mode file's scope and input
+section, and write your output into that same directory.
