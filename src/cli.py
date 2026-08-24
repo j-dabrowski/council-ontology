@@ -3410,6 +3410,70 @@ def main() -> None:
 
     p_editor.set_defaults(func=_cmd_editor)
 
+    # editor-score (S8 scoring stage: Layer 1 script + Layer 2 fresh-context agent)
+    p_editor_score = sub.add_parser(
+        "editor-score",
+        help="Score a completed Editor review, two layers "
+             "(docs/GENERATION_SCORING_SPLIT.md §2.3): Layer 1 is a "
+             "deterministic validator (contract hygiene, flag routability, "
+             "verdict integrity, dimension-8 false positives vs S7), Layer "
+             "2 is a fresh-context judgment agent that never reads "
+             "Editor_prompt.txt. Writes editor_score_<n>.json/.md into the "
+             "draft directory. Exits non-zero if the overall score is FAIL "
+             "(a Layer-1 structural problem, or a Layer-2 false negative).",
+    )
+    p_editor_score.add_argument("council", choices=list(COUNCILS))
+    p_editor_score.add_argument(
+        "run_id",
+        help="the data/draft/<council>/<run_id> directory holding the review to score",
+    )
+
+    def _cmd_editor_score(a):
+        import json as _json
+        import subprocess as _subprocess
+
+        from scripts.conductor_loop import load_prompt, run_claude
+        from src.editor_score import next_score_pass, run_layer1
+
+        draft_dir = Path("data/draft") / a.council / a.run_id
+        if not draft_dir.exists():
+            console.print(f"[red]No draft directory at {draft_dir}[/red]")
+            sys.exit(1)
+
+        try:
+            layer1 = run_layer1(draft_dir, a.run_id)
+        except RuntimeError as exc:
+            console.print(f"[red]Layer 1 could not run: {exc}[/red]")
+            sys.exit(2)
+
+        console.print(f"Layer 1: structural_ok={layer1.structural_ok}, measurements={layer1.measurements}")
+        for finding in layer1.findings:
+            console.print(f"  [yellow]{finding.check}[/yellow]: {finding.detail}")
+
+        n = next_score_pass(draft_dir)
+        prompt = load_prompt(
+            "editor_scorer",
+            council=a.council, run_id=a.run_id, n=str(n),
+            layer1_json=_json.dumps(layer1.to_dict(), indent=2),
+        )
+        try:
+            run_claude(prompt, f"Editor scorer (Layer 2), {a.council}/{a.run_id}, score pass {n}")
+        except _subprocess.CalledProcessError as exc:
+            console.print(f"[red]Editor scorer failed (exit {exc.returncode}): {exc.cmd}[/red]")
+            sys.exit(2)
+
+        score_path = draft_dir / f"editor_score_{n}.json"
+        if not score_path.exists():
+            console.print(f"[red]Editor scorer ran but wrote no {score_path.name} — malformed session[/red]")
+            sys.exit(2)
+        score = _json.loads(score_path.read_text())
+        status = score.get("status")
+        console.print(f"editor-score {status}: {score_path}")
+        if status != "PASS":
+            sys.exit(1)
+
+    p_editor_score.set_defaults(func=_cmd_editor_score)
+
     # fixer (act on one Fixer track's flagged issues, no loop)
     p_fixer = sub.add_parser(
         "fixer",
@@ -3421,8 +3485,8 @@ def main() -> None:
              "mode in isolation. A real `claude -p` session — "
              "docs/agent_prompts/fixer.txt",
     )
-    from scripts.conductor_loop import VALID_TRACKS as _VALID_TRACKS
-    p_fixer.add_argument("track", choices=sorted(_VALID_TRACKS))
+    from scripts.conductor_loop import FIXER_TRACKS as _FIXER_TRACKS
+    p_fixer.add_argument("track", choices=sorted(_FIXER_TRACKS))
     p_fixer.add_argument("council", choices=list(COUNCILS))
     p_fixer.add_argument(
         "run_id",

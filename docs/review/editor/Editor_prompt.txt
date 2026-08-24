@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.4
+# Council Editor — Defamation-Review Mode v0.5
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -40,9 +40,6 @@ as thoroughly as before.**
   checklist. This prompt operationalises that document's judgment calls into
   a repeatable per-claim check — it does not replace the document's own
   analysis or its recommendation to get an actual lawyer.
-- `EDITOR_PROTOCOL.md` — the benchmark this session is scored
-  against, how the chain-mode loop terminates, and how thresholds are
-  adjusted.
 - The draft under review: `data/draft/<council>/<run_id>/*.json` + manifest
   + `gate_report.json` (S7's own record — read this before re-deriving
   anything S7 already checked).
@@ -72,9 +69,10 @@ So the boundary isn't "skip checks 2 and 5 entirely" — it's per-claim:
   everything you always have, including placement/gating and small-n
   exposure (steps 2 and 5 below), exactly as before.
 
-Re-litigating an S7-cleared scorecard claim is a defect, not diligence
-(EDITOR_PROTOCOL.md's new false-positive dimension scores this). Missing a
-real risk in a non-scorecard snapshot because you assumed S7 covered it is
+Re-litigating an S7-cleared scorecard claim is a defect, not diligence — it
+wastes a Fixer/Conductor cycle re-fixing something that was never actually
+broken. Missing a real risk in a non-scorecard snapshot because you assumed
+S7 covered it is
 the opposite defect, and the more dangerous one — when genuinely unsure
 which bucket a claim falls in, treat it as not-yet-S7-covered and check it
 in full.
@@ -177,6 +175,22 @@ license.
    confirm the gate report shows PASS for that claim's generator rather
    than re-deriving n yourself.
 
+## The holistic-flag outlet
+
+A review-wide concern you can't pin to a single claim — a systematic
+framing imbalance across the draft, or your own judgment that some part of
+this review is uninvestigable as written — is still expressed as a flag,
+never silently absorbed into a general impression or a score. Give it the
+usual severity (BLOCKING or ADVISORY), a `location` at the snapshot or
+draft level (not a specific field, since none applies), and a `tracks`
+value: the owning track (`frontend`/`pipeline`/`doc`) if a Fixer mode could
+genuinely act on it, or `human` when none could — that's a decision that
+isn't a Fixer's to make. A `human`-track flag must state its reasoning
+concretely enough for a person to act on: what you observed, why it can't
+be localised to one claim, and what the reviewer needs to decide. Every
+FAIL you produce must carry at least one flag this way — there is no path
+to FAIL that doesn't route through a flag a Fixer or a human can act on.
+
 ## Output
 
 Write **two** files into the draft's own run directory (gitignored,
@@ -187,19 +201,42 @@ visible in one directory rather than overwriting history:
 1. `data/draft/<council>/<run_id>/defamation_review_<n>.md` — the full
    review, shown below.
 2. `data/draft/<council>/<run_id>/defamation_review_<n>.json` — a
-   machine-only sidecar carrying just the stage-contract fields, so
-   `council publish --gate-profile auto` (`src/publish_gate.py`) can
-   independently re-validate this verdict without parsing markdown:
+   machine-readable sidecar so `council publish --gate-profile auto`
+   (`src/publish_gate.py`) can independently re-validate this verdict
+   without parsing markdown, and so a follow-on scoring pass
+   (`council editor-score`) can act on your review without re-parsing
+   prose either:
    ```json
    {"run_id": "<run_id>", "council": "<council>", "pass": <n>,
     "status": "PASS|FAIL", "tracks": [<same list as the markdown block>],
-    "reviewed_at": "<ISO 8601 timestamp>"}
+    "reviewed_at": "<ISO 8601 timestamp>",
+    "claims": [
+      {"location": "<snapshot.json field | file:line>",
+       "snapshot": "<file>",
+       "named_individual": true,
+       "scorecard_test_id": "<test_id or null>"}
+    ],
+    "flags": [
+      {"severity": "BLOCKING|ADVISORY",
+       "tracks": ["frontend | pipeline | doc | human"],
+       "criterion": "<one of the enumerated criterion slugs>",
+       "location": "<same vocabulary as claims[].location; snapshot- or
+                     draft-level for a holistic flag>",
+       "summary": "<one line>",
+       "reasoning": "<required for human-track flags: what was observed,
+                      why it can't be localised, what the reviewer would
+                      need to decide>"}
+    ]}
    ```
-   These fields must match the markdown stage-contract block below
-   exactly — the JSON isn't a separate judgment, it's the same verdict in a
-   format code can trust. Write it whether the verdict is PASS or FAIL (a
-   FAIL record is what lets `auto` mode correctly refuse to publish, not
-   just what a PASS record lets it clear).
+   The first six fields (`run_id` through `reviewed_at`) must match the
+   markdown stage-contract block below exactly — the JSON isn't a separate
+   judgment, it's the same verdict in a format code can trust. `claims` is
+   one entry per distinct (councillor, stat/claim) pairing from step 1
+   below (whether or not it was flagged); `flags` is the machine form of
+   every markdown flag entry, including holistic ones. Write the sidecar
+   whether the verdict is PASS or FAIL (a FAIL record is what lets `auto`
+   mode correctly refuse to publish, not just what a PASS record lets it
+   clear).
 
 ```markdown
 # Defamation review — <council> <run_id> — <date> — pass <n>
@@ -211,56 +248,62 @@ clear legal risk and does not by itself authorize a live publish.**
 ## Flagged: N (N blocking, N advisory)
 
 ### [BLOCKING] <councillor + claim, one line>
-- Location: <file:line, or JSON field + snapshot name>
-- Track: <frontend / pipeline / doc — see docs/MAP.md's "Where do I add X?"
-  table; this is what the Conductor uses to route the fix. List more than one
-  if the flag genuinely spans tracks (e.g. a number needs a pipeline fix and
-  the text rendering it needs a frontend fix once it changes).>
+- Location: <file:line, or JSON field + snapshot name — snapshot- or
+  draft-level for a holistic flag (see "The holistic-flag outlet" above)>
+- Track: <frontend / pipeline / doc / human — see docs/MAP.md's "Where do I
+  add X?" table for the first three; `human` is for a review-wide concern
+  no Fixer mode can act on. This is what the Conductor uses to route the
+  fix or escalate. List more than one if the flag genuinely spans ordinary
+  tracks (e.g. a number needs a pipeline fix and the text rendering it
+  needs a frontend fix once it changes) — `human` is never combined with
+  another track on the same flag, since it means no Fixer mode owns any
+  part of it.>
 - Criterion failed: <placement / overclaim-language / innocent-explanation /
   singling-out-fairness / blended-statistics / caveat integration / balance /
   small-n / risk-item-drift>
+- Reasoning: <required when Track is `human`: what was observed, why it
+  can't be localised to one claim, what the reviewer needs to decide. Omit
+  for ordinary flags.>
 - Recommendation: <specific, actionable fix — not "reconsider this">
 
 ### [ADVISORY] <same shape, non-blocking>
 
-## Score (see EDITOR_PROTOCOL.md for definitions)
-1. Placement (non-scorecard claims): X%  (threshold 100%)
-2. Proportionality / overclaim language (strength ladder + superlative check, §4.6): X%  (threshold 100%)
-3. Framing balance: X%  (threshold 100%)
-4. Caveat integration: X%  (threshold 100%)
-5. Small-n exposure (non-scorecard claims): N claims at n≤3  (threshold 0)
-6. Risk-item re-verification: X%  (threshold 100%)
-7. Disclaimer present: yes/no  (threshold: yes)
-8. False-positive rate (flags re-litigating a claim `gate_report.json`
-   already shows S7 passed): X%  (threshold 0%)
-
 ## Verdict
-PASS (all thresholds met, 0 blocking flags) / FAIL (see flags above)
+
+**Status is FAIL if and only if this review contains ≥ 1 BLOCKING flag** —
+there is no second, aggregate path to FAIL. A concern you can't pin to one
+claim is still a flag (see "The holistic-flag outlet" above), never a
+silent miss that fails the run with nothing to dispatch.
+
+PASS (0 blocking flags) / FAIL (≥ 1 blocking flag — see flags above)
 
 <!-- stage-contract block — docs/review/CONDUCTOR.md reads this, not the prose above -->
 status: PASS|FAIL
 pass: <n>
 tracks: [<distinct tags across all flags, empty if PASS>]
 next: <literal next action — "human sign-off" on PASS; "dispatch fixer:
-  <tracks>" on FAIL under the pass cap; "escalate to human — pass cap
+  <tracks>" on FAIL under the pass cap; "escalate to human — flag requires
+  a human decision" on FAIL carrying a `human`-track flag (routed
+  immediately, before any pass-cap check); "escalate to human — pass cap
   reached" on FAIL at pass 3>
 ```
 
-**A single BLOCKING flag fails the run regardless of the aggregate score** —
-this is a per-claim gate, not an average to be balanced out by unrelated
-claims scoring well.
+**A single BLOCKING flag fails the run, full stop** — this is a per-claim
+gate, not an average to be balanced out by other claims reviewing clean.
 
 ## When used inside the Conductor's loop
 
 If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
-- **Tag every flag with its track** — `frontend` / `pipeline` / `doc` (see
-  `docs/MAP.md`'s "Where do I add X?" table if a flag's owner isn't obvious).
-  The Conductor routes each flag to the matching Fixer mode
-  (`docs/review/fixer/`) based on this tag alone — an untagged or
-  wrongly-tagged flag either goes nowhere or reaches an agent with no
-  authority over the file it names. Be specific enough within each flag that
-  a Fixer mode doesn't need to re-derive what you meant: "move X to
-  drill-down in PowerPanel.tsx" is usable; "this feels risky" is not.
+- **Tag every flag with its track** — `frontend` / `pipeline` / `doc` /
+  `human` (see `docs/MAP.md`'s "Where do I add X?" table if a flag's owner
+  isn't obvious among the first three). The Conductor routes each ordinary
+  flag to the matching Fixer mode (`docs/review/fixer/`) based on this tag
+  alone — an untagged or wrongly-tagged flag either goes nowhere or reaches
+  an agent with no authority over the file it names. A `human`-track flag
+  is routed straight to escalation instead, no Fixer dispatched. Be specific
+  enough within each flag that a Fixer mode (or a human, for a `human`-track
+  flag) doesn't need to re-derive what you meant: "move X to drill-down in
+  PowerPanel.tsx" is usable; "this feels risky" is not.
 - On the re-review, do not simply check that the flagged items changed —
   re-run the full procedure (steps 1–5) against the new draft. A fix aimed
   at one flag can introduce a new one elsewhere, and a fix in one track
@@ -291,6 +334,26 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 
 ## Changelog
 
+- v0.5 (2026-08-24) — Generation/scoring split
+  (`docs/GENERATION_SCORING_SPLIT.md` §2): this session no longer reads or
+  reports against a benchmark. Removed the `EDITOR_PROTOCOL.md` "Read
+  first" bullet and the entire Score section (both the markdown block and
+  the instruction to compute it) — `EDITOR_PROTOCOL.md` now owns all eight
+  dimension definitions and is read only by the new fresh-context scoring
+  session (`docs/agent_prompts/editor_scorer.txt`, run via `council
+  editor-score`), never by this prompt. Verdict rule simplified to a single
+  path: **FAIL iff ≥ 1 BLOCKING flag** — the old dual-condition line ("all
+  thresholds met, 0 blocking flags") is gone, closing the crash path where
+  a self-scored threshold miss with no flag produced FAIL with empty
+  `tracks`. Added "The holistic-flag outlet": a review-wide concern that
+  can't be pinned to one claim is still expressed as a flag, tagged with
+  the owning track or the new `human` track when no Fixer mode could act
+  on it; a `human`-track flag requires a `reasoning` field. Added `claims[]`
+  and `flags[]` arrays to the JSON sidecar (additive — the six existing
+  fields are unchanged) so both scoring layers can act on the review
+  without re-parsing markdown. Added the `Reasoning` line and `human` to
+  the `Track` line in the flag markdown template, and to the
+  Conductor-loop tagging instructions.
 - v0.4 (2026-08-23) — Scope narrowed per `docs/AGENT_DESIGN.md` §2/§4/§6
   Step 5 ("Editor... narrowed — S8"). Added "The S7 boundary" section:
   everything S7 (`src/invariant_gate.py`) already gates on a claim

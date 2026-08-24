@@ -16,6 +16,15 @@ automation story. Neither built workflow runs on a schedule yet — both are
 deliberately dispatch-only until their own stated activation conditions
 are met (Part 3).
 
+**Revised 2026-08-24:** Part 4 now specifies the branch-based escalation
+model — logical runs executed as chains of working-branch segments, with
+a successful segment PRing to `main` and an escalation PRing to a
+long-lived `staging` branch whose merge is the approval that resumes the
+run. **Accepted design, not built:** both built workflows still implement
+the pre-revision shape (one PR to `main`; an escalation ends the workflow
+with a job summary). Part 3's uniform rule survives with one refinement,
+noted there; Part 5 lists the rewiring work.
+
 **Companion docs, not duplicates:** `docs/TESTING.md` documents the
 workflows that already exist (`draft.yml`, `publish.yml`, and — as of this
 update — `discovery.yml`, `maintenance.yml`) and the GCP one-time setup;
@@ -119,6 +128,15 @@ Two stages are genuinely exempt, but *because the rule doesn't apply to
 them*, not because they're graded as safe enough to skip it: `council
 draft` and Editor write only to GCS, never touch a git file at all, so
 there is no file change for the rule to gate.
+
+**Refined 2026-08-24 (see Part 4):** the rule's "its own branch and PR"
+is now per **segment** of a logical run, and the PR's *target* depends on
+the segment's outcome — `main` on successful completion, `staging` on an
+escalation. Nothing else in this Part changes: the GCS-only exemptions
+stand, and each flow box below describes that stage's own mechanics
+unchanged — read "opens a PR" in them as "opens its segment's PR,
+targeted per Part 4." The built workflows still open a single PR to
+`main` (the pre-revision shape) until rewired.
 
 **Two more rules that follow directly from "one PR per run" (Part 4):**
 
@@ -250,7 +268,16 @@ not a second one.** Read both before assuming which applies.
                                    the sidecar, which unblocks FLOW E.
                                    Fixer's edits commit directly on the
                                    runner within the job — not yet a
-                                   separate PR (see the note below).
+                                   separate PR (see the note below). The
+                                   loop is now followed by `council
+                                   editor-score` (two layers — a script,
+                                   then a fresh-context agent that never
+                                   reads Editor_prompt.txt — docs/
+                                   GENERATION_SCORING_SPLIT.md §2.3),
+                                   run once per chain regardless of the
+                                   loop's own outcome; a hard Layer-2
+                                   finding blocks FLOW E even on a clean
+                                   Editor PASS.
 
 
  FLOW E — council publish                    FLOW F — Vercel
@@ -364,15 +391,20 @@ explicit conditions, not removed altogether:
   (single source of intent, kept in sync manually — update both if the
   checklist changes):
 
-  1. ≥ 3 real Editor v0.4 PASS/FAIL cycles have completed via
+  1. ≥ 3 real Editor v0.5 PASS/FAIL cycles have completed via
      `maintenance.yml` (`workflow_dispatch`), each independently reviewed
-     by a human against their own judgment of the same draft.
+     by a human against their own judgment of the same draft —
+     `editor_score_<n>.json`/`.md` (`docs/GENERATION_SCORING_SPLIT.md`
+     §2.3) is the data source for this and the next two items, not the
+     review session's own claims about itself.
   2. Editor's false-positive dimension (`EDITOR_PROTOCOL.md`, added
-     2026-08-23 alongside the S7 narrowing) has real calibration data,
-     not just the pre-narrowing prediction that flag volume would drop.
-  3. Zero missed real risks (false negatives) across those cycles — per
-     `EDITOR_PROTOCOL.md`, this is the one failure mode that actually
-     matters; false positives are safe, just wasteful.
+     2026-08-23 alongside the S7 narrowing) has real calibration data
+     from `editor_score_<n>.json`'s Layer-1 `false_positives`, not just
+     the pre-narrowing prediction that flag volume would drop.
+  3. Zero missed real risks (false negatives) across those cycles —
+     `editor_score_<n>.json`'s Layer-2 `false_negatives`, empty on every
+     cycle — per `EDITOR_PROTOCOL.md`, this is the one failure mode that
+     actually matters; false positives are safe, just wasteful.
   4. The project owner has explicitly signed off on that calibration data
      in the PR that uncomments the `cron:` block — not a self-certified
      "looks calibrated enough," a real, separate review of the evidence.
@@ -410,35 +442,187 @@ change.
 
 ---
 
-## Part 4 — One PR per triggered pipeline run, not per role
+## Part 4 — One PR per segment, not per role: logical runs and the staging lane (revised 2026-08-24)
 
-The unit that gets its own branch and PR is a **run** — one triggered
-invocation of the agents pipeline — not each role inside it. If a single
-run executes Explorer, finds something worth codifying, and continues
-straight into Refiner in the same job, both stages' output accumulates on
-the one branch that run created and lands in the one PR it opens:
-`scratchpad/*.py` + the findings summary from Explorer, and the
-`queries.py`/`tests.py` diff + seven-dimension score block from Refiner,
-reviewed together as one story — "found X, codified it into Y" — instead
-of split across two PRs a reviewer has to cross-reference.
+**What changed in this revision.** Until 2026-08-24 this Part stated one
+rule: one PR per triggered run, targeting `main`, with an escalation
+ending the workflow and printing a job summary for a human to act on
+out-of-band. The revision keeps the rule's core — the PR unit is never a
+role — and re-scopes it: the unit is a **segment** of a **logical run**,
+and the PR's target depends on the segment's outcome — `main` on
+success, a new long-lived `staging` branch on an escalation, with the
+merge of an escalation PR doubling as the approval that resumes the run.
+GitHub stays what it already is in this design: the trigger surface and
+the approval surface. Development never moves onto it — fixes are made
+in whatever environment the human works in (local editor, a Claude Code
+session, a hosted coding agent) and reach the run through ordinary
+pushes. **Accepted design, not built** — the rewiring work is listed in
+Part 5. `docs/GENERATION_SCORING_SPLIT.md`'s appendix carries the
+summary version alongside the escalation contracts (Editor's
+`human`-track flags with their `reasoning` field, review sidecars, score
+files) that are this model's PR payload.
+
+### The model
+
+A **logical run** is one human intention ("bring this council up to date
+and review it") executed as a chain of **segments** — working branches
+(`working_session_1`, `_2`, …), each ending in exactly one PR. `staging`
+is a long-lived branch holding `main` plus the approved partial work of
+the current logical run: an approval ledger and the resume substrate. It
+never deploys (Vercel stays wired to `main` only) and never merges to
+`main` itself — the final segment's PR to `main` carries the whole
+approved lineage in one reviewed merge.
+
+```
+main ──────────────────────────────────────────────► (final PR merge)
+  │ reset staging = main (fresh dispatch)                   ▲
+  ▼                                                         │
+staging ──► working_session_1 ──fail──► PR → staging        │
+  │           (branch off staging)        │ approve/merge   │
+  ▼◄──────────────────────────────────────┘                 │
+staging ──► working_session_2 ──fail──► PR → staging        │
+  │           (branch off staging,        │ approve/merge   │
+  ▼◄──────── resumes from run_state) ─────┘                 │
+staging ──► working_session_3 ──success──► PR → main ───────┘
+```
+
+- **Segments always branch off `staging`**, so approved partial work —
+  including any amendments the human pushed before approving — is the
+  substrate the next segment builds on. This is what makes approval more
+  than a rubber stamp: a human can correct the work and merge, and the
+  resumed run continues from the corrected version.
+- **`run_state.json`** (run id, sequence position, segment number, pass
+  counts) is committed on the working branch; after an approval merge it
+  sits at `staging` HEAD, so the resume workflow — triggered on
+  merge-to-staging — reads everything it needs from git. No state lives
+  outside the repo and the existing GCS conventions (Part 1 is
+  unchanged: the DB, drafts, and `INVESTIGATIONS.md` stay in GCS;
+  `run_state.json` is coordination state, not findings, so it's safe in
+  git).
+- **One logical run at a time**: `staging` is a single lane, enforced by
+  a workflow concurrency group. Per-run staging branches were considered
+  and rejected — they reduce the escalation PR to an ordinary feature
+  branch, giving up both things a shared `staging` buys (the clean
+  merge-event trigger and the accumulated approval ledger).
+- The final PR (`working_session_N → main`) contains commits already in
+  `staging` from earlier approval merges — intended, not a defect: `main`
+  receives the whole approved lineage in one reviewed merge, and git
+  handles the shared history normally.
+
+### Dispatching: fresh vs. resume
+
+A dispatch chooses one of two modes; `staging` never resets between
+segments:
+
+- **fresh** — reset `staging = main`, start the sequence from the
+  beginning. Chosen when there is no prior approved work to keep, or
+  when the human's upstream fix invalidates it (an extraction-prompt
+  change staling already-approved extractions, say).
+- **resume** — keep `staging` (which still holds the approved segments
+  of a previously declined run), **merge `main` into it as the first
+  step**, and continue from `run_state.json` at `staging` HEAD —
+  re-running only the failed stage onward, never recomputing approved
+  work. Token/compute cost is the point: approved scrape/extraction
+  work is never redone by a resume. (The stages' own internal caches —
+  incremental census, inventory responses keyed by document hash +
+  prompt version — remain a second layer of protection even on a fresh
+  run.)
+
+Only the human can judge which mode a given fix calls for, which is why
+it's a dispatch input, never inferred.
+
+**Where a manual fix goes before a resume — by fix type; resume's
+unconditional `main → staging` merge makes it a non-decision at
+dispatch:** a fix to the *run's own work* (a bad intermediate output,
+wrong partial state) is committed directly to `staging` — it's
+run-scoped, and reaches `main` via the final PR like the rest of the
+run's work. A fix to the *instrument* (a prompt, a script, config, the
+schema) goes to `main` via the normal dev flow — it should benefit every
+future run, and an instrument fix living only on `staging` is hostage to
+this run succeeding: declined-and-abandoned means the next fresh
+dispatch's reset silently wipes it. The first-step merge is a no-op when
+`main` hasn't moved, carries the fix when it has, and handles both at
+once. A conflict in that merge is rare (instrument fixes and run-scoped
+work touch mostly disjoint paths) and is itself a useful signal — the
+two fix types collided on one file, which is worth a human's look — and
+resolves in the human's own environment like any conflict.
+
+### What escalates, and what the escalation PR shows
+
+An **escalation** is any stop that, in the built workflows, ends the run
+with a job summary: a Flow 0 validation/typology failure, an S7-blocked
+draft, a Conductor cap-hit, a Fixer BLOCKED report, an Editor
+`human`-track flag, a scoring-stage hard finding
+(`docs/GENERATION_SCORING_SPLIT.md` §2.4). Under this model, each of
+those opens the segment's PR against `staging` instead, carrying the
+segment's diff plus the same artifacts those paths already produce —
+`gate_report.json`, the review sidecars and their `reasoning` fields,
+the score files. Part 3's reviewability rules apply unchanged, including
+the hard one: verbatim findings prose about named individuals never
+enters a PR body, escalation or not.
+
+### The two human responses to an escalation PR
+
+1. **Approve + merge** → the run resumes from `staging`. This includes
+   "amend, then approve" with no extra machinery: the working branch is
+   an ordinary branch, so a human who finds the partial work fixable
+   checks it out wherever they work, pushes the fix, and merges — the
+   resume builds on the corrected version automatically, because
+   segments always branch off `staging`.
+2. **Close (decline)** → the logical run ends. Branch kept for
+   forensics; the closed PR is itself the record; the lane is released.
+   A decline discards only the failed segment's work (which never
+   reached `staging`) — the approved segments stay in `staging`
+   indefinitely, because a decline rejects the failure, not the human's
+   own earlier approvals. **No automatic retry**: a decline carries no
+   information to retry *with*, so a blind re-run would reproduce the
+   same failure at full cost. The human makes the fix by hand (placed
+   per the fix-type rule above), then dispatches the retry in whichever
+   mode the fix calls for. Anything salvageable from the declined
+   segment can be cherry-picked from its branch. Same principle as the
+   Conductor's pass-cap rule: persistent failure signals the instrument,
+   not the iteration count.
+
+A third response — GitHub's request-changes review driving an in-place
+revision agent — was considered and rejected 2026-08-24: it shifts the
+development environment onto GitHub (structured review-comment
+conventions, a revision session, a re-review cycle) when the
+amend-then-approve path already covers the same need through the tools
+the human actually develops in.
+
+### One PR per segment, not per role — the surviving core
+
+The unit that gets its own branch and PR is a **segment** — never each
+role inside it. If a single segment executes Explorer, finds something
+worth codifying, and continues straight into Refiner in the same job,
+both stages' output accumulates on the one branch that segment created
+and lands in the one PR it opens: `scratchpad/*.py` + the findings
+summary from Explorer, and the `queries.py`/`tests.py` diff +
+seven-dimension score block from Refiner, reviewed together as one story
+— "found X, codified it into Y" — instead of split across two PRs a
+reviewer has to cross-reference.
 
 **What this trades away, worth stating plainly rather than glossing over:**
-Refiner acting on Explorer's output from the same run means it's building
-code on a finding nobody has reviewed yet — the finding and the code change
-only reach review *together*, after the fact, not the finding first with
-Refiner waiting on a separate acknowledgment before touching it. The
-earlier idea of gating Refiner's Step 0 on a merged Explorer PR (Part 3)
-only applies across separate runs — a *later*, independently-triggered
-Refiner run picking up a Banked finding from a *prior*, already-merged
-Explorer run — not within one continuous run that chains straight through.
+Refiner acting on Explorer's output from the same segment means it's
+building code on a finding nobody has reviewed yet — the finding and the
+code change only reach review *together*, after the fact, not the finding
+first with Refiner waiting on a separate acknowledgment before touching
+it. The earlier idea of gating Refiner's Step 0 on a merged Explorer PR
+(Part 3) only applies across separate runs — a *later*, independently-
+triggered Refiner run picking up a Banked finding from a *prior*,
+already-merged Explorer run — not within one continuous segment that
+chains straight through.
 
-**What still doesn't share a branch**: genuinely separate, independently
-triggered runs — the DB-update pipeline and a later agents-pipeline run;
-two agents-pipeline runs triggered on different days. Those aren't one
-story, and coupling them would mean either serialising unrelated work or
-risking a merge conflict between commits that have nothing to do with each
-other. The rule is "one branch per run," not "one branch per role" *or*
-"one branch for everything" — the run boundary is what decides it.
+**What still doesn't share a branch**: genuinely separate logical runs —
+the DB-update pipeline and a later agents-pipeline run; two runs
+dispatched on different days. Those aren't one story, and coupling them
+would mean either serialising unrelated work or risking a merge conflict
+between commits that have nothing to do with each other. Segments of one
+logical run sit between: they don't share a branch either, but they do
+share the `staging` lineage, which is exactly the "one story told in
+approved installments" the model exists to express. The rule is "one
+branch per segment," not "one branch per role" *or* "one branch for
+everything" — the segment boundary is what decides it.
 
 ---
 
@@ -488,3 +672,35 @@ the concrete gate rather than a restated principle here.
 - **New, not yet resolved: `discovery.yml` doesn't support a standalone
   Refiner-only dispatch.** See Flow B's note in Part 3 — a real, logged
   gap versus the original design, not forgotten.
+- **New, 2026-08-24 — the staging escalation model (Part 4) is accepted
+  design with nothing built.** The open build items, roughly in
+  dependency order:
+  1. the two dispatch modes (fresh/resume) as workflow inputs, the
+     `staging` reset/merge steps, and the concurrency group enforcing
+     the single lane;
+  2. `run_state.json` — schema, which stage boundaries checkpoint it,
+     and the resume workflow triggered on merge-to-staging that reads it
+     and launches the next segment;
+  3. rewiring `maintenance.yml` (first — it has the escalation traffic:
+     Editor `human`-track flags, cap-hits, BLOCKED reports, and the
+     scoring stage from `docs/GENERATION_SCORING_SPLIT.md`) and then
+     `discovery.yml` from single-PR-to-`main` + job-summary escalation
+     to segment PRs; Flow 0 adopts the model whenever it's built at all.
+     The 2026-08-24 Fixer-repairs PR mechanism folds into this: under
+     the segment model, Fixer's edits accumulate on the segment's own
+     branch and land in its one PR, rather than opening a separate
+     repairs PR mid-run.
+  4. It also sharpens (not settles) Flow E's open question above: the
+     natural landing under this model is publish's data commit riding
+     the final segment PR into `main` — Vercel then deploys on the
+     merge, making that merge the publish authorization — but that would
+     supersede the existing hash-verified direct-commit mechanism, which
+     is arguably the stronger gate. Still deliberately undecided. A
+     proposed resolution exists (2026-08-24): an **authenticated draft
+     viewer** — the final segment PR stays the approval surface while a
+     locally-run viewer, pulling the draft's private JSON from GCS under
+     the human's own authenticated session, becomes the review surface,
+     so PR-gating the final approval no longer conflicts with Part 3's
+     rule keeping draft content out of PRs. Parked for a future session
+     — see `CICD_DECISIONS.md`'s open-decisions entry for the full
+     sketch, including the hosted admin-only preview variant.

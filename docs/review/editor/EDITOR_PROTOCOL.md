@@ -18,31 +18,123 @@ workflow" (where this stage sits in the larger pipeline).
 
 ---
 
-## Status: Editor is v0.4; real chains so far ran pre-narrowing, against v0.3
+## Status: Editor is v0.5; real chains so far ran pre-split, against v0.3
 
 Real Conductor-loop chains ran against Editor v0.3 in August 2026 (see the
 open-questions entries below, each citing a real
 `defamation_review_<n>.md`) — the "never been run" framing of this section
 in earlier versions is stale as of those runs. What's genuinely untested:
-v0.4's narrowed scope (the S7 boundary, the four-semantic-class
-recalibration, dimension 8). Treat every threshold below as a starting
-point to be revised once a real chain runs under v0.4, not a settled
-benchmark. The single most important thing a human does after that first
-v0.4 run is check whether the editor's flags match their own judgment —
-false negatives (missed real risk) are the failure mode that matters; false
-positives (over-flagging) waste
-iteration cycles but are safe.
+v0.5's split (this doc now owns the dimension definitions below; the
+review session no longer reads or reports against them — see
+`docs/GENERATION_SCORING_SPLIT.md` §2) on top of v0.4's still-untested
+narrowed scope (the S7 boundary, the four-semantic-class recalibration,
+dimension 8). Treat every threshold below as a starting point to be revised
+once a real chain runs under v0.5, not a settled benchmark. The single most
+important thing a human does after that first v0.5 run is check whether the
+editor's flags match their own judgment — false negatives (missed real
+risk) are the failure mode that matters; false positives (over-flagging)
+waste iteration cycles but are safe. v0.3-era chain scores were produced by
+`Editor_prompt.txt` grading its own review in the same session — they are
+**not comparable** with post-split scores, which come from a separate
+Layer-1 script and a fresh-context Layer-2 agent that never see each
+other's context, let alone the review session's. Post-split calibration
+data starts a new series (kept as history here, per this project's usual
+practice, rather than deleting the old series).
+
+## The two-layer scoring stage
+
+`Editor_prompt.txt` no longer reads this file, computes a score, or reports
+against a threshold — see `docs/GENERATION_SCORING_SPLIT.md` §1 for why
+(the census precedent: a model that can see the check it's graded against
+can shape its output toward the check). Scoring happens afterward, in a
+separate invocation, via `council editor-score <council> <run_id>`
+(`src/editor_score.py`):
+
+- **Layer 1 — deterministic validator (script, every run).** Reads only the
+  run directory plus `gate_report.json` and `scorecard.json`. Checks
+  contract hygiene (sidecar/markdown agreement, all required fields
+  present, `run_id` matches the directory), flag routability (every flag's
+  `tracks` ⊆ `{frontend, pipeline, doc, human}` and non-empty, `criterion`
+  in the enumerated slug vocabulary below, `location` non-empty,
+  `human`-track flags carry a non-empty `reasoning`), verdict integrity
+  (FAIL ⟺ ≥ 1 BLOCKING flag), the disclaimer string, and dimension 8 below.
+  It also computes the percentage dimensions (1–6) as descriptive
+  measurements from `claims[]` × `flags[]` — they inform calibration, they
+  are no longer verdict inputs.
+- **Layer 2 — fresh-context judgment scorer (agent,
+  `docs/agent_prompts/editor_scorer.txt`).** Reads the draft, the review
+  files, this protocol, `Investigator_prompt.txt` Part 4, and
+  `PRIVATE_ASSESSMENT.md`. Never reads `Editor_prompt.txt` and is never
+  told what the review session was instructed beyond what this protocol
+  defines. Its job: independently re-review a sample of claims (including
+  every named-individual claim) cold and compare against the review's
+  flags — a real risk it finds that the review missed is a false negative,
+  the failure mode that matters most; check each flag's criterion and track
+  for validity; and judge the dimensions a script can't (proportionality/
+  overclaim correctness, innocent-explanation adequacy, singling-out
+  fairness, blended-statistics calls, caveat-integration quality, framing
+  balance). On any failing dimension, it drafts the minimal
+  `Editor_prompt.txt` edit for a human to review — that duty moved out of
+  the generation session along with everything else scoring-related.
+
+Output lands next to what it scored: `editor_score_<n>.json` + `.md` in the
+same (gitignored) run directory, never overwriting the
+`defamation_review_<n>` files it judges. A hard Layer-2 finding (a missed
+real risk — `false_negatives` non-empty) fails the score; in automated
+operation (`maintenance.yml`) that failure blocks an auto-profile publish
+in the same run, per `docs/review/CONDUCTOR.md`.
+
+**Human comparison is not replaced.** This section's own "compare the
+editor's flags against a human's independent read" (below, "What 'done'
+looks like") remains the calibration bar; Layer 2 assists and structures
+it, and the activation checklist in `maintenance.yml` (real false-positive
+data, independently human-reviewed cycles) is now fed by these score files
+instead of the review session's own claims about itself.
 
 ## Scoring and thresholds
 
-The eight dimensions are defined in `Editor_prompt.txt`'s "Score" output
-block, not duplicated here (single source of truth — update the prompt, not
-this doc, when a dimension's definition changes). Today they are all fixed at
-pass/fail thresholds the prompt author (this session) judged reasonable —
-100% on placement, proportionality/overclaim language, framing balance,
-caveat integration, and risk-item re-verification; zero tolerance on
-small-n exposure and (added 2026-08-23, per `docs/AGENT_DESIGN.md` §2)
-false positives against claims S7 already passed; binary on the disclaimer.
+The eight dimensions, defined here (moved from `Editor_prompt.txt`'s old
+Score block as part of the v0.5 split — this doc is now the single source
+of truth; update here, not the prompt, when a dimension's definition
+changes):
+
+1. **Placement** (non-scorecard claims) — every named individual plus a
+   critical or legal-compliance-adjacent stat sits behind `Reveal`/
+   `DrillDown`, never standing always-visible text. Layer 1, from `claims[]`.
+2. **Proportionality / overclaim language** (strength ladder + superlative
+   check, `Investigator_prompt.txt` §4.6) — severity grade supported by
+   stated n/base-rate/era; wording matches declared `strength`. Layer 2
+   (judgment).
+3. **Framing balance** — every critical-valence claim carries both the
+   hostile-reader and the promoter sentence. Layer 2 (judgment).
+4. **Caveat integration** — an uncertainty caveat is integral to the
+   sentence, not buried in a footnote. Layer 2 (judgment).
+5. **Small-n exposure** (non-scorecard claims) — any named-individual claim
+   at n ≤ 3 is BLOCKING regardless of framing. Layer 1, from `claims[]` ×
+   `flags[]` (count).
+6. **Risk-item re-verification** — every `PRIVATE_ASSESSMENT.md` named risk
+   item's current mitigation status independently re-checked against the
+   live draft/component source. Layer 2 (judgment).
+7. **Disclaimer present** — the markdown states plainly that this is an
+   editorial risk screen, not legal advice. Layer 1, string check.
+8. **False-positive rate** (flags re-litigating a claim `gate_report.json`
+   already shows S7 passed) — see below. Layer 1, cross-reference.
+
+**The enumerated criterion slug vocabulary** (`Editor_prompt.txt`'s output
+template, `src/editor_score.py`'s `CRITERION_SLUGS`): `placement`,
+`overclaim-language`, `innocent-explanation`, `singling-out-fairness`,
+`blended-statistics`, `caveat-integration`, `balance`, `small-n`,
+`risk-item-drift` — the nine Editor is instructed to use — plus
+`name-free-schema` and `entity-resolution`, recognised but never
+instructed: a flag carrying either of those two on an S7-passed scorecard
+claim is exactly what dimension 8 exists to catch, not a vocabulary error.
+
+Today all eight dimensions are fixed at pass/fail thresholds the prompt
+author (this session) judged reasonable — 100% on placement,
+proportionality/overclaim language, framing balance, caveat integration,
+and risk-item re-verification; zero tolerance on small-n exposure and
+(added 2026-08-23, per `docs/AGENT_DESIGN.md` §2) false positives against
+claims S7 already passed; binary on the disclaimer.
 
 **Why a false-positive dimension exists (added 2026-08-23):** once S7
 (`src/invariant_gate.py`) gates `scorecard.json` claims mechanically before
@@ -71,13 +163,18 @@ mode a per-claim gate exists to prevent.
 ## Track-tagging is part of what's being calibrated
 
 `Editor_prompt.txt` now requires every flag to carry a `track` tag
-(`frontend` / `pipeline` / `doc`, matching `docs/MAP.md`'s own vocabulary) so
-`CONDUCTOR.md` can route it to the right Fixer mode. This is a second thing
-to check on the first real run, alongside the flags themselves: did the
-editor tag correctly? A flag routed to the wrong Fixer mode either fails
-loudly (the mode has no authority over the named file) or, worse, succeeds
-quietly by touching something adjacent — check tagging accuracy the same way
-you'd check flag accuracy.
+(`frontend` / `pipeline` / `doc`, matching `docs/MAP.md`'s own vocabulary,
+or `human` — added 2026-08-24, the holistic-flag outlet,
+`docs/GENERATION_SCORING_SPLIT.md` §2.2 — for a review-wide concern no
+Fixer mode can act on) so `CONDUCTOR.md` can route it to the right Fixer
+mode or escalate it directly. This is a second thing to check on the first
+real run, alongside the flags themselves: did the editor tag correctly? A
+flag routed to the wrong Fixer mode either fails loudly (the mode has no
+authority over the named file) or, worse, succeeds quietly by touching
+something adjacent — check tagging accuracy the same way you'd check flag
+accuracy. A `human`-track flag is a third possible tagging error worth
+checking specifically: did it actually need a human, or was it routable to
+an ordinary track the editor missed?
 
 ## Open questions
 
@@ -172,6 +269,15 @@ the editor's flags against a human's independent read of the same draft.
 
 ## Changelog
 
+- v0.4 (2026-08-24) — Generation/scoring split
+  (`docs/GENERATION_SCORING_SPLIT.md` §2). This doc now owns all eight
+  dimension definitions (moved from `Editor_prompt.txt`'s old Score block,
+  which is gone) and the enumerated criterion slug vocabulary. Added "The
+  two-layer scoring stage" documenting `council editor-score` (Layer 1
+  script + Layer 2 fresh-context agent). Noted that v0.3-era chain scores
+  (rubric-aware self-grading) are not comparable with post-split scores.
+  Added the `human` track to "Track-tagging is part of what's being
+  calibrated."
 - v0.3 (2026-08-23) — Recalibrated for `Editor_prompt.txt` v0.4's narrowed
   scope (`docs/AGENT_DESIGN.md` §2/§6 Step 5): added dimension 8
   (false-positive rate against S7-already-passed scorecard claims) and

@@ -65,8 +65,18 @@ ROOT = Path(__file__).parent.parent
 DATA_DRAFT = ROOT / "data" / "draft"
 CONFIG = ROOT / "config" / "agent_switches.json"
 
-# Same three modes Fixer has always had -- see docs/review/fixer/.
-VALID_TRACKS = {"frontend", "pipeline", "doc"}
+# Same three modes Fixer has always had -- see docs/review/fixer/. This is
+# also the set of valid `council fixer <track>` CLI choices -- "human"
+# below is deliberately NOT part of it, since no Fixer mode exists for it.
+FIXER_TRACKS = {"frontend", "pipeline", "doc"}
+
+# The full track vocabulary a Editor flag may carry -- FIXER_TRACKS plus
+# "human", added 2026-08-24 for the generation/scoring split's
+# holistic-flag outlet (docs/GENERATION_SCORING_SPLIT.md §2.2): a
+# review-wide concern no Fixer mode can act on. A FAIL carrying a
+# "human"-track flag escalates immediately (escalate_blocked(), below)
+# instead of dispatching Fixer -- see run_conductor_loop.
+VALID_TRACKS = FIXER_TRACKS | {"human"}
 
 # Same tool set Refiner/Fixer need locally -- see docs/AGENT_PROMPTS.md.
 ALLOWED_TOOLS = "Read,Edit,Write,Bash,Grep,Glob"
@@ -279,6 +289,26 @@ def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
             raise RuntimeError(f"unknown track(s) in Editor's sidecar: {unknown!r} — not one of {VALID_TRACKS}")
         if not tracks:
             raise RuntimeError("status is FAIL but tracks is empty — malformed sidecar, cannot dispatch a fix")
+
+        # A "human" tag is the holistic-flag outlet
+        # (docs/GENERATION_SCORING_SPLIT.md §2.2): Editor's own judgment
+        # that some part of this FAIL isn't a Fixer's decision to make.
+        # Escalate immediately, on the same path a Fixer BLOCKED report
+        # uses -- it's the same thing declared one step earlier. No Fixer
+        # is dispatched this pass, including for any co-flagged ordinary
+        # tracks -- the human's decision may change what those fixes
+        # should be, and the pass cap shouldn't burn passes while a human
+        # item is open.
+        if "human" in tracks:
+            human_flags = [f for f in record.get("flags", []) if "human" in (f.get("tracks") or [])]
+            escalate_blocked(council, run_id, [{
+                "track": "human",
+                "blocked_on": [
+                    {"flag": f.get("summary", "<no summary given>"), "reason": f.get("reasoning", "<no reason given>")}
+                    for f in human_flags
+                ],
+            }])
+            return 1
 
         if pass_num == max_passes:
             escalate(council, run_id, record, max_passes)

@@ -37,9 +37,12 @@ Not owned by one track — gates all of them:
   `council publish`: **Editor** (reviews a draft for defamation exposure
   across every track) and **Fixer** (three modes — frontend / pipeline /
   doc — that act on Editor's flags), chained by the **Conductor**
-  (`review/CONDUCTOR.md`). Start at `review/REVIEW.md`. Untested as of
-  2026-08-10 — see that file's status note before treating any of it as
-  calibrated.
+  (`review/CONDUCTOR.md`). As of 2026-08-24 Editor's own review session no
+  longer scores itself — a separate follow-on, `council editor-score`
+  (two layers: a deterministic script, then a fresh-context agent that
+  never reads `Editor_prompt.txt`), does (`docs/GENERATION_SCORING_SPLIT.md`
+  §2). Start at `review/REVIEW.md`. Untested as of 2026-08-10 — see that
+  file's status note before treating any of it as calibrated.
 - `render/` — the S10 audience-rendering stage, after a claim has cleared
   S7/S8 (and S9, for any named-individual claim): **Renderer**, two modes
   (plain-language: institutional product → resident-facing summary;
@@ -63,12 +66,16 @@ Not owned by one track — gates all of them:
   prompt file — never inlined here, so there's exactly one copy); this doc
   is the command layer plus GitHub Actions setup (install, auth) on top of
   those files.
-- `AUTOMATION_ARCHITECTURE.md` — design sketch (not built) for running the
+- `AUTOMATION_ARCHITECTURE.md` — partially built; running the
   full agent pipeline via GitHub Actions: the GCS-vs-git rule that decides
   where every file lands, a stage-by-stage input/output map, and a uniform
   rule (any pipeline run that writes a git-tracked file change opens its
-  own PR — one PR per triggered run, not per role, never a direct commit)
-  applied across the DB-update pipeline and every agent role. Extends
+  own PR — never a direct commit) applied across the DB-update pipeline
+  and every agent role. Part 4 (revised 2026-08-24, accepted design, not
+  built) specifies the branch-based escalation model: logical runs as
+  chains of working-branch segments, success PRs to `main`, escalations
+  PR to a `staging` branch whose merge is the approval that resumes the
+  run (fresh/resume dispatch modes, `run_state.json`). Extends
   `pipeline/PIPELINE.md`'s "Production scale" section into the
   investigator/review tracks that section doesn't cover.
 - `INFORMATION_ARCHITECTURE.md` + `AGENT_DESIGN.md` — the 2026-08-23
@@ -302,7 +309,8 @@ The non-obvious edges, spelled out:
 | improving the refinement prompt / harness | `investigator/REFINEMENT_PROTOCOL.md` (benchmark) → bump `Refiner_prompt.txt` |
 | writing up cross-cutting conclusions | `investigator/FINDINGS_SUMMARY.md` (current, hand-maintained) — or `render/synthesis_mode.txt` (run) once Renderer has real calibration data |
 | reviewing a draft for defamation exposure | `review/editor/Editor_prompt.txt` (run) → writes `data/draft/<council>/<run_id>/defamation_review_<n>.md` |
-| improving the editor prompt | `review/editor/EDITOR_PROTOCOL.md` (benchmark) → bump `Editor_prompt.txt` |
+| scoring a completed Editor review | `council editor-score <council> <run_id>` (`src/editor_score.py` Layer 1, deterministic; `docs/agent_prompts/editor_scorer.txt` Layer 2, fresh-context agent — `docs/GENERATION_SCORING_SPLIT.md` §2.3) → writes `editor_score_<n>.json/.md` next to the review it scored |
+| improving the editor prompt | `review/editor/EDITOR_PROTOCOL.md` (now the scorer's rubric — Editor itself no longer reads it) → bump `Editor_prompt.txt`; a failing score's proposed edit comes from `editor-score`'s Layer 2, not from Editor's own session |
 | fixing a flagged claim (frontend/pipeline/doc) | `review/fixer/<track>_mode.txt` (run) — only the track(s) the editor tagged |
 | adding a fourth fixer track | `review/fixer/FIXER_PROTOCOL.md` — additive by design, see "Adding a fourth mode" |
 | chaining editor + fixer, or asking what happens after a FAIL | `review/CONDUCTOR.md` — the loop, the pass cap, the one rule (never calls `council publish`); `council editor-loop <council>` runs the scripted version (`scripts/conductor_loop.py`) |

@@ -159,6 +159,16 @@ stuck — that's a deliberate override, not the default.
 FAIL should never trigger `pipeline-fix` — running an idle track wastes a
 call and gives it an opportunity to "fix" something that was never broken.
 
+**A FAIL carrying a `human`-track flag escalates immediately, no Fixer
+dispatched.** Added 2026-08-24 for the holistic-flag outlet
+(`docs/GENERATION_SCORING_SPLIT.md` §2.2): a review-wide concern Editor
+can't pin to one claim, and can't route to any Fixer mode, is still a flag
+— tagged `human` instead of `frontend`/`pipeline`/`doc`. This escalates on
+the exact same path as a Fixer BLOCKED report (below): the run stops, no
+pass is spent, and no Fixer runs for that pass — including for any
+co-flagged ordinary tracks, since the human's decision may change what
+those fixes should be.
+
 **Every pass's draft must be freshly generated.** The publish gate's
 integrity check (`verify_draft_integrity`, `src/publish_gate.py`) hashes
 draft files at draft time — reviewing a stale `run_id` after a Fixer mode has
@@ -228,6 +238,12 @@ provides on its own.
 
 ## Changelog
 
+- v0.4 (2026-08-24) — Added the `human`-track escalation sentence to "The
+  chain loop" (`docs/GENERATION_SCORING_SPLIT.md` §2.2/§2.4's holistic-flag
+  outlet): a FAIL carrying a `human`-track flag now escalates immediately,
+  same path as a Fixer BLOCKED report, before any pass-cap check. No change
+  to the loop mechanics, pass cap, or gate profiles themselves —
+  `scripts/conductor_loop.py`'s `VALID_TRACKS` gained `"human"` to match.
 - v0.3 (2026-08-23) — Added "The S7 and S9 boundary" section
   (`docs/AGENT_DESIGN.md` §3 Q3): the Conductor owns the S8 flag loop only,
   not S7 (a gate failure blocks the draft mechanically, never entering the

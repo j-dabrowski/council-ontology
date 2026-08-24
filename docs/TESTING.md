@@ -68,6 +68,25 @@ elsewhere says to.
   battery is recomputed fresh every run. `--regenerate` bypasses the ledger
   deliberately, for the rare case a packet needs re-sending.
 
+- **`test_editor_score.py`** — `run_layer1()`, the deterministic half of
+  the Editor scoring stage (`src/editor_score.py`,
+  `docs/GENERATION_SCORING_SPLIT.md` §2.3): a clean PASS review, a FAIL
+  with valid flags, a sidecar/markdown mismatch, an invalid track, a
+  missing criterion, verdict-integrity failures in both directions, a
+  human-track flag with and without `reasoning`, and dimension 8 (a flag
+  re-litigating a claim `gate_report.json` already shows S7 passed on that
+  exact check) — plus the inverse (agreeing with a real S7 violation is
+  not a false positive) and the pre-S7-draft case (no `gate_report.json`
+  to cross-reference, not a failure). All plain dicts and `tmp_path`
+  fixtures — no DB, no CLI, no `claude` call.
+- **`test_conductor_loop.py`** — `run_conductor_loop()`'s dispatch logic
+  from `scripts/conductor_loop.py`: a FAIL carrying a `human`-track flag
+  (the holistic-flag outlet, added 2026-08-24) escalates immediately with
+  no Fixer dispatched, including when ordinary tracks are co-flagged; a
+  FAIL with only ordinary tracks still dispatches Fixer as before; unknown
+  tracks still raise. `run_draft`/`run_editor`/`run_fixer` and the sidecar
+  readers are monkeypatched to plain stand-ins — no real subprocess.
+
 All of these test **pure functions or hermetic DB/source-parsing logic** —
 same inputs
 always produce the same outputs, no network/filesystem side effects
@@ -625,12 +644,18 @@ gh workflow run discovery.yml -f refine=true
 
 **`maintenance.yml`** — Flow C/D(+E): `council draft` → the S7 invariant
 gate (inside `council draft`) → the Editor/Fixer loop
-(`scripts/conductor_loop.py`) → optionally `council publish
---gate-profile auto`, behind an explicit `publish=true` opt-in (default
-**false**). This is the first CI wiring for Editor/Fixer at all — previously
-human-run locally only (`council editor-loop <council>` is the same script's
-CLI wrapper, for running the loop by hand outside CI). If Fixer changes any
-git-tracked file while closing an Editor flag, that change opens its own PR
+(`scripts/conductor_loop.py`) → `council editor-score` (both scoring
+layers, `docs/GENERATION_SCORING_SPLIT.md` §2.3/§2.4 — runs once per chain,
+after the loop ends, regardless of PASS or escalation, since its purpose is
+calibration, not gating) → optionally `council publish --gate-profile
+auto`, behind an explicit `publish=true` opt-in (default **false**). A hard
+Layer-2 finding (a missed real risk `editor-score` exits non-zero on) fails
+that step and blocks the publish step in the same run, on top of the
+existing `publish=true`/clean-PASS/no-pending-Fixer-PR conditions — this is
+the first CI wiring for Editor/Fixer at all — previously human-run locally
+only (`council editor-loop <council>` is the same script's CLI wrapper, for
+running the loop by hand outside CI). If Fixer changes any git-tracked file
+while closing an Editor flag, that change opens its own PR
 (`frontend/public/data/` excepted — that stays `council publish`'s direct
 commit) and **publish is held until that PR merges**, regardless of the
 `publish=true` input — refreshed data must never ship against the exact code

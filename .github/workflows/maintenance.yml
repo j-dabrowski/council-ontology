@@ -2,9 +2,12 @@ name: Maintenance
 
 # The maintenance run (docs/AGENT_DESIGN.md §5, docs/AUTOMATION_ARCHITECTURE.md):
 # council draft -> S7 invariant gate (inside council draft) -> Editor/Fixer
-# loop (scripts/conductor_loop.py) -> optionally council publish. This is
-# the first CI wiring for Editor/Fixer at all — previously "human-run
-# locally, not yet in CI" (AUTOMATION_ARCHITECTURE.md's old Flow D row).
+# loop (scripts/conductor_loop.py) -> council editor-score (two-layer
+# scoring, docs/GENERATION_SCORING_SPLIT.md §2.3/§2.4 — runs once per
+# chain regardless of PASS or escalation) -> optionally council publish.
+# This is the first CI wiring for Editor/Fixer at all — previously
+# "human-run locally, not yet in CI" (AUTOMATION_ARCHITECTURE.md's old
+# Flow D row).
 #
 # Deliberately does NOT include the DB-update pipeline (scrape/extract/
 # dedup — AUTOMATION_ARCHITECTURE.md Flow 0) or Renderer. Both remain
@@ -128,6 +131,27 @@ jobs:
         run: |
           gcloud storage cp -r "${{ steps.draft.outputs.path }}" "gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/"
 
+      - name: Score the Editor review (two layers, docs/GENERATION_SCORING_SPLIT.md §2.3)
+        id: score
+        # Runs once per chain regardless of PASS or escalation -- its
+        # purpose is calibration, not gating (§2.4). Only skipped if the
+        # loop never reached an Editor review at all (steps.draft failed
+        # to locate a directory), which "if: always()" alone wouldn't catch.
+        if: always() && steps.draft.outputs.path != ''
+        run: |
+          set +e
+          council editor-score cambridge "${{ steps.draft.outputs.run_id }}"
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+      - name: Upload the score to GCS (for the record, every outcome)
+        if: always() && steps.score.outputs.exit_code != ''
+        run: |
+          gcloud storage cp -r "${{ steps.draft.outputs.path }}" "gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/"
+
       - name: Capture Fixer's source edits into a PR
         id: fixes
         env:
@@ -177,20 +201,24 @@ jobs:
           # where it always did, not onto the fixes branch.
           git checkout -
 
-      - name: Publish (only if the loop passed, publish=true, and no fix is pending)
+      - name: Publish (only if the loop passed, publish=true, no fix is pending, and the score is clean)
         # The third condition is the point: if Fixer had to change source to
         # reach PASS, that fix is sitting in an unmerged PR, so publishing now
         # would ship refreshed data against the unfixed code the Editor
         # flagged. Publish by hand once the fixes PR merges — the job summary
-        # prints the exact command.
-        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true && steps.fixes.outputs.opened != 'true'
+        # prints the exact command. The fourth condition
+        # (docs/GENERATION_SCORING_SPLIT.md §2.4) is new: a hard Layer-2
+        # finding — editor-score's false-negative probe found a real risk
+        # the review missed — must never let an auto-profile publish through
+        # in the same run, even on a clean Editor PASS.
+        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true && steps.fixes.outputs.opened != 'true' && steps.score.outputs.exit_code == '0'
         run: |
           council publish cambridge \
             --from-draft "${{ steps.draft.outputs.path }}" \
             --gate-profile auto
 
       - name: Commit refreshed public-tier snapshots (only if publish ran)
-        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true && steps.fixes.outputs.opened != 'true'
+        if: steps.loop.outputs.exit_code == '0' && inputs.publish == true && steps.fixes.outputs.opened != 'true' && steps.score.outputs.exit_code == '0'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -215,6 +243,17 @@ jobs:
             echo ""
             echo "Draft: \`gs://${{ vars.GCP_BUCKET }}/drafts/cambridge/${{ steps.draft.outputs.run_id }}/\`"
             echo ""
+            if [ -n "${{ steps.score.outputs.exit_code }}" ]; then
+              if [ "${{ steps.score.outputs.exit_code }}" = "0" ]; then
+                echo "Editor score: **clean** (both layers passed)."
+              else
+                echo "Editor score: **FAIL** — a Layer-1 structural problem, or a Layer-2"
+                echo "false negative (a real risk the review missed). See"
+                echo "\`editor_score_<n>.md\` in the draft directory. This blocks an"
+                echo "auto-profile publish in this run regardless of the loop's own PASS."
+              fi
+              echo ""
+            fi
             if [ "${{ steps.fixes.outputs.opened }}" = "true" ]; then
               echo "**Fixer changed source to close Editor flags — PR opened.**"
               echo "Publishing is held until that PR merges, so refreshed data"
@@ -222,11 +261,11 @@ jobs:
               echo ""
             fi
             if [ "${{ steps.loop.outputs.exit_code }}" = "0" ]; then
-              if [ "${{ inputs.publish }}" = "true" ] && [ "${{ steps.fixes.outputs.opened }}" != "true" ]; then
+              if [ "${{ inputs.publish }}" = "true" ] && [ "${{ steps.fixes.outputs.opened }}" != "true" ] && [ "${{ steps.score.outputs.exit_code }}" = "0" ]; then
                 echo "**Loop PASSED — publish step ran (see the Publish step above for the result).**"
               else
-                echo "**Loop PASSED. Not published** (publish=false, or held pending"
-                echo "the Fixer PR above). Publish by hand with:"
+                echo "**Loop PASSED. Not published** (publish=false, held pending the Fixer"
+                echo "PR above, or held on the Editor score above). Publish by hand with:"
                 echo ""
                 echo '```'
                 echo "council publish cambridge --from-draft ${{ steps.draft.outputs.path }} --gate-profile auto"

@@ -185,6 +185,33 @@ claude -p "$(sed \
   --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
 ```
 
+**Editor scorer — score a completed review, two layers, never run by
+Editor itself.**
+```bash
+council editor-score cambridge draft_20260822_120000
+```
+Not a self-directing role and not a fourth worker role — a per-run
+follow-on (`docs/GENERATION_SCORING_SPLIT.md` §2.3) invoked after Editor
+has already produced a `defamation_review_<n>` pair for the draft named.
+Layer 1 (`src/editor_score.py`, a deterministic script — contract hygiene,
+flag routability, verdict integrity, the dimension-8 false-positive
+cross-check against `gate_report.json`) always runs first and costs
+nothing; its result is embedded into Layer 2's prompt as the
+`<layer1_json>` placeholder. Layer 2 is a real `claude -p` call, in a
+fresh context that never reads `Editor_prompt.txt` or shares any state
+with the review session it's scoring — its whole point is independence
+from what it judges. Writes `editor_score_<n>.json`/`.md` into the same
+draft directory, never touching the `defamation_review_<n>` files it
+scored. Exits non-zero if the combined result is FAIL (a Layer-1
+structural problem, or a Layer-2 false negative — a real risk the review
+missed). Equivalent raw form
+(`docs/agent_prompts/editor_scorer.txt` has four placeholders,
+`<council>`/`<run_id>`/`<n>`/`<layer1_json>`, that only the CLI wrapper can
+fill, since `<layer1_json>` is Layer 1's freshly-computed output, not a
+fixed token — same shape as `inventory_refine.txt`'s `<instructions>`
+placeholder above. No practical raw-form equivalent for that reason; use
+the CLI command.)
+
 **Fixer (frontend / pipeline / doc modes) — apply Editor's tagged flags.**
 Not really a standalone, context-free invocation — a Fixer mode only does
 something meaningful when it's acting on a specific Editor FAIL's tagged

@@ -80,11 +80,11 @@ narrowing was built from.
 scripts/conductor_loop.py cambridge --max-passes 3` → `draft_20260823_171209`,
 pass 1: **FAIL — 3 blocking, 5 advisory**. Useful evidence for the narrowing
 itself, not just a first data point: two of the three blocking flags were
-outside S7's reach by construction, not by luck. Flag 1 (Pauline O'Connor's
+outside S7's reach by construction, not by luck. Flag 1 (a named councillor's
 must-leave recusal rate computed from two records whose stored action
 contradicted their own extracted quote) is a data-derivation bug — S7's
 claim-schema checks have nothing to check it against. Flag 2 (four likely
-split councillor identities — Timmermanis, Fredericks, King, Barlow) sits in
+split councillor identities) sits in
 `councillors.json`, not a battery/scorecard snapshot, so S7 never looks
 there at all. Only flag 3 (`OverviewPanel.tsx` reintroducing overclaim
 framing already removed elsewhere) is the kind of judgment call v0.4 is
@@ -94,12 +94,12 @@ Fixer[pipeline] root-caused flag 1 beyond what Editor named: a
 `setdefault`-first-quote bug in `_linked_declared_votes` was silently
 dropping a "left the meeting" sentence whenever it wasn't the first
 extraction-evidence row for a declaration, understating compliance for two
-more councillors (Rod Bradley, Kate Barlow) besides the two records Editor
+more councillors besides the two records Editor
 flagged. Fixed at the root, verified by hand against `council.db` and two
 clean `council draft` re-runs. Fixer[frontend] closed flag 3 plus all 5
 advisories (`tsc`/lint clean). Fixer[pipeline] correctly declined flag 2
 (`status: BLOCKED`) — a `councillors.json` identity merge is a hard-to-reverse
-shared-data write, same precedent as the Colin Walker merge — and the chain
+shared-data write, same precedent as an earlier real identity merge — and the chain
 escalated to a human after pass 1 rather than continuing, per this doc's
 rule that a single BLOCKED flag stops it regardless of pass count.
 
@@ -107,6 +107,26 @@ This is the first of the ≥ 3 real v0.4 PASS/FAIL cycles
 `maintenance.yml`'s scheduling activation checklist requires; two more
 (plus real false-positive data and zero missed real risks across all of
 them) are still needed before its `cron:` block can be uncommented.
+
+**2026-08-24 — pass 2, on the re-draft (`draft_20260823_173842`) that
+followed pass 1's Fixer round.** FAIL — 1 blocking, 3 advisory. The
+councillor-identity flag (pass 1's BLOCKING #2) is unresolved — `council.db`
+is unchanged, so it reproduces identically — but this time tagged `human`
+directly rather than `pipeline`, since Fixer[pipeline] already reported
+`status: BLOCKED` on the exact same flag last pass; re-dispatching it would
+just reproduce that report. Per the `human`-track escalation rule above, the
+chain stops here with no Fixer dispatched this pass, including for the 3
+co-flagged advisories (a new ungated claim in `TrendsChart.tsx`, an internal
+`sponsorship.json` inconsistency about a councillor's old-guard membership
+that `PRIVATE_ASSESSMENT.md` item 7 currently relies on, and two supportive
+`scorecard.json` verdicts using causal/intent-denying wording).
+Independently re-verified (not just re-read from the fix reports): pass 1's
+pipeline fix (the recusal-miscoding correction) against raw `council.db`
+rows directly, and all 5 pass-1 frontend fixes against current component
+source — all correct and complete, no regressions. This is now the second
+of the ≥ 3 real v0.4 cycles the `maintenance.yml` activation checklist
+requires; the councillor-identity merge decision above is the open item
+blocking a third clean cycle.
 
 ## Where this sits in the larger pipeline
 
