@@ -128,6 +128,28 @@ of the ≥ 3 real v0.4 cycles the `maintenance.yml` activation checklist
 requires; the councillor-identity merge decision above is the open item
 blocking a third clean cycle.
 
+**2026-08-24 — correction to the pass-2 count above, via `Editor_prompt.txt`
+v0.6.** `council editor-score`'s first live run against pass 2 found a real
+false negative: a named-individual claim at n=1, reachable only via a
+`DrillDown` click target, that pass 2's own `claims[]` had already logged by
+location but never checked against the small-n floor (gating behind a click
+satisfies placement, not small-n — two separate checks). `Editor_prompt.txt`
+v0.6 closed the gap (the small-n check is now stated as unconditional and
+independent of placement, explicitly including click-gated locations). A
+fresh Editor re-review of the same draft under v0.6 found the identical
+issue and correctly added it as a second BLOCKING flag, tagged `frontend`
+— **pass 2 was actually FAIL, 2 blocking, 3 advisory**, not the "1 blocking"
+recorded above. With a `human`-track flag also present, the loop's own rule
+would block any Fixer dispatch this pass; the project owner explicitly
+authorized a standalone override to fix the independent `frontend` flag
+only, leaving the councillor-identity merge untouched and still open. Both
+the BLOCKING small-n fix (same `SMALL_N_FLOOR` pattern as
+`ConflictRecusalPanel.tsx`/`InterestsChart.tsx`) and the co-flagged
+`TrendsChart.tsx` advisory were applied; `tsc -b`, `eslint`, and
+`vite build` all clean; no hardcoded name introduced (grepped). The
+councillor-identity merge remains the sole open item blocking a third clean
+cycle.
+
 ## Where this sits in the larger pipeline
 
 ```

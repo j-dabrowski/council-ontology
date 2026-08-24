@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.5
+# Council Editor — Defamation-Review Mode v0.6
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -175,6 +175,21 @@ license.
    confirm the gate report shows PASS for that claim's generator rather
    than re-deriving n yourself.
 
+   **This check is unconditional, independent of placement — run it on
+   every named-individual claim location you enumerated in step 1,
+   including ones reached only via a `DrillDown`/`Reveal` click target (a
+   chart bar, table row, or cell — not just standing chart-note prose).**
+   Gating behind a click satisfies step 2 (placement); it does not
+   satisfy this step — the two are separate checks, and a claim can pass
+   one and fail the other. Some components already have a settled fix for
+   this: `ConflictRecusalPanel.tsx` and `InterestsChart.tsx` both define a
+   `SMALL_N_FLOOR` constant and exclude a person from the named breakdown
+   entirely below it, rather than gating-and-showing them regardless of n
+   — that's the fix to recommend when you find this. Logging a claim's
+   location in step 1 is not the same as having checked its n against this
+   floor; do not fold a claim into "no issues found" without explicitly
+   doing so.
+
 ## The holistic-flag outlet
 
 A review-wide concern you can't pin to a single claim — a systematic
@@ -334,6 +349,17 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 
 ## Changelog
 
+- v0.6 (2026-08-24) — Closed a real false negative from `council
+  editor-score`'s first live run (`editor_score_1.md`,
+  `draft_20260823_173842`): step 5's small-n check hadn't been applied to
+  a claim already logged in step 1 (`RecusalTrendPanel.tsx`'s post-2022
+  financial-conflict bar, n=1), because gating behind a click read as
+  "already handled" without the separate small-n check actually being run
+  against it. Step 5 now states explicitly that the check is unconditional
+  and independent of placement, applies to click-gated locations same as
+  standing prose, and points at the `SMALL_N_FLOOR` pattern
+  (`ConflictRecusalPanel.tsx`/`InterestsChart.tsx`) as the fix to
+  recommend.
 - v0.5 (2026-08-24) — Generation/scoring split
   (`docs/GENERATION_SCORING_SPLIT.md` §2): this session no longer reads or
   reports against a benchmark. Removed the `EDITOR_PROTOCOL.md` "Read

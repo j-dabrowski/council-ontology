@@ -31,6 +31,13 @@ const ERA_FULL: Record<string, string> = {
   post: "after the Inquiry (2022+)",
 };
 
+// A by-type/by-era cell resting on <=3 declarations isn't a defensible basis
+// for naming the individual(s) behind it, regardless of placement behind a
+// click — a single misattributed declaration (extraction error) can flip the
+// whole picture. Matches ConflictRecusalPanel.tsx / InterestsChart.tsx's own
+// SMALL_N_FLOOR. See docs/review, BLOCKING flag, 2026-08-24 pass 2.
+const SMALL_N_FLOOR = 3;
+
 function RecusalDeclRow({ d }: { d: RecusalDeclarationDetail }) {
   const left = d.action.startsWith("Stepped");
   return (
@@ -241,9 +248,17 @@ export function RecusalTrendPanel() {
           {selectedCell.declarations.length === 0 && (
             <p className="chart-note">No itemised declarations behind this cell.</p>
           )}
-          {selectedCell.declarations.map((d, i) => (
-            <RecusalDeclRow key={i} d={d} />
-          ))}
+          {selectedCell.declarations.length > 0 && selectedCell.declared <= SMALL_N_FLOOR && (
+            <p className="chart-note">
+              n too small to name individual declarations — shown at aggregate level only
+              ({selectedCell.declared} on record, {SMALL_N_FLOOR} or fewer).
+            </p>
+          )}
+          {selectedCell.declarations.length > 0 && selectedCell.declared > SMALL_N_FLOOR && (
+            selectedCell.declarations.map((d, i) => (
+              <RecusalDeclRow key={i} d={d} />
+            ))
+          )}
         </DrillDown>
       )}
 

@@ -4,6 +4,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { Reveal } from "./DrillDown";
 
 export function ContestationChart() {
   const { data, loading, error } = useData(() => api.trends());
@@ -52,15 +53,24 @@ export function ContestationChart() {
       <p className="chart-note">
         Contestation rate across the full 30-year corpus (1995–2026).
       </p>
-      <h3 className="section-heading">Most contested motion per year</h3>
-      <div className="contested-list">
-        {data.contestation.map((r) => (
-          <div key={r.year} className="contested-row">
-            <span className="contested-year">{r.year}</span>
-            <span className="contested-title">{r.most_contested[0] ?? "—"}</span>
-          </div>
-        ))}
-      </div>
+      <Reveal label="see the most contested motion per year">
+        <h3 className="section-heading" style={{ marginTop: 12 }}>Most contested motion per year</h3>
+        <div className="contested-list">
+          {data.contestation.map((r) => (
+            <div key={r.year} className="contested-row">
+              <span className="contested-year">{r.year}</span>
+              <span className="contested-title">
+                {r.most_contested[0] ?? "—"}
+                {r.most_contested[0] && (
+                  <span style={{ color: "var(--text-muted)" }}>
+                    {" "}({r.total_with_dissent} of {r.total_carried} motions had any dissent that year)
+                  </span>
+                )}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Reveal>
     </Card>
   );
 }
