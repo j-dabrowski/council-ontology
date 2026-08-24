@@ -325,26 +325,19 @@ by Anthropic as of this writing:**
   against — treat a workflow that starts failing on an auth error as the
   signal to regenerate it.
 - **Unsetting `ANTHROPIC_API_KEY` in the child process's own OS
-  environment is not sufficient to guarantee subscription-only billing —
-  confirmed by a real incident, 2026-08-24.** Claude Code can also inject
-  `ANTHROPIC_API_KEY` via an `env` block in a **user-level** settings file
-  (`~/.claude/settings.json`), and it does this on every invocation
-  regardless of the child process's own environment — a bare
-  `env.pop("ANTHROPIC_API_KEY", None)` (`scripts/conductor_loop.py`'s
-  `run_claude()`) cannot see or stop it. This is what actually happened:
-  the first real `council editor` / `council editor-score` dispatch drew
-  on an org's API credits and burned them out, despite that stripping.
-  The fix, applied to every `claude -p` invocation in this project
-  (`run_claude()`, and the two direct calls in `discovery.yml`): add
-  `--setting-sources project,local` — this excludes the "user" settings
-  source from being read at all, so an `env.ANTHROPIC_API_KEY` sitting in
-  a machine's global Claude Code config can never reach a session this
-  project starts. Verified directly: with the shell var explicitly
-  unset, a bare `claude -p` call still authenticated via a
-  settings-injected key; with `--setting-sources project,local` added,
-  the same call cleanly used subscription auth instead. This repo's own
-  `.claude/settings.json` / `.claude/settings.local.json` carry no `env`
-  block, so excluding only "user" costs nothing here.
+  environment is not sufficient on its own to guarantee subscription-only
+  billing.** Claude Code can also inject `ANTHROPIC_API_KEY` via an `env`
+  block in a **user-level** settings file (`~/.claude/settings.json`), on
+  every invocation, regardless of the child process's own environment —
+  a bare `env.pop("ANTHROPIC_API_KEY", None)` can't see or stop that.
+  Every `claude -p` invocation in this project (`run_claude()`,
+  `scripts/conductor_loop.py`; the two direct calls in `discovery.yml`)
+  therefore also passes `--setting-sources project,local`, excluding the
+  "user" settings source entirely — this repo's own `.claude/
+  settings.json` / `.claude/settings.local.json` carry no `env` block, so
+  excluding only "user" costs nothing here. See `docs/CICD_DECISIONS.md`'s
+  2026-08-24 entry for the incident this closed and the alternatives
+  considered.
 
 **In a workflow step**, the commands above become:
 ```yaml
