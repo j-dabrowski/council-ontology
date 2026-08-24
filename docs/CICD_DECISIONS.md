@@ -364,6 +364,58 @@ exception — that would be evidence about Editor calibration (the
 
 ---
 
+## 2026-08-24 — Escalations become PRs into a `staging` branch; approval-by-merge resumes the run (accepted design, not built)
+
+**Decision:** `AUTOMATION_ARCHITECTURE.md` Part 4 revised. A pipeline
+invocation becomes a **logical run** executed as a chain of working-branch
+**segments**, each ending in one PR: to `main` on successful completion,
+to a long-lived `staging` branch on an escalation. Merging an escalation
+PR is the approval that resumes the run — the next segment branches off
+`staging`, so approved partial work (including any amendments the human
+pushed before merging) is what the continuation builds on. Dispatch
+offers **fresh** (reset `staging = main`) or **resume** (keep `staging`,
+merge `main` in, continue from `run_state.json` at `staging` HEAD —
+approved work never recomputed). Declining an escalation PR ends the run
+with no automatic retry; approved segments survive in `staging` for a
+later resume dispatch. Instrument fixes go to `main`, run-scoped fixes to
+`staging`; resume's unconditional `main → staging` merge picks up either.
+Nothing is built yet — both existing workflows keep the old shape (one PR
+to `main`, escalation = job summary) until rewired per Part 5's list.
+
+**Alternatives considered:**
+- *Status quo: escalation ends the workflow with a job summary; retry is a
+  full re-dispatch.* Rejected: no reviewable diff at the escalation point,
+  no approval record, and a re-dispatch recomputes everything — including
+  expensive, already-good scrape/extraction work — because nothing marks
+  where approved work ends.
+- *A GitHub request-changes review driving an in-place revision agent* (a
+  third response between approve and decline). Rejected: it shifts the
+  development environment onto GitHub — review-comment conventions, a
+  revision session, a re-review cycle — when "amend the branch in your own
+  tools, then merge" already covers the need. GitHub stays the trigger and
+  approval surface only.
+- *Always reset `staging` at every dispatch (no resume mode).* Rejected:
+  a decline followed by a manual fix would force re-running everything,
+  wasting tokens on stages a human had already approved.
+- *Auto-retry on decline.* Rejected: a decline carries no information to
+  retry with, so a blind re-run reproduces the same failure at full cost —
+  same principle as the Conductor's existing pass cap.
+- *Per-run staging branches instead of one shared lane.* Rejected: gives
+  up the clean merge-event trigger and the accumulated approval ledger;
+  concurrency is instead handled by a workflow concurrency group (one
+  logical run at a time).
+
+**Trade-off:** more PRs per logical run (one per segment instead of one
+total), and `main`'s protection now partly depends on `staging` discipline
+— an instrument fix committed only to `staging` is hostage to that run
+succeeding, which is why fix placement is stated as a rule rather than
+left to habit. Accepted because each escalation PR is small, focused, and
+arrives exactly when a human decision is needed anyway; the pre-revision
+shape had the same human act (read the job summary, fix, re-dispatch)
+with less to show for it and full recomputation after.
+
+---
+
 ## 2026-08-24 — `--setting-sources project,local` on every agent-role `claude -p` call (real incident, not a hypothetical)
 
 **Decision:** Every `claude -p` invocation this project makes for an
@@ -514,6 +566,43 @@ say what was actually weighed rather than reconstructing it after the fact.
   requiring someone to remember to trigger it, is still an open question —
   noted in `TESTING.md`'s "Where this goes next" as the natural home for a
   headless Conductor once Editor/Fixer are calibrated.
+- **An authenticated draft viewer, to make the final publish approval
+  PR-gated without exposing draft content.** Proposed by the project owner
+  2026-08-24, alongside the staging escalation model (see that entry
+  above) — deliberately parked for a future session, not designed now.
+  The problem it solves: `AUTOMATION_ARCHITECTURE.md` Flow E's open
+  question (should publish's gate become a PR?) has always been blocked
+  on a real conflict — a PR is the approval surface the segment model
+  standardises on, but Part 3's hard rule keeps named-individual draft
+  content out of anything PR-visible, and the draft JSON itself is
+  private GCS. So "approve the final draft via PR" would mean approving
+  content the PR cannot show. The proposal: the completed draft's final
+  segment PR stays the approval surface, and a **viewer** becomes the
+  review surface — run locally, it checks out the PR's branch and pulls
+  the draft's private JSON from GCS under the human's own authenticated
+  session (`gcloud auth` — read access is already bucket-wide, no IAM
+  change needed for the local form), rendering the draft exactly as the
+  site would, visible only inside that session until the human approves
+  the PR. Explicitly compatible with a later hosted form: a non-public
+  preview instance of the site, built for draft review, accessible only
+  to authenticated admins.
+  - **Most of the local form already exists in pieces:** the frontend dev
+    server renders the same snapshot JSON shapes the draft directory
+    holds, and Flow C's `ref`-aware preview-draft idea ("checked out
+    against the PR's own branch") is the same concept one step earlier
+    in the pipeline. The likely build is small: a `council preview
+    <council> <run_id>` that pulls the draft dir from GCS to a local
+    gitignored path and points the dev server's data source at it.
+  - **The hosted form is the larger, separate build** (an auth layer in
+    front of a second deployment, credential story for its GCS reads) —
+    same class of undecided infrastructure as the Cloud Run entry above,
+    and probably the same OIDC/service reuse answer when it's designed.
+  - **If adopted, this resolves Flow E** in the direction Part 5's item 4
+    sketches (publish rides the final segment PR; merge = publish
+    authorization) — the hash-verification question remains: keep the
+    existing draft-integrity hash check as a merge-triggered validation
+    rather than dropping it, so "what was reviewed is provably what
+    ships" survives the gate change. Not decided here.
 - **README CI status badge.** Not added yet — small, but Actions history
   already has a real success/failure story worth surfacing (the
   `python-dotenv` failure above, fixed same day) rather than starting from
