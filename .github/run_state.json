@@ -1,0 +1,12 @@
+{
+  "run_id": "discovery-32754575127",
+  "workflow": "discovery",
+  "council": "cambridge",
+  "segment": 1,
+  "mode": "fresh",
+  "status": "completed",
+  "escalation_reason": null,
+  "conductor_loop": null,
+  "publish_requested": false,
+  "updated_at": "2026-08-24T17:17:14.448141+00:00"
+}

@@ -593,6 +593,36 @@ LOGGED CYCLES:
   isn't a data caveat but a methods note for whoever runs a future F-genre
   hypothesis.
 
+- Session 12 (2026-08-24) — first session run under the v3.0 discovery-only
+  rewrite and its four-dimension Stage 3 benchmark (register-gap reduction /
+  structural kill rate / finding rate / framing balance), replacing the
+  seven-dimension score used through Session 11. Register-gap seeding worked
+  exactly as v3.0 intends: the coverage register's one true zero-hypothesis
+  EMPTY row (dimension 12, Gifts/benefits & post-separation relationships)
+  found real, hand-verifiable material on its very first attempt — [50],
+  a single hypothesis run deep rather than several run shallow, landing two
+  independently-verified threads (a Governance-concern narrative: a
+  developer-gift prohibition motion LOST then WITHDRAWN in 2016, fixed only
+  by a 2019 Acting-CEO directive, alongside a councillor's own gift-
+  declaration record being destroyed by the administration; and a Good-
+  governance-strength credit: the one gift-linked declaration this session
+  could anchor-verify against an actual vote showed correct recusal on the
+  gift-giving association's own funding request). All four dimensions
+  passed on a single well-run hypothesis — confirms Stage 2's "one
+  well-identified finding beats five descriptive charts" applies at the
+  session-scoring level too, not just within a single write-up. Did the
+  balance hold: yes, both threads shipped at the severity/strength the
+  evidence earned, neither amplified nor buried. New standing-checklist
+  candidate: a councillor-identity thinness class distinct from the
+  known given/family field-swap class ([48]/Pass 4) — several rows sharing
+  a family name with a plausible, non-transposed given name, one dominant
+  and the rest near-zero-vote, surfaced on "McKerracher" (5 rows: 398/2/7/
+  0/0 votes). Flagged for `scripts/dedup_councillors.py`, not resolved this
+  session (out of scope for Explorer). No version bump — v3.0's Stage 1/2/3
+  mechanics all held up on their first real use; nothing in this session
+  exposed a wording gap the way Sessions 10–11 did for the old Stage
+  5/6 benchmark.
+
 STANDING CONFOUND CHECKLIST (grow this):
 - Selection in planning: bigger/uglier proposals attract *both* more objectors
   and more refusals — control for value, zoning, suburb before claiming an
@@ -654,6 +684,18 @@ STANDING CONFOUND CHECKLIST (grow this):
   filter them out. Generalises [25]'s narrower finding (previously stated
   only for the 24 confidential `budget_items` rows) to the whole table.
   Surfaced by [47] (Session 11).
+- **A councillor-identity thinness class distinct from the known given/
+  family field-swap class ([48]/Pass 4).** Several rows can share one
+  family name with plausible, distinct (non-transposed) given names, where
+  one is the real, well-established identity (hundreds of votes) and the
+  others are near-zero-vote (single low digits or zero), often confined to
+  one meeting, with no `councillor_terms` row. Surfaced on "McKerracher"
+  ([50], Session 12): Kate id197/398 votes (the flagship identity behind
+  [8]/[18]/[19]) vs Margaret id236/2 votes/1 meeting, James id321/7 votes,
+  Kerry id348/0, Rod id407/0. Not resolved (out of scope for an Explorer
+  session) — before trusting any per-person count on a shared surname,
+  check for this shape (`SELECT id, given_name, COUNT(votes) FROM
+  councillors ... GROUP BY family_name`), not just the field-swap class.
 
 ═══════════════════════════════════════════════════
 CHANGELOG
