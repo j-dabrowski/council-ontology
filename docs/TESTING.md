@@ -486,6 +486,13 @@ gcloud storage buckets create "gs://${BUCKET}" \
 # 6. Upload the DB (repeat this after every re-extraction)
 gcloud storage cp data/council.db "gs://${BUCKET}/council.db"
 
+# 6b. Seed INVESTIGATIONS.md too — discovery.yml downloads this path on
+#     every run (AUTOMATION_ARCHITECTURE.md Part 1) and fails if it's
+#     missing; nothing else ever creates it. One-time only — every run
+#     after this re-uploads it itself.
+gcloud storage cp docs/investigator/INVESTIGATIONS.md \
+  "gs://${BUCKET}/investigations/INVESTIGATIONS.md"
+
 # 7. A dedicated, minimal-privilege service account for this workflow only
 gcloud iam service-accounts create publish-workflow \
   --display-name="GitHub Actions: publish.yml"
@@ -505,6 +512,15 @@ gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
   --member="serviceAccount:${SA_EMAIL}" \
   --role="roles/storage.objectAdmin" \
   --condition="expression=resource.name.startsWith(\"projects/_/buckets/${BUCKET}/objects/drafts/\") || resource.name.startsWith(\"projects/_/buckets/${BUCKET}/objects/published/full/\"),title=drafts-and-full-tier-write"
+
+# 8c. discovery.yml re-uploads INVESTIGATIONS.md every run (step 6b above)
+#     — a separate conditional binding, added as its own grant rather than
+#     editing 8b's condition, so the original drafts/published-full grant
+#     is never touched by this one.
+gcloud storage buckets add-iam-policy-binding "gs://${BUCKET}" \
+  --member="serviceAccount:${SA_EMAIL}" \
+  --role="roles/storage.objectAdmin" \
+  --condition="expression=resource.name.startsWith(\"projects/_/buckets/${BUCKET}/objects/investigations/\"),title=investigations-write"
 
 # 9. The trust boundary: a Workload Identity Pool GCP will accept GitHub's
 #    OIDC tokens through
@@ -529,6 +545,17 @@ gh variable set GCP_WORKLOAD_IDENTITY_PROVIDER \
   --body "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
 gh variable set GCP_SERVICE_ACCOUNT --body "$SA_EMAIL"
 gh variable set GCP_BUCKET --body "$BUCKET"
+
+# 13. A GitHub (not GCP) repo setting, not on by default: discovery.yml and
+#     maintenance.yml both open a segment PR at the end of every run (the
+#     staging escalation model, AUTOMATION_ARCHITECTURE.md Part 4) using
+#     the default GITHUB_TOKEN via `gh pr create` — without this, that call
+#     fails outright ("GitHub Actions is not permitted to create or approve
+#     pull requests"), a real failure hit standing up this build, not a
+#     hypothetical. Despite the field name, this does not let Actions merge
+#     anything — nothing in this repo's workflows auto-merges a PR.
+gh api -X PUT repos/j-dabrowski/council-ontology/actions/permissions/workflow \
+  -f default_workflow_permissions=write -F can_approve_pull_request_reviews=true
 ```
 
 `GCP_WORKLOAD_IDENTITY_PROVIDER` / `GCP_SERVICE_ACCOUNT` / `GCP_BUCKET` are

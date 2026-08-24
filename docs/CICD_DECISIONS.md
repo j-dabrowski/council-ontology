@@ -542,6 +542,52 @@ Part 4/Part 5 have already moved on to describing it as built.
 
 ---
 
+## 2026-08-24 — Two setup gaps closed after the first live dispatch of the staging model
+
+**What was fixed, found by actually dispatching `discovery.yml` rather
+than by review alone:**
+
+1. **`investigations/INVESTIGATIONS.md` was never seeded in GCS.**
+   `discovery.yml` downloads this path on every run
+   (`AUTOMATION_ARCHITECTURE.md` Part 1), but nothing had ever uploaded it
+   — the one-time setup script only ever covered `council.db`. Fixed by a
+   one-time manual upload (now `docs/TESTING.md`'s new step 6b) and,
+   separately, by realizing the service account's write access was *also*
+   never extended to the `investigations/` prefix (Part 1 already flagged
+   this as needed; it just was never done) — fixed with a new conditional
+   IAM binding scoped only to that prefix (`docs/TESTING.md` step 8c),
+   added rather than editing the existing `drafts-and-full-tier-write`
+   condition, so that grant is untouched.
+2. **GitHub Actions couldn't open pull requests at all.** `gh pr create`
+   failed with "GitHub Actions is not permitted to create or approve pull
+   requests" — a repo-level setting
+   (`can_approve_pull_request_reviews`, off by default) that an explicit
+   `permissions: pull-requests: write` block in workflow YAML does not
+   override. Required for the staging model to function at all, since
+   every segment's whole point is opening a PR. Fixed via `gh api -X PUT
+   repos/.../actions/permissions/workflow` (now `docs/TESTING.md` step 13).
+   Despite the field's name this does not let Actions merge or approve
+   anything on its own — nothing in this repo's workflows auto-merges.
+
+Also hardened `.gitignore` against a class of file neither gap-fix above
+touches: `google-github-actions/auth@v2` writes a per-run credential
+config into the repo root that its own cleanup only removes at job end,
+so any step doing `git add -A` earlier in the job — the segment-PR step,
+in both `discovery.yml` and `maintenance.yml` — could otherwise stage and
+commit it. `gha-creds-*.json` is now gitignored; `git add -A` never stages
+an ignored path regardless of pathspec, so no workflow YAML change was
+needed.
+
+**Trade-off / why worth logging:** none of this was visible to code
+review, YAML validation, or the unit test suite — it only exists at the
+intersection of "a workflow actually runs on a real GitHub Actions runner
+against this real repo's real settings," which nothing short of a real
+dispatch exercises. Consistent with this file's 2026-08-05
+`python-dotenv` entry: the value of actually running the thing, not just
+reasoning about it.
+
+---
+
 ## Open decisions (not yet made / not yet built, as of 2026-08-22)
 
 Logged now, before they're decided, specifically so the eventual entry can

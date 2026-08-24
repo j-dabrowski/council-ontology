@@ -12,6 +12,12 @@ src/__init__.pyc
 # macOS
 .DS_Store
 
+# google-github-actions/auth@v2 writes this into the repo root on every CI
+# job that authenticates to GCP (a workload-identity credential config).
+# Its own cleanup step only runs at job END, so a workflow step doing
+# `git add -A` earlier in the same job would otherwise stage it too.
+gha-creds-*.json
+
 # Personal notes
 stack_overview.md
 
