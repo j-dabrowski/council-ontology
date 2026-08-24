@@ -91,17 +91,25 @@ jobs:
         # argument. Same shape as maintenance.yml and draft.yml.
         run: |
           claude -p "$(cat docs/agent_prompts/explorer.txt)" \
-            --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+            --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob" \
+            --setting-sources project,local
         env:
           # Subscription auth only — never ANTHROPIC_API_KEY, same
           # discipline as scripts/conductor_loop.py and docs/AGENT_PROMPTS.md.
+          # `--setting-sources project,local` (added 2026-08-24, same
+          # incident as run_claude()'s matching comment) excludes any
+          # user-level Claude Code settings the runner's image might carry
+          # an `env.ANTHROPIC_API_KEY` block in — a bare unset env var is
+          # not sufficient on its own, verified against the incident that
+          # motivated this.
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 
       - name: Run Refiner (only if refine=true)
         if: inputs.refine == true
         run: |
           claude -p "$(cat docs/agent_prompts/refiner.txt)" \
-            --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob"
+            --permission-mode dontAsk --allowedTools "Read,Edit,Write,Bash,Grep,Glob" \
+            --setting-sources project,local
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
 

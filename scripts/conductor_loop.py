@@ -129,12 +129,38 @@ def run_draft(council: str) -> str:
 
 def run_claude(prompt: str, label: str) -> None:
     """Invokes Claude Code as a subscription user, never the pay-per-token
-    API. `ANTHROPIC_API_KEY` is stripped from the child process's
-    environment unconditionally -- even if it's set in the calling shell
-    for some unrelated reason (e.g. direct API dev work on the same
-    machine), the `claude` process launched here never sees it, so it
-    can only authenticate via a login session or CLAUDE_CODE_OAUTH_TOKEN.
-    See this module's docstring, "Billing", for the reasoning."""
+    API. Two independent layers, because one alone is provably not enough
+    (incident, 2026-08-24: this project's first real `council editor` /
+    `council editor-score` dispatch drew on a user's org API credits
+    despite the env-stripping below, and burned them out):
+
+    1. `ANTHROPIC_API_KEY` is stripped from the child process's OS-level
+       environment unconditionally -- even if it's set in the calling
+       shell for some unrelated reason (e.g. direct API dev work on the
+       same machine), the `claude` process launched here never sees it
+       *at that layer*.
+    2. `--setting-sources project,local` excludes the user-level Claude
+       Code settings source (`~/.claude/settings.json`) from being read
+       at all. This is the layer that actually mattered for the incident:
+       Claude Code can inject `ANTHROPIC_API_KEY` via an `env` block in
+       that file, and it does so unconditionally on every invocation --
+       independent of the child process's OS environment, so layer 1
+       alone cannot stop it (verified: with the shell var explicitly
+       unset, a bare `claude -p` call still authenticated via that
+       settings-injected key; with `--setting-sources project,local`
+       added, the same call cleanly used subscription auth instead). This
+       repo's own `.claude/settings.json` / `.claude/settings.local.json`
+       carry no such `env` block, so excluding only "user" costs nothing
+       here.
+
+    Together these mean the `claude` process launched here can only
+    authenticate via a login session or `CLAUDE_CODE_OAUTH_TOKEN` --
+    never any API key, wherever it might be configured to leak in from.
+    See this module's docstring, "Billing", for why that matters. This
+    does NOT apply to `src/extraction/extractor.py`, which is *meant* to
+    use `ANTHROPIC_API_KEY` directly via the Anthropic SDK for real,
+    cost-tracked extraction -- a completely separate code path that
+    never calls this function."""
     print(f"\n>>> {label}")
     env = os.environ.copy()
     env.pop("ANTHROPIC_API_KEY", None)
@@ -143,6 +169,7 @@ def run_claude(prompt: str, label: str) -> None:
             "claude", "-p", prompt,
             "--permission-mode", "dontAsk",
             "--allowedTools", ALLOWED_TOOLS,
+            "--setting-sources", "project,local",
         ],
         check=True,
         cwd=ROOT,

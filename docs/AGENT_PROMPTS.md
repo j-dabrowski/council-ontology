@@ -324,6 +324,27 @@ by Anthropic as of this writing:**
   than interactive use, isn't stated. No proactive warning to build
   against — treat a workflow that starts failing on an auth error as the
   signal to regenerate it.
+- **Unsetting `ANTHROPIC_API_KEY` in the child process's own OS
+  environment is not sufficient to guarantee subscription-only billing —
+  confirmed by a real incident, 2026-08-24.** Claude Code can also inject
+  `ANTHROPIC_API_KEY` via an `env` block in a **user-level** settings file
+  (`~/.claude/settings.json`), and it does this on every invocation
+  regardless of the child process's own environment — a bare
+  `env.pop("ANTHROPIC_API_KEY", None)` (`scripts/conductor_loop.py`'s
+  `run_claude()`) cannot see or stop it. This is what actually happened:
+  the first real `council editor` / `council editor-score` dispatch drew
+  on an org's API credits and burned them out, despite that stripping.
+  The fix, applied to every `claude -p` invocation in this project
+  (`run_claude()`, and the two direct calls in `discovery.yml`): add
+  `--setting-sources project,local` — this excludes the "user" settings
+  source from being read at all, so an `env.ANTHROPIC_API_KEY` sitting in
+  a machine's global Claude Code config can never reach a session this
+  project starts. Verified directly: with the shell var explicitly
+  unset, a bare `claude -p` call still authenticated via a
+  settings-injected key; with `--setting-sources project,local` added,
+  the same call cleanly used subscription auth instead. This repo's own
+  `.claude/settings.json` / `.claude/settings.local.json` carry no `env`
+  block, so excluding only "user" costs nothing here.
 
 **In a workflow step**, the commands above become:
 ```yaml
@@ -357,9 +378,9 @@ review, Fixer's fix) reach a real `claude -p` call one hop inside those
 commands — see that script's own docstring for why this is a legitimate
 replacement for an agent-driven loop specifically (Editor's verdict is
 already structured data) and not a shortcut around the parts that still
-need real judgment. It applies the same `ANTHROPIC_API_KEY`-stripping
-discipline as this section, and never calls `council publish`, same as
-Conductor itself.
+need real judgment. It applies the same subscription-only billing
+discipline as this section (both layers — see the caveat above), and
+never calls `council publish`, same as Conductor itself.
 
 **`scripts/conductor_loop.py` is exactly what `.github/workflows/
 maintenance.yml` runs** (added `docs/AGENT_DESIGN.md` §6 Step 7,
