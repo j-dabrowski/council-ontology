@@ -1,0 +1,108 @@
+name: Resume
+
+# The "merge = approval that resumes the run" half of the staging
+# escalation model (docs/AUTOMATION_ARCHITECTURE.md Part 4). Triggers on
+# a PR into `staging` being merged — deliberately the `pull_request:
+# types: [closed]` event, filtered to merged==true below, NOT a plain
+# `push: branches: [staging]`.
+#
+# Why not push: a segment's own "Prepare the staging lane" step (in
+# maintenance.yml/discovery.yml) also pushes to `staging` mid-run — the
+# fresh reset, or the resume-mode merge — and that push happens BEFORE
+# the current run has written its own new run_state.json, so `staging`
+# HEAD at that moment still carries the PREVIOUS segment's
+# status=escalated. A push-triggered router can't tell that apart from a
+# human actually merging an escalation PR, so it would fire again, see
+# escalated, and dispatch a redundant resume of the same workflow — which
+# then queues behind the run already in flight (same staging-lane
+# concurrency group) and, when its turn comes, recomputes the identical
+# segment number and branch name the first run already used, colliding on
+# a rejected non-fast-forward push. Caught by tracing through "what if
+# two workflows touch staging around the same time" — not from a real
+# run (see docs/CICD_DECISIONS.md's entry logging this fix).
+#
+# A PR-merge event doesn't have this problem: a segment's own git pushes
+# (both the fresh-mode force-push and the resume-mode merge-push) are
+# plain pushes, never a PR merge, so they never fire this trigger at all
+# — only an actual `gh pr merge`/GitHub-UI merge of a PR based against
+# `staging` does, which is exactly and only the human-approval event this
+# workflow exists to react to.
+on:
+  pull_request:
+    types: [closed]
+    branches: [staging]
+
+permissions:
+  contents: read
+  actions: write   # to trigger the next segment's workflow_dispatch
+
+concurrency:
+  group: council-ontology-resume-router
+  cancel-in-progress: true   # idempotent (re-reads staging HEAD each time); a
+                             # rapid double-merge should only need the latest
+
+jobs:
+  resume:
+    name: Route an escalation-PR merge to the next segment
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: staging   # not the default PR merge/head ref — we need the
+                         # real post-merge staging HEAD run_state.json sits at
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          # No `pip install -e .` here on purpose: scripts/run_state.py
+          # is stdlib-only (argparse/json/dataclasses/datetime/pathlib),
+          # so this router doesn't need the package installed.
+
+      - name: Confirm run_state.json at staging HEAD agrees this is an escalation resume
+        id: check
+        # Belt-and-suspenders, not the primary filter any more (the
+        # pull_request/merged trigger above is): every PR this repo's own
+        # workflows ever open against `staging` is an escalation PR by
+        # construction, so this should always be true. Kept as a real
+        # check anyway, not assumed, in case a PR into `staging` is ever
+        # opened some other way.
+        run: |
+          set +e
+          workflow=$(python scripts/run_state.py should-resume)
+          code=$?
+          echo "workflow=$workflow" >> "$GITHUB_OUTPUT"
+          echo "should_resume=$([ $code -eq 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Dispatch the next segment
+        if: steps.check.outputs.should_resume == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # --ref main, deliberately not staging: workflow_dispatch runs
+          # the workflow FILE from whichever ref it's dispatched against,
+          # and instrument fixes (including to the workflow files
+          # themselves) always land on main, never staging-only (the
+          # fix-placement rule in AUTOMATION_ARCHITECTURE.md Part 4) — so
+          # main always carries the current, intended definition. The
+          # job's own steps check out and operate on `staging` explicitly
+          # regardless of which ref triggered the dispatch.
+          gh workflow run "${{ steps.check.outputs.workflow }}.yml" \
+            --ref main \
+            -f mode=resume
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "### Resume router"
+            echo ""
+            echo "PR #${{ github.event.pull_request.number }} merged into \`staging\`."
+            echo ""
+            if [ "${{ steps.check.outputs.should_resume }}" = "true" ]; then
+              echo "Dispatched \`${{ steps.check.outputs.workflow }}.yml\` with \`mode=resume\`."
+            else
+              echo "run_state.json at \`staging\` HEAD wasn't \`status: escalated\` — unexpected"
+              echo "for a merge into this branch, but nothing to resume either way."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"

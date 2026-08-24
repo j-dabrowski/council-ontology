@@ -16,14 +16,16 @@ automation story. Neither built workflow runs on a schedule yet — both are
 deliberately dispatch-only until their own stated activation conditions
 are met (Part 3).
 
-**Revised 2026-08-24:** Part 4 now specifies the branch-based escalation
-model — logical runs executed as chains of working-branch segments, with
-a successful segment PRing to `main` and an escalation PRing to a
-long-lived `staging` branch whose merge is the approval that resumes the
-run. **Accepted design, not built:** both built workflows still implement
-the pre-revision shape (one PR to `main`; an escalation ends the workflow
-with a job summary). Part 3's uniform rule survives with one refinement,
-noted there; Part 5 lists the rewiring work.
+**Revised 2026-08-24, built the same day:** Part 4 specifies the
+branch-based escalation model — logical runs executed as chains of
+working-branch segments, with a successful segment PRing to `main` and an
+escalation PRing to a long-lived `staging` branch whose merge is the
+approval that resumes the run. Both `discovery.yml` and `maintenance.yml`
+now implement it (a `mode` input, a shared `staging`-lane concurrency
+group, and a segment PR whose target depends on outcome), and a third
+workflow, `resume.yml`, auto-dispatches the next segment on an
+escalation-PR merge. Part 3's uniform rule survives with one refinement,
+noted there; Part 5's build list is now a closed record of what shipped.
 
 **Companion docs, not duplicates:** `docs/TESTING.md` documents the
 workflows that already exist (`draft.yml`, `publish.yml`, and — as of this
@@ -135,8 +137,9 @@ the segment's outcome — `main` on successful completion, `staging` on an
 escalation. Nothing else in this Part changes: the GCS-only exemptions
 stand, and each flow box below describes that stage's own mechanics
 unchanged — read "opens a PR" in them as "opens its segment's PR,
-targeted per Part 4." The built workflows still open a single PR to
-`main` (the pre-revision shape) until rewired.
+targeted per Part 4." **Built 2026-08-24**, per Part 4/Part 5: both
+workflows now open their segment's PR with the target this rule
+describes, not the pre-revision single-PR-to-`main` shape.
 
 **Two more rules that follow directly from "one PR per run" (Part 4):**
 
@@ -369,21 +372,25 @@ dispatch-by-track are scripted (no judgment in that gap), while Editor's
 own review and Fixer's own fix stay real `claude -p` calls. Whenever
 Fixer actually changes a git-tracked file (source, prompts, docs — never
 `frontend/public/data`, which is `council publish`'s own output, not a
-Fixer repair) `maintenance.yml`'s "Capture Fixer's source edits into a
-PR" step opens one, per this uniform rule, exactly like Refiner's Flow B —
-first built as a direct-commit shortcut, corrected the same day a code
-review of the build caught it discarding real repairs (logged in
-`CICD_DECISIONS.md`'s 2026-08-24 entry, which also records the
-alternatives considered). What `maintenance.yml` deliberately does
-**not** do is auto-publish or schedule itself — both are gated behind
-explicit conditions, not removed altogether:
+Fixer repair, and is deliberately kept off the segment branch entirely —
+see Part 4), that change lands in this segment's own PR, per this
+uniform rule, exactly like Refiner's Flow B. This was first built
+(2026-08-23) as a direct-commit shortcut, corrected the same day a code
+review of the build caught it discarding real repairs by opening a
+second, separate "Fixer-repairs PR" (logged in `CICD_DECISIONS.md`'s
+2026-08-24 entry) — and folded again, 2026-08-24, into the one segment
+PR the staging model already opens per run, once that model was built
+(Part 4, `CICD_DECISIONS.md`'s matching entry). What `maintenance.yml`
+deliberately does **not** do is auto-publish or schedule itself — both
+are gated behind explicit conditions, not removed altogether:
 
 - **Publish** is an opt-in `publish=true` dispatch input (default false),
-  **and** is held automatically whenever the run just opened a Fixer-repair
-  PR, regardless of that input — publishing refreshed data against the
-  exact code Editor just flagged would defeat the review that produced
-  the fix. The job summary always prints the exact `council publish`
-  command to run by hand once that PR merges. A human dispatching with
+  **and** is held automatically whenever the segment escalates or Fixer
+  touched a git-tracked file outside `frontend/public/data`, regardless
+  of that input — publishing refreshed data against the exact code Editor
+  just flagged would defeat the review that produced the fix. The job
+  summary always prints the exact `council publish` command to run by
+  hand once the segment's PR merges. A human dispatching with
   `publish=true` on a run with no pending fix is still a deliberate act
   each time — the gate is "not automatic," not "impossible."
 - **Scheduling** is a commented-out `cron:` block in `maintenance.yml`
@@ -442,7 +449,7 @@ change.
 
 ---
 
-## Part 4 — One PR per segment, not per role: logical runs and the staging lane (revised 2026-08-24)
+## Part 4 — One PR per segment, not per role: logical runs and the staging lane (revised 2026-08-24, built 2026-08-24)
 
 **What changed in this revision.** Until 2026-08-24 this Part stated one
 rule: one PR per triggered run, targeting `main`, with an escalation
@@ -456,8 +463,12 @@ GitHub stays what it already is in this design: the trigger surface and
 the approval surface. Development never moves onto it — fixes are made
 in whatever environment the human works in (local editor, a Claude Code
 session, a hosted coding agent) and reach the run through ordinary
-pushes. **Accepted design, not built** — the rewiring work is listed in
-Part 5. `docs/GENERATION_SCORING_SPLIT.md`'s appendix carries the
+pushes. **Built 2026-08-24** — `discovery.yml`, `maintenance.yml`, and the
+new `resume.yml` implement this model; see Part 5 for what shipped and
+`docs/CICD_DECISIONS.md`'s matching entry for the one real refinement made
+along the way (publish's direct-commit path had to be deliberately
+isolated from the segment branch — see that entry for why).
+`docs/GENERATION_SCORING_SPLIT.md`'s appendix carries the
 summary version alongside the escalation contracts (Editor's
 `human`-track flags with their `reasoning` field, review sidecars, score
 files) that are this model's PR payload.
@@ -672,35 +683,53 @@ the concrete gate rather than a restated principle here.
 - **New, not yet resolved: `discovery.yml` doesn't support a standalone
   Refiner-only dispatch.** See Flow B's note in Part 3 — a real, logged
   gap versus the original design, not forgotten.
-- **New, 2026-08-24 — the staging escalation model (Part 4) is accepted
-  design with nothing built.** The open build items, roughly in
-  dependency order:
-  1. the two dispatch modes (fresh/resume) as workflow inputs, the
-     `staging` reset/merge steps, and the concurrency group enforcing
-     the single lane;
-  2. `run_state.json` — schema, which stage boundaries checkpoint it,
-     and the resume workflow triggered on merge-to-staging that reads it
-     and launches the next segment;
-  3. rewiring `maintenance.yml` (first — it has the escalation traffic:
-     Editor `human`-track flags, cap-hits, BLOCKED reports, and the
-     scoring stage from `docs/GENERATION_SCORING_SPLIT.md`) and then
-     `discovery.yml` from single-PR-to-`main` + job-summary escalation
-     to segment PRs; Flow 0 adopts the model whenever it's built at all.
-     The 2026-08-24 Fixer-repairs PR mechanism folds into this: under
-     the segment model, Fixer's edits accumulate on the segment's own
-     branch and land in its one PR, rather than opening a separate
-     repairs PR mid-run.
-  4. It also sharpens (not settles) Flow E's open question above: the
-     natural landing under this model is publish's data commit riding
-     the final segment PR into `main` — Vercel then deploys on the
-     merge, making that merge the publish authorization — but that would
-     supersede the existing hash-verified direct-commit mechanism, which
-     is arguably the stronger gate. Still deliberately undecided. A
-     proposed resolution exists (2026-08-24): an **authenticated draft
-     viewer** — the final segment PR stays the approval surface while a
-     locally-run viewer, pulling the draft's private JSON from GCS under
-     the human's own authenticated session, becomes the review surface,
-     so PR-gating the final approval no longer conflicts with Part 3's
+- **Closed 2026-08-24 — the staging escalation model (Part 4) is built.**
+  All three items that were open build work now ship:
+  1. the two dispatch modes (fresh/resume) as workflow inputs on both
+     `discovery.yml` and `maintenance.yml`, the `staging` reset/merge
+     steps, and the `council-ontology-staging-lane` concurrency group
+     shared by both files (plus every segment they dispatch);
+  2. `run_state.json` (`.github/run_state.json`, `scripts/run_state.py`)
+     — written by every segment regardless of outcome, and read by the
+     new `resume.yml` as a secondary check confirming a merged PR's
+     `staging` HEAD actually says `status: escalated`. `resume.yml`
+     itself triggers on the PR-merge event (`pull_request: types:
+     [closed]`, filtered to `merged == true`), not a raw push — a push
+     trigger would also fire on a segment's own mid-run pushes to
+     `staging` (the fresh-mode reset, the resume-mode merge) and
+     misread the still-stale prior segment's `status: escalated` as a
+     fresh approval, dispatching a redundant, colliding resume;
+  3. `maintenance.yml` (segment PR to `staging` on a
+     `conductor_loop.py` escalation or a hard `editor-score` finding,
+     `main` otherwise) and `discovery.yml` (always `main` — Explorer/
+     Refiner have no scripted escalation signal of their own) both moved
+     off the pre-revision single-PR-to-`main`-plus-job-summary shape.
+     Flow 0 adopts the model whenever it's built at all. The 2026-08-24
+     Fixer-repairs PR mechanism folded into this as planned: Fixer's
+     edits now accumulate on the segment's own branch and land in its
+     one PR, rather than a separate repairs PR mid-run.
+
+  One refinement made during the build, not spelled out above beforehand:
+  `council publish`'s direct-commit path had to be deliberately isolated
+  from the segment branch (an independent `origin/main` checkout, not a
+  push of the segment branch's own `HEAD`) — see
+  `docs/CICD_DECISIONS.md`'s entry logging this build for why a naive
+  push would have leaked a resumed run's not-yet-reviewed segment history
+  straight into `main`.
+
+  **Still open, deliberately parked, not part of this build:** Flow E —
+  publish's own gate mechanism is unchanged; the segment model doesn't
+  settle Flow E's open question above, only sharpens it. The natural
+  landing under this model is publish's data commit riding the final
+  segment PR into `main` — Vercel then deploys on the merge, making that
+  merge the publish authorization — but that would supersede the existing
+  hash-verified direct-commit mechanism, which is arguably the stronger
+  gate. Still deliberately undecided. A proposed resolution exists
+  (2026-08-24): an **authenticated draft viewer** — the final segment PR
+  stays the approval surface while a locally-run viewer, pulling the
+  draft's private JSON from GCS under the human's own authenticated
+  session, becomes the review surface, so PR-gating the final approval no
+  longer conflicts with Part 3's
      rule keeping draft content out of PRs. Parked for a future session
      — see `CICD_DECISIONS.md`'s open-decisions entry for the full
      sketch, including the hosted admin-only preview variant.

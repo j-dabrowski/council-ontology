@@ -381,9 +381,11 @@ maintenance.yml` runs** (added `docs/AGENT_DESIGN.md` §6 Step 7,
 pattern, not just a documented possibility. `.github/workflows/
 discovery.yml` is the same for Explorer(+Refiner) — see
 `docs/TESTING.md`'s "Discovery & maintenance workflows" for the quick
-reference and `AUTOMATION_ARCHITECTURE.md` Part 3 for the full design,
-including what each workflow deliberately doesn't do yet (auto-publish,
-scheduling, a standalone Refiner-only dispatch, PR-gated Fixer edits).
+reference and `AUTOMATION_ARCHITECTURE.md` Parts 3-4 for the full design
+— including what each workflow deliberately doesn't do yet (auto-publish
+by default, scheduling, a standalone Refiner-only dispatch) — and the
+staging escalation model (segments, `mode=fresh|resume`, `run_state.json`,
+`resume.yml`) both are now built on.
 
 ## What's still manual (not a queued command — a human action)
 

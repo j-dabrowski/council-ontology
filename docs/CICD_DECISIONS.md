@@ -474,6 +474,74 @@ doesn't apply to.
 
 ---
 
+## 2026-08-24 — The staging escalation model, built (same day as the design entry above)
+
+**What shipped:** the accepted design logged in this file's earlier
+2026-08-24 entry ("Escalations become PRs into a `staging` branch...") is
+now real. `discovery.yml` and `maintenance.yml` both take a `mode`
+(fresh/resume) dispatch input, share one `council-ontology-staging-lane`
+concurrency group, branch each run off `staging`, and end in exactly one
+PR — to `main` on a clean completion, to `staging` on an escalation
+(maintenance only; discovery has no scripted escalation signal of its
+own). A new `scripts/run_state.py` owns `.github/run_state.json` — the
+git-tracked coordination record every segment writes, which both tells
+the next `resume` dispatch which segment number to continue at and tells
+the new `resume.yml` workflow (triggered when a PR into `staging` merges —
+deliberately `pull_request: types: [closed]` + `merged == true`, not a
+raw `push` trigger; see that file's own header comment for the
+self-triggering-loop bug a push trigger has and this avoids)
+whether that push was an escalation-PR merge worth auto-dispatching the
+next segment for. The 2026-08-24 Fixer-repairs-PR mechanism (logged
+above) folded into this as that entry anticipated: Fixer's edits now
+land in the one segment PR, not a second one.
+
+**The one real design refinement made during the build, not spelled out
+in the architecture doc beforehand:** `council publish`'s direct-commit
+path had to be deliberately decoupled from the segment branch. The
+architecture doc's Part 4 describes segments as ordinary working branches
+a human can amend and merge — true for review purposes, but it means a
+`resume` dispatch's `working_session_N` can legitimately carry commits
+from a prior, already-approved-but-not-yet-merged-to-`main` segment.
+Publish's original mechanics (`git push HEAD:<ref>`) assumed the checkout
+it ran on was always a clean `main` — under the segment model that's no
+longer true, and pushing `HEAD` straight to `main` from a segment branch
+would have carried that segment's *entire* history into `main`, including
+any not-yet-reviewed Fixer edits sitting in the same segment — exactly
+what the PR gate exists to prevent. The fix: publish's step first snapshots
+whatever `council publish` wrote into `frontend/public/data`, discards
+that from the segment's own working tree, checks out an independent,
+freshly-fetched `origin/main`, replays the snapshot there, and commits
+from that isolated checkout — then returns to the segment branch for the
+segment's own PR. Verified safe because this step only runs when a
+sibling check has already confirmed Fixer touched nothing else in the
+segment's working tree, so there is nothing else to lose by switching
+away and back.
+
+**Alternatives considered for that refinement:**
+- *Keep publishing on the segment branch, just push to `main` via a
+  three-way merge instead of a raw ref update.* Rejected: still risks
+  carrying the segment's other commits into `main` on a fast-forwardable
+  history, and adds merge-conflict handling to a code path (`council
+  publish`) whose whole design point is a hash-verified, deterministic
+  commit — not a place to introduce merge ambiguity.
+- *Forbid publish entirely on a `resume` dispatch, only allow it on
+  `fresh`.* Rejected: would make a perfectly clean resumed segment
+  (Fixer's earlier fix merged, this segment's own loop reaching PASS with
+  no further Fixer intervention) unable to auto-publish for a reason
+  unrelated to its own cleanliness — the isolated-checkout fix removes
+  the actual hazard instead of blocking a whole dispatch mode around it.
+
+**Trade-off:** the publish step now does more git plumbing (a snapshot,
+a discard, a second checkout) than a single `git push` — accepted,
+because the alternative is a publish step that is *usually* safe and
+occasionally, silently, ships an unreviewed segment's history to `main`
+depending on which dispatch mode happened to produce it. `docs/TESTING.md`
+documents the resulting workflow shape; this entry is the "why," kept
+here per this file's own stated purpose even though `AUTOMATION_ARCHITECTURE.md`
+Part 4/Part 5 have already moved on to describing it as built.
+
+---
+
 ## Open decisions (not yet made / not yet built, as of 2026-08-22)
 
 Logged now, before they're decided, specifically so the eventual entry can

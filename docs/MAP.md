@@ -71,11 +71,12 @@ Not owned by one track — gates all of them:
   where every file lands, a stage-by-stage input/output map, and a uniform
   rule (any pipeline run that writes a git-tracked file change opens its
   own PR — never a direct commit) applied across the DB-update pipeline
-  and every agent role. Part 4 (revised 2026-08-24, accepted design, not
-  built) specifies the branch-based escalation model: logical runs as
+  and every agent role. Part 4 (revised and built 2026-08-24) specifies
+  and implements the branch-based escalation model: logical runs as
   chains of working-branch segments, success PRs to `main`, escalations
   PR to a `staging` branch whose merge is the approval that resumes the
-  run (fresh/resume dispatch modes, `run_state.json`). Extends
+  run (fresh/resume dispatch modes, `run_state.json`, `resume.yml`).
+  Extends
   `pipeline/PIPELINE.md`'s "Production scale" section into the
   investigator/review tracks that section doesn't cover.
 - `INFORMATION_ARCHITECTURE.md` + `AGENT_DESIGN.md` — the 2026-08-23

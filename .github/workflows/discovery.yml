@@ -10,6 +10,16 @@ name: Discovery
 # cron block at all: there is no activation condition to wait for, the
 # design says this stays dispatch-only permanently).
 #
+# Built on the staging escalation model (AUTOMATION_ARCHITECTURE.md Part
+# 4), same skeleton as maintenance.yml: this run is one SEGMENT, branched
+# off the shared `staging` lane. Explorer/Refiner have no scripted
+# escalation signal of their own (no FAIL/BLOCKED-shaped outcome the way
+# Editor/Fixer do) — this is the honest absence of one, not a gap — so a
+# discovery segment always completes and its PR always targets `main`.
+# The staging/run_state.json machinery is still real here, both for
+# consistency with maintenance.yml and because Flow 0 (once built) and any
+# future escalation path for this flow adopt the same lane.
+#
 # INVESTIGATIONS.md never touches git (AUTOMATION_ARCHITECTURE.md Part 1 —
 # it names real individuals with risk-adjacent framing, same reason it's
 # gitignored locally). It round-trips through GCS instead:
@@ -37,11 +47,30 @@ on:
         required: false
         type: boolean
         default: false
+      mode:
+        description: >-
+          fresh: reset the shared `staging` lane to `main` and start a new
+          logical run at segment 1. resume: keep `staging`, merge `main`
+          into it first, and continue from .github/run_state.json at
+          `staging` HEAD. Discovery segments have no scripted escalation
+          path today, so resume is rarely needed here — it exists mainly
+          for consistency with maintenance.yml's dispatch shape. See
+          docs/AUTOMATION_ARCHITECTURE.md Part 4.
+        required: false
+        type: choice
+        options: [fresh, resume]
+        default: fresh
 
 permissions:
   contents: write
   pull-requests: write
   id-token: write   # required to mint the OIDC token that authenticates to GCP
+
+concurrency:
+  # Shared with maintenance.yml (and the segments resume.yml dispatches) —
+  # `staging` is one lane for the whole repo, not one per workflow file.
+  group: council-ontology-staging-lane
+  cancel-in-progress: false
 
 jobs:
   discovery:
@@ -49,6 +78,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need real history on both main and staging to merge/push either
 
       - uses: actions/setup-python@v5
         with:
@@ -77,12 +108,33 @@ jobs:
           gcloud storage cp "gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md" \
             docs/investigator/INVESTIGATIONS.md
 
-      - name: Create the run's branch
-        id: branch
+      - name: Prepare the staging lane
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          branch="discovery/$(date -u +%Y%m%d-%H%M%S)"
-          git checkout -b "$branch"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ "${{ inputs.mode }}" = "fresh" ]; then
+            echo "fresh dispatch: resetting staging = main"
+            git fetch origin main
+            git push origin origin/main:refs/heads/staging --force
+          else
+            echo "resume dispatch: merging main into the existing staging lane"
+            git fetch origin staging
+            git checkout -B staging origin/staging
+            git merge origin/main --no-edit -m "Merge main into staging (resume, run ${{ github.run_id }})"
+            git push origin staging
+          fi
+          git fetch origin staging
+
+      - name: Determine this segment's number and create its working branch
+        id: segment
+        run: |
+          n=$(python scripts/run_state.py next-segment --mode "${{ inputs.mode }}")
+          branch="discovery/working_session_${n}"
+          echo "number=$n" >> "$GITHUB_OUTPUT"
           echo "name=$branch" >> "$GITHUB_OUTPUT"
+          git checkout -b "$branch" origin/staging
 
       - name: Run Explorer
         # Block scalar, not a plain one: a plain `run:` folds its newline to a
@@ -118,34 +170,33 @@ jobs:
           gcloud storage cp docs/investigator/INVESTIGATIONS.md \
             "gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md"
 
-      - name: Commit git-tracked changes and open a PR
+      - name: Write run_state.json, commit git-tracked changes, and open the segment PR
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Discovery has no scripted escalation signal (see this file's
+          # header comment) — every segment that gets this far completed.
+          python scripts/run_state.py write \
+            --run-id "discovery-${{ github.run_id }}" \
+            --workflow discovery \
+            --council cambridge \
+            --segment "${{ steps.segment.outputs.number }}" \
+            --mode "${{ inputs.mode }}" \
+            --status completed
+
           # INVESTIGATIONS.md is gitignored — never staged here, GCS only.
           git add -A
-          if git diff --cached --quiet; then
-            echo "No git-tracked change (scratchpad script, prompt edit, "
-            echo "or code) resulted from this run — nothing to open a PR "
-            echo "for. Findings (if any) are still in GCS, see the job "
-            echo "summary step below."
-            echo "opened=false" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          # Capture the changed-files list from the index before committing —
-          # actions/checkout defaults to a shallow (depth-1) clone, so a
-          # post-commit `git diff HEAD~1 HEAD` isn't reliable (the parent
-          # commit's full object may not be fetched); `--cached` only needs
-          # the current HEAD and the index, both always present.
           changed=$(git diff --cached --name-only)
           git commit -m "Discovery run ${{ github.run_id }} (workflow_dispatch)"
-          git push -u origin "${{ steps.branch.outputs.name }}"
+          git push -u origin "${{ steps.segment.outputs.name }}"
           pr_body=$(cat <<EOF
-          Discovery run (Explorer$([ "${{ inputs.refine }}" = "true" ] && echo " + Refiner"))
-          via \`workflow_dispatch\`, run ${{ github.run_id }}.
+          Segment ${{ steps.segment.outputs.number }} of discovery run ${{ github.run_id }}
+          (Explorer$([ "${{ inputs.refine }}" = "true" ] && echo " + Refiner")),
+          \`mode=${{ inputs.mode }}\`.
 
           **Git-tracked files changed:**
           \`\`\`
@@ -161,27 +212,22 @@ jobs:
           named individuals — see the header comment in this workflow file.
           EOF
           )
-          gh pr create --title "Discovery run ${{ github.run_id }}" --body "$pr_body"
-          echo "opened=true" >> "$GITHUB_ENV"
+          gh pr create --base main --title "Discovery segment ${{ steps.segment.outputs.number }} — run ${{ github.run_id }}" --body "$pr_body"
+          echo "opened=true" >> "$GITHUB_OUTPUT"
 
       - name: Job summary
         if: always()
         run: |
           {
-            echo "### Discovery run"
+            echo "### Discovery run — segment ${{ steps.segment.outputs.number }} (mode=${{ inputs.mode }})"
             echo ""
             echo "Findings: \`gs://${{ vars.GCP_BUCKET }}/investigations/INVESTIGATIONS.md\`"
             echo ""
-            # Check the PR step's own outcome first: if it was skipped or failed,
-            # $opened is simply unset, and reporting that as "no change" would
-            # dress a failed run up as a clean no-op.
             if [ "${{ steps.pr.outcome }}" != "success" ]; then
               echo "**PR step did not complete** (outcome: \`${{ steps.pr.outcome }}\`)."
               echo "Any git-tracked changes from this run are still only on the"
               echo "runner — check the step logs before re-dispatching."
-            elif [ "$opened" = "true" ]; then
-              echo "PR opened from \`${{ steps.branch.outputs.name }}\`."
             else
-              echo "No git-tracked change — no PR opened."
+              echo "PR opened from \`${{ steps.segment.outputs.name }}\` into \`main\`."
             fi
           } >> "$GITHUB_STEP_SUMMARY"

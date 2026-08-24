@@ -86,6 +86,16 @@ elsewhere says to.
   FAIL with only ordinary tracks still dispatches Fixer as before; unknown
   tracks still raise. `run_draft`/`run_editor`/`run_fixer` and the sidecar
   readers are monkeypatched to plain stand-ins — no real subprocess.
+- **`test_run_state.py`** — `scripts/run_state.py`'s `.github/run_state.json`
+  read/write round-trip, and the two CLI subcommands the discovery/
+  maintenance/resume workflows actually shell out to: `next-segment`
+  (`fresh` is always segment 1; `resume` is the prior segment + 1, or a
+  clear error with no prior state to resume from) and `should-resume`
+  (exits 0 with the workflow name only when `status: escalated`; exits 1
+  on a missing file or `status: completed`, the two ways a push to
+  `staging` isn't an escalation-PR merge). CLI tests drive `main()`
+  directly via `monkeypatch.setattr("sys.argv", ...)` and `capsys`, no
+  subprocess.
 
 All of these test **pure functions or hermetic DB/source-parsing logic** —
 same inputs
@@ -623,6 +633,37 @@ activation checklist that gates scheduling `maintenance.yml` — lives in
 reference, same relationship `draft.yml`/`publish.yml` have to that doc's
 Flow C/E.
 
+**Both are built on the staging escalation model** (Part 4, revised
+2026-08-24, built 2026-08-24): a workflow run is one **segment** of a
+logical run. It branches off a shared, long-lived `staging` branch and
+always ends in exactly one PR — to `main` on a clean completion, to
+`staging` on an escalation (maintenance only — see below). Merging an
+escalation PR is the approval that resumes the run; a third workflow,
+**`resume.yml`**, triggers when a PR into `staging` is merged (a
+`pull_request: types: [closed]` event filtered to `merged == true` —
+deliberately not a `push: branches: [staging]` trigger, which would also
+fire on a segment's own mid-run pushes to `staging` — the fresh-mode
+reset and the resume-mode merge — and misread the still-stale prior
+segment's `status: escalated` at that point as a fresh approval,
+dispatching a redundant, colliding resume) and auto-dispatches the next
+segment. `run_state.json` (`scripts/run_state.py` owns reading/writing
+it) is what makes the mechanical half of this work: the next segment's
+number, and (as a secondary check, since the merge event is now the real
+filter) confirming the merged PR's `staging` HEAD actually says
+`status: escalated`.
+
+Both `discovery.yml` and `maintenance.yml` take a `mode` input
+(`fresh`/`resume`, default `fresh`): `fresh` resets `staging = main` and
+starts segment 1; `resume` merges `main` into the existing `staging`
+first, then continues from `run_state.json` at `staging` HEAD. A human
+re-dispatching by hand almost always wants `fresh`; `resume` is what
+`resume.yml` uses automatically, and is also available for a human who
+wants to continue a declined-and-not-yet-retried run deliberately. All
+three workflows share one `concurrency` group
+(`council-ontology-staging-lane`) — `staging` is a single lane for the
+whole repo, so a second dispatch while one is in flight queues rather than
+cancelling the run in progress.
+
 **`discovery.yml`** — Flow A/B: Explorer, optionally chaining Refiner in
 the same run (`refine=true` input). `workflow_dispatch` only, and
 *permanently* so by design (`docs/AGENT_DESIGN.md` §5) — discovery changes
@@ -630,9 +671,11 @@ the instrument itself, so it's always a deliberate trigger, never a
 schedule. Round-trips `docs/investigator/INVESTIGATIONS.md` through GCS
 (`investigations/INVESTIGATIONS.md` — it never touches git, same reason
 it's gitignored locally: named individuals, risk-adjacent framing). Opens
-a PR with whatever git-tracked files changed (`scratchpad/*.py`, prompt
-calibration-log edits, `queries.py`/`tests.py` from a chained Refiner) plus
-a body pointing at the GCS findings path — a simplified stand-in for the
+a PR — always targeting `main`, since Explorer/Refiner have no
+scripted escalation signal of their own — with whatever git-tracked files
+changed (`scratchpad/*.py`, prompt calibration-log edits,
+`queries.py`/`tests.py` from a chained Refiner, `run_state.json`) plus a
+body pointing at the GCS findings path — a simplified stand-in for the
 machine-generated hypothesis-summary `AUTOMATION_ARCHITECTURE.md`
 originally specified (no role has a structured session-summary contract to
 extract that from yet).
@@ -648,19 +691,27 @@ gate (inside `council draft`) → the Editor/Fixer loop
 layers, `docs/GENERATION_SCORING_SPLIT.md` §2.3/§2.4 — runs once per chain,
 after the loop ends, regardless of PASS or escalation, since its purpose is
 calibration, not gating) → optionally `council publish --gate-profile
-auto`, behind an explicit `publish=true` opt-in (default **false**). A hard
-Layer-2 finding (a missed real risk `editor-score` exits non-zero on) fails
-that step and blocks the publish step in the same run, on top of the
-existing `publish=true`/clean-PASS/no-pending-Fixer-PR conditions — this is
-the first CI wiring for Editor/Fixer at all — previously human-run locally
-only (`council editor-loop <council>` is the same script's CLI wrapper, for
-running the loop by hand outside CI). If Fixer changes any git-tracked file
-while closing an Editor flag, that change opens its own PR
-(`frontend/public/data/` excepted — that stays `council publish`'s direct
-commit) and **publish is held until that PR merges**, regardless of the
-`publish=true` input — refreshed data must never ship against the exact code
-Editor just flagged. `workflow_dispatch` only today; the file carries a
-commented-out `schedule:` block and its own activation checklist (also in
+auto`, behind an explicit `publish=true` opt-in (default **false**). This
+segment escalates (its PR targets `staging`, not `main`) on a
+`conductor_loop.py` exit 1 (a pass-cap hit, a Fixer BLOCKED report, or an
+Editor human-track flag) **or** a hard `editor-score` finding (Layer-1
+structural problem or a Layer-2 false negative) — the latter also still
+blocks the publish step outright even on an otherwise-clean PASS, on top
+of the existing `publish=true`/non-escalated/no-Fixer-source-edit
+conditions. This is the first CI wiring for Editor/Fixer at all —
+previously human-run locally only (`council editor-loop <council>` is the
+same script's CLI wrapper, for running the loop by hand outside CI). If
+Fixer changes any git-tracked file while closing an Editor flag, that
+change lands in this segment's own PR (`frontend/public/data/`
+excepted — that stays `council publish`'s direct commit, deliberately kept
+off the segment branch entirely so a `resume` dispatch's inherited
+segment history is never at risk of riding along into `main`) and
+**publish is held until that PR merges**, regardless of the `publish=true`
+input — refreshed data must never ship against the exact code Editor just
+flagged. (Pre-2026-08-24, this was a second, separate "Fixer-repairs PR";
+it's now folded into the one segment PR, per Part 5's own note that it
+would.) `workflow_dispatch` only today; the file carries a commented-out
+`schedule:` block and its own activation checklist (also in
 `AUTOMATION_ARCHITECTURE.md` Part 3) — do not uncomment it until every item
 is checked in `EDITOR_PROTOCOL.md`'s calibration log, and even then it's a
 deliberate PR from the project owner, not something to flip casually.
@@ -668,6 +719,7 @@ deliberate PR from the project owner, not something to flip casually.
 ```bash
 gh workflow run maintenance.yml                    # loop only, no publish
 gh workflow run maintenance.yml -f publish=true     # also publish on a clean PASS
+gh workflow run maintenance.yml -f mode=resume      # continue a declined run by hand
 council editor-loop cambridge --dry-run             # same loop, run locally, no cost
 ```
 
@@ -675,7 +727,8 @@ Both need the same `CLAUDE_CODE_OAUTH_TOKEN` secret and GCP OIDC Variables
 as everything else in this file — see `docs/AGENT_PROMPTS.md`'s "Running
 any of these via GitHub Actions" section for the install/auth mechanics,
 which these two follow exactly (subscription auth only, `ANTHROPIC_API_KEY`
-never used).
+never used). `resume.yml` needs neither — it only reads `run_state.json`
+off the pushed `staging` ref and calls `gh workflow run`.
 
 ## Adding coverage
 
