@@ -1,12 +1,14 @@
 {
-  "run_id": "discovery-32754575127",
-  "workflow": "discovery",
+  "run_id": "maintenance-32954370357",
+  "workflow": "maintenance",
   "council": "cambridge",
   "segment": 1,
   "mode": "fresh",
-  "status": "completed",
-  "escalation_reason": null,
-  "conductor_loop": null,
+  "status": "escalated",
+  "escalation_reason": "conductor_escalation (cap-hit, Fixer BLOCKED, or an Editor human-track flag \u2014 see the loop step's log)",
+  "conductor_loop": {
+    "exit_code": 1
+  },
   "publish_requested": false,
-  "updated_at": "2026-08-24T17:17:14.448141+00:00"
+  "updated_at": "2026-08-26T09:59:47.862237+00:00"
 }
