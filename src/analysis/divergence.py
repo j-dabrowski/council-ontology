@@ -50,11 +50,18 @@ def officer_divergence(
     from_year: int | None = None,
     to_year: int | None = None,
     min_confidence: float = 0.5,
+    meeting_id: int | None = None,
 ) -> list[DivergencePair]:
     """
     For every meeting date that has both an agenda and a minutes document,
     match agenda motions (with officer_recommendation) to minutes motions (with outcome)
     and flag divergences.
+
+    `meeting_id`, when set, narrows to that one meeting's date (looked up
+    from whichever of its agenda/minutes rows `meeting_id` names — the two
+    document types are separate `Meeting` rows sharing a date) — overrides
+    from_year/to_year (docs/frontend/PRODUCT_ROADMAP.md F2's single-meeting
+    digest).
     """
     from sqlalchemy import extract as sql_extract
 
@@ -67,12 +74,17 @@ def officer_divergence(
         Meeting.council_id == council_id,
         Meeting.document_type == "minutes",
     )
-    if from_year:
-        agenda_q = agenda_q.filter(sql_extract("year", Meeting.meeting_date) >= from_year)
-        minutes_q = minutes_q.filter(sql_extract("year", Meeting.meeting_date) >= from_year)
-    if to_year:
-        agenda_q = agenda_q.filter(sql_extract("year", Meeting.meeting_date) <= to_year)
-        minutes_q = minutes_q.filter(sql_extract("year", Meeting.meeting_date) <= to_year)
+    if meeting_id is not None:
+        target = session.query(Meeting.meeting_date).filter(Meeting.id == meeting_id).scalar()
+        agenda_q = agenda_q.filter(Meeting.meeting_date == target)
+        minutes_q = minutes_q.filter(Meeting.meeting_date == target)
+    else:
+        if from_year:
+            agenda_q = agenda_q.filter(sql_extract("year", Meeting.meeting_date) >= from_year)
+            minutes_q = minutes_q.filter(sql_extract("year", Meeting.meeting_date) >= from_year)
+        if to_year:
+            agenda_q = agenda_q.filter(sql_extract("year", Meeting.meeting_date) <= to_year)
+            minutes_q = minutes_q.filter(sql_extract("year", Meeting.meeting_date) <= to_year)
 
     agenda_dates = {d for (d,) in agenda_q.all()}
     minutes_dates = {d for (d,) in minutes_q.all()}

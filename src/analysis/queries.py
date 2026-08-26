@@ -41,9 +41,16 @@ from src.models import (
 )
 
 
-def _year_filters(stmt, meeting_model, from_year: int | None, to_year: int | None):
-    """Apply optional from_year / to_year filters to a SQLAlchemy statement."""
+def _year_filters(stmt, meeting_model, from_year: int | None, to_year: int | None,
+                  meeting_id: int | None = None):
+    """Apply optional from_year / to_year (or an exact meeting_id) filters to a
+    SQLAlchemy statement. meeting_id narrows to one meeting — a future
+    single-meeting-digest caller (docs/frontend/PRODUCT_ROADMAP.md F2) passes
+    it instead of from_year/to_year, which are too coarse (year-level, not
+    meeting-level) for that use."""
     from sqlalchemy import extract as sql_extract
+    if meeting_id is not None:
+        return stmt.where(meeting_model.id == meeting_id)
     if from_year:
         stmt = stmt.where(sql_extract("year", meeting_model.meeting_date) >= from_year)
     if to_year:
@@ -51,9 +58,13 @@ def _year_filters(stmt, meeting_model, from_year: int | None, to_year: int | Non
     return stmt
 
 
-def _year_filter_query(query, meeting_model, from_year: int | None, to_year: int | None):
-    """Apply optional from_year / to_year filters to a legacy ORM query."""
+def _year_filter_query(query, meeting_model, from_year: int | None, to_year: int | None,
+                       meeting_id: int | None = None):
+    """Apply optional from_year / to_year (or an exact meeting_id) filters to a
+    legacy ORM query. See `_year_filters` above — same meeting_id behaviour."""
     from sqlalchemy import extract as sql_extract
+    if meeting_id is not None:
+        return query.filter(meeting_model.id == meeting_id)
     if from_year:
         query = query.filter(sql_extract("year", meeting_model.meeting_date) >= from_year)
     if to_year:
@@ -615,8 +626,14 @@ def public_engagement_by_year(
     council_id: int,
     from_year: int | None = None,
     to_year: int | None = None,
+    meeting_id: int | None = None,
 ) -> list[EngagementStats]:
-    """Public questions, deputations, and petitions per year (minutes only)."""
+    """Public questions, deputations, and petitions per year (minutes only).
+
+    `meeting_id`, when set, narrows to that one meeting
+    (docs/frontend/PRODUCT_ROADMAP.md F2's single-meeting digest) — the
+    single-item result list still keys off `year`, just with one entry.
+    """
 
     def _count_by_year(model):
         q = (
@@ -630,7 +647,7 @@ def public_engagement_by_year(
                 Meeting.document_type == "minutes",
             )
         )
-        q = _year_filter_query(q, Meeting, from_year, to_year)
+        q = _year_filter_query(q, Meeting, from_year, to_year, meeting_id=meeting_id)
         return {int(yr): n for yr, n in q.group_by("yr").all()}
 
     questions = _count_by_year(PublicQuestion)
@@ -1731,6 +1748,7 @@ class LinkedDeclaredVote:
 
 def _linked_declared_votes(
     session, council_id, from_year=None, to_year=None, councillor_ids=None,
+    meeting_id=None,
 ) -> list[LinkedDeclaredVote]:
     """The one safe, vote-driven declared-interest linkage — see `LinkedDeclaredVote`."""
     vq = (
@@ -1749,7 +1767,7 @@ def _linked_declared_votes(
     )
     if councillor_ids:
         vq = vq.filter(Vote.councillor_id.in_(councillor_ids))
-    vq = _year_filter_query(vq, Meeting, from_year, to_year)
+    vq = _year_filter_query(vq, Meeting, from_year, to_year, meeting_id=meeting_id)
 
     # declarations, keyed for a meeting-scoped item match (last-wins on a
     # duplicate key — a dict lookup can't multiply rows the way a join can)
@@ -1810,7 +1828,8 @@ def _linked_declared_votes(
     return out
 
 
-def _populate_declaration_details(session, council_id, profiles, from_year, to_year) -> None:
+def _populate_declaration_details(session, council_id, profiles, from_year, to_year,
+                                  meeting_id=None) -> None:
     """Attach the per-vote drill-down list to each RecusalProfile.
 
     Built on `_linked_declared_votes` — see that function for why this is
@@ -1820,7 +1839,8 @@ def _populate_declaration_details(session, council_id, profiles, from_year, to_y
     if not profiles:
         return
     ids = [p.councillor_id for p in profiles]
-    linked = _linked_declared_votes(session, council_id, from_year, to_year, councillor_ids=ids)
+    linked = _linked_declared_votes(session, council_id, from_year, to_year, councillor_ids=ids,
+                                    meeting_id=meeting_id)
 
     by_councillor: dict[int, list[DeclarationDetail]] = {cid: [] for cid in ids}
     for row in linked:
@@ -1856,6 +1876,7 @@ def conflict_recusal_stats(
     from_year: int | None = None,
     to_year: int | None = None,
     min_declared: int = 8,
+    meeting_id: int | None = None,
 ) -> ConflictRecusalStats:
     """
     How declaring a conflict of interest changes voting behaviour.
@@ -1864,10 +1885,15 @@ def conflict_recusal_stats(
     declared-interest item is read as a recusal (the councillor stepped out).
     Returns the declared-vs-baseline contrast plus per-councillor recusal
     rates for councillors with at least ``min_declared`` declared votes.
+
+    `meeting_id`, when set, overrides from_year/to_year and scopes every
+    query below to that one meeting (docs/frontend/PRODUCT_ROADMAP.md F2's
+    single-meeting digest) — pass a low `min_declared` (e.g. 1) alongside it,
+    since a single meeting rarely has 8+ declared votes from one councillor.
     """
     from sqlalchemy import case as sa_case
 
-    def _bucket(declared: bool):
+    def _bucket(declared: bool, scope_to_meeting: bool = True):
         q = (
             session.query(
                 func.count(Vote.id).label("total"),
@@ -1882,7 +1908,8 @@ def conflict_recusal_stats(
                 Vote.declared_interest == declared,  # noqa: E712
             )
         )
-        q = _year_filter_query(q, Meeting, from_year, to_year)
+        q = _year_filter_query(q, Meeting, from_year, to_year,
+                               meeting_id=meeting_id if scope_to_meeting else None)
         total, absent, against, cast = q.one()
         total = total or 0
         absent = absent or 0
@@ -1891,7 +1918,12 @@ def conflict_recusal_stats(
         return total, absent, against, cast
 
     d_total, d_absent, d_against, d_cast = _bucket(True)
-    b_total, b_absent, b_against, b_cast = _bucket(False)
+    # The baseline (non-declared) bucket is NOT meeting-scoped even when
+    # meeting_id is set: it's the "normal" rate a single meeting's declared-
+    # interest behaviour is compared against (ConflictRecusalStats.
+    # baseline_recusal_pct, read by _t_recusal_overall) — scoping it to the
+    # same one meeting would compare a number to itself.
+    b_total, b_absent, b_against, b_cast = _bucket(False, scope_to_meeting=False)
 
     # Per-councillor recusal rate on declared votes
     prof_q = (
@@ -1911,7 +1943,7 @@ def conflict_recusal_stats(
             Vote.declared_interest == True,  # noqa: E712
         )
     )
-    prof_q = _year_filter_query(prof_q, Meeting, from_year, to_year)
+    prof_q = _year_filter_query(prof_q, Meeting, from_year, to_year, meeting_id=meeting_id)
     prof_rows = prof_q.group_by(Vote.councillor_id).all()
 
     cutoff = date.today() - timedelta(days=548)  # ~18 months
@@ -1931,7 +1963,8 @@ def conflict_recusal_stats(
     # Sort by recusal rate desc, then by declared count desc
     profiles.sort(key=lambda r: (r.recusal_rate, r.declared_votes), reverse=True)
 
-    _populate_declaration_details(session, council_id, profiles, from_year, to_year)
+    _populate_declaration_details(session, council_id, profiles, from_year, to_year,
+                                  meeting_id=meeting_id)
 
     # Must-leave split, computed from the same per-declaration `must_leave` flag
     # already attached above (financial/proximity vs. impartiality/other) — not a
@@ -2024,6 +2057,7 @@ def tender_concentration(
     from_year: int | None = None,
     to_year: int | None = None,
     limit: int = 15,
+    meeting_id: int | None = None,
 ) -> TenderConcentration:
     """
     Concentration of tendered spend among contractors.
@@ -2059,7 +2093,7 @@ def tender_concentration(
             Tender.amount.isnot(None),
         )
     )
-    q = _year_filter_query(q, Meeting, from_year, to_year)
+    q = _year_filter_query(q, Meeting, from_year, to_year, meeting_id=meeting_id)
     all_rows = q.all()
 
     # Dedup: same contractor + same normalised reference + same amount ==
@@ -2198,6 +2232,7 @@ def decider_supplier_conflict(
     council_id: int,
     from_year: int | None = None,
     to_year: int | None = None,
+    meeting_id: int | None = None,
 ) -> DeciderSupplierConflict:
     """
     Part 3.3 procurement-integrity test: does the decider<->winner join expose
@@ -2280,7 +2315,7 @@ def decider_supplier_conflict(
             tender_kw,
         )
     )
-    tm_q = _year_filter_query(tm_q, Meeting, from_year, to_year)
+    tm_q = _year_filter_query(tm_q, Meeting, from_year, to_year, meeting_id=meeting_id)
     tender_motion_ids = [mid for (mid,) in tm_q.all()]
 
     votes_on_tm = 0
@@ -2300,6 +2335,10 @@ def decider_supplier_conflict(
         .join(Meeting, Motion.meeting_id == Meeting.id)
         .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
     )
+    # NOT meeting-scoped even when meeting_id is set: this is the "normal"
+    # baseline a single meeting's tender-motion declaration rate is compared
+    # against (headline below) — scoping it to the same one meeting would
+    # compare a number to itself instead of to a real baseline.
     base_q = _year_filter_query(base_q, Meeting, from_year, to_year)
     base_rows = base_q.all()
     base_pct = round(100 * sum(1 for (d,) in base_rows if d) / len(base_rows), 2) if base_rows else 0.0
@@ -2326,7 +2365,7 @@ def decider_supplier_conflict(
             ~func.lower(Tender.awarded_to).like("respondent%"),
         )
     )
-    aw_q = _year_filter_query(aw_q, Meeting, from_year, to_year)
+    aw_q = _year_filter_query(aw_q, Meeting, from_year, to_year, meeting_id=meeting_id)
 
     # Dedup pass — see docstring: a real award can be extracted more than
     # once (agenda+minutes, or twice within minutes); collapse rows sharing
@@ -2786,7 +2825,8 @@ class ObjectionDoseStats:
     headline_examples: list[str] = field(default_factory=list)  # high-objector refusals
 
 
-def objection_dose_response(session: Session, council_id: int) -> ObjectionDoseStats:
+def objection_dose_response(session: Session, council_id: int,
+                            meeting_id: int | None = None) -> ObjectionDoseStats:
     """
     Refusal rate as a function of *how many* community objections an application
     drew. The existing objection panel treats objection as binary; this asks
@@ -2794,8 +2834,13 @@ def objection_dose_response(session: Session, council_id: int) -> ObjectionDoseS
 
     Buckets: 0, 1, 2-4, 5+ objectors. Decided applications only (APPROVED /
     REFUSED). Objections = community_submissions with position='object'.
+
+    `meeting_id`, when set, narrows to applications decided at that one
+    meeting (docs/frontend/PRODUCT_ROADMAP.md F2's single-meeting digest) —
+    only applications with a linked `motion_id` are reachable this way (see
+    that same caveat noted against `_t_big_dollar_leniency`).
     """
-    rows = (
+    q = (
         session.query(
             PlanningApplication.id,
             PlanningApplication.status,
@@ -2816,9 +2861,10 @@ def objection_dose_response(session: Session, council_id: int) -> ObjectionDoseS
                 [ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]
             ),
         )
-        .group_by(PlanningApplication.id)
-        .all()
     )
+    if meeting_id is not None:
+        q = q.filter(Meeting.id == meeting_id)
+    rows = q.group_by(PlanningApplication.id).all()
 
     def _bucket(n: int) -> str:
         if n == 0:
@@ -2884,7 +2930,8 @@ class TransparencyStats:
     category_totals: dict[str, dict[str, int]]  # {tenders: {total, confidential}, ...}
 
 
-def transparency_by_year(session: Session, council_id: int) -> TransparencyStats:
+def transparency_by_year(session: Session, council_id: int,
+                         meeting_id: int | None = None) -> TransparencyStats:
     """
     Share of decided council items recorded as confidential, per year.
 
@@ -2892,6 +2939,10 @@ def transparency_by_year(session: Session, council_id: int) -> TransparencyStats
     'other items', delegated decisions and budget items — over minutes (not
     agendas). Surfaces whether the proportion of business taken behind closed
     doors has shifted over the 30-year record.
+
+    `meeting_id`, when set, narrows every subquery to that one meeting
+    (docs/frontend/PRODUCT_ROADMAP.md F2's single-meeting digest) — the
+    `:mid IS NULL OR m.id = :mid` form keeps one SQL string for both modes.
     """
     from sqlalchemy import text as sql_text
 
@@ -2901,18 +2952,22 @@ def transparency_by_year(session: Session, council_id: int) -> TransparencyStats
             SELECT m.meeting_date d, t.is_confidential c, 'tenders' AS cat
               FROM tenders t JOIN meetings m ON t.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
+               AND (:mid IS NULL OR m.id = :mid)
             UNION ALL
             SELECT m.meeting_date, o.is_confidential, 'other'
               FROM other_items o JOIN meetings m ON o.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
+               AND (:mid IS NULL OR m.id = :mid)
             UNION ALL
             SELECT m.meeting_date, dd.is_confidential, 'delegated'
               FROM delegated_decisions dd JOIN meetings m ON dd.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
+               AND (:mid IS NULL OR m.id = :mid)
             UNION ALL
             SELECT m.meeting_date, b.is_confidential, 'budget'
               FROM budget_items b JOIN meetings m ON b.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
+               AND (:mid IS NULL OR m.id = :mid)
         )
         SELECT CAST(substr(d, 1, 4) AS INTEGER) yr,
                cat,
@@ -2923,7 +2978,7 @@ def transparency_by_year(session: Session, council_id: int) -> TransparencyStats
          GROUP BY yr, cat
         """
     )
-    rows = session.execute(sql, {"cid": council_id}).fetchall()
+    rows = session.execute(sql, {"cid": council_id, "mid": meeting_id}).fetchall()
 
     per_year: dict[int, list[int]] = defaultdict(lambda: [0, 0])  # [total, conf]
     cat_totals: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "confidential": 0})
@@ -2948,15 +3003,18 @@ def transparency_by_year(session: Session, council_id: int) -> TransparencyStats
     pre_tot = sum(y.total for y in pre)
     pre_conf = sum(y.confidential for y in pre)
     pre_pct = round(100 * pre_conf / pre_tot, 1) if pre_tot else 0.0
-    # Peak by % among years with a meaningful sample (>= 50 items)
+    # Peak by % among years with a meaningful sample (>= 50 items). No years
+    # at all is a real case for a meeting_id-scoped call (a single meeting
+    # can easily have zero rows across all four category tables) — not just
+    # a hypothetical the corpus-wide call never hits.
     eligible = [y for y in years if y.total >= 50]
-    peak = max(eligible, key=lambda y: y.confidential_pct) if eligible else years[-1]
+    peak = max(eligible, key=lambda y: y.confidential_pct) if eligible else (years[-1] if years else None)
 
     return TransparencyStats(
         years=years,
         pre_era_pct=pre_pct,
-        peak_year=peak.year,
-        peak_pct=peak.confidential_pct,
+        peak_year=peak.year if peak else 0,
+        peak_pct=peak.confidential_pct if peak else 0.0,
         category_totals=dict(cat_totals),
     )
 
@@ -3553,8 +3611,17 @@ def public_question_responsiveness(
     council_id: int,
     min_year_n: int = 15,
     cell_cap: int = 60,
+    meeting_id: int | None = None,
 ) -> PQResponsivenessStats:
-    """Are public questions answered in the meeting, or 'taken on notice'?"""
+    """Are public questions answered in the meeting, or 'taken on notice'?
+
+    `meeting_id`, when set, narrows to that one meeting's questions
+    (docs/frontend/PRODUCT_ROADMAP.md F2's single-meeting digest) — the
+    era/year breakdown fields become degenerate (a single meeting sits in
+    one era, one year); a caller wanting this meeting's numbers next to a
+    real baseline should also call this unscoped and compare, the same way
+    `_t_question_responsiveness`'s single-meeting variant does.
+    """
     from sqlalchemy import text
 
     rows = session.execute(text("""
@@ -3567,7 +3634,8 @@ def public_question_responsiveness(
         FROM public_questions pq
         JOIN meetings mt ON pq.meeting_id = mt.id
         WHERE mt.council_id = :cid AND mt.document_type = 'minutes'
-    """), {"cid": council_id}).all()
+          AND (:mid IS NULL OR mt.id = :mid)
+    """), {"cid": council_id, "mid": meeting_id}).all()
 
     # overall + era + year tallies
     era_ct: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0])  # [answered, on_notice, blank]

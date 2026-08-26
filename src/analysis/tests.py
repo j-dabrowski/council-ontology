@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 
 from src.models import (
     ApplicationStatus,
+    Councillor,
     Deputation,
     Meeting,
     Motion,
@@ -151,14 +152,18 @@ def _line(points, unit: str = "", refline: dict | None = None) -> dict:
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
-def _minutes_motions(session: Session, council_id: int):
-    """(outcome, votes_against, year) for every motion in minutes."""
-    rows = (
+def _minutes_motions(session: Session, council_id: int, meeting_id: int | None = None):
+    """(outcome, votes_against, year) for every motion in minutes, or just
+    one meeting's when meeting_id is set (docs/frontend/PRODUCT_ROADMAP.md
+    F2's single-meeting digest)."""
+    q = (
         session.query(Motion.outcome, Motion.votes_against, Meeting.meeting_date)
         .join(Meeting, Motion.meeting_id == Meeting.id)
         .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
-        .all()
     )
+    if meeting_id is not None:
+        q = q.filter(Meeting.id == meeting_id)
+    rows = q.all()
     return [(o, va, d.year if d else None) for o, va, d in rows]
 
 
@@ -173,10 +178,21 @@ def _tender_rows(session: Session, council_id: int):
     return [(a, n, (d.year if d else None), (d.month if d else None)) for a, n, d in rows]
 
 
+def _meeting_label(session: Session, meeting_id: int) -> str:
+    """ISO date string for a meeting, for a SCOPE_SINGLE_MEETING TestResult's
+    `era` field. Falls back to the raw id if the meeting can't be found —
+    should never happen for a caller passing a real meeting_id, but a
+    missing date shouldn't crash digest generation over a display string."""
+    d = session.query(Meeting.meeting_date).filter(Meeting.id == meeting_id).scalar()
+    return d.isoformat() if d else f"meeting {meeting_id}"
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # WRAPPED TESTS — existing flagship panels, re-expressed as valenced battery rows
 # ════════════════════════════════════════════════════════════════════════════
-def _t_recusal_overall(session, council_id, pc) -> TestResult:
+def _t_recusal_overall(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_recusal_overall_meeting(session, council_id, meeting_id)
     s = pc.get("conflict") or conflict_recusal_stats(session, council_id)
     stay = round(100 - s.declared_recusal_pct, 1)
     # Computed the same way ConflictRecusalPanel.tsx derives its own headline
@@ -200,6 +216,67 @@ def _t_recusal_overall(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="declared",
         scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_recusal_overall_meeting(session, council_id, meeting_id) -> TestResult:
+    """Plain factual recount, not a rate: did anyone declare a conflict at
+    THIS meeting, and what did they do about it — sourced the same way the
+    minutes themselves already state it. n is near-always tiny (a single
+    meeting rarely has more than a handful of declarations), so unlike the
+    whole-corpus version this is genuinely about specific people's specific
+    actions when declared_total > 0 — declared UNIT_INDIVIDUAL accordingly
+    (Investigator_prompt.txt §4/C1), not left at the institutional default."""
+    s = conflict_recusal_stats(session, council_id, min_declared=1, meeting_id=meeting_id)
+    era = _meeting_label(session, meeting_id)
+    if s.declared_total == 0:
+        return TestResult(
+            test_id="conflict.recusal_management", title="Did anyone declare a conflict this meeting?",
+            genre="Integrity / conflict (3.3)", principle="Nolan Integrity, Objectivity · CIPFA-A",
+            question="Did any councillor declare a conflict of interest at this meeting?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No conflicts of interest were declared at this meeting",
+            verdict="No conflicts of interest were declared at this meeting.",
+            n=0, era=era, detail_panel="declared",
+            scope=[SCOPE_SINGLE_MEETING],
+        )
+    # One line per COUNCILLOR, not per declaration — a grants-round agenda
+    # can produce dozens of near-identical declarations from the same
+    # handful of members (confirmed live: 64 declarations / 9 councillors
+    # in one real meeting), and a sentence-per-declaration recount is
+    # unreadable at that volume. Per-councillor grouping compresses that to
+    # one line each while keeping the single-declaration case (the common
+    # one) just as detailed as before.
+    lines = []
+    names = []
+    for p in s.profiles:
+        if not p.declarations:
+            continue
+        names.append(p.name)
+        n = len(p.declarations)
+        stepped_out = sum(1 for d in p.declarations if d.action == "Stepped out")
+        stayed = n - stepped_out
+        if n == 1:
+            d = p.declarations[0]
+            lines.append(f"{p.name} declared an interest on {d.item or 'an item'} "
+                         f"({d.what or d.interest_type or 'interest not specified'}) — {d.action.lower()}")
+        elif stepped_out and stayed:
+            lines.append(f"{p.name} declared {n} interests this meeting — stepped out {stepped_out} "
+                         f"time(s), stayed and voted {stayed} time(s)")
+        elif stepped_out:
+            lines.append(f"{p.name} declared {n} interests this meeting — stepped out every time")
+        else:
+            lines.append(f"{p.name} declared {n} interests this meeting — stayed and voted every time")
+    return TestResult(
+        test_id="conflict.recusal_management", title="Did anyone declare a conflict this meeting?",
+        genre="Integrity / conflict (3.3)", principle="Nolan Integrity, Objectivity · CIPFA-A",
+        question="Did any councillor declare a conflict of interest at this meeting, and what did they do about it?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{s.declared_total} conflict(s) of interest declared this meeting, by {len(names)} councillor(s)",
+        verdict="; ".join(lines),
+        n=s.declared_total, era=era, detail_panel="declared",
+        unit_of_analysis=UNIT_INDIVIDUAL, named_entities=sorted(set(names)),
+        scope=[SCOPE_SINGLE_MEETING],
     )
 
 
@@ -305,7 +382,9 @@ def _t_delegate_body_conflict(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_transparency(session, council_id, pc) -> TestResult:
+def _t_transparency(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_transparency_meeting(session, council_id, meeting_id)
     t = pc.get("transparency") or transparency_by_year(session, council_id)
     return TestResult(
         test_id="transparency.confidential_share",
@@ -326,7 +405,37 @@ def _t_transparency(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_officer_divergence(session, council_id, pc) -> TestResult:
+def _t_transparency_meeting(session, council_id, meeting_id) -> TestResult:
+    """This meeting's own confidential share, next to the whole-corpus rate
+    (never re-derived from the single meeting — see the module note by
+    `transparency_by_year`'s meeting_id param). Institutional: a closed-item
+    count names no one."""
+    this = transparency_by_year(session, council_id, meeting_id=meeting_id)
+    corpus = transparency_by_year(session, council_id)
+    total = sum(y.total for y in this.years)
+    conf = sum(y.confidential for y in this.years)
+    pct = round(100 * conf / total, 1) if total else 0.0
+    corpus_total = sum(y.total for y in corpus.years)
+    corpus_conf = sum(y.confidential for y in corpus.years)
+    corpus_pct = round(100 * corpus_conf / corpus_total, 1) if corpus_total else 0.0
+    era = _meeting_label(session, meeting_id)
+    return TestResult(
+        test_id="transparency.confidential_share", title="How much of this meeting was closed to the public?",
+        genre="Process / transparency (3.4)", principle="Nolan Openness · CIPFA-B",
+        question="What share of this meeting's decided items were confidential?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{conf} of {total} items closed to the public this meeting ({pct}%)" if total
+                 else "No confidential-eligible items this meeting",
+        verdict=f"{conf} of {total} items were taken confidential this meeting, vs a {corpus_pct}% "
+                f"corpus-wide rate." if total else "No confidential-eligible items this meeting.",
+        n=total, base_rate=f"{corpus_pct}% corpus-wide", era=era, detail_panel="transparency",
+        scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_officer_divergence(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_officer_divergence_meeting(session, council_id, meeting_id)
     pairs = pc.get("divergence") or officer_divergence(session, council_id, None, None)
     total = len(pairs)
     diverged = sum(1 for p in pairs if p.diverged)
@@ -347,6 +456,33 @@ def _t_officer_divergence(session, council_id, pc) -> TestResult:
         era="where officer recs exist (agenda-matched)",
         detail_panel="divergence",
         scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_officer_divergence_meeting(session, council_id, meeting_id) -> TestResult:
+    """No names — a divergence pair is per agenda item, not per person."""
+    pairs = officer_divergence(session, council_id, meeting_id=meeting_id)
+    total = len(pairs)
+    diverged = sum(1 for p in pairs if p.diverged)
+    era = _meeting_label(session, meeting_id)
+    if total == 0:
+        return TestResult(
+            test_id="governance.officer_ratification", title="Did council follow its officers' recommendations?",
+            genre="Governance / culture (3.2)", principle="CIPFA-F",
+            question="Did council depart from the officer recommendation on any item this meeting?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No agenda/minutes-matched officer recommendations this meeting",
+            verdict="No agenda/minutes-matched officer recommendations this meeting.",
+            n=0, era=era, detail_panel="divergence", scope=[SCOPE_SINGLE_MEETING],
+        )
+    return TestResult(
+        test_id="governance.officer_ratification", title="Did council follow its officers' recommendations?",
+        genre="Governance / culture (3.2)", principle="CIPFA-F",
+        question="Did council depart from the officer recommendation on any item this meeting?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"Council departed from the officer recommendation on {diverged} of {total} matched items this meeting",
+        verdict=f"{diverged} of {total} matched items departed from the officer recommendation this meeting.",
+        n=total, era=era, detail_panel="divergence", scope=[SCOPE_SINGLE_MEETING],
     )
 
 
@@ -512,7 +648,9 @@ def _t_tenure(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_objection_dose(session, council_id, pc) -> TestResult:
+def _t_objection_dose(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_objection_dose_meeting(session, council_id, meeting_id)
     d = pc.get("dose") or objection_dose_response(session, council_id)
     by = {b.label: b for b in d.buckets}
     lo = by.get("0")
@@ -537,7 +675,39 @@ def _t_objection_dose(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_tender_concentration(session, council_id, pc) -> TestResult:
+def _t_objection_dose_meeting(session, council_id, meeting_id) -> TestResult:
+    """A dose-response curve needs many applications — one meeting only ever
+    has a handful, so this recounts what was decided rather than a rate."""
+    d = objection_dose_response(session, council_id, meeting_id=meeting_id)
+    era = _meeting_label(session, meeting_id)
+    if d.total_decided == 0:
+        return TestResult(
+            test_id="planning.objection_responsiveness", title="Were any planning applications decided this meeting?",
+            genre="Process / engagement (3.4)", principle="CIPFA-B",
+            question="How many planning applications were decided this meeting, and how many drew objections?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No planning applications decided this meeting",
+            verdict="No planning applications decided this meeting.",
+            n=0, era=era, detail_panel="dose", scope=[SCOPE_SINGLE_MEETING],
+        )
+    with_obj = sum(b.n for b in d.buckets if b.label != "0")
+    refused = sum(b.refused for b in d.buckets)
+    return TestResult(
+        test_id="planning.objection_responsiveness", title="Were any planning applications decided this meeting?",
+        genre="Process / engagement (3.4)", principle="CIPFA-B",
+        question="How many planning applications were decided this meeting, and how many drew objections?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{d.total_decided} application(s) decided this meeting, {refused} refused, "
+                 f"{with_obj} drew at least one objection",
+        verdict=f"{d.total_decided} application(s) decided this meeting: {refused} refused, "
+                f"{with_obj} drew at least one community objection.",
+        n=d.total_decided, era=era, detail_panel="dose", scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_tender_concentration(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_tender_concentration_meeting(session, council_id, meeting_id)
     t = pc.get("tenders") or tender_concentration(session, council_id)
     red_pct = round(t.redacted_amount / t.total_amount * 100) if t.total_amount else 0
     return TestResult(
@@ -560,10 +730,39 @@ def _t_tender_concentration(session, council_id, pc) -> TestResult:
     )
 
 
+def _t_tender_concentration_meeting(session, council_id, meeting_id) -> TestResult:
+    """Firm names, not person names — stays institutional (same convention
+    as the whole-corpus version, whose `contractors` list also names firms
+    without being flagged individual)."""
+    t = tender_concentration(session, council_id, meeting_id=meeting_id)
+    era = _meeting_label(session, meeting_id)
+    if t.total_awards == 0:
+        return TestResult(
+            test_id="procurement.concentration", title="Were any tenders awarded this meeting?",
+            genre="Procurement / transparency (3.1/3.4)", principle="CIPFA-F, G",
+            question="Were any tenders awarded this meeting, and to whom?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No tenders awarded this meeting",
+            verdict="No tenders awarded this meeting.",
+            n=0, era=era, detail_panel="tenders", scope=[SCOPE_SINGLE_MEETING],
+        )
+    who = ", ".join(f"{c.name} (${c.total_amount:,.0f})" for c in t.contractors[:5])
+    return TestResult(
+        test_id="procurement.concentration", title="Were any tenders awarded this meeting?",
+        genre="Procurement / transparency (3.1/3.4)", principle="CIPFA-F, G",
+        question="Were any tenders awarded this meeting, and to whom?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{t.total_awards} tender(s) awarded this meeting, ${t.total_amount:,.0f} total",
+        verdict=f"{t.total_awards} tender(s) awarded this meeting totalling ${t.total_amount:,.0f}"
+                + (f": {who}" if who else "") + (f" ({t.redacted_awards} confidential)" if t.redacted_awards else ""),
+        n=t.total_awards, era=era, detail_panel="tenders", scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # CLEAN INTEGRITY TESTS — previously hidden nulls, now shown as supportive
 # ════════════════════════════════════════════════════════════════════════════
-def _t_decider_supplier_conflict(session, council_id, pc) -> TestResult:
+def _t_decider_supplier_conflict(session, council_id, pc, meeting_id=None) -> TestResult:
     """[35] The Part 3.3 decider x supplier join: does a councillor who votes
     to award a tender ever share a declared or name-matched connection to the
     winning firm? Built on `decider_supplier_conflict()` — see that function's
@@ -571,6 +770,8 @@ def _t_decider_supplier_conflict(session, council_id, pc) -> TestResult:
     item_reference join. Converges with `procurement.threshold_gaming` and
     `procurement.incumbency` (supplier side) and `conflict.recusal_management`
     (decider side) as a fourth, independent procurement-integrity credit."""
+    if meeting_id is not None:
+        return _t_decider_supplier_conflict_meeting(session, council_id, meeting_id)
     r = pc.get("decider_supplier") or decider_supplier_conflict(session, council_id)
     chart = _bars(
         [("Tender-award votes", r.declared_pct), ("Chamber base rate", r.base_declared_pct)],
@@ -604,6 +805,54 @@ def _t_decider_supplier_conflict(session, council_id, pc) -> TestResult:
         detail_panel="decider-supplier",
         chart=chart,
         scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_decider_supplier_conflict_meeting(session, council_id, meeting_id) -> TestResult:
+    """Whether any tender awarded this meeting has a raw surname collision
+    with a real voting councillor. The collision detector names a specific
+    councillor when it fires — the docstring above is explicit that a hit
+    is a candidate for a human to check on provenance, not confirmed
+    evidence, so that caveat is carried into the verdict text, not dropped."""
+    r = decider_supplier_conflict(session, council_id, meeting_id=meeting_id)
+    era = _meeting_label(session, meeting_id)
+    if r.votes_on_tender_motions == 0 and not r.collisions:
+        return TestResult(
+            test_id="procurement.decider_supplier_conflict", title="Any decider↔supplier collisions this meeting?",
+            genre="Integrity / procurement (3.3)", principle="Nolan Objectivity · CIPFA-A/F",
+            question="Did anyone vote on a tender award this meeting with a possible connection to the winner?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No tender-award votes this meeting",
+            verdict="No tender-award votes this meeting.",
+            n=0, era=era, detail_panel="decider-supplier", scope=[SCOPE_SINGLE_MEETING],
+        )
+    if not r.collisions:
+        return TestResult(
+            test_id="procurement.decider_supplier_conflict", title="Any decider↔supplier collisions this meeting?",
+            genre="Integrity / procurement (3.3)", principle="Nolan Objectivity · CIPFA-A/F",
+            question="Did anyone vote on a tender award this meeting with a possible connection to the winner?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline=f"{r.declared_votes} of {r.votes_on_tender_motions} tender-award votes declared an "
+                     f"interest this meeting; no surname collisions with the winner found",
+            verdict=f"{r.declared_votes} of {r.votes_on_tender_motions} tender-award votes declared an "
+                     f"interest this meeting; no surname collisions with the winner found.",
+            n=r.votes_on_tender_motions, era=era, detail_panel="decider-supplier", scope=[SCOPE_SINGLE_MEETING],
+        )
+    names = sorted({c.councillor_name for c in r.collisions})
+    lines = "; ".join(f"{c.councillor_name}'s surname appears in winner '{c.firm}' (${c.amount:,.0f})"
+                       for c in r.collisions)
+    return TestResult(
+        test_id="procurement.decider_supplier_conflict", title="Any decider↔supplier collisions this meeting?",
+        genre="Integrity / procurement (3.3)", principle="Nolan Objectivity · CIPFA-A/F",
+        question="Did anyone vote on a tender award this meeting with a possible connection to the winner?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{len(r.collisions)} surname collision(s) found between a tender winner and a voting "
+                 f"councillor this meeting — unconfirmed, provenance not checked",
+        verdict=lines + " — a raw surname match, not a confirmed relationship; resolving it needs the "
+                "underlying minute text.",
+        n=r.votes_on_tender_motions, era=era, detail_panel="decider-supplier",
+        unit_of_analysis=UNIT_INDIVIDUAL, named_entities=names,
+        scope=[SCOPE_SINGLE_MEETING],
     )
 
 
@@ -703,7 +952,9 @@ def _t_procurement_incumbency(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_big_dollar_leniency(session, council_id, pc) -> TestResult:
+def _t_big_dollar_leniency(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_big_dollar_leniency_meeting(session, council_id, meeting_id)
     rows = (
         session.query(PlanningApplication.estimated_value, PlanningApplication.status)
         .filter(
@@ -745,6 +996,48 @@ def _t_big_dollar_leniency(session, council_id, pc) -> TestResult:
         detail_panel="big-dollar",
         chart=chart,
         scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_big_dollar_leniency_meeting(session, council_id, meeting_id) -> TestResult:
+    """A quartile split needs many applications — one meeting recounts its
+    own decided applications and their values instead. NOTE (real coverage
+    gap, not assumed away): PlanningApplication reaches a Meeting only via
+    its nullable motion_id -> Motion.meeting_id; an application with no
+    linked motion is invisible to this meeting-scoped query even though the
+    whole-corpus version above (no Meeting join at all) would still count
+    it. Worth checking how common that is before treating this as complete."""
+    rows = (
+        session.query(PlanningApplication.estimated_value, PlanningApplication.status)
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.id == meeting_id,
+                PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]))
+        .all()
+    )
+    era = _meeting_label(session, meeting_id)
+    if not rows:
+        return TestResult(
+            test_id="planning.big_dollar_leniency", title="Were any planning applications decided this meeting?",
+            genre="Governance / fairness (3.2)", principle="CIPFA-D · Nolan Objectivity",
+            question="What planning applications were decided this meeting, and at what estimated value?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No planning applications decided this meeting",
+            verdict="No planning applications decided this meeting.",
+            n=0, era=era, detail_panel="big-dollar", scope=[SCOPE_SINGLE_MEETING],
+        )
+    approved = sum(1 for _v, s in rows if s == ApplicationStatus.APPROVED)
+    valued = [v for v, _s in rows if v and v > 0]
+    val_str = f", estimated value ${max(valued):,.0f}" if valued and len(rows) == 1 else \
+              f", estimated values ${min(valued):,.0f}–${max(valued):,.0f}" if len(valued) > 1 else ""
+    return TestResult(
+        test_id="planning.big_dollar_leniency", title="Were any planning applications decided this meeting?",
+        genre="Governance / fairness (3.2)", principle="CIPFA-D · Nolan Objectivity",
+        question="What planning applications were decided this meeting, and at what estimated value?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{len(rows)} application(s) decided this meeting, {approved} approved{val_str}",
+        verdict=f"{len(rows)} application(s) decided this meeting, {approved} approved{val_str}.",
+        n=len(rows), era=era, detail_panel="big-dollar", scope=[SCOPE_SINGLE_MEETING],
     )
 
 
@@ -808,7 +1101,9 @@ def _t_repeat_applicant(session, council_id, pc) -> TestResult:
 # ════════════════════════════════════════════════════════════════════════════
 # NEUTRAL DESCRIPTIVE TESTS — how the council works (no good/bad direction)
 # ════════════════════════════════════════════════════════════════════════════
-def _t_unanimity_trend(session, council_id, pc) -> TestResult:
+def _t_unanimity_trend(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_unanimity_trend_meeting(session, council_id, meeting_id)
     rows = _minutes_motions(session, council_id)
     by_year: dict[int, list[int]] = {}
     for outcome, va, year in rows:
@@ -840,6 +1135,34 @@ def _t_unanimity_trend(session, council_id, pc) -> TestResult:
         detail_panel="unanimity",
         chart=_line([{"x": p["x"], "y": p["y"]} for p in series], unit="%"),
         scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_unanimity_trend_meeting(session, council_id, meeting_id) -> TestResult:
+    """Plain recount of contested vs unanimous carried motions this meeting
+    — no names (a motion, not a person, is the unit)."""
+    rows = _minutes_motions(session, council_id, meeting_id=meeting_id)
+    carried = [(va or 0) for outcome, va, _yr in rows if outcome == MotionOutcome.CARRIED]
+    era = _meeting_label(session, meeting_id)
+    if not carried:
+        return TestResult(
+            test_id="governance.unanimity_trend", title="Did any motions split this meeting?",
+            genre="Governance / culture (3.2)", principle="CIPFA-B",
+            question="How many of this meeting's carried motions drew a dissenting vote?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No carried motions this meeting",
+            verdict="No carried motions this meeting.",
+            n=0, era=era, detail_panel="unanimity", scope=[SCOPE_SINGLE_MEETING],
+        )
+    contested = sum(1 for va in carried if va > 0)
+    return TestResult(
+        test_id="governance.unanimity_trend", title="Did any motions split this meeting?",
+        genre="Governance / culture (3.2)", principle="CIPFA-B",
+        question="How many of this meeting's carried motions drew a dissenting vote?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{contested} of {len(carried)} carried motions drew a dissenting vote this meeting",
+        verdict=f"{contested} of {len(carried)} carried motions drew at least one dissenting vote this meeting.",
+        n=len(carried), era=era, detail_panel="unanimity", scope=[SCOPE_SINGLE_MEETING],
     )
 
 
@@ -981,7 +1304,9 @@ def _t_election_cycle(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_deputation_dissent(session, council_id, pc) -> TestResult:
+def _t_deputation_dissent(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_deputation_dissent_meeting(session, council_id, meeting_id)
     dep_meetings = {m for (m,) in session.query(Deputation.meeting_id)
                     .join(Meeting, Deputation.meeting_id == Meeting.id)
                     .filter(Meeting.council_id == council_id).distinct().all()}
@@ -1010,6 +1335,30 @@ def _t_deputation_dissent(session, council_id, pc) -> TestResult:
     )
 
 
+def _t_deputation_dissent_meeting(session, council_id, meeting_id) -> TestResult:
+    """Plain recount: did this meeting have a public deputation, and how
+    contested were its carried motions?"""
+    had_deputation = session.query(Deputation.id).filter(Deputation.meeting_id == meeting_id).first() is not None
+    rows = [c for mid, c in _meeting_contestation(session, council_id) if mid == meeting_id]
+    era = _meeting_label(session, meeting_id)
+    contested = sum(rows)
+    return TestResult(
+        test_id="engagement.deputation_dissent", title="Was there a public deputation this meeting?",
+        genre="Process / engagement (3.4)", principle="CIPFA-B",
+        question="Did this meeting have a public deputation, and how contested were its carried motions?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=(f"A public deputation was heard this meeting; {contested} of {len(rows)} carried "
+                  f"motions were contested" if had_deputation else
+                  f"No public deputation this meeting; {contested} of {len(rows)} carried motions were contested")
+                 if rows else
+                 (f"A public deputation was heard this meeting; no carried motions" if had_deputation
+                  else "No public deputation and no carried motions this meeting"),
+        verdict=f"{'A' if had_deputation else 'No'} public deputation was heard this meeting"
+                + (f"; {contested} of {len(rows)} carried motions were contested." if rows else "."),
+        n=len(rows), era=era, detail_panel="deputations", scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
 def _meeting_contestation(session, council_id):
     """(meeting_id, contested_flag) for each carried motion in minutes."""
     rows = (
@@ -1022,7 +1371,9 @@ def _meeting_contestation(session, council_id):
     return [(mid, 1 if (va or 0) > 0 else 0) for mid, va in rows]
 
 
-def _t_attendance(session, council_id, pc) -> TestResult:
+def _t_attendance(session, council_id, pc, meeting_id=None) -> TestResult:
+    if meeting_id is not None:
+        return _t_attendance_meeting(session, council_id, meeting_id)
     # [31] refinement: split the single ABSENT number into lawful recusal
     # (ABSENT with a declared interest on that motion — the member stepped out for
     # cause) vs genuine non-attendance (ABSENT with no declaration). Resolves this
@@ -1068,6 +1419,70 @@ def _t_attendance(session, council_id, pc) -> TestResult:
     )
 
 
+def _t_attendance_meeting(session, council_id, meeting_id) -> TestResult:
+    """Who was absent this meeting, and whether it was a declared recusal
+    or unexplained — a plain recount of ABSENT vote rows, same source as
+    the minutes themselves. Genuinely-absent councillors are named
+    (UNIT_INDIVIDUAL); a meeting where every absence was a declared
+    recusal, or nobody was absent, names no one and stays institutional."""
+    rows = (
+        session.query(Vote.choice, Vote.declared_interest, Councillor.given_name, Councillor.family_name)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .join(Councillor, Vote.councillor_id == Councillor.id)
+        .filter(Meeting.id == meeting_id)
+        .all()
+    )
+    era = _meeting_label(session, meeting_id)
+    if not rows:
+        return TestResult(
+            test_id="governance.attendance", title="Was anyone absent this meeting?",
+            genre="Governance / culture (3.2)", principle="Nolan Accountability",
+            question="Which councillors were absent this meeting, and was it a declared recusal or unexplained?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No vote rows recorded this meeting",
+            verdict="No vote rows recorded this meeting.",
+            n=0, era=era, detail_panel="attendance", scope=[SCOPE_SINGLE_MEETING],
+        )
+    by_councillor: dict[str, list[tuple]] = {}
+    for ch, di, given, family in rows:
+        name = f"{given or ''} {family or ''}".strip()
+        by_councillor.setdefault(name, []).append((ch, di))
+    genuine_names = sorted(
+        name for name, votes in by_councillor.items()
+        if any(ch == VoteChoice.ABSENT and not di for ch, di in votes)
+    )
+    recusal_only_names = sorted(
+        name for name, votes in by_councillor.items()
+        if name not in genuine_names
+        and any(ch == VoteChoice.ABSENT and di for ch, di in votes)
+    )
+    if not genuine_names:
+        note = (f"; {', '.join(recusal_only_names)} stepped out on a declared conflict"
+                if recusal_only_names else "")
+        return TestResult(
+            test_id="governance.attendance", title="Was anyone absent this meeting?",
+            genre="Governance / culture (3.2)", principle="Nolan Accountability",
+            question="Which councillors were absent this meeting, and was it a declared recusal or unexplained?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No unexplained absences this meeting" + note,
+            verdict="No unexplained absences this meeting" + note + ".",
+            n=len(rows), era=era, detail_panel="attendance", scope=[SCOPE_SINGLE_MEETING],
+        )
+    return TestResult(
+        test_id="governance.attendance", title="Was anyone absent this meeting?",
+        genre="Governance / culture (3.2)", principle="Nolan Accountability",
+        question="Which councillors were absent this meeting, and was it a declared recusal or unexplained?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{', '.join(genuine_names)} had at least one unexplained absence this meeting",
+        verdict=f"{', '.join(genuine_names)} had at least one vote recorded ABSENT this meeting with no "
+                f"declared interest on that item.",
+        n=len(rows), era=era, detail_panel="attendance",
+        unit_of_analysis=UNIT_INDIVIDUAL, named_entities=genuine_names,
+        scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
 # ════════════════════════════════════════════════════════════════════════════
 # DATA-LIMITED TESTS — the corpus can't support these (still comparable!)
 # ════════════════════════════════════════════════════════════════════════════
@@ -1104,8 +1519,10 @@ def _t_reserve_trajectory(session, council_id, pc) -> TestResult:
     return r
 
 
-def _t_engagement(session, council_id, pc) -> TestResult:
+def _t_engagement(session, council_id, pc, meeting_id=None) -> TestResult:
     """Public participation volume over time — CIPFA-B stakeholder engagement."""
+    if meeting_id is not None:
+        return _t_engagement_meeting(session, council_id, meeting_id)
     years = public_engagement_by_year(session, council_id)
     total = sum(y.total for y in years)
     series = [{"x": y.year, "y": y.total} for y in years if y.total]
@@ -1131,12 +1548,36 @@ def _t_engagement(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_confidential_tender_size(session, council_id, pc) -> TestResult:
+def _t_engagement_meeting(session, council_id, meeting_id) -> TestResult:
+    """Plain recount of this meeting's public questions/deputations/petitions
+    — no names."""
+    rows = public_engagement_by_year(session, council_id, meeting_id=meeting_id)
+    total = sum(y.total for y in rows)
+    era = _meeting_label(session, meeting_id)
+    q = sum(y.public_questions for y in rows)
+    d = sum(y.deputations for y in rows)
+    p = sum(y.petitions for y in rows)
+    return TestResult(
+        test_id="engagement.participation", title="How much public participation did this meeting see?",
+        genre="Process / engagement (3.4)", principle="CIPFA-B",
+        question="How many public questions, deputations and petitions did this meeting see?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=(f"{q} public question(s), {d} deputation(s), {p} petition(s) this meeting" if total
+                  else "No recorded public questions, deputations, or petitions this meeting"),
+        verdict=(f"{q} public question(s), {d} deputation(s), {p} petition(s) this meeting." if total
+                 else "No recorded public questions, deputations, or petitions this meeting."),
+        n=total, era=era, detail_panel="engagement", scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_confidential_tender_size(session, council_id, pc, meeting_id=None) -> TestResult:
     """[30] Are the CONFIDENTIAL tenders systematically the larger-dollar ones?
     Pooled cross-sectional: median confidential vs open (amount-bearing rows only).
     DIRECTIONAL — n_confidential is small; measured by the is_confidential FLAG on
     rows that carry an amount, never by award-field missingness (the [25] trap).
     """
+    if meeting_id is not None:
+        return _t_confidential_tender_size_meeting(session, council_id, meeting_id)
     import statistics
     rows = session.query(Tender.amount, Tender.is_confidential, Meeting.meeting_date) \
         .join(Meeting, Tender.meeting_id == Meeting.id) \
@@ -1181,6 +1622,47 @@ def _t_confidential_tender_size(session, council_id, pc) -> TestResult:
     )
 
 
+def _t_confidential_tender_size_meeting(session, council_id, meeting_id) -> TestResult:
+    """This meeting's own confidential tenders (if any), next to the
+    whole-corpus open-tender median — a single meeting rarely has enough
+    tenders of either kind to compute its own median, so the comparison
+    point is the established corpus baseline, not a recomputed one."""
+    import statistics
+    rows = session.query(Tender.amount, Tender.is_confidential) \
+        .join(Meeting, Tender.meeting_id == Meeting.id) \
+        .filter(Meeting.id == meeting_id, Tender.amount.isnot(None), Tender.amount > 0).all()
+    era = _meeting_label(session, meeting_id)
+    conf = [a for a, ic in rows if ic]
+    corpus_open = [a for a, ic, _d in
+                   session.query(Tender.amount, Tender.is_confidential, Meeting.meeting_date)
+                   .join(Meeting, Tender.meeting_id == Meeting.id)
+                   .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                           Tender.amount.isnot(None), Tender.amount > 0).all()
+                   if not ic]
+    corpus_med = round(statistics.median(corpus_open)) if corpus_open else None
+    if not conf:
+        return TestResult(
+            test_id="transparency.confidential_tender_size", title="Were any tenders this meeting confidential?",
+            genre="Transparency / financial (3.4 / 3.1)", principle="Nolan Openness · CIPFA-G",
+            question="Was any tender awarded confidentially this meeting, and at what value?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No confidential tenders (with a recorded amount) this meeting",
+            verdict="No confidential tenders (with a recorded amount) this meeting.",
+            n=0, era=era, detail_panel="confidential-tender-size", scope=[SCOPE_SINGLE_MEETING],
+        )
+    return TestResult(
+        test_id="transparency.confidential_tender_size", title="Were any tenders this meeting confidential?",
+        genre="Transparency / financial (3.4 / 3.1)", principle="Nolan Openness · CIPFA-G",
+        question="Was any tender awarded confidentially this meeting, and at what value?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{len(conf)} confidential tender(s) this meeting, ${max(conf):,.0f} largest",
+        verdict=f"{len(conf)} confidential tender(s) this meeting (largest ${max(conf):,.0f})"
+                + (f", vs a ${corpus_med:,} corpus-wide open-tender median." if corpus_med else "."),
+        n=len(conf), base_rate=f"${corpus_med:,} corpus-wide open-tender median" if corpus_med else None,
+        era=era, detail_panel="confidential-tender-size", scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
 # theme keyword buckets for [36] — legitimate statutory grounds vs contentious topics
 _CONF_THEMES = [
     ("Commercial-in-conf", r"commercial|in-confidence|negotiation|proposal|confidential"),
@@ -1192,13 +1674,15 @@ _CONF_THEMES = [
 ]
 
 
-def _t_confidential_topics(session, council_id, pc) -> TestResult:
+def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResult:
     """[36] Is confidentiality aimed at particular subject matter — contentious
     topics beyond lawful grounds — or does it track the statutory grounds?
     Topical decomposition across the confidential-item tables. A credit if closure
     tracks lawful grounds and the contentious 'named development' theme is NOT
     over-closed. Keyword bucketing is noisy — reported at Observation/strength level.
     """
+    if meeting_id is not None:
+        return _t_confidential_topics_meeting(session, council_id, meeting_id)
     import re as _re
     from src.models import OtherItem, DelegatedDecision
     descs: list[tuple[str, bool]] = []
@@ -1258,9 +1742,48 @@ def _t_confidential_topics(session, council_id, pc) -> TestResult:
     )
 
 
-def _t_question_responsiveness(session, council_id, pc) -> TestResult:
+def _t_confidential_topics_meeting(session, council_id, meeting_id) -> TestResult:
+    """A theme-lift statistic needs many items — one meeting recounts what
+    was closed and its (already-public, since it's in the minutes) subject
+    description instead."""
+    from src.models import OtherItem, DelegatedDecision
+    descs: list[str] = []
+    for model in (Tender, OtherItem, DelegatedDecision):
+        for (desc,) in (
+            session.query(model.description)
+            .join(Meeting, model.meeting_id == Meeting.id)
+            .filter(Meeting.id == meeting_id, model.is_confidential.is_(True))
+        ):
+            if desc:
+                descs.append(desc.strip())
+    era = _meeting_label(session, meeting_id)
+    if not descs:
+        return TestResult(
+            test_id="transparency.confidential_topics", title="What was closed to the public this meeting?",
+            genre="Transparency (3.4)", principle="Nolan Openness · CIPFA-B",
+            question="Which items, if any, were taken confidential this meeting, and on what subject?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No confidential items this meeting",
+            verdict="No confidential items this meeting.",
+            n=0, era=era, detail_panel="confidential-topics", scope=[SCOPE_SINGLE_MEETING],
+        )
+    shown = "; ".join(d[:120] for d in descs[:5])
+    return TestResult(
+        test_id="transparency.confidential_topics", title="What was closed to the public this meeting?",
+        genre="Transparency (3.4)", principle="Nolan Openness · CIPFA-B",
+        question="Which items, if any, were taken confidential this meeting, and on what subject?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{len(descs)} item(s) closed to the public this meeting",
+        verdict=f"{len(descs)} item(s) closed to the public this meeting: {shown}",
+        n=len(descs), era=era, detail_panel="confidential-topics", scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
+def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> TestResult:
     """[37] Public-question responsiveness — answered in the room, or 'taken on
     notice'? Deferral share by era, tracking the 2018–21 Inquiry shock."""
+    if meeting_id is not None:
+        return _t_question_responsiveness_meeting(session, council_id, meeting_id)
     r = pc.get("pq_responsiveness") or public_question_responsiveness(session, council_id)
     series = [{"x": y.year, "y": y.on_notice_pct}
               for y in r.by_year if y.on_notice_pct is not None]
@@ -1289,6 +1812,37 @@ def _t_question_responsiveness(session, council_id, pc) -> TestResult:
     )
 
 
+def _t_question_responsiveness_meeting(session, council_id, meeting_id) -> TestResult:
+    """This meeting's own answered-vs-on-notice split, next to the
+    pre-Inquiry corpus baseline (never re-derived from this one meeting)."""
+    r = public_question_responsiveness(session, council_id, meeting_id=meeting_id)
+    corpus = public_question_responsiveness(session, council_id)
+    era = _meeting_label(session, meeting_id)
+    total = r.answered + r.on_notice
+    if total == 0:
+        return TestResult(
+            test_id="engagement.question_responsiveness", title="Were public questions answered this meeting?",
+            genre="Process / engagement (3.4)", principle="CIPFA-B",
+            question="How many public questions this meeting were answered live vs taken on notice?",
+            valence=NEUTRAL, grade=G_OBSERVATION,
+            headline="No public questions this meeting",
+            verdict="No public questions this meeting.",
+            n=0, era=era, detail_panel="question-responsiveness", scope=[SCOPE_SINGLE_MEETING],
+        )
+    on_notice_pct = round(100 * r.on_notice / total, 1)
+    return TestResult(
+        test_id="engagement.question_responsiveness", title="Were public questions answered this meeting?",
+        genre="Process / engagement (3.4)", principle="CIPFA-B",
+        question="How many public questions this meeting were answered live vs taken on notice?",
+        valence=NEUTRAL, grade=G_OBSERVATION,
+        headline=f"{r.answered} of {total} public question(s) answered live, {r.on_notice} taken on notice this meeting",
+        verdict=f"{r.answered} of {total} public question(s) answered live this meeting "
+                f"({on_notice_pct}% on notice), vs a {corpus.pre_pct}% pre-Inquiry corpus baseline.",
+        n=total, base_rate=f"{corpus.pre_pct}% pre-Inquiry corpus baseline", era=era,
+        detail_panel="question-responsiveness", scope=[SCOPE_SINGLE_MEETING],
+    )
+
+
 # ── registry ────────────────────────────────────────────────────────────────
 # Ordered roughly by genre. Each entry is a (session, council_id, precomputed) -> TestResult.
 _BATTERY = [
@@ -1307,6 +1861,21 @@ _BATTERY = [
     # Financial
     _t_eoy_spending, _t_reserve_trajectory,
     # Engagement
+    _t_engagement, _t_deputation_dissent, _t_question_responsiveness,
+]
+
+# The SCOPE_SINGLE_MEETING-eligible subset of _BATTERY (docs/frontend/
+# PRODUCT_ROADMAP.md F2) — an explicit list, matching _BATTERY's own style,
+# rather than a dry-run scope check: every function here accepts a
+# meeting_id kwarg (see each one's meeting-scoped sibling, e.g.
+# _t_recusal_overall_meeting) and produces a factual recount of that one
+# meeting, not a corpus-wide rate.
+_MEETING_BATTERY = [
+    _t_tender_concentration, _t_decider_supplier_conflict,
+    _t_recusal_overall,
+    _t_big_dollar_leniency, _t_objection_dose,
+    _t_officer_divergence, _t_unanimity_trend, _t_attendance,
+    _t_transparency, _t_confidential_tender_size, _t_confidential_topics,
     _t_engagement, _t_deputation_dissent, _t_question_responsiveness,
 ]
 
@@ -1332,6 +1901,30 @@ def run_test_battery(session: Session, council_id: int,
                 genre="(error)", principle="—", question="—",
                 valence=NEUTRAL, grade=G_NODATA, data_ok=False,
                 headline="Test errored", verdict=f"{type(exc).__name__}: {exc}",
+            ))
+    return results
+
+
+def run_meeting_digest(session: Session, council_id: int, meeting_id: int) -> list[TestResult]:
+    """Run only the SCOPE_SINGLE_MEETING-eligible tests (_MEETING_BATTERY),
+    scoped to one meeting (docs/frontend/PRODUCT_ROADMAP.md F2) — a review
+    artifact for looking at what a single-meeting digest would actually say
+    before deciding whether/how to publish anything like it. NOT wired into
+    `council draft`/`council publish`, S7/S8/S9, or the coverage register —
+    see `council meeting-digest`'s own docstring for why.
+    """
+    results: list[TestResult] = []
+    for fn in _MEETING_BATTERY:
+        try:
+            results.append(fn(session, council_id, {}, meeting_id=meeting_id))
+        except Exception as exc:  # a broken test must not sink the digest
+            results.append(TestResult(
+                test_id=getattr(fn, "__name__", "unknown"),
+                title=fn.__name__.replace("_t_", "").replace("_", " "),
+                genre="(error)", principle="—", question="—",
+                valence=NEUTRAL, grade=G_NODATA, data_ok=False,
+                headline="Test errored", verdict=f"{type(exc).__name__}: {exc}",
+                scope=[SCOPE_SINGLE_MEETING],
             ))
     return results
 

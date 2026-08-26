@@ -58,6 +58,11 @@ data/draft/
 data/published_full/
 data/reply_packets/
 
+# council meeting-digest review artifact (docs/frontend/PRODUCT_ROADMAP.md
+# F2) — deliberately separate from data/draft/ so it can never be mistaken
+# for, or picked up by, the publish pipeline.
+data/meeting_digest_preview/
+
 .cache/
 
 # Generated outputs

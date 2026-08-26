@@ -2844,6 +2844,95 @@ def cmd_draft(args) -> None:
     ))
 
 
+def cmd_meeting_digest(args) -> None:
+    """Print (and optionally save) a single-meeting digest — a review
+    artifact for looking at what `run_meeting_digest()` actually produces
+    before deciding whether/how any of it gets published.
+
+    Deliberately NOT a `council draft` snapshot: writes only to a scratch
+    path (`data/meeting_digest_preview/`, gitignored, distinct from
+    `data/draft/`) that `council publish` never reads, never runs the S7
+    invariant gate, and is not wired into the Conductor/Editor/Fixer loop.
+    See docs/frontend/PRODUCT_ROADMAP.md F2 for what this build is and
+    isn't scoped to.
+    """
+    import json as _json
+    from datetime import date as _date, datetime, timezone
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    short_name = COUNCILS[key]["short_name"]
+
+    from src.storage.database import init_db, make_session_factory
+    from src.analysis.queries import get_council_by_name
+    from src.analysis.tests import run_meeting_digest
+    from src.models import Meeting
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+    council_id = council_obj.id
+
+    if args.meeting:
+        meeting_id = args.meeting
+        meeting = session.query(Meeting).filter(Meeting.id == meeting_id,
+                                                 Meeting.council_id == council_id).first()
+        if not meeting:
+            console.print(f"[red]No meeting id {meeting_id} for {key}[/red]")
+            sys.exit(1)
+    else:
+        try:
+            target_date = _date.fromisoformat(args.date)
+        except ValueError:
+            console.print(f"[red]--date must be YYYY-MM-DD, got {args.date!r}[/red]")
+            sys.exit(1)
+        meeting = (
+            session.query(Meeting)
+            .filter(Meeting.council_id == council_id, Meeting.meeting_date == target_date,
+                    Meeting.document_type == "minutes")
+            .first()
+        )
+        if not meeting:
+            console.print(f"[red]No minutes meeting on {args.date} for {key}[/red]")
+            sys.exit(1)
+        meeting_id = meeting.id
+
+    console.print(Panel(
+        f"Meeting digest — [bold]{key}[/bold], {meeting.meeting_date.isoformat()} (meeting {meeting_id})",
+        style="blue",
+    ))
+
+    results = run_meeting_digest(session, council_id, meeting_id)
+    session.close()
+
+    for r in results:
+        colour = {"critical": "red", "supportive": "green", "neutral": "cyan"}.get(r.valence, "white")
+        console.print(f"\n[{colour}][{r.test_id}][/{colour}] {r.headline}")
+        console.print(f"  [dim]unit={r.unit_of_analysis}"
+                      + (f" named={r.named_entities}" if r.named_entities else "")
+                      + f" n={r.n}[/dim]")
+        console.print(f"  {r.verdict}")
+
+    if args.save:
+        out_dir = Path("data/meeting_digest_preview") / key
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"meeting_{meeting_id}.json"
+        from dataclasses import asdict as _asdict
+        out_path.write_text(_json.dumps({
+            "council": key,
+            "meeting_id": meeting_id,
+            "meeting_date": meeting.meeting_date.isoformat(),
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "results": [_asdict(r) for r in results],
+        }, indent=2))
+        console.print(f"\n[dim]Saved: {out_path}[/dim]")
+
+
 def cmd_publish(args) -> None:
     """The publish gate: copy a reviewed draft's snapshots into
     frontend/public/data/ — the only command allowed to write there.
@@ -3809,6 +3898,21 @@ def main() -> None:
     )
     p_draft.add_argument("council", choices=list(COUNCILS))
     p_draft.set_defaults(func=cmd_draft)
+
+    # meeting-digest (review artifact — docs/frontend/PRODUCT_ROADMAP.md F2,
+    # NOT a council draft snapshot, NOT publish-eligible)
+    p_meeting_digest = sub.add_parser(
+        "meeting-digest",
+        help="Print a single-meeting digest for review (data/meeting_digest_preview/ "
+             "if --save) — a review artifact, not a council draft snapshot",
+    )
+    p_meeting_digest.add_argument("council", choices=list(COUNCILS))
+    mg_target = p_meeting_digest.add_mutually_exclusive_group(required=True)
+    mg_target.add_argument("--meeting", type=int, help="meeting id")
+    mg_target.add_argument("--date", help="meeting date, YYYY-MM-DD (minutes document)")
+    p_meeting_digest.add_argument("--save", action="store_true",
+                                  help="also write JSON to data/meeting_digest_preview/<council>/")
+    p_meeting_digest.set_defaults(func=cmd_meeting_digest)
 
     # editor-loop (S8: scripted Editor/Fixer review loop — the Conductor role, scripted)
     p_loop = sub.add_parser(
