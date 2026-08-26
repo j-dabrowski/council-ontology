@@ -87,6 +87,14 @@ UNIT_INDIVIDUAL = "individual"                           # a claim about named p
 ENTITY_RESOLUTION_CLEAN = "clean"
 ENTITY_RESOLUTION_OPEN_SPLITS = "open-splits"
 
+# scope — declares which granularity this finding-type is MEANINGFUL at, not
+# which granularity it's currently computed at. Every generator today only
+# ever computes over the whole corpus; SCOPE_SINGLE_MEETING marks a test as
+# ELIGIBLE for a future per-meeting digest, not as already supporting one —
+# no generator accepts a period/meeting filter yet.
+SCOPE_WHOLE_CORPUS = "whole_corpus"
+SCOPE_SINGLE_MEETING = "single_meeting"
+
 
 @dataclass
 class TestResult:
@@ -109,6 +117,9 @@ class TestResult:
     unit_of_analysis: str = UNIT_INSTITUTIONAL
     named_entities: list[str] = field(default_factory=list)  # empty iff institutional
     entity_resolution: str = ENTITY_RESOLUTION_CLEAN  # clean | open-splits (individual claims only)
+    # granularity this finding-type is meaningful at (see SCOPE_* above) —
+    # every generator declares this explicitly, same discipline as unit_of_analysis
+    scope: list[str] = field(default_factory=lambda: [SCOPE_WHOLE_CORPUS])
     # S9 right of reply (§4) — set by src/reply_packets.py, never hand-authored.
     # None until a packet is sent; {"sent_at": iso8601, "response": str|None,
     # "declined": bool} after. Only meaningful for named_entities-bearing claims.
@@ -188,6 +199,7 @@ def _t_recusal_overall(session, council_id, pc) -> TestResult:
         base_rate=f"{s.baseline_recusal_pct}% recuse on a normal vote",
         era="1995–2026",
         detail_panel="declared",
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -211,6 +223,7 @@ def _t_recusal_trend(session, council_id, pc) -> TestResult:
         base_rate="leaving is legally mandatory for financial/proximity interests",
         era="pre-2018 / 2018–21 / post-2022",
         detail_panel="recusal",
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -244,7 +257,8 @@ def _t_delegate_body_conflict(session, council_id, pc) -> TestResult:
                        "Do council-appointed delegates declare on their own body's business?",
                        "Integrity / conflict (3.3)", "Nolan Objectivity/Integrity · CIPFA-A",
                        "When a councillor is Council's own appointed delegate on an external body, "
-                       "do they declare an interest before voting on that body's business?")
+                       "do they declare an interest before voting on that body's business?",
+                       scope=[SCOPE_WHOLE_CORPUS])
     og = next((b for b in r.bodies if "Ocean Gardens" in b.label), r.bodies[-1])
     others = [b for b in r.bodies if b is not og]
     others_desc = "; ".join(
@@ -287,6 +301,7 @@ def _t_delegate_body_conflict(session, council_id, pc) -> TestResult:
         data_ok=True,
         detail_panel="delegate-body-conflict",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -307,6 +322,7 @@ def _t_transparency(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="transparency",
         series=[{"x": y.year, "y": y.confidential_pct} for y in t.years if y.total >= 50],
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -330,6 +346,7 @@ def _t_officer_divergence(session, council_id, pc) -> TestResult:
         base_rate=f"{diverged} departures across {total} matched items",
         era="where officer recs exist (agenda-matched)",
         detail_panel="divergence",
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -352,6 +369,7 @@ def _t_voting_power(session, council_id, pc) -> TestResult:
         base_rate=f"{round(p.base_carry_rate * 100, 1)}% base carry rate",
         era="2003–2026 (contested motions)",
         detail_panel="power",
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -382,7 +400,8 @@ def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
                        "Is the council's own oversight function captured by its most powerful members?",
                        "Governance / culture (3.2) & Strength (E)", "CIPFA-A · Nolan Accountability",
                        "Does membership on the council's Audit/CEO-Performance-Review bodies skew "
-                       "toward the chamber's habitual winners, or draw broadly?")
+                       "toward the chamber's habitual winners, or draw broadly?",
+                       scope=[SCOPE_WHOLE_CORPUS])
     gap = round(r.appointee_win_rate - r.non_appointee_win_rate, 1)
     lo = min((p.win_rate for p in r.profiles), default=None)
     hi = max((p.win_rate for p in r.profiles), default=None)
@@ -416,6 +435,7 @@ def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
         data_ok=True,
         detail_panel="oversight-body-capture",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -437,6 +457,7 @@ def _t_mayoral(session, council_id, pc) -> TestResult:
         base_rate=f"{m.other_contest_pct}% backbench dissent rate",
         era="1999–2026 (mayors with dated terms)",
         detail_panel="mayoral",
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -457,6 +478,7 @@ def _t_sponsorship(session, council_id, pc) -> TestResult:
         base_rate=f"high-sponsor pairs agree {s.convergence_high_agree}% vs {s.convergence_low_agree}% base",
         era="1996–2023 (electoral terms)",
         detail_panel="sponsorship",
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -486,6 +508,7 @@ def _t_tenure(session, council_id, pc) -> TestResult:
         base_rate=f"median {t.median_years}y",
         era="1995–2026",
         detail_panel="tenure",
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -510,6 +533,7 @@ def _t_objection_dose(session, council_id, pc) -> TestResult:
         base_rate=f"{lo.refusal_pct if lo else '—'}% refusal with no objectors",
         era="all decided applications",
         detail_panel="dose",
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -532,6 +556,7 @@ def _t_tender_concentration(session, council_id, pc) -> TestResult:
         base_rate=f"{t.distinct_named} distinct named contractors",
         era="1995–2026",
         detail_panel="tenders",
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -578,6 +603,7 @@ def _t_decider_supplier_conflict(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="decider-supplier",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -621,6 +647,7 @@ def _t_threshold_gaming(session, council_id, pc) -> TestResult:
         era="2015+ ($250k regime)",
         detail_panel="threshold-gaming",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -641,7 +668,8 @@ def _t_procurement_incumbency(session, council_id, pc) -> TestResult:
     if not by_firm:
         return _nodata("procurement.incumbency", "Repeat-winner / incumbent capture",
                        "Integrity / procurement (3.3)", "ICAC supplier-panel risk",
-                       "Do the same firms keep winning the big-dollar work?")
+                       "Do the same firms keep winning the big-dollar work?",
+                       scope=[SCOPE_WHOLE_CORPUS])
     top_dollars = sorted(by_firm.values(), key=lambda r: r["amt"], reverse=True)[:10]
     top_dollar_keys = {id(r) for r in top_dollars}
     most_recurring = max(by_firm.items(), key=lambda kv: len(kv[1]["years"]))
@@ -671,6 +699,7 @@ def _t_procurement_incumbency(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="incumbency",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -686,7 +715,8 @@ def _t_big_dollar_leniency(session, council_id, pc) -> TestResult:
     if len(vals) < 20:
         return _nodata("planning.big_dollar_leniency", "Do big developments get an easier ride?",
                        "Governance / fairness (3.2)", "CIPFA-D — value for money / objectivity",
-                       "Are high-value applications approved at a different rate?")
+                       "Are high-value applications approved at a different rate?",
+                       scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING])
     q = len(vals) // 4
     quartiles = [vals[:q], vals[q:2*q], vals[2*q:3*q], vals[3*q:]]
     rates = []
@@ -714,6 +744,7 @@ def _t_big_dollar_leniency(session, council_id, pc) -> TestResult:
         era="applications with a recorded value",
         detail_panel="big-dollar",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -734,7 +765,8 @@ def _t_repeat_applicant(session, council_id, pc) -> TestResult:
     if not freq:
         return _nodata("planning.repeat_applicant", "Do frequent applicants win more often?",
                        "Integrity / fairness (3.3)", "ICAC favouritism risk",
-                       "Do repeat builders/agents get approved more than one-shot applicants?")
+                       "Do repeat builders/agents get approved more than one-shot applicants?",
+                       scope=[SCOPE_WHOLE_CORPUS])
 
     def rate(items):
         n = len(items)
@@ -769,6 +801,7 @@ def _t_repeat_applicant(session, council_id, pc) -> TestResult:
         era="applications with a named applicant",
         detail_panel="repeat-applicant",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -806,6 +839,7 @@ def _t_unanimity_trend(session, council_id, pc) -> TestResult:
         series=series,
         detail_panel="unanimity",
         chart=_line([{"x": p["x"], "y": p["y"]} for p in series], unit="%"),
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -814,7 +848,8 @@ def _t_eoy_spending(session, council_id, pc) -> TestResult:
     if not rows:
         return _nodata("finance.eoy_spending", "End-of-year spending spike",
                        "Financial (3.1)", "ICAC generic risk",
-                       "Do tender awards/dollars spike at the end of the budget cycle?")
+                       "Do tender awards/dollars spike at the end of the budget cycle?",
+                       scope=[SCOPE_WHOLE_CORPUS])
     dec_amt = sum(a for a, m in rows if m == 12)
     tot_amt = sum(a for a, _m in rows)
     dec_n = sum(1 for _a, m in rows if m == 12)
@@ -847,6 +882,7 @@ def _t_eoy_spending(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="eoy",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -898,6 +934,7 @@ def _t_freshman(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="freshman",
         chart=_bars([("First 12 months", er or 0), ("Later service", lr or 0)], unit="%"),
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -940,6 +977,7 @@ def _t_election_cycle(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="election-cycle",
         chart=_bars([("Pre-election (Apr–Oct odd yr)", wr or 0), ("Rest of cycle", orr or 0)], unit="%"),
+        scope=[SCOPE_WHOLE_CORPUS],
     )
 
 
@@ -968,6 +1006,7 @@ def _t_deputation_dissent(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="deputations",
         chart=_bars([("With a deputation", wr or 0), ("Without", orr or 0)], unit="%"),
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -1025,25 +1064,28 @@ def _t_attendance(session, council_id, pc) -> TestResult:
         data_ok=True,
         detail_panel="attendance",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
 # ════════════════════════════════════════════════════════════════════════════
 # DATA-LIMITED TESTS — the corpus can't support these (still comparable!)
 # ════════════════════════════════════════════════════════════════════════════
-def _nodata(test_id, title, genre, principle, question) -> TestResult:
+def _nodata(test_id, title, genre, principle, question, scope=None) -> TestResult:
     return TestResult(
         test_id=test_id, title=title, genre=genre, principle=principle, question=question,
         valence=NEUTRAL, grade=G_NODATA, data_ok=False,
         headline="Not computable on this corpus",
         verdict="The data needed for this standard test is not present/structured in this corpus.",
+        scope=scope if scope is not None else [SCOPE_WHOLE_CORPUS],
     )
 
 
 def _t_single_source(session, council_id, pc) -> TestResult:
     r = _nodata("procurement.single_source", "Single-source / direct-negotiation share",
                 "Integrity / procurement (3.3)", "ICAC direct-negotiation guidance",
-                "What share of tenders had no competitive field?")
+                "What share of tenders had no competitive field?",
+                scope=[SCOPE_WHOLE_CORPUS])
     r.verdict = ("Tenders carry no competitive-field metadata (number of respondents) in this "
                  "corpus, so single-source concentration can't be measured — flagged for re-extraction.")
     r.detail_panel = "single-source"
@@ -1053,7 +1095,8 @@ def _t_single_source(session, council_id, pc) -> TestResult:
 def _t_reserve_trajectory(session, council_id, pc) -> TestResult:
     r = _nodata("finance.reserve_trajectory", "Reserve depletion / financial resilience",
                 "Financial (3.1)", "CIPFA Financial Resilience Index",
-                "Are reserves being depleted (the s.114 precursor)?")
+                "Are reserves being depleted (the s.114 precursor)?",
+                scope=[SCOPE_WHOLE_CORPUS])
     r.verdict = ("An investment-portfolio series exists in the minutes (peaked ~$73M in 2018) but the "
                  "~24 irregular free-text snapshots can't be normalised to a defensible reserve trend "
                  "yet — needs a finance-aware re-extraction.")
@@ -1084,6 +1127,7 @@ def _t_engagement(session, council_id, pc) -> TestResult:
         era="1995–2026",
         detail_panel="engagement",
         chart=_line(series, unit=""),
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -1104,7 +1148,8 @@ def _t_confidential_tender_size(session, council_id, pc) -> TestResult:
         return _nodata("transparency.confidential_tender_size",
                        "Are the redacted tenders the bigger contracts?",
                        "Transparency / financial (3.4 / 3.1)", "Nolan Openness · CIPFA-G",
-                       "Do confidential tenders carry higher dollar values than open ones?")
+                       "Do confidential tenders carry higher dollar values than open ones?",
+                       scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING])
     conf_med = round(statistics.median(conf))
     opn_med = round(statistics.median(opn))
     ratio = round(conf_med / opn_med, 1) if opn_med else None
@@ -1132,6 +1177,7 @@ def _t_confidential_tender_size(session, council_id, pc) -> TestResult:
         data_ok=True,
         detail_panel="confidential-tender-size",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -1169,7 +1215,8 @@ def _t_confidential_topics(session, council_id, pc) -> TestResult:
         return _nodata("transparency.confidential_topics",
                        "What subject matter gets closed?",
                        "Transparency (3.4)", "Nolan Openness · CIPFA-B",
-                       "Does confidentiality track lawful grounds or contentious topics?")
+                       "Does confidentiality track lawful grounds or contentious topics?",
+                       scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING])
     base = conf_total / total * 100
     theme_stat: list[tuple[str, int, int, float]] = []  # name, items, conf, lift
     for name, pat in _CONF_THEMES:
@@ -1207,6 +1254,7 @@ def _t_confidential_topics(session, council_id, pc) -> TestResult:
         data_ok=True,
         detail_panel="confidential-topics",
         chart=chart,
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 
@@ -1237,6 +1285,7 @@ def _t_question_responsiveness(session, council_id, pc) -> TestResult:
         data_ok=True,
         detail_panel="question-responsiveness",
         chart=_line(series, unit="%"),
+        scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
     )
 
 

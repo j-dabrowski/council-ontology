@@ -52,7 +52,7 @@ claim's fields if a Refiner session actually declared them on purpose.
 | 4 | **Council-agnosticism** | 100% for newly-refined tests; existing tests graded, failures logged as backlog, not blocking | Function signature takes only `council_id` (+ generic `from_year`/`to_year`); no council-specific literal (a specific year, name, or corpus-tuned threshold) baked into the logic without being a parameter with a documented default |
 | 5 | **Chart & drill-down completeness** | 100% for flagships; chart populated for all battery tests | `TestResult.chart` renders in `BatteryTestPanel`; flagships carry drill-down arrays with ≥1 source quote |
 | 6 | **Independent reproducibility** | Pass/fail per test | Can a fresh reader explain what the test measures and why its join is safe from the function's own docstring/comments alone, without consulting `INVESTIGATIONS.md`'s narrative? |
-| 7 | **Declaration completeness** | 100% for newly-refined generators — hard gate; pre-2026-08-23 generators graded as backlog, not blocking (same asymmetry as dimension 4) | A one-line declaration comment sits directly above the `TestResult(...)` call stating `unit`/`MIN_N`/`strength`/`principle` (plus the superlative check if `strength=superlative`), and its stated values match what the `TestResult` call actually sets; the matching `docs/investigator/coverage_register.json` row lists the new `test_id` |
+| 7 | **Declaration completeness** | 100% for newly-refined generators — hard gate; pre-2026-08-23 generators graded as backlog for `unit`/`MIN_N`/`strength`/`principle` only, not blocking (same asymmetry as dimension 4) — `scope` (added 2026-08-26) carries no such backlog, since all 29 pre-existing generators were tagged directly in code alongside the prompt update that introduced it | A one-line declaration comment sits directly above the `TestResult(...)` call stating `unit`/`MIN_N`/`strength`/`principle`/`scope` (plus the superlative check if `strength=superlative`), and its stated values match what the `TestResult` call actually sets; the matching `docs/investigator/coverage_register.json` row lists the new `test_id` |
 
 **One rule that should never become adjustable without an explicit, logged
 decision** (same principle as `EDITOR_PROTOCOL.md`'s BLOCKING-flag rule):
@@ -175,6 +175,15 @@ flagship ([18]) than the one this session was scoped to.
 
 ## Changelog
 
+- v0.5 (2026-08-26) — Dimension 7 gains a fifth declared field, `scope`
+  (`whole_corpus`/`single_meeting` — declares which granularity a
+  finding-type is *meaningful* at, ahead of a possible future per-meeting
+  digest section; no generator computes at single-meeting granularity yet).
+  `Refiner_prompt.txt` bumped to v1.3 (Step 5/6, score-block line). Unlike
+  the original four declaration fields, `scope` has no pre-existing-generator
+  backlog exception — all 29 shipped tests were tagged directly in
+  `src/analysis/tests.py` alongside this change, so the dimension-7 hard
+  gate applies to `scope` on every generator, old and new, immediately.
 - v0.4 (2026-08-23) — Added dimension 7 (declaration completeness, hard
   gate for newly-refined generators) per `docs/AGENT_DESIGN.md` §6 Step 5.
   `Refiner_prompt.txt` v1.2 emits the declaration block and updates the

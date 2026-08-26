@@ -74,6 +74,28 @@ Overview page.
 *interestingness to a general reader*, not just high-volume or high-dollar items.
 Requires iteration and a test battery of known-notable past events.
 
+**2026-08-26 — the battery now declares which of its tests are eligible for
+this.** Every `TestResult` in `src/analysis/tests.py` carries a `scope`
+field (`SCOPE_WHOLE_CORPUS` / `SCOPE_SINGLE_MEETING`, one or both) declaring
+which granularity that finding-type is *meaningful* at — not which
+granularity it's currently computed at; every generator today still only
+ever runs over the whole corpus. 14 of the 29 existing tests are tagged
+single-meeting-eligible (direct event flags — a tender awarded, an item
+closed, a conflict declared — or comparisons against an already-established
+corpus-wide baseline); the other 15 stay whole-corpus only (entrenchment,
+cohort, seasonal, or bunching patterns a single meeting can't exhibit).
+`Refiner_prompt.txt` (v1.3) now declares `scope` for every newly-codified
+test going forward, so this list stays current without a re-audit.
+
+**Still unbuilt, and a real step beyond tagging:** actually computing any
+tagged test over one meeting's data (period-filterable queries, a
+`run_meeting_digest()`-shaped entry point), and giving Explorer/Refiner the
+ability to originate genuinely new single-meeting hypotheses rather than
+only tag existing ones. Single-meeting claims are more individually
+attributable than corpus-wide aggregates (one date, few actors), so this
+needs its own look at S7/S9/defamation exposure before it goes anywhere
+near automation — not scheduled yet.
+
 **Monetisation alignment:**
 - Latest month's digest: free (drives return visits and sharing)
 - Historical digests beyond 6 months: paywalled or email-gated

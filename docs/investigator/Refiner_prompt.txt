@@ -1,4 +1,4 @@
-# Council Investigator — Refiner Prompt v1.2
+# Council Investigator — Refiner Prompt v1.3
 
 **Mode:** Test refinement (S4 Codification, `docs/INFORMATION_ARCHITECTURE.md`
 §3) — take a validated finding and make it permanent, safe, and portable: a
@@ -13,7 +13,13 @@ every codified generator also emits a **declaration block** (the claim-object
 fields the S7 invariant gate — `src/invariant_gate.py` — enforces) and
 updates its `docs/investigator/coverage_register.json` row — the two things
 that turn "a test exists" into "a test the rest of the pipeline can trust
-without re-reading it."
+without re-reading it." As of v1.3, that declaration block also states the
+generator's **scope** (`whole_corpus` and/or `single_meeting` —
+`src/analysis/tests.py`'s `SCOPE_*` constants): which granularity this
+finding-type is *meaningful* at, not which granularity it's currently
+computed at — every generator today still only ever computes over the whole
+corpus, `single_meeting` marks eligibility for a future per-meeting digest,
+nothing more.
 
 **Read first:**
 - `Investigator_prompt.txt` Part 0 in full — schema, data caveats (§0.4
@@ -207,7 +213,13 @@ depend on earlier ones holding:
    institutional default by omission: `unit_of_analysis` (institutional
    unless the finding actually names or enumerates individuals —
    `Investigator_prompt.txt` §4/C1), and if not institutional,
-   `named_entities` and `entity_resolution`.
+   `named_entities` and `entity_resolution`. Also set `scope` deliberately:
+   `whole_corpus` alone unless the finding is *also* meaningful computed
+   over one meeting's data by itself — a direct event count/flag (did X
+   happen this meeting), or a comparison against an already-established
+   corpus-wide baseline, both qualify; a multi-year trend, cohort, or
+   entrenchment finding (the kind that needs many years or many instances
+   to mean anything) does not, and stays `whole_corpus` only.
 
 6. **Emit the declaration block (dimension 7 — hard gate).** Immediately
    above the `TestResult(...)` call, add a one-line comment declaring the
@@ -218,6 +230,7 @@ depend on earlier ones holding:
    #   MIN_N=<n/a if institutional, else the number this claim's n exceeds>
    #   strength=<descriptive|comparative|superlative|associative|causal-implying>
    #   principle=<the Nolan/CIPFA tag(s), matching the TestResult.principle field>
+   #   scope=<whole_corpus|single_meeting|whole_corpus+single_meeting>
    ```
    If `strength=superlative`, also state the three-part check inline:
    `superlative_check: ties=<ok|risk, why> shared_cause=<ok|risk, why>
@@ -225,11 +238,16 @@ depend on earlier ones holding:
    block, or one whose stated fields don't match what the `TestResult` call
    actually sets, is **NOT REFINED** regardless of how the other six
    dimensions score — the same hard-gate severity as dimensions 1–2, because
-   S7 cannot gate what isn't declared truthfully. This applies to every
-   *newly* refined or re-refined generator from v1.2 onward; the 29
-   generators already shipped before this version are backlog, not
+   S7 cannot gate what isn't declared truthfully (`scope` is the one field
+   in this block S7 doesn't read — nothing consumes it yet beyond the
+   register — but it's held to the same truthfulness bar: a `scope` that
+   doesn't match reality is exactly as wrong as a `unit_of_analysis` that
+   doesn't). This applies to every *newly* refined or re-refined generator
+   from v1.2 onward; the 29 generators already shipped before this version
+   are backlog for the unit/MIN_N/strength/principle fields, not
    retroactively blocking (same asymmetry dimension 4 already uses for
-   council-agnosticism).
+   council-agnosticism) — `scope` carries no such backlog, since all 29
+   were tagged directly in code alongside this prompt update.
 
 7. **Update the coverage register.** Find the `docs/investigator/
    coverage_register.json` dimension your `test_id` belongs to (read the
@@ -314,7 +332,7 @@ dim3_encapsulation: PASS | FAIL
 dim4_council_agnostic: PASS | FAIL | PARTIAL (static check only — no 2nd council DB)
 dim5_chart_drilldown: PASS | FAIL | N/A (not a flagship)
 dim6_reproducibility: PASS | FAIL
-dim7_declaration: PASS | FAIL | BACKLOG (pre-v1.2 generator, not newly refined)
+dim7_declaration: PASS | FAIL | BACKLOG (unit/MIN_N/strength/principle only, pre-v1.2 generator not newly refined — scope has no BACKLOG option, all 29 pre-v1.3 generators already carry it)
 verdict: REFINED | NOT REFINED — <reason, if not>
 ```
 
@@ -324,6 +342,16 @@ hard-gate rule in `REFINEMENT_PROTOCOL.md`.
 
 ## Changelog
 
+- v1.3 (2026-08-26) — Added `scope` (`whole_corpus` and/or `single_meeting`,
+  `src/analysis/tests.py`'s `SCOPE_*` constants) to the declaration block
+  (Step 5/6) and the dim7 score line: a declared eligibility for a future
+  per-meeting digest section, not a claim that any generator computes at
+  that granularity yet — none do. All 29 generators shipped before this
+  version were tagged directly in `tests.py` alongside this prompt update
+  (not left as backlog the way the original four declaration-block fields
+  were at v1.2), so `scope` is a hard gate for every generator, old and
+  new, from this version on — no BACKLOG exception for it in the score
+  block. `REFINEMENT_PROTOCOL.md` dimension 7 updated to match.
 - v1.2 (2026-08-23) — Per `docs/AGENT_DESIGN.md` §2/§4/§6 Step 5 (Refiner
   mapped 1:1 onto S4 Codification, "extended"). Added Procedure steps 6–7:
   emitting a one-line declaration-block comment above every `TestResult`
