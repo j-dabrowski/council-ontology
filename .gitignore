@@ -72,6 +72,9 @@ data/council.db.bak*
 # Private strategy notes (track: strategy)
 docs/strategy/
 
+# private prompts
+prompt_notes.txt
+
 # Investigator-track OUTPUT docs (investigation findings, retroactive audits,
 # session synthesis) are gitignored by default — these are the artefacts that
 # name real individuals with risk-adjacent framing (recusal drivers, etc.),
