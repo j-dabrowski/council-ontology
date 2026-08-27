@@ -2790,12 +2790,27 @@ def cmd_draft(args) -> None:
     # docs/frontend/PRODUCT_ROADMAP.md F2 for why single-meeting claims
     # can't go through S7/S8/S9 yet.
     from src.analysis.tests import battery_summary, run_meeting_digest
-    from src.models import Meeting
-    latest_meeting = (
-        session.query(Meeting)
-        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
-        .order_by(Meeting.meeting_date.desc())
-        .first()
+    from src.models import Meeting, Motion
+    # The newest `document_type == "minutes"` row isn't always usable: WA
+    # councils typically confirm/publish official minutes at the *following*
+    # meeting, so the most recent one can be a stub (e.g. only a
+    # questions-submitted attachment scraped under the minutes slot, 0 real
+    # content) while its real minutes simply don't exist yet. Every genuine
+    # minutes meeting in this corpus has at least one motion, so skip
+    # candidates with none and fall back to the newest one that has real
+    # content, rather than surfacing an all-empty digest for a meeting whose
+    # minutes haven't actually landed.
+    latest_meeting = next(
+        (
+            m for m in (
+                session.query(Meeting)
+                .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+                .order_by(Meeting.meeting_date.desc())
+                .all()
+            )
+            if session.query(Motion).filter(Motion.meeting_id == m.id).count() > 0
+        ),
+        None,
     )
     digest_payload = None
     if latest_meeting:
@@ -2875,7 +2890,7 @@ def cmd_draft(args) -> None:
             f"{m['meeting_date']}) [dim]— local review only, outside manifest/Editor scope[/dim]"
         )
     else:
-        console.print(f"  [yellow]○[/yellow] local/digest.json skipped — no minutes meetings for {key}")
+        console.print(f"  [yellow]○[/yellow] local/digest.json skipped — no minutes meeting with real content for {key}")
 
     n_public = sum(1 for t in tiers.values() if t == "public")
     n_full = len(tiers) - n_public
