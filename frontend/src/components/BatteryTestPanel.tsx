@@ -139,9 +139,13 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ScorecardTest; cl
         <span className="bt-headline-text">{headline}</span>
       </div>
 
-      {t.data_ok && t.chart ? (
-        <ChartView chart={t.chart} valence={t.valence} />
-      ) : (
+      {/* "Not computable" reflects data_ok, not chart presence — a real,
+          computed result can legitimately have no chart (e.g. a single-
+          meeting point stat has nothing to trend), and showing the "not
+          computable" message for that case would misreport a real n=0/n=20
+          finding as a data gap. */}
+      {t.data_ok && t.chart && <ChartView chart={t.chart} valence={t.valence} />}
+      {!t.data_ok && (
         <div className="bt-nodata">
           <span className="bt-nodata-mark">○</span> Not computable on this corpus.
         </div>
