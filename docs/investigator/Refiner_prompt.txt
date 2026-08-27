@@ -1,4 +1,4 @@
-# Council Investigator — Refiner Prompt v1.3
+# Council Investigator — Refiner Prompt v1.4
 
 **Mode:** Test refinement (S4 Codification, `docs/INFORMATION_ARCHITECTURE.md`
 §3) — take a validated finding and make it permanent, safe, and portable: a
@@ -221,7 +221,33 @@ depend on earlier ones holding:
    entrenchment finding (the kind that needs many years or many instances
    to mean anything) does not, and stays `whole_corpus` only.
 
-6. **Emit the declaration block (dimension 7 — hard gate).** Immediately
+6. **If `scope` includes `single_meeting`, write the meeting-scoped variant
+   too — a declared eligibility with nothing behind it is not refined
+   (dimension 7).** `scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING]` on
+   its own proves nothing — nothing checks it until you also ship the
+   function a digest can actually call. Concretely:
+   - Write `_<name>_meeting(session, council_id, meeting_id)`, dispatched
+     from the whole-corpus function's own body (`if meeting_id is not
+     None: return _t_x_meeting(...)`, the existing convention every
+     current `_MEETING_BATTERY` member uses). Read two or three real ones
+     first for the register — `_t_recusal_overall_meeting`,
+     `_t_tender_concentration_meeting`, `_t_attendance_meeting` — rather
+     than inventing a new shape: a `_meeting_label()` era string, an
+     early-return `TestResult` for the "nothing happened this meeting"
+     case, `scope=[SCOPE_SINGLE_MEETING]` on the meeting variant
+     specifically (not the whole-corpus list).
+   - Add the new function to `_MEETING_BATTERY` (`src/analysis/tests.py`),
+     next to `_BATTERY`. A meeting-scoped function that exists but isn't in
+     `_MEETING_BATTERY` never runs inside `run_meeting_digest()` and is
+     exactly as absent as if it were never written.
+   - A generator declaring `single_meeting` scope with no `_meeting`
+     function, or one not added to `_MEETING_BATTERY`, is **NOT REFINED**
+     regardless of the other dimensions — same hard-gate severity as
+     dimension 7's other fields (Step 7 below).
+   - A `whole_corpus`-only generator (no `single_meeting` in `scope`) skips
+     this step entirely — nothing to write.
+
+7. **Emit the declaration block (dimension 7 — hard gate).** Immediately
    above the `TestResult(...)` call, add a one-line comment declaring the
    fields S7 (`src/invariant_gate.py`) and the language-ladder discipline
    (`Investigator_prompt.txt` §4.6) both care about, in this exact shape:
@@ -231,50 +257,70 @@ depend on earlier ones holding:
    #   strength=<descriptive|comparative|superlative|associative|causal-implying>
    #   principle=<the Nolan/CIPFA tag(s), matching the TestResult.principle field>
    #   scope=<whole_corpus|single_meeting|whole_corpus+single_meeting>
+   #   stat=<n/a if scope is whole_corpus-only, else {value, denominator, unit}
+   #     naming the one number score_salience() compares against this
+   #     (test_id, body_class)'s baseline (src/analysis/digest.py)>
+   #   digest_floor=<n/a if scope is whole_corpus-only, else 1.0 if this
+   #     claim reports a discrete, always-reportable EVENT (a tender
+   #     awarded, a conflict declared, an item closed, a deputation heard,
+   #     an unexplained absence) regardless of novelty, else 0.0
+   #     (novelty-only — the common case for a descriptive rate/count)>
    ```
    If `strength=superlative`, also state the three-part check inline:
    `superlative_check: ties=<ok|risk, why> shared_cause=<ok|risk, why>
    lawful_exception=<ok|risk, why>` (§4.6). A generator with no declaration
    block, or one whose stated fields don't match what the `TestResult` call
-   actually sets, is **NOT REFINED** regardless of how the other six
-   dimensions score — the same hard-gate severity as dimensions 1–2, because
-   S7 cannot gate what isn't declared truthfully (`scope` is the one field
-   in this block S7 doesn't read — nothing consumes it yet beyond the
-   register — but it's held to the same truthfulness bar: a `scope` that
-   doesn't match reality is exactly as wrong as a `unit_of_analysis` that
-   doesn't). This applies to every *newly* refined or re-refined generator
-   from v1.2 onward; the 29 generators already shipped before this version
-   are backlog for the unit/MIN_N/strength/principle fields, not
-   retroactively blocking (same asymmetry dimension 4 already uses for
-   council-agnosticism) — `scope` carries no such backlog, since all 29
-   were tagged directly in code alongside this prompt update.
+   actually sets (**or, for the two new fields, what the meeting-scoped
+   `TestResult` call sets — `stat`/`digest_floor` live on the meeting
+   variant, not the whole-corpus one**), is **NOT REFINED** regardless of
+   how the other dimensions score — the same hard-gate severity as
+   dimensions 1–2, because S7 cannot gate what isn't declared truthfully
+   (`scope`/`stat`/`digest_floor` are fields S7 itself doesn't read —
+   nothing consumes `scope` yet beyond the register, and `stat`/
+   `digest_floor` are read by `src/analysis/digest.py`'s
+   `score_salience()`, not S7 — but each is held to the same truthfulness
+   bar: a declared value that doesn't match reality is exactly as wrong as
+   a `unit_of_analysis` that doesn't). This applies to every *newly*
+   refined or re-refined generator from v1.2 onward (v1.4 for `stat`/
+   `digest_floor` specifically); the 29 generators shipped before v1.2 are
+   backlog for the unit/MIN_N/strength/principle fields, not retroactively
+   blocking (same asymmetry dimension 4 already uses for
+   council-agnosticism) — `scope` and `stat`/`digest_floor` carry no such
+   backlog: `scope` because all 29 were tagged directly in code alongside
+   the v1.3 prompt update, `stat`/`digest_floor` because the same is true
+   of the 14 `_MEETING_BATTERY` members as of the digest Phase 1 build
+   (`src/analysis/tests.py`) — both are hard gates for every generator,
+   old and new, the moment the eligibility they declare actually applies.
 
-7. **Update the coverage register.** Find the `docs/investigator/
+8. **Update the coverage register.** Find the `docs/investigator/
    coverage_register.json` dimension your `test_id` belongs to (read the
    register's dimension names/traditions, not just the test_id string, to
    pick the right one) and add the `test_id` to its `tests` array if it
    isn't already there. If the finding doesn't fit any existing dimension,
    don't invent one — flag it in your output for a human or a future
-   Researcher session to add as a new row. Run
-   `python -c "from src.analysis.coverage_register import *; ..."`
-   (or `pytest tests/test_coverage_register.py`) after editing to confirm
-   the register still verifies clean against the real battery.
+   Researcher session to add as a new row. **If the row already carries a
+   granularity field (a future addition — not built as of v1.4, see
+   `EXPLORATION_PROTOCOL.md`), keep it in sync with this generator's
+   `scope`; if the row has no such field yet, this step doesn't invent
+   one.** Run `python -c "from src.analysis.coverage_register import *;
+   ..."` (or `pytest tests/test_coverage_register.py`) after editing to
+   confirm the register still verifies clean against the real battery.
 
-8. **Chart & drill-down completeness (dimension 5).** Run `council draft
+9. **Chart & drill-down completeness (dimension 5).** Run `council draft
    <council>`, confirm the `chart` payload renders in `BatteryTestPanel` (or
    its bespoke panel). If this is a flagship, confirm the snapshot JSON
    carries a populated drill-down array with at least one verbatim
    `extraction_evidence` quote per driver claim — not just that the field
    exists, read the actual rendered text.
 
-9. **Independent reproducibility check (dimension 6).** Read only the
-   function's own docstring and inline comments — no `INVESTIGATIONS.md`,
-   no memory of this session. Can you state what it measures and why its
-   join is safe from that alone? If not, the comments are the gap, not the
-   logic — fix the comments before calling the test refined. This is the
-   cheapest dimension to satisfy and the easiest to skip; don't skip it.
+10. **Independent reproducibility check (dimension 6).** Read only the
+    function's own docstring and inline comments — no `INVESTIGATIONS.md`,
+    no memory of this session. Can you state what it measures and why its
+    join is safe from that alone? If not, the comments are the gap, not the
+    logic — fix the comments before calling the test refined. This is the
+    cheapest dimension to satisfy and the easiest to skip; don't skip it.
 
-10. **Final verification.** `council draft <council>` runs clean end to end
+11. **Final verification.** `council draft <council>` runs clean end to end
     (including the S7 invariant gate — a declaration-block/`TestResult`
     mismatch that S7 would actually catch, e.g. an `individual` claim at
     n≤MIN_N, means step 6 was wrong, not just a documentation gap); the
@@ -332,7 +378,8 @@ dim3_encapsulation: PASS | FAIL
 dim4_council_agnostic: PASS | FAIL | PARTIAL (static check only — no 2nd council DB)
 dim5_chart_drilldown: PASS | FAIL | N/A (not a flagship)
 dim6_reproducibility: PASS | FAIL
-dim7_declaration: PASS | FAIL | BACKLOG (unit/MIN_N/strength/principle only, pre-v1.2 generator not newly refined — scope has no BACKLOG option, all 29 pre-v1.3 generators already carry it)
+dim7_declaration: PASS | FAIL | BACKLOG (unit/MIN_N/strength/principle only, pre-v1.2 generator not newly refined — scope/stat/digest_floor have no BACKLOG option: all 29 pre-v1.3 generators carry scope, all 14 _MEETING_BATTERY members carry stat/digest_floor)
+meeting_variant: PASS | FAIL | N/A (whole_corpus-only generator — no single_meeting scope to deliver on)
 verdict: REFINED | NOT REFINED — <reason, if not>
 ```
 
@@ -342,6 +389,23 @@ hard-gate rule in `REFINEMENT_PROTOCOL.md`.
 
 ## Changelog
 
+- v1.4 (2026-08-27) — Closes the gap `scope=single_meeting` left open since
+  v1.3: declaring eligibility proved nothing on its own — nothing checked
+  whether a `_meeting` function actually existed. New Procedure step 6:
+  when `scope` includes `single_meeting`, write the meeting-scoped variant
+  and add it to `_MEETING_BATTERY` (`src/analysis/tests.py`), or the
+  generator is NOT REFINED — same hard-gate severity as the rest of
+  dimension 7. Declaration block gains two conditional fields, `stat`
+  (`{value, denominator, unit}` — what `score_salience()` compares against
+  a baseline, `src/analysis/digest.py`) and `digest_floor` (1.0 for a
+  discrete always-reportable event, 0.0 for novelty-only descriptive
+  claims — the rule the digest Phase 1 build already applied to all 14
+  existing `_MEETING_BATTERY` members), both "n/a" for `whole_corpus`-only
+  generators. Step 8 (coverage register) gains a forward-compatible
+  instruction to sync a granularity field if the register row already
+  carries one — the schema itself is Explorer v3.1's job, not built here.
+  No backlog exception for either new field, same asymmetry `scope` used
+  at v1.3. Score block gains a `meeting_variant` line.
 - v1.3 (2026-08-26) — Added `scope` (`whole_corpus` and/or `single_meeting`,
   `src/analysis/tests.py`'s `SCOPE_*` constants) to the declaration block
   (Step 5/6) and the dim7 score line: a declared eligibility for a future
