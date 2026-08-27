@@ -2752,6 +2752,7 @@ def cmd_draft(args) -> None:
     """
     import hashlib
     import json as _json
+    from dataclasses import asdict as _asdict
     from datetime import datetime, timezone
 
     key = args.council
@@ -2777,6 +2778,39 @@ def cmd_draft(args) -> None:
     council_id = council_obj.id
 
     written, battery = _generate_snapshots(session, council_id, output_dir, generated_at)
+
+    # Local-review-only: a single-meeting digest for the latest minutes
+    # meeting, computed (not yet written — see below) while the session is
+    # still open. Never added to `written`/manifest.snapshots, so it's
+    # structurally unreachable by `council publish` (src/publish_gate.py's
+    # copy loop only ever iterates manifest.snapshots) regardless of tier or
+    # human error. Written into a `local/` subdirectory once the gate below
+    # passes, specifically because both `council publish`'s glob and
+    # Editor_prompt.txt's input list are non-recursive `*.json` — see
+    # docs/frontend/PRODUCT_ROADMAP.md F2 for why single-meeting claims
+    # can't go through S7/S8/S9 yet.
+    from src.analysis.tests import battery_summary, run_meeting_digest
+    from src.models import Meeting
+    latest_meeting = (
+        session.query(Meeting)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+        .order_by(Meeting.meeting_date.desc())
+        .first()
+    )
+    digest_payload = None
+    if latest_meeting:
+        _dr = run_meeting_digest(session, council_id, latest_meeting.id)
+        digest_payload = {
+            "published_at": generated_at,
+            "council": key,
+            "data": {
+                "meeting_id": latest_meeting.id,
+                "meeting_date": latest_meeting.meeting_date.isoformat(),
+                "summary": battery_summary(_dr),
+                "tests": [_asdict(r) for r in _dr],
+            },
+        }
+
     # Fetch before closing: the gate's text-level name scan needs the corpus's
     # real people to check institutional claims against (src/invariant_gate.py).
     from src.models.ontology import Councillor as _Councillor
@@ -2792,8 +2826,6 @@ def cmd_draft(args) -> None:
     # find this run at all (see src/publish_gate.py), and no Editor call —
     # a gate failure is a blocked draft, not a review finding
     # (docs/AGENT_DESIGN.md §3 Q3).
-    from dataclasses import asdict as _asdict
-
     from src.invariant_gate import load_min_n, run_invariant_gate
     gate = run_invariant_gate(battery, min_n=load_min_n(), known_names=known_names)
     (output_dir / "gate_report.json").write_text(_json.dumps({
@@ -2832,6 +2864,18 @@ def cmd_draft(args) -> None:
         "file_hashes": file_hashes,
         "tiers": tiers,
     }, indent=2))
+
+    if digest_payload:
+        local_dir = output_dir / "local"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        (local_dir / "digest.json").write_text(_json.dumps(digest_payload, indent=2))
+        m = digest_payload["data"]
+        console.print(
+            f"  [green]✓[/green] local/digest.json (meeting {m['meeting_id']}, "
+            f"{m['meeting_date']}) [dim]— local review only, outside manifest/Editor scope[/dim]"
+        )
+    else:
+        console.print(f"  [yellow]○[/yellow] local/digest.json skipped — no minutes meetings for {key}")
 
     n_public = sum(1 for t in tiers.values() if t == "public")
     n_full = len(tiers) - n_public

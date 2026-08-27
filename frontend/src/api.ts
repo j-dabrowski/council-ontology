@@ -1,3 +1,5 @@
+import { getMode } from "./devMode";
+
 // Reserved for future interactive API endpoints (councillor drill-downs etc.)
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
@@ -13,18 +15,26 @@ export async function get<T>(path: string, params?: Record<string, string | numb
   return res.json();
 }
 
-// Read a pre-computed snapshot written by `council publish <council>`.
-// Snapshots live at frontend/public/data/{name}.json and are served as
-// static files — the site only reflects data from the last publish run.
+// Read a pre-computed snapshot. In Publish mode (the default, and the only
+// mode possible in a production build — see devMode.ts) this is
+// frontend/public/data/{name}.json, the static files `council publish`
+// writes — the site only reflects data from the last publish run. In Draft
+// mode (dev server only, via the corner switch) this instead reads
+// /data/draft/{name}.json, served live from the newest `council draft` run
+// by vite.config.ts's draftOverlay() plugin.
 async function getSnapshot<T>(name: string): Promise<T> {
-  const res = await fetch(`/data/${name}.json`);
+  const draftMode = getMode() === "draft";
+  const res = await fetch(`${draftMode ? "/data/draft" : "/data"}/${name}.json`);
   // Vite's dev server SPA-falls-back to index.html (200, text/html) for any
-  // unmatched path rather than a real 404 — so a missing snapshot in dev
-  // mode (e.g. digest.json with no VITE_DIGEST_FILE set) would otherwise
-  // surface as a cryptic "JSON.parse: unexpected character" instead of this
-  // message.
+  // unmatched path rather than a real 404 — so a missing snapshot (e.g. no
+  // `council draft` has ever been run yet) would otherwise surface as a
+  // cryptic "JSON.parse: unexpected character" instead of this message.
   if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
-    throw new Error(`Snapshot not found: ${name}.json — run 'council publish' first`);
+    throw new Error(
+      draftMode
+        ? `Snapshot not found: ${name}.json — run 'council draft' first`
+        : `Snapshot not found: ${name}.json — run 'council publish' first`
+    );
   }
   const json = await res.json();
   return json.data as T;
@@ -615,6 +625,15 @@ export interface ScorecardData {
   tests: ScorecardTest[];
 }
 
+// A single-meeting digest (see `digest` below): the same shape as
+// ScorecardData, plus which meeting it's for — src/cli.py's cmd_draft writes
+// meeting_id/meeting_date alongside summary/tests inside the same `data`
+// object getSnapshot unwraps.
+export interface DigestData extends ScorecardData {
+  meeting_id: number;
+  meeting_date: string;
+}
+
 export const api = {
   scorecard:  () => getSnapshot<ScorecardData>("scorecard"),
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
@@ -637,9 +656,10 @@ export const api = {
   sponsorship:  () => getSnapshot<SponsorshipData>("sponsorship"),
   overview:     () => getSnapshot<OverviewData>("overview"),
   councillors:  () => getSnapshot<CouncillorsData>("councillors"),
-  // Local-review-only: served by vite.config.ts's digestPreview() plugin from
-  // VITE_DIGEST_FILE. No file exists at build time, so this 404s (and shows
-  // the standard "Snapshot not found" ErrorCard) anywhere the dev env var
-  // isn't set — including the published site.
-  digest:       () => getSnapshot<ScorecardData>("digest"),
+  // Local-review-only: computed automatically by every `council draft` run
+  // (src/cli.py's cmd_draft) into local/digest.json, outside the publish
+  // manifest — only reachable in Draft mode via the draftOverlay() plugin.
+  // In Publish mode (including the published site) this always 404s to the
+  // standard "Snapshot not found" ErrorCard, since digest data never ships.
+  digest:       () => getSnapshot<DigestData>("digest"),
 };

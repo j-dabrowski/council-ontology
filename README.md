@@ -249,15 +249,15 @@ render an unreviewed draft in the real dashboard, locally, without touching
 `frontend/public/data/`:
 
 ```bash
-cd frontend
-VITE_DRAFT_DIR=../data/draft/cambridge/<run_id> npm run dev
-# → http://localhost:5173, serving that draft's JSON instead of the
-#   committed placeholder data — for local review only, nothing is published
+cd frontend && npm run dev   # → http://localhost:5173
 ```
 
-This is a dev-only Vite plugin — see `docs/TESTING.md` ("Draft & publish
-workflow") for how it works and why it's safe to leave in the codebase
-unused.
+A corner switch (dev server only — never present in a build) flips every
+panel between the published snapshots (default) and the newest `council
+draft` run, no env var or restart needed; `council draft` also computes a
+single-meeting digest for the latest minutes meeting, viewable at `/#/digest`
+in Draft mode. See `docs/TESTING.md` ("Draft & publish workflow") for how it
+works and why it's safe to leave in the codebase unused.
 
 > The methodology behind the battery — the criteria findings are judged against,
 > the standard of proof, the supportive/neutral/critical valences — lives in

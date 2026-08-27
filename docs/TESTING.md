@@ -311,30 +311,63 @@ a git-tracked directory with unreviewed data, exactly the risk the gate
 exists to prevent. See the README's "Dashboard" section for the reviewer-facing
 command; this is the mechanism behind it.
 
-`frontend/vite.config.ts` defines a small dev-only Vite plugin, `draftPreview()`.
-At server start it reads `process.env.VITE_DRAFT_DIR` and, if set, resolves it
-to an absolute path relative to `frontend/` (e.g.
-`VITE_DRAFT_DIR=../data/draft/cambridge/<run_id>`). Its `configureServer` hook
-registers a Connect middleware that runs *before* Vite's normal static-file
-handling: on every request it checks the URL against `/data/([\w-]+)\.json`,
-and if that name exists as a file in the resolved draft directory, it reads
-the file straight off disk (`readFileSync`) and writes it as the response —
-with `Cache-Control: no-store` so the browser never caches a stale draft
-across runs — instead of letting the request fall through to
-`frontend/public/data/`. If the URL doesn't match, the file isn't in the
-draft directory, or `VITE_DRAFT_DIR` isn't set at all, the middleware calls
-`next()` and Vite serves the committed placeholder data exactly as it always
-has. `getSnapshot()` in `frontend/src/api.ts` (every panel's data source) has
-no idea any of this is happening — it just calls `fetch('/data/<name>.json')`
-and gets back whichever bytes the dev server decided to serve.
+`frontend/vite.config.ts` defines a small dev-only Vite plugin, `draftOverlay()`,
+plus two frontend modules it works with: `frontend/src/devMode.ts` (the
+Draft/Publish mode, dev-only and `localStorage`-persisted) and
+`frontend/src/components/DevModeSwitch.tsx` (the corner UI that flips it — a
+loud full-width bar plus a corner pill when in Draft mode, quiet otherwise;
+reload-on-toggle, no live reactive state). `getSnapshot()` in
+`frontend/src/api.ts` (every panel's data source) picks its fetch prefix from
+the current mode: `/data/<name>.json` (Publish, the default — Vite's normal
+static-file serving of `frontend/public/data/`, untouched by any plugin) or
+`/data/draft/<name>.json` (Draft).
+
+`draftOverlay()` handles the second prefix. Its `configureServer` middleware
+matches `/data/draft/([\w-]+)\.json` on every request and, for each one,
+*re-resolves* which draft run to serve from — not once at plugin
+construction, so a fresh `council draft` is picked up live with no restart.
+By default that's the newest `draft_*` entry in `data/draft/cambridge/`
+**that contains a `manifest.json`** (the on-disk marker that the run cleared
+the S7 gate — `cmd_draft` only writes `manifest.json` after `gate.passed`),
+sorted lexicographically (`draft_YYYYMMDD_HHMMSS` sorts correctly that way);
+`VITE_DRAFT_DIR` still works as an explicit override, for reviewing a specific
+(e.g. Editor-flagged) run instead of whatever's newest. The `digest` name is
+special-cased to `<run_dir>/local/digest.json` — see "The single-meeting
+digest" below for why it lives one level down from everything else. Reads
+straight off disk (`readFileSync`), `Cache-Control: no-store` so the browser
+never caches a stale draft, falls through to `next()` (→ a real 404, since
+nothing exists at that path in `frontend/public/`) when nothing matches.
 
 The reason this can't leak into production: `configureServer` is a dev-server
 hook. `vite build` never starts a server and never calls it, so the plugin is
-structurally inert during a production build — there's no flag to
-misconfigure, nothing to forget to turn off. And because the middleware reads
-from the gitignored `data/draft/` tree on every request rather than copying
-anything into `frontend/public/`, no tracked file is ever touched — closing
-the dev server (or not setting `VITE_DRAFT_DIR`) leaves zero trace.
+structurally inert during a production build — confirmed by grepping the
+built bundle for the switch's own strings (zero hits; `import.meta.env.DEV`
+is statically `false` in a build, so Rollup dead-code-eliminates
+`DevModeSwitch` entirely, not just hides it). And because the middleware
+reads from the gitignored `data/draft/` tree on every request rather than
+copying anything into `frontend/public/`, no tracked file is ever touched —
+closing the dev server (or never running `council draft`) leaves zero trace.
+
+**The single-meeting digest.** Every `council draft` run also computes a
+digest for the most recent minutes meeting (`run_meeting_digest()`,
+`src/analysis/tests.py`) and writes it to
+`data/draft/<council>/<run_id>/local/digest.json` — inside `cmd_draft`, after
+the S7 gate passes, alongside the `manifest.json` write. It's deliberately
+never added to `written`/`manifest.json`'s `"snapshots"` list, so
+`council publish`'s copy loop (which only ever iterates
+`manifest.snapshots`, never globs the directory — `src/cli.py`) cannot reach
+it regardless of tier, and it never enters the S7 gate check (`battery` never
+includes digest results). The `local/` subdirectory is a second, independent
+boundary on top of that: both `council publish`'s logic and
+`docs/review/editor/Editor_prompt.txt`'s input list (`*.json`, non-recursive)
+only ever see the run directory's top level, so `local/` is structurally
+excluded from Editor's defamation review too — this is what lets the digest
+carry real single-meeting claims (including named individuals) without
+routing them through S7/S8/S9, per the standing caveat in
+`docs/frontend/PRODUCT_ROADMAP.md` F2 that single-meeting claims need their
+own look at that before anything like this could ever be published.
+`tests/test_publish_gate.py::test_digest_is_excluded_from_manifest_and_glob`
+enforces the invariant rather than just documenting it.
 
 **`council publish <council> --from-draft <path>`** is the actual gate.
 `--from-draft` is always required — there is no code path that publishes

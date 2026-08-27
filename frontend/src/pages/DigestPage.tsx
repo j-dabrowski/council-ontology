@@ -3,31 +3,42 @@ import { CouncilHeader } from "../components/CouncilHeader";
 import { BatteryTestCard } from "../components/BatteryTestPanel";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { useData } from "../hooks/useData";
-import { api, ScorecardData, CouncillorsData } from "../api";
+import { api, DigestData, CouncillorsData } from "../api";
 import { groupTestsByGenre } from "../groupTestsByGenre";
 
-// Local-review-only surface for `council meeting-digest --save` output
-// (see docs/frontend/PRODUCT_ROADMAP.md F2 and `council meeting-digest`'s
-// own docstring): never wired into `council draft`/`council publish`, so
-// /data/digest.json only exists when a dev server is started with
-// VITE_DIGEST_FILE set (see vite.config.ts's digestPreview() plugin) —
-// everywhere else, including the published site, this page shows the
-// standard "snapshot not found" error. No bespoke panels here: those are
-// built against whole-corpus snapshot shapes, so every digest test renders
-// through the same generic BatteryTestCard used for un-bespoke battery tests.
+// Local-review-only surface for the single-meeting digest, computed
+// automatically for the latest minutes meeting by every `council draft` run
+// (src/cli.py's cmd_draft, writing data/draft/<council>/<run_id>/local/digest.json)
+// — see docs/frontend/PRODUCT_ROADMAP.md F2 for why single-meeting claims stay
+// out of S7/S8/S9 and can never reach `council publish` regardless of Draft/
+// Publish mode. Only ever populated in Draft mode (frontend/src/devMode.ts):
+// in Publish mode, including the published site, this shows the standard
+// "snapshot not found" error, since digest data never ships. No bespoke
+// panels here: those are built against whole-corpus snapshot shapes, so every
+// digest test renders through the same generic BatteryTestCard used for
+// un-bespoke battery tests.
 export function DigestPage() {
-  const { data, loading, error } = useData<ScorecardData>(() => api.digest());
+  const { data, loading, error } = useData<DigestData>(() => api.digest());
   const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
   if (loading) return <LoadingCard />;
   if (error || !data) {
     return (
       <ErrorCard
-        msg={error ?? "run 'council meeting-digest <council> --meeting <id> --save', then start the dev server with VITE_DIGEST_FILE set to that file"}
+        msg={
+          error ??
+          (import.meta.env.DEV
+            ? "This is a local review artifact and is never published. Run `council draft cambridge`, then flip the corner switch to DRAFT."
+            : "This is a local review artifact and is never published.")
+        }
       />
     );
   }
 
   const groups = groupTestsByGenre(data.tests);
+  const meetingDate = new Date(`${data.meeting_date}T00:00:00`).toLocaleDateString("en-AU", {
+    day: "numeric", month: "long", year: "numeric",
+  });
+  const s = data.summary;
 
   return (
     <div className="app">
@@ -37,6 +48,11 @@ export function DigestPage() {
           <h3 className="analysis-group-heading">
             Single-meeting digest — local review only, never published
           </h3>
+          <p className="chart-note">
+            Meeting {data.meeting_id} · {meetingDate} · {s.n_tests} tests ·{" "}
+            {s.n_supportive} supportive, {s.n_neutral} neutral, {s.n_critical} critical,{" "}
+            {s.n_not_computable} not computable
+          </p>
         </section>
         {groups.map((g) => (
           <Fragment key={g.name}>

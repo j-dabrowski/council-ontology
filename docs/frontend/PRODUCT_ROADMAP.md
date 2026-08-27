@@ -87,14 +87,33 @@ cohort, seasonal, or bunching patterns a single meeting can't exhibit).
 `Refiner_prompt.txt` (v1.3) now declares `scope` for every newly-codified
 test going forward, so this list stays current without a re-audit.
 
-**Still unbuilt, and a real step beyond tagging:** actually computing any
-tagged test over one meeting's data (period-filterable queries, a
-`run_meeting_digest()`-shaped entry point), and giving Explorer/Refiner the
-ability to originate genuinely new single-meeting hypotheses rather than
-only tag existing ones. Single-meeting claims are more individually
-attributable than corpus-wide aggregates (one date, few actors), so this
-needs its own look at S7/S9/defamation exposure before it goes anywhere
-near automation — not scheduled yet.
+**2026-08-27 — computing it is built, but only as far as local review.**
+`run_meeting_digest()` (`src/analysis/tests.py`) runs the 14 tagged tests
+over the latest minutes meeting; every `council draft` run now calls it
+automatically and writes the result to
+`data/draft/<council>/<run_id>/local/digest.json` (`cmd_draft`, `src/cli.py`).
+The frontend can render it locally — a Draft/Publish corner switch (dev
+server only, `frontend/src/devMode.ts` +
+`frontend/src/components/DevModeSwitch.tsx`) flips every panel between the
+published snapshots and the newest draft run, `/#/digest`
+(`frontend/src/pages/DigestPage.tsx`) shows the digest itself — but the
+`local/` subdirectory is a deliberate structural dead end: it's excluded from
+both `manifest.json`'s `"snapshots"` list (so `council publish`'s
+manifest-driven copy can't reach it) and `Editor_prompt.txt`'s non-recursive
+`*.json` input scope (`docs/review/editor/Editor_prompt.txt` v0.7's `local/`
+exclusion) — enforced by
+`tests/test_publish_gate.py::test_digest_is_excluded_from_manifest_and_glob`,
+not just documented. **This does not resolve the caveat below.** Nothing
+about this change lets a digest claim reach S7/S8/S9 or `council publish`;
+it only makes the already-computed data visible to a local reviewer. Giving
+Explorer/Refiner the ability to originate genuinely new single-meeting
+hypotheses (rather than only tag existing whole-corpus ones) is also still
+unbuilt.
+
+Single-meeting claims are more individually attributable than corpus-wide
+aggregates (one date, few actors), so actually publishing any of this still
+needs its own look at S7/S9/defamation exposure before it goes anywhere near
+automation — not scheduled yet.
 
 **Monetisation alignment:**
 - Latest month's digest: free (drives return visits and sharing)

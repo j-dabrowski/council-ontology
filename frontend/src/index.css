@@ -93,6 +93,47 @@
   color-scheme: light;
 }
 
+/* ── Dev-mode Draft/Publish switch (frontend/src/components/DevModeSwitch.tsx) ──
+ * Dev-server only — never rendered in a production build, so these rules are
+ * dead weight on the published site but harmless. Reuses the existing
+ * critical/valence tokens (--bad-*) rather than inventing new colours: Draft
+ * mode is deliberately loud, the same "don't miss this" register as a
+ * critical-valence card. */
+.draft-bar {
+  width: 100%;
+  padding: 6px 12px;
+  background: var(--bad-bg);
+  color: var(--bad-t);
+  border-bottom: 1px solid var(--bad-bd);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.dev-mode-switch {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.dev-mode-switch.dev-mode-draft {
+  background: var(--bad-t);
+  border-color: var(--bad-t);
+  color: #fff;
+}
+
 @media (prefers-color-scheme: dark) {
   :root {
     --bg:          #0f172a;

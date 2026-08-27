@@ -196,3 +196,34 @@ def test_verify_draft_integrity_flags_hash_drift(tmp_path):
         tiers={"overview": "public"},
     )
     assert verify_draft_integrity(tmp_path, manifest) == ["overview"]
+
+
+# ---------------------------------------------------------------------------
+# The single-meeting digest (`cmd_draft`, src/cli.py) must be invisible to
+# both `council publish` and Editor: it lands in a `local/` subdirectory,
+# outside the manifest's `snapshots` list and outside the non-recursive
+# `*.json` glob both of them use. Enforced here rather than only reasoned
+# about, per docs/review/editor/Editor_prompt.txt v0.7's `local/` exclusion.
+# ---------------------------------------------------------------------------
+
+def test_digest_is_excluded_from_manifest_and_glob(tmp_path):
+    overview_path = tmp_path / "overview.json"
+    overview_path.write_text('{"a": 1}')
+
+    (tmp_path / "manifest.json").write_text(json.dumps({
+        "run_id": "run_1",
+        "council": "cambridge",
+        "generated_at": "2026-08-27T12:00:00Z",
+        "snapshots": ["overview"],
+        "file_hashes": {"overview": snapshot_hash(overview_path)},
+        "tiers": {"overview": "public"},
+    }))
+
+    local_dir = tmp_path / "local"
+    local_dir.mkdir()
+    (local_dir / "digest.json").write_text('{"data": {"tests": []}}')
+
+    manifest = load_draft_manifest(tmp_path)
+    assert "digest" not in manifest.snapshots
+    assert verify_draft_integrity(tmp_path, manifest) == []
+    assert "digest" not in {p.stem for p in tmp_path.glob("*.json")}

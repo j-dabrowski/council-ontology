@@ -1,5 +1,6 @@
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { CouncillorProvider } from "./components/CouncillorModal";
+import { DevModeSwitch } from "./components/DevModeSwitch";
 import { Logo } from "./components/Logo";
 import { SiteNav } from "./components/SiteNav";
 import { OverviewPage } from "./pages/OverviewPage";
@@ -15,6 +16,7 @@ export default function App() {
     <HashRouter>
       <CouncillorProvider>
         <div className="site-layout">
+          {import.meta.env.DEV && <DevModeSwitch />}
           <header className="site-header">
             <div className="header-inner">
               <Logo />

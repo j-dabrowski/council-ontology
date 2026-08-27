@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.6
+# Council Editor — Defamation-Review Mode v0.7
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -42,7 +42,14 @@ as thoroughly as before.**
   analysis or its recommendation to get an actual lawyer.
 - The draft under review: `data/draft/<council>/<run_id>/*.json` + manifest
   + `gate_report.json` (S7's own record — read this before re-deriving
-  anything S7 already checked).
+  anything S7 already checked). **`local/` is out of scope** — a
+  non-recursive glob of `*.json` never enters it, and that's deliberate:
+  it holds local-review-only artifacts (currently the single-meeting
+  digest) that are structurally excluded from `manifest.json`'s
+  `snapshots` list and therefore from `council publish` — see
+  `src/publish_gate.py` and `docs/frontend/PRODUCT_ROADMAP.md` F2 for why
+  that data can't ship yet. Nothing under `local/` is ever this mode's
+  concern.
 - The frontend components that render it: `frontend/src/components/*.tsx` —
   a defamation risk can live in the JSON, in the prose wrapped around it, or
   in how prominently a component chooses to render an otherwise-fine number.
@@ -349,6 +356,13 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 
 ## Changelog
 
+- v0.7 (2026-08-27) — Added the `local/` exclusion to the input list: the
+  single-meeting digest, now computed automatically by every `council
+  draft` run (`src/cli.py`'s `cmd_draft`), lands in
+  `data/draft/<council>/<run_id>/local/digest.json` specifically so it
+  never enters this mode's non-recursive `*.json` scope or `council
+  publish`'s manifest-driven copy — see `tests/test_publish_gate.py` for
+  the enforced invariant. No other change to this mode.
 - v0.6 (2026-08-24) — Closed a real false negative from `council
   editor-score`'s first live run (`editor_score_1.md`,
   `draft_20260823_173842`): step 5's small-n check hadn't been applied to

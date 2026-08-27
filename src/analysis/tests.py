@@ -1909,9 +1909,15 @@ def run_meeting_digest(session: Session, council_id: int, meeting_id: int) -> li
     """Run only the SCOPE_SINGLE_MEETING-eligible tests (_MEETING_BATTERY),
     scoped to one meeting (docs/frontend/PRODUCT_ROADMAP.md F2) — a review
     artifact for looking at what a single-meeting digest would actually say
-    before deciding whether/how to publish anything like it. NOT wired into
-    `council draft`/`council publish`, S7/S8/S9, or the coverage register —
-    see `council meeting-digest`'s own docstring for why.
+    before deciding whether/how to publish anything like it. Called
+    automatically by every `council draft` run (`cmd_draft`, src/cli.py),
+    which writes the result to a `local/` subdirectory deliberately excluded
+    from manifest.json's "snapshots" list and from
+    docs/review/editor/Editor_prompt.txt's non-recursive `*.json` scope —
+    still NOT wired into S7/S8/S9, the coverage register, or anything
+    `council publish` can reach; see that exclusion (and
+    `tests/test_publish_gate.py`) for why, and `council meeting-digest`'s own
+    docstring for the separate one-off manual preview path.
     """
     results: list[TestResult] = []
     for fn in _MEETING_BATTERY:
