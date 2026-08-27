@@ -1,11 +1,8 @@
 import { useData } from "../hooks/useData";
-import { api, ScorecardData, ScorecardTest, Valence, CouncillorsData } from "../api";
+import { api, ScorecardData, ScorecardTest, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { ValenceChip } from "./ValenceChip";
-
-// Map a test's detail_panel snapshot name to the on-page anchor we scroll to.
-// (Panels aren't individually anchored yet, so this is a best-effort scroll.)
-const VALENCE_ORDER: Record<Valence, number> = { critical: 0, neutral: 1, supportive: 2 };
+import { groupTestsByGenre } from "../groupTestsByGenre";
 
 // Structural guardrail: a test's headline/verdict must never carry a named
 // individual through this always-visible slot unnoticed — any valence, not
@@ -95,28 +92,7 @@ export function ScorecardPanel() {
     }
   }
 
-  // Assign each test to exactly one genre family (first match wins), then sort
-  // each family critical → neutral → supportive.
-  const order: [string, (g: string) => boolean][] = [
-    ["Integrity & procurement", (g) => /procurement|conflict|integrity/i.test(g)],
-    ["Governance & culture", (g) => /governance|culture/i.test(g)],
-    ["Planning & fairness", (g) => /planning|fairness/i.test(g)],
-    ["Transparency & engagement", (g) => /transparency|engagement/i.test(g)],
-    ["Financial", (g) => /financial/i.test(g)],
-  ];
-  const buckets = new Map<string, ScorecardTest[]>(order.map(([name]) => [name, []]));
-  const other: ScorecardTest[] = [];
-  for (const t of data.tests) {
-    const hit = order.find(([, match]) => match(t.genre));
-    (hit ? buckets.get(hit[0])! : other).push(t);
-  }
-  const groups = order
-    .map(([name]) => ({
-      name,
-      tests: buckets.get(name)!.sort((a, b) => VALENCE_ORDER[a.valence] - VALENCE_ORDER[b.valence]),
-    }))
-    .filter((g) => g.tests.length);
-  if (other.length) groups.push({ name: "Other", tests: other });
+  const groups = groupTestsByGenre(data.tests);
 
   return (
     <Card

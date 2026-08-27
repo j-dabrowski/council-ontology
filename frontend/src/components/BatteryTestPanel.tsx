@@ -97,19 +97,14 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
 }
 
 /**
- * Generic panel for a battery test that has no bespoke component. Reads the
- * already-loaded scorecard snapshot, finds the test by id, and renders its chart
- * + headline + verdict + meta. One component serves every "simple" test, so a
- * new battery test gets a panel for free.
+ * Renders one already-resolved ScorecardTest: chart + headline + verdict +
+ * meta, plus the named-individual guardrail. Pure presentational component —
+ * where the test came from (the whole-corpus scorecard, a single-meeting
+ * digest) is the caller's problem, not this one's, so this is what both
+ * BatteryTestPanel (corpus-wide, fetches by testId) and DigestPage
+ * (single-meeting, already has the full test list) render through.
  */
-export function BatteryTestPanel({ testId }: { testId: string }) {
-  const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
-  const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
-  if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
-  const t: ScorecardTest | undefined = data.tests.find((x) => x.test_id === testId);
-  if (!t) return <ErrorCard msg={`test ${testId} not found`} />;
-
+export function BatteryTestCard({ test: t, cllrData }: { test: ScorecardTest; cllrData: CouncillorsData | null }) {
   let flaggedNames: string[] = [];
   if (cllrData) {
     flaggedNames = findNamedCouncillorsInText(
@@ -162,4 +157,21 @@ export function BatteryTestPanel({ testId }: { testId: string }) {
       </p>
     </Card>
   );
+}
+
+/**
+ * Generic panel for a battery test that has no bespoke component. Reads the
+ * already-loaded scorecard snapshot, finds the test by id, and renders it via
+ * BatteryTestCard. One component serves every "simple" test, so a new battery
+ * test gets a panel for free.
+ */
+export function BatteryTestPanel({ testId }: { testId: string }) {
+  const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
+  const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
+  if (loading) return <LoadingCard />;
+  if (error || !data) return <ErrorCard msg={error} />;
+  const t: ScorecardTest | undefined = data.tests.find((x) => x.test_id === testId);
+  if (!t) return <ErrorCard msg={`test ${testId} not found`} />;
+
+  return <BatteryTestCard test={t} cllrData={cllrData} />;
 }

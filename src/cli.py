@@ -2907,6 +2907,8 @@ def cmd_meeting_digest(args) -> None:
         style="blue",
     ))
 
+    from src.analysis.tests import battery_summary
+
     results = run_meeting_digest(session, council_id, meeting_id)
     session.close()
 
@@ -2923,12 +2925,21 @@ def cmd_meeting_digest(args) -> None:
         out_dir.mkdir(parents=True, exist_ok=True)
         out_path = out_dir / f"meeting_{meeting_id}.json"
         from dataclasses import asdict as _asdict
+        # Same {published_at, data: {summary, tests}} shape as a real
+        # scorecard.json snapshot (src/cli.py's `_write` in the draft export)
+        # so the frontend's ScorecardData-driven components — BatteryTestCard,
+        # groupTestsByGenre — can render this file directly. Still gitignored,
+        # still never touched by `council draft`/`council publish`; see this
+        # command's own docstring for why.
         out_path.write_text(_json.dumps({
+            "published_at": datetime.now(timezone.utc).isoformat(),
             "council": key,
             "meeting_id": meeting_id,
             "meeting_date": meeting.meeting_date.isoformat(),
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            "results": [_asdict(r) for r in results],
+            "data": {
+                "summary": battery_summary(results),
+                "tests": [_asdict(r) for r in results],
+            },
         }, indent=2))
         console.print(f"\n[dim]Saved: {out_path}[/dim]")
 

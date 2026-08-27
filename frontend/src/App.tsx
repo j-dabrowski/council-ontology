@@ -4,6 +4,7 @@ import { Logo } from "./components/Logo";
 import { SiteNav } from "./components/SiteNav";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AnalysisPage } from "./pages/AnalysisPage";
+import { DigestPage } from "./pages/DigestPage";
 import { EvidencePage } from "./pages/EvidencePage";
 import { MapPage } from "./pages/MapPage";
 import { AboutPage } from "./pages/AboutPage";
@@ -23,6 +24,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<OverviewPage />} />
             <Route path="/analysis" element={<AnalysisPage />} />
+            <Route path="/digest" element={<DigestPage />} />
             <Route path="/evidence" element={<EvidencePage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/about" element={<AboutPage />} />

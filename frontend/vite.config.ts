@@ -38,8 +38,41 @@ function draftPreview(): Plugin {
   }
 }
 
+// Dev-only: preview a `council meeting-digest --save` output locally, the
+// same way draftPreview() previews a `council draft` run — set
+// VITE_DIGEST_FILE to one saved digest file (e.g.
+// `../data/meeting_digest_preview/cambridge/meeting_412.json`, relative to
+// this directory) and it's served as /data/digest.json. Single file, not a
+// directory, because a digest is scoped to one meeting. Never wired into
+// `council draft`/`council publish` — see docs/frontend/PRODUCT_ROADMAP.md F2
+// and `council meeting-digest`'s own docstring for why this stays local-only.
+function digestPreview(): Plugin {
+  const digestFile = process.env.VITE_DIGEST_FILE
+  const file = digestFile ? resolve(process.cwd(), digestFile) : null
+  return {
+    name: 'digest-preview',
+    configureServer(server) {
+      if (!file) return
+      if (!existsSync(file)) {
+        server.config.logger.error(`[digest-preview] VITE_DIGEST_FILE not found: ${file}`)
+        return
+      }
+      server.config.logger.warn(
+        `\n[digest-preview] serving UNPUBLISHED meeting digest from ${file}\n` +
+        `[digest-preview] this is a review artifact only — never published\n`
+      )
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.split('?')[0] !== '/data/digest.json') return next()
+        res.setHeader('Content-Type', 'application/json')
+        res.setHeader('Cache-Control', 'no-store')
+        res.end(readFileSync(file))
+      })
+    },
+  }
+}
+
 export default defineConfig({
-  plugins: [react(), draftPreview()],
+  plugins: [react(), draftPreview(), digestPreview()],
   server: {
     proxy: {
       '/api': 'http://localhost:8000',

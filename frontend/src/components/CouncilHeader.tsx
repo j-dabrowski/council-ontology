@@ -28,6 +28,7 @@ export function CouncilHeader() {
       <nav className="council-subnav" aria-label="Report sections">
         <NavLink to="/" end className={cls}>Overview</NavLink>
         <NavLink to="/analysis" className={cls}>Analysis</NavLink>
+        <NavLink to="/digest" className={cls}>Digest</NavLink>
         <NavLink to="/evidence" className={cls}>Evidence</NavLink>
       </nav>
     </div>

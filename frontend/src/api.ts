@@ -18,7 +18,14 @@ export async function get<T>(path: string, params?: Record<string, string | numb
 // static files — the site only reflects data from the last publish run.
 async function getSnapshot<T>(name: string): Promise<T> {
   const res = await fetch(`/data/${name}.json`);
-  if (!res.ok) throw new Error(`Snapshot not found: ${name}.json — run 'council publish' first`);
+  // Vite's dev server SPA-falls-back to index.html (200, text/html) for any
+  // unmatched path rather than a real 404 — so a missing snapshot in dev
+  // mode (e.g. digest.json with no VITE_DIGEST_FILE set) would otherwise
+  // surface as a cryptic "JSON.parse: unexpected character" instead of this
+  // message.
+  if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
+    throw new Error(`Snapshot not found: ${name}.json — run 'council publish' first`);
+  }
   const json = await res.json();
   return json.data as T;
 }
@@ -630,4 +637,9 @@ export const api = {
   sponsorship:  () => getSnapshot<SponsorshipData>("sponsorship"),
   overview:     () => getSnapshot<OverviewData>("overview"),
   councillors:  () => getSnapshot<CouncillorsData>("councillors"),
+  // Local-review-only: served by vite.config.ts's digestPreview() plugin from
+  // VITE_DIGEST_FILE. No file exists at build time, so this 404s (and shows
+  // the standard "Snapshot not found" ErrorCard) anywhere the dev env var
+  // isn't set — including the published site.
+  digest:       () => getSnapshot<ScorecardData>("digest"),
 };
