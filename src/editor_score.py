@@ -38,8 +38,11 @@ from pathlib import Path
 
 from scripts.conductor_loop import VALID_TRACKS
 
-# The nine criteria Editor_prompt.txt's output template instructs the
-# review session to use, plus the two S7-boundary checks (name-free-schema,
+# The eleven criteria Editor_prompt.txt's output template instructs the
+# review session to use (the last two, jigsaw-identification and
+# digest-fidelity, added 2026-08-27 for v0.8's period-claim review --
+# EDITOR_PROTOCOL.md dimension 9, only relevant when local/digest_summary.md
+# exists), plus the two S7-boundary checks (name-free-schema,
 # entity-resolution) it is instructed NOT to use but might anyway -- those
 # two are recognised, not rejected as unknown vocabulary, because a flag
 # carrying one of them on an S7-passed scorecard claim is exactly what
@@ -54,6 +57,8 @@ CRITERION_SLUGS = {
     "balance",
     "small-n",
     "risk-item-drift",
+    "jigsaw-identification",
+    "digest-fidelity",
     "name-free-schema",
     "entity-resolution",
 }

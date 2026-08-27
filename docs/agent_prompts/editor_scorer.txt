@@ -46,6 +46,22 @@ report — treat it as given, do not recompute it:
    calls, caveat-integration quality, framing balance, and independent
    re-verification of PRIVATE_ASSESSMENT.md's named risk items against the
    live draft.
+
+   **If the run directory contains local/digest_summary.md**, also apply
+   dimension 9 (period-claim discipline, EDITOR_PROTOCOL.md): independently
+   re-check jigsaw identification (does any highlight, combined with public
+   attendance/membership info for a small-membership body, narrow to one or
+   two identifiable people even though it names no one?), body-matched
+   baselines (any sentence comparing figures across different
+   meeting_bodies.json body classes?), and digest fidelity (does every
+   sentence you sample actually trace to a real claim_id/item_id in
+   local/period_digest.json, and does anything read as sourced from a deep
+   field or a non-"public"-tier candidate?). A real jigsaw-identification
+   or digest-fidelity miss the review didn't flag is a false negative under
+   step 1 above, same severity as any other missed real risk — record it
+   there, not as a separate category. If local/digest_summary.md doesn't
+   exist in this run directory, skip dimension 9 entirely — it has nothing
+   to score.
 4. If any dimension fails, draft the minimal `Editor_prompt.txt` edit that
    would have caught it — specific enough for a human to apply directly,
    not "tighten the review."
@@ -77,7 +93,7 @@ not recompute or restate it in your own words:
     "judgment_findings": [
       {"dimension": "proportionality | framing-balance | caveat-integration |
                      innocent-explanation | singling-out-fairness |
-                     risk-item-reverification",
+                     risk-item-reverification | period-claim-discipline",
        "verdict": "pass | concern", "detail": "..."}
     ],
     "proposed_prompt_edit": "<text, or null if nothing to propose>"

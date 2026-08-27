@@ -153,6 +153,28 @@ def test_missing_criterion_is_structural_failure(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Period-claim criteria (EDITOR_PROTOCOL.md dimension 9, added 2026-08-27) —
+# jigsaw-identification / digest-fidelity must be accepted vocabulary, not
+# rejected as unknown, the same way every other enumerated criterion is.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize("criterion", ["jigsaw-identification", "digest-fidelity"])
+def test_period_claim_criterion_is_valid_vocabulary(tmp_path, criterion):
+    sidecar = _base_sidecar(
+        status="FAIL",
+        tracks=["human"],
+        flags=[{
+            "severity": "BLOCKING", "tracks": ["human"], "criterion": criterion,
+            "location": "local/digest_summary.md", "summary": "period-claim risk",
+            "reasoning": "identifies a committee member by elimination",
+        }],
+    )
+    draft_dir = _write_review(tmp_path, sidecar)
+    result = run_layer1(draft_dir, "run_1")
+    assert not any(f.check == "missing-criterion" for f in result.findings)
+
+
+# ---------------------------------------------------------------------------
 # Verdict integrity: FAIL with zero blocking flags
 # ---------------------------------------------------------------------------
 

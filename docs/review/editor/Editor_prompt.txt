@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.7
+# Council Editor — Defamation-Review Mode v0.8
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -42,14 +42,22 @@ as thoroughly as before.**
   analysis or its recommendation to get an actual lawyer.
 - The draft under review: `data/draft/<council>/<run_id>/*.json` + manifest
   + `gate_report.json` (S7's own record — read this before re-deriving
-  anything S7 already checked). **`local/` is out of scope** — a
-  non-recursive glob of `*.json` never enters it, and that's deliberate:
-  it holds local-review-only artifacts (currently the single-meeting
-  digest) that are structurally excluded from `manifest.json`'s
-  `snapshots` list and therefore from `council publish` — see
-  `src/publish_gate.py` and `docs/frontend/PRODUCT_ROADMAP.md` F2 for why
-  that data can't ship yet. Nothing under `local/` is ever this mode's
-  concern.
+  anything S7 already checked).
+- **`local/digest.json` is out of scope, unchanged.** The single-meeting
+  digest preview, computed automatically by every `council draft` run, is
+  structurally excluded from `manifest.json`'s `snapshots` list and
+  therefore from `council publish` — see `src/publish_gate.py` and
+  `tests/test_publish_gate.py` for the enforced invariant. Never this
+  mode's concern, same as v0.7.
+- **`local/period_digest.json` + `local/digest_summary.md` are IN scope,
+  when the latter exists** (`local/` is no longer categorically excluded —
+  as of v0.8, only `digest.json` is). `digest_summary.md` is Renderer
+  digest mode's rendered prose (`docs/render/digest_mode.txt`) — a separate
+  `council render digest` invocation, not automatic inside every `council
+  draft` run, so check for its presence rather than assuming it's there.
+  When it is, see "Period-claim review" below — a different procedure from
+  the five-step one, because this is free-composed prose over a
+  salience-ranked pool, not a templated per-field claim.
 - The frontend components that render it: `frontend/src/components/*.tsx` —
   a defamation risk can live in the JSON, in the prose wrapped around it, or
   in how prominently a component chooses to render an otherwise-fine number.
@@ -197,6 +205,60 @@ license.
    floor; do not fold a claim into "no issues found" without explicitly
    doing so.
 
+## Period-claim review (only when `local/digest_summary.md` exists)
+
+The five-step procedure above is built for templated per-field claims
+(`headline`/`verdict` on a fixed schema). `digest_summary.md` is different
+on two axes at once: it's freely composed prose, and its subject is a
+single meeting on a single date rather than a corpus aggregate — "a claim
+about one meeting on one date singles out far more sharply than a corpus
+aggregate" is the reason this gets its own section rather than folding into
+step 3. Run all four checks below on every highlight in the digest; do not
+skip this section because the underlying `local/period_digest.json`
+candidates already cleared the S7 gate and per-claim tier derivation
+(`src/invariant_gate.py`) — that gate proves the claim is name-free by
+construction, not that the *rendered sentence* is safe once combined with
+what a reader already knows about a small chamber.
+
+1. **Jigsaw identification.** For each highlight, could a reader combine it
+   with public information (a meeting's published attendance list, a
+   body's known membership) to identify a specific person even though the
+   text names no one? The concrete risk case is a small committee — check
+   `local/period_digest.json`'s `meetings_covered[].body_class` for the
+   meeting each highlight comes from, and treat any body under ~5 members
+   as the danger zone. A name-free claim that narrows to one or two
+   plausible individuals in a small body is a BLOCKING flag under this
+   criterion, the same severity a directly-named claim would get — the
+   reader-side effect is the same regardless of whether the text itself
+   contains a name.
+2. **Do not apply the corpus small-n instinct here.** A meeting-scoped `n`
+   (e.g. "1 of 4 committee members") is the honest count for that meeting,
+   not evidence of thin/unreliable data the way a small `n` on a
+   corpus-wide aggregate would be. Do not flag a highlight under step 5's
+   small-n criterion, or invent a new one, purely because its `n` looks
+   small — that's expected at meeting scope, not a defect. (Jigsaw
+   identification, check 1 above, is the real risk small `n` correlates
+   with here; check that instead of the raw number.)
+3. **Body-matched baselines.** Does any sentence in `digest_summary.md`
+   compare one meeting's figure against a different meeting's `body_class`
+   — most concretely, a committee's own number read next to language that
+   implies a whole-council rate? `RENDERER_PROTOCOL.md` dimension 10 is
+   Renderer's own self-check on this; treat it as unverified and check the
+   rendered text independently, the same "don't trust the prose" discipline
+   step 1 already applies to arithmetic. Flag under `blended-statistics` —
+   a cross-body comparison is a form of misleadingly blended statistics,
+   not a new category.
+4. **Digest fidelity.** Sample sentences from `digest_summary.md` (all of
+   them, if it's short) and independently verify each traces to a real
+   `claim_id` or `item_id` in `local/period_digest.json`'s `candidates` /
+   `inventories`. Also confirm nothing reads as if it originated from a
+   candidate's `deep` field or a candidate whose `tier` isn't `"public"` —
+   this is your own independent re-check of `RENDERER_PROTOCOL.md`
+   dimensions 8 and 11, not a reuse of Renderer's self-reported
+   stage-contract numbers. A sentence you can't trace to a real id, or that
+   reads as sourced from a non-public candidate, is a BLOCKING flag under
+   `digest-fidelity`.
+
 ## The holistic-flag outlet
 
 A review-wide concern you can't pin to a single claim — a systematic
@@ -282,7 +344,8 @@ clear legal risk and does not by itself authorize a live publish.**
   part of it.>
 - Criterion failed: <placement / overclaim-language / innocent-explanation /
   singling-out-fairness / blended-statistics / caveat integration / balance /
-  small-n / risk-item-drift>
+  small-n / risk-item-drift / jigsaw-identification / digest-fidelity — the
+  last two are period-claim-only, see "Period-claim review" above>
 - Reasoning: <required when Track is `human`: what was observed, why it
   can't be localised to one claim, what the reviewer needs to decide. Omit
   for ordinary flags.>
@@ -356,6 +419,25 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 
 ## Changelog
 
+- v0.8 (2026-08-27) — `local/` is no longer categorically out of scope:
+  `local/digest.json` stays excluded unchanged (same test, same reasoning
+  as v0.7), but `local/period_digest.json` + `local/digest_summary.md`
+  (Renderer digest mode's rendered prose, `docs/render/digest_mode.txt`)
+  enter scope when the latter exists. New "Period-claim review" section (a
+  separate procedure from the five-step one — free-composed prose over a
+  single meeting needs different checks than a templated corpus claim):
+  jigsaw identification (a name-free claim can still identify someone by
+  elimination in a small body — new, BLOCKING), an explicit instruction
+  *not* to apply the corpus small-n instinct to meeting-scoped counts,
+  body-matched baselines (independent re-check of `RENDERER_PROTOCOL.md`
+  dimension 10, flagged under the existing `blended-statistics` slug), and
+  digest fidelity (independent re-check of dimensions 8/11 — every sentence
+  traces to a real `claim_id`/`item_id`, nothing from a `deep` field or a
+  non-public-tier candidate). Two new criterion slugs:
+  `jigsaw-identification`, `digest-fidelity` (also added to
+  `EDITOR_PROTOCOL.md`'s vocabulary and `src/editor_score.py`'s
+  `CRITERION_SLUGS`). No calibration data for this section yet — same
+  caveat dimension 8 carried at its own introduction.
 - v0.7 (2026-08-27) — Added the `local/` exclusion to the input list: the
   single-meeting digest, now computed automatically by every `council
   draft` run (`src/cli.py`'s `cmd_draft`), lands in

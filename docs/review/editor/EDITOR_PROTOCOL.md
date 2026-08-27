@@ -18,7 +18,13 @@ workflow" (where this stage sits in the larger pipeline).
 
 ---
 
-## Status: Editor is v0.5; real chains so far ran pre-split, against v0.3
+## Status: Editor is v0.8; real chains so far ran pre-split, against v0.3
+
+Dimension 9 (period-claim discipline, added 2026-08-27) has zero
+calibration data — no digest has ever been rendered, let alone reviewed.
+Treat it exactly as dimension 8 was treated at its own introduction:
+a starting judgment to be revised after the first real run against
+`local/digest_summary.md`, not a settled check.
 
 Real Conductor-loop chains ran against Editor v0.3 in August 2026 (see the
 open-questions entries below, each citing a real
@@ -119,22 +125,45 @@ changes):
    editorial risk screen, not legal advice. Layer 1, string check.
 8. **False-positive rate** (flags re-litigating a claim `gate_report.json`
    already shows S7 passed) — see below. Layer 1, cross-reference.
+9. **Period-claim discipline** (added 2026-08-27, `Editor_prompt.txt` v0.8's
+   "Period-claim review" section — only applies when the run directory
+   contains `local/digest_summary.md`) — jigsaw identification (a
+   name-free claim in a small-membership body still narrows to one or two
+   plausible individuals against public attendance records — the risk a
+   corpus-wide aggregate never has), body-matched baselines (no sentence
+   compares one meeting's figure against a different `body_class`'s), and
+   digest fidelity (every sentence independently re-traced to a real
+   `claim_id`/`item_id` in `local/period_digest.json`, nothing sourced from
+   a `deep` field or a non-`"public"`-tier candidate). Layer 2 (judgment) —
+   a script can flag *that* a sentence exists, not whether it's actually
+   traceable or actually identifying. Explicitly does **not** cover
+   "flagged a meeting-scoped claim for having a small `n`" — that's an
+   instruction not to apply dimension 5's small-n instinct at meeting
+   scope, not a thing to score.
 
 **The enumerated criterion slug vocabulary** (`Editor_prompt.txt`'s output
 template, `src/editor_score.py`'s `CRITERION_SLUGS`): `placement`,
 `overclaim-language`, `innocent-explanation`, `singling-out-fairness`,
 `blended-statistics`, `caveat-integration`, `balance`, `small-n`,
-`risk-item-drift` — the nine Editor is instructed to use — plus
-`name-free-schema` and `entity-resolution`, recognised but never
-instructed: a flag carrying either of those two on an S7-passed scorecard
-claim is exactly what dimension 8 exists to catch, not a vocabulary error.
+`risk-item-drift`, `jigsaw-identification`, `digest-fidelity` — the eleven
+Editor is instructed to use (the last two, added 2026-08-27, period-claim
+only) — plus `name-free-schema` and `entity-resolution`, recognised but
+never instructed: a flag carrying either of those two on an S7-passed
+scorecard claim is exactly what dimension 8 exists to catch, not a
+vocabulary error. Body-matched-baseline findings use the existing
+`blended-statistics` slug — a cross-body comparison is a form of
+misleadingly blended statistics, not a third new category.
 
-Today all eight dimensions are fixed at pass/fail thresholds the prompt
+Today all nine dimensions are fixed at pass/fail thresholds the prompt
 author (this session) judged reasonable — 100% on placement,
 proportionality/overclaim language, framing balance, caveat integration,
-and risk-item re-verification; zero tolerance on small-n exposure and
-(added 2026-08-23, per `docs/AGENT_DESIGN.md` §2) false positives against
-claims S7 already passed; binary on the disclaimer.
+risk-item re-verification, and period-claim discipline; zero tolerance on
+small-n exposure and (added 2026-08-23, per `docs/AGENT_DESIGN.md` §2)
+false positives against claims S7 already passed; binary on the
+disclaimer. Whether dimension 9's jigsaw-identification check should be a
+hard gate (like dimensions 6/8) rather than an ordinary 100%-threshold
+dimension is an open question — flagged, not resolved, pending the first
+real run against digest prose (see "Open questions" below).
 
 **Why a false-positive dimension exists (added 2026-08-23):** once S7
 (`src/invariant_gate.py`) gates `scorecard.json` claims mechanically before
@@ -177,6 +206,18 @@ checking specifically: did it actually need a human, or was it routable to
 an ordinary track the editor missed?
 
 ## Open questions
+
+- **Should jigsaw identification be a hard gate?** — raised 2026-08-27
+  alongside dimension 9's introduction. Dimensions 6 (reply-completeness,
+  Renderer's synthesis mode) and 8 (S7 false-positive rate) are hard
+  gates because each guards the one failure mode with genuine legal
+  exposure for its respective stage. Jigsaw identification arguably has
+  the same character — a small-body claim that lets a reader identify a
+  specific person is functionally equivalent to naming them — but there's
+  no real run yet to confirm how often it fires or whether a 100%-threshold
+  ordinary dimension is enough friction to catch it reliably. Left as an
+  ordinary dimension for now; revisit once `local/digest_summary.md` has
+  actually been reviewed for real at least once.
 
 - **Superlative single-name call-outs near the n≤3 floor** — flagged
   2026-08-22 (Editor pass 1,
@@ -269,6 +310,15 @@ the editor's flags against a human's independent read of the same draft.
 
 ## Changelog
 
+- v0.5 (2026-08-27) — Dimension 9, period-claim discipline
+  (`Editor_prompt.txt` v0.8's "Period-claim review" section, active only
+  when `local/digest_summary.md` exists): jigsaw identification,
+  body-matched baselines (flagged under the existing `blended-statistics`
+  slug), digest fidelity. Two new criterion slugs,
+  `jigsaw-identification`/`digest-fidelity`, added to the vocabulary list
+  and `src/editor_score.py`'s `CRITERION_SLUGS`. No calibration data.
+  Open question added on whether jigsaw identification should be a hard
+  gate.
 - v0.4 (2026-08-24) — Generation/scoring split
   (`docs/GENERATION_SCORING_SPLIT.md` §2). This doc now owns all eight
   dimension definitions (moved from `Editor_prompt.txt`'s old Score block,
