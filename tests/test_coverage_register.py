@@ -18,7 +18,9 @@ import ast
 import pytest
 
 from src.analysis.coverage_register import (
+    extract_meeting_scope_test_ids,
     extract_shipped_test_ids,
+    granularity_report,
     load_register,
     verify_register,
 )
@@ -184,3 +186,119 @@ def test_extract_shipped_test_ids_handles_an_annotated_battery_assignment(tmp_pa
         "_BATTERY: list = [_t_x]\n"
     )
     assert extract_shipped_test_ids(src) == {"fixture.x"}
+
+
+# ---------------------------------------------------------------------------
+# extract_meeting_scope_test_ids — the granularity axis's real-data input
+# (digest design plan, Explorer v3.1)
+# ---------------------------------------------------------------------------
+
+_MEETING_FIXTURE_SOURCE = '''
+def _t_a(session, council_id, pc, meeting_id=None):
+    if meeting_id is not None:
+        return _t_a_meeting(session, council_id, meeting_id)
+    return TestResult(
+        test_id="dim.alpha",
+        title="t", genre="g", principle="p", question="q",
+        valence="neutral", grade="g", headline="h", verdict="v",
+    )
+
+
+def _t_a_meeting(session, council_id, meeting_id):
+    return TestResult(
+        test_id="dim.alpha",
+        title="t", genre="g", principle="p", question="q",
+        valence="neutral", grade="g", headline="h", verdict="v",
+    )
+
+
+def _t_b(session, council_id, pc):
+    return TestResult(
+        test_id="dim.beta",
+        title="t", genre="g", principle="p", question="q",
+        valence="neutral", grade="g", headline="h", verdict="v",
+    )
+
+
+_BATTERY = [_t_a, _t_b]
+_MEETING_BATTERY = [_t_a]
+'''
+
+
+def test_extract_meeting_scope_finds_only_meeting_battery_members(tmp_path):
+    path = tmp_path / "fixture_tests.py"
+    path.write_text(_MEETING_FIXTURE_SOURCE)
+    assert extract_meeting_scope_test_ids(path) == {"dim.alpha"}
+    # dim.beta ships in _BATTERY but has no _meeting sibling / isn't in
+    # _MEETING_BATTERY — correctly absent from the meeting-scope set.
+    assert extract_shipped_test_ids(path) == {"dim.alpha", "dim.beta"}
+
+
+def test_extract_meeting_scope_empty_when_no_meeting_battery(tmp_path):
+    path = tmp_path / "fixture_tests.py"
+    path.write_text("_BATTERY = []\n_MEETING_BATTERY = []\n")
+    assert extract_meeting_scope_test_ids(path) == set()
+
+
+def test_real_meeting_battery_source_parses_and_is_a_subset_of_shipped_ids():
+    meeting_ids = extract_meeting_scope_test_ids()
+    shipped_ids = extract_shipped_test_ids()
+    assert meeting_ids  # the real _MEETING_BATTERY is non-empty
+    assert meeting_ids <= shipped_ids
+
+
+# ---------------------------------------------------------------------------
+# granularity_report
+# ---------------------------------------------------------------------------
+
+def test_granularity_report_computes_verdict_thresholds():
+    register = _register([
+        {"id": 1, "name": "Empty dim", "verdict": "DENSE", "tests": ["a.one", "a.two"]},
+        {"id": 2, "name": "Thin dim", "verdict": "DENSE", "tests": ["b.one", "b.two"]},
+        {"id": 3, "name": "Moderate dim", "verdict": "DENSE", "tests": ["c.one", "c.two", "c.three"]},
+        {"id": 4, "name": "Dense dim", "verdict": "DENSE", "tests": ["d.one", "d.two", "d.three", "d.four"]},
+    ])
+    meeting_ids = {"b.one", "c.one", "c.two", "d.one", "d.two", "d.three", "d.four"}
+    report = {row.dimension_id: row for row in granularity_report(register, meeting_ids)}
+    assert report[1].meeting_verdict == "EMPTY"
+    assert report[2].meeting_verdict == "THIN"
+    assert report[3].meeting_verdict == "MODERATE"
+    assert report[4].meeting_verdict == "DENSE"
+
+
+def test_granularity_report_preserves_corpus_verdict_unchanged():
+    register = _register([
+        {"id": 1, "name": "Dim", "verdict": "MODERATE", "tests": []},
+    ])
+    report = granularity_report(register, set())
+    assert report[0].corpus_verdict == "MODERATE"
+
+
+def test_granularity_report_excludes_data_blocked_and_out_of_scope_rows():
+    register = _register([
+        {"id": 1, "name": "Blocked", "verdict": "EMPTY", "tests": [], "data_blocked": True},
+        {"id": 2, "name": "Out of scope", "verdict": "EMPTY", "tests": [], "out_of_scope": True},
+        {"id": 3, "name": "Normal", "verdict": "EMPTY", "tests": []},
+    ])
+    report = granularity_report(register, set())
+    assert {row.dimension_id for row in report} == {3}
+
+
+def test_granularity_report_meeting_tests_is_the_intersection():
+    register = _register([
+        {"id": 1, "name": "Dim", "verdict": "DENSE", "tests": ["a.one", "a.two", "a.three"]},
+    ])
+    report = granularity_report(register, {"a.two", "a.not_in_dimension"})
+    assert report[0].meeting_tests == ["a.two"]
+
+
+def test_real_register_granularity_report_runs_clean():
+    # The real register/battery — dimension 1 (Conflict-of-interest) is the
+    # design doc's own motivating example: DENSE at corpus scope, THIN at
+    # meeting scope (only conflict.recusal_management ships a _meeting sibling).
+    register = load_register()
+    meeting_ids = extract_meeting_scope_test_ids()
+    report = {row.dimension_id: row for row in granularity_report(register, meeting_ids)}
+    assert report[1].corpus_verdict == "DENSE"
+    assert report[1].meeting_verdict == "THIN"
+    assert report[1].meeting_tests == ["conflict.recusal_management"]

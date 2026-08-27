@@ -61,7 +61,7 @@ the next improvement to `Explorer_prompt.txt`.
 
 | # | Dimension | Threshold | How to measure |
 |---|-----------|-----------|----------------|
-| 1 | **Register-gap reduction** | ≥ 1 bespoke hypothesis this session explicitly targets a `docs/investigator/coverage_register.json` dimension with verdict EMPTY or THIN that is neither `data_blocked` nor `out_of_scope` | Read the register; check the Stage 1 hypothesis list for ≥ 1 entry naming a matching dimension |
+| 1 | **Register-gap reduction** | ≥ 1 bespoke hypothesis this session explicitly targets a register gap, of either kind below, on a dimension that is neither `data_blocked` nor `out_of_scope` | Read the register; check the Stage 1 hypothesis list for ≥ 1 entry naming a matching dimension. **Two kinds of gap both satisfy this (added 2026-08-27, Explorer v3.1):** (a) a `docs/investigator/coverage_register.json` dimension with corpus-scope `verdict` EMPTY or THIN; (b) a dimension with corpus-scope `verdict` MODERATE/DENSE but `meeting_verdict` EMPTY/THIN — computed by `src/analysis/coverage_register.py`'s `granularity_report()` (cross-references the register against `_MEETING_BATTERY`, never a hand-maintained field, so it can't drift the way a second stored verdict could). One hypothesis satisfies the dimension regardless of which kind it targets — this doesn't raise the bar, it recognises a second real kind of gap the four-dimension benchmark didn't previously have visibility into. |
 | 2 | **Structural kill rate** | ≤ 10% of bespoke hypotheses tested in Stage 2 die to structurally missing data (columns that the test requires are absent or 100% NULL) | Count hypotheses classified INFEASIBLE or died to schema/NULL gaps; divide by total bespoke tested; `council profile`'s output (S2) should surface most of these before Stage 2 |
 | 3 | **Finding rate** | ≥ 25% of bespoke hypotheses tested produce a Finding (built) or an actionable Banked result | Count `INVESTIGATIONS.md` entries classified `[✓]` Finding or `[◐]` Banked with a clear build path; exclude structural kills (those belong to Dim 2); divide by total bespoke tested |
 | 4 | **Framing balance** | 100% of confirmed flagship findings carry both the hostile-reader sentence and the promoter sentence, and are published in the NEUTRAL register | Review each flagship write-up for the mandatory two-sentence pair (`Investigator_prompt.txt` Stage-2 write-up discipline); verify register is NEUTRAL, not pure-CRITIC |
@@ -141,19 +141,29 @@ every other stage in this doc set uses.
 Read `docs/investigator/coverage_register.json` and `council profile`'s
 output (or `data/<council>_profile.json`) first — not a Stage of their own
 anymore, since both are now scripted (S2 profile; the register is a static
-file with its own verifier, `src/analysis/coverage_register.py`). Generate
-a broad candidate list anchored to recognised governance criteria (Nolan /
-CIPFA / Best-Value), with at least one hypothesis explicitly targeting the
-register's worst open (EMPTY/THIN, not `data_blocked`/`out_of_scope`) gap.
-Do not test yet — enumerate first. Each hypothesis should name the
-table(s) it requires and the predicted direction.
+file with its own verifier, `src/analysis/coverage_register.py`). Also run
+`granularity_report()` (same module, added 2026-08-27) — a dimension's
+corpus-scope density and its meeting-scope density are different
+questions, and the register's own `verdict` only ever answered the former.
+Generate a broad candidate list anchored to recognised governance criteria
+(Nolan / CIPFA / Best-Value), with at least one hypothesis explicitly
+targeting the register's worst open gap — either a corpus-scope EMPTY/THIN
+row, or a row DENSE/MODERATE at corpus scope but EMPTY/THIN at meeting
+scope (dimension 1's two-kind definition, above); not `data_blocked`/
+`out_of_scope` either way. Do not test yet — enumerate first. Each
+hypothesis should name the table(s) it requires and the predicted
+direction.
 Output: numbered hypothesis list (format: `INVESTIGATIONS.md` Phase headers).
 
 **Stage 2 — Hypothesis testing**
 For each hypothesis from Stage 1, write a query, run it, apply the
 two-tier bar (standard test: include regardless; flagship: novel ×
 resident-relevant × surprising), and classify as Finding / Null / Banked /
-Infeasible. Save findings immediately to `INVESTIGATIONS.md` with the
+Infeasible. For a meeting-scope-gap hypothesis (added 2026-08-27): its
+natural `n` is small by nature ("1 of 4," "2 of 9") — that's the honest
+count at that scale, not a thin-data signal the way the same `n` would
+read on a corpus-wide test, so don't default it to DIRECTIONAL-ONLY purely
+on `n`'s size (`Explorer_prompt.txt`'s Stage 2 states this in full). Save findings immediately to `INVESTIGATIONS.md` with the
 standard entry format (n, base rate, era, severity grade, strength +
 superlative check where relevant, hostile-reader and promoter sentences —
 `Investigator_prompt.txt` §4.6, `Explorer_prompt.txt`'s Stage-2 write-up
