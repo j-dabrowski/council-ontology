@@ -11,7 +11,9 @@ Related: `docs/review/REVIEW.md` (how this fits with Editor/Fixer),
 `docs/review/fixer/Fixer_prompt.txt` + `FIXER_PROTOCOL.md`,
 `docs/TESTING.md` "Draft & publish workflow" (where this whole stage sits),
 `docs/investigator/EXPLORATION_PROTOCOL.md` "Current approach" (the
-spawn-a-session pattern this doc extends to two more roles).
+spawn-a-session pattern this doc extends to two more roles),
+`docs/render/Renderer_prompt.txt` + `digest_mode.txt` (the period product
+Editor's period-claim review reads, once rendered).
 
 **Naming note:** this role was called "the runner" through most of the
 design conversation that produced this doc. Renamed to **Conductor** before
@@ -106,6 +108,38 @@ and "a human (or `--gate-profile auto`) decides to publish it" — S7 sits
 just before that box, S9 sits beside it, and the box itself is exactly the
 loop below, unchanged.
 
+**Restated for period claims (added 2026-08-27, once Editor v0.8 brought
+`local/period_digest.json`/`local/digest_summary.md` into scope): the
+boundary holds, but S7's own shape at this call site is different, and
+that difference matters to how the loop actually behaves.**
+
+- **S7's digest call site is diagnostic, not blocking** — unlike the
+  corpus call site above. `cmd_draft` runs `run_invariant_gate` a second
+  time, over the digest's own claims, and writes
+  `local/digest_gate_report.json`, but it never `sys.exit`s on a failure
+  there (`src/cli.py`) — a period digest is *expected* to routinely
+  contain `UNIT_INDIVIDUAL` claims (an unexplained absence, a declared
+  conflict) that this pass will flag, and that's exactly the signal
+  per-claim tier derivation (`src/invariant_gate.py`'s `derive_claim_tiers`)
+  consumes to decide what may enter the *public* candidate pool. So a
+  digest never gets blocked from reaching Editor the way a corpus S7
+  failure blocks the corpus draft — every `council draft` run's digest
+  artifacts reach Editor's period-claim review unconditionally (once
+  Renderer digest mode has actually run — see the chain-loop note below),
+  regardless of what `digest_gate_report.json` says.
+- **S9 does not apply to the public digest — structurally, not just
+  procedurally.** Renderer digest mode reads only `tier=="public"`
+  candidates and only their `public` field (`docs/render/digest_mode.txt`'s
+  hard gate) — no `individual`-unit claim, complete-reply or not, can ever
+  reach `digest_summary.md`. This is a stronger guarantee than the
+  synthesis-mode case S9 was originally written for (where a reply gate is
+  actively checked per claim): here there is nothing for a reply gate to
+  check, because the claim class it would gate never appears in the
+  rendered output at all. The raw `local/period_digest.json` still carries
+  the `deep` view (with names) for a human reading it directly under the
+  Draft switch — S9 doesn't apply there either, since that surface is
+  local-only and never reaches `council publish` regardless of tier.
+
 ## The chain loop
 
 ```
@@ -158,6 +192,24 @@ stuck — that's a deliberate override, not the default.
 **Only dispatch the Fixer modes a FAIL actually tagged.** A frontend-only
 FAIL should never trigger `pipeline-fix` — running an idle track wastes a
 call and gives it an opportunity to "fix" something that was never broken.
+
+**A flag from Editor's period-claim review (jigsaw identification,
+body-matched baselines, digest fidelity — `EDITOR_PROTOCOL.md` dimension 9)
+enters this exact same loop, no special-casing.** It's a flag like any
+other: same PASS/FAIL mechanics, same pass cap, same re-draft-before-
+re-review rule. The one honest gap: none of the three Fixer tracks
+(frontend/pipeline/doc) currently has authority to *fix* rendered digest
+prose — there's no scripted or LLM path yet that takes a digest-fidelity
+flag and produces a corrected `digest_summary.md` the way `frontend-fix`
+corrects a `.tsx` file. Until one exists, expect Editor's own track-tagging
+discipline (`Editor_prompt.txt`'s "When used inside the Conductor's loop")
+to route a period-claim flag to `human` by default — the holistic-flag
+outlet's own rule already covers this ("the owning track... or `human`
+when none could"), so this isn't a gap in the loop, it's a gap in what a
+human is asked to do next: re-run `council render digest` with the flag's
+detail as guidance, by hand, rather than a Fixer mode doing it
+unattended. A fourth Fixer mode that closes this (`FIXER_PROTOCOL.md`'s
+"Adding a fourth mode") is plausible future work, not built here.
 
 **A FAIL carrying a `human`-track flag escalates immediately, no Fixer
 dispatched.** Added 2026-08-24 for the holistic-flag outlet
@@ -238,6 +290,19 @@ provides on its own.
 
 ## Changelog
 
+- v0.5 (2026-08-27) — Restated the S7/S9 boundary for period claims, now
+  that Editor v0.8 brought `local/period_digest.json`/`digest_summary.md`
+  into scope: S7's digest call site is diagnostic, not blocking (unlike the
+  corpus call site), so a digest's claims always reach Editor once
+  rendered, regardless of `digest_gate_report.json`'s own verdict; S9
+  doesn't apply to the public digest structurally, since Renderer digest
+  mode never renders an `individual`-unit claim in the first place. Added a
+  note to "The chain loop" confirming a period-claim flag runs through the
+  identical PASS/FAIL/pass-cap loop, with an honest gap noted: no Fixer
+  mode yet has authority to fix rendered digest prose, so such a flag
+  currently routes to `human` by default under Editor's own existing
+  track-tagging rule, not a new loop mechanic. No change to the chain-loop
+  diagram, the pass cap, or gate profiles themselves.
 - v0.4 (2026-08-24) — Added the `human`-track escalation sentence to "The
   chain loop" (`docs/GENERATION_SCORING_SPLIT.md` §2.2/§2.4's holistic-flag
   outlet): a FAIL carrying a `human`-track flag now escalates immediately,
