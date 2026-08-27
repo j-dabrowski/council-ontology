@@ -2943,6 +2943,18 @@ def transparency_by_year(session: Session, council_id: int,
     `meeting_id`, when set, narrows every subquery to that one meeting
     (docs/frontend/PRODUCT_ROADMAP.md F2's single-meeting digest) — the
     `:mid IS NULL OR m.id = :mid` form keeps one SQL string for both modes.
+
+    The `other_items` branch excludes rows whose description is a standing
+    "Nil items" placeholder heading (e.g. "Confidential Reports - Nil items")
+    — a section header meaning nothing was listed under it, not a decided
+    item, and not confidential just because the section it stands in for
+    would be (digest design plan, fact 5: meeting 258's "1 of 34 items
+    closed" was entirely this one placeholder row). SQLite's LIKE is
+    case-insensitive on ASCII, so one pattern covers "Nil"/"nil". Confirmed
+    2026-08-27 against live data: only 2 of 529 corpus-wide confidential
+    other_items rows match, so this doesn't move the corpus-wide baseline
+    `transparency.confidential_share` publishes — a per-meeting fix, not a
+    whole-corpus correction.
     """
     from sqlalchemy import text as sql_text
 
@@ -2958,6 +2970,7 @@ def transparency_by_year(session: Session, council_id: int,
               FROM other_items o JOIN meetings m ON o.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
                AND (:mid IS NULL OR m.id = :mid)
+               AND o.description NOT LIKE '%nil item%'
             UNION ALL
             SELECT m.meeting_date, dd.is_confidential, 'delegated'
               FROM delegated_decisions dd JOIN meetings m ON dd.meeting_id = m.id

@@ -131,6 +131,16 @@ class TestResult:
     # have no bespoke panel. kind="bars": {bars:[{label,value,highlight?}], unit, refline?}
     # kind="line": {points:[{x,y}], unit, refline?}.
     chart: dict | None = None
+    # Digest salience inputs (docs — the digest design plan; SCOPE_SINGLE_MEETING
+    # generators only). `stat` is the one number `score_salience()` compares against
+    # this (test_id, body_class)'s baseline distribution — {"value": ..., "denominator":
+    # ... | None, "unit": "count"|"$"|...}; None means this claim doesn't participate in
+    # novelty scoring (only `digest_floor` can make it salient). `digest_floor` is a
+    # per-generator-declared minimum salience for an event reportable at n≥1 regardless
+    # of novelty (a tender awarded, a conflict declared, an item closed, a deputation
+    # heard, an unexplained absence) — 0.0 (the default) means "novelty-only".
+    stat: dict | None = None
+    digest_floor: float = 0.0
 
 
 def _bars(pairs, unit: str = "", highlight_label: str | None = None, refline: dict | None = None) -> dict:
@@ -239,6 +249,7 @@ def _t_recusal_overall_meeting(session, council_id, meeting_id) -> TestResult:
             verdict="No conflicts of interest were declared at this meeting.",
             n=0, era=era, detail_panel="declared",
             scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     # One line per COUNCILLOR, not per declaration — a grants-round agenda
     # can produce dozens of near-identical declarations from the same
@@ -277,6 +288,8 @@ def _t_recusal_overall_meeting(session, council_id, meeting_id) -> TestResult:
         n=s.declared_total, era=era, detail_panel="declared",
         unit_of_analysis=UNIT_INDIVIDUAL, named_entities=sorted(set(names)),
         scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": s.declared_total, "denominator": None, "unit": "count"},
+        digest_floor=1.0,
     )
 
 
@@ -430,6 +443,8 @@ def _t_transparency_meeting(session, council_id, meeting_id) -> TestResult:
                 f"corpus-wide rate." if total else "No confidential-eligible items this meeting.",
         n=total, base_rate=f"{corpus_pct}% corpus-wide", era=era, detail_panel="transparency",
         scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": conf, "denominator": total, "unit": "count"},
+        digest_floor=1.0 if conf >= 1 else 0.0,
     )
 
 
@@ -474,6 +489,7 @@ def _t_officer_divergence_meeting(session, council_id, meeting_id) -> TestResult
             headline="No agenda/minutes-matched officer recommendations this meeting",
             verdict="No agenda/minutes-matched officer recommendations this meeting.",
             n=0, era=era, detail_panel="divergence", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": 0, "unit": "count"}, digest_floor=0.0,
         )
     return TestResult(
         test_id="governance.officer_ratification", title="Did council follow its officers' recommendations?",
@@ -483,6 +499,7 @@ def _t_officer_divergence_meeting(session, council_id, meeting_id) -> TestResult
         headline=f"Council departed from the officer recommendation on {diverged} of {total} matched items this meeting",
         verdict=f"{diverged} of {total} matched items departed from the officer recommendation this meeting.",
         n=total, era=era, detail_panel="divergence", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": diverged, "denominator": total, "unit": "count"}, digest_floor=0.0,
     )
 
 
@@ -689,6 +706,7 @@ def _t_objection_dose_meeting(session, council_id, meeting_id) -> TestResult:
             headline="No planning applications decided this meeting",
             verdict="No planning applications decided this meeting.",
             n=0, era=era, detail_panel="dose", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": 0, "unit": "count"}, digest_floor=0.0,
         )
     with_obj = sum(b.n for b in d.buckets if b.label != "0")
     refused = sum(b.refused for b in d.buckets)
@@ -702,6 +720,7 @@ def _t_objection_dose_meeting(session, council_id, meeting_id) -> TestResult:
         verdict=f"{d.total_decided} application(s) decided this meeting: {refused} refused, "
                 f"{with_obj} drew at least one community objection.",
         n=d.total_decided, era=era, detail_panel="dose", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": refused, "denominator": d.total_decided, "unit": "count"}, digest_floor=0.0,
     )
 
 
@@ -745,6 +764,7 @@ def _t_tender_concentration_meeting(session, council_id, meeting_id) -> TestResu
             headline="No tenders awarded this meeting",
             verdict="No tenders awarded this meeting.",
             n=0, era=era, detail_panel="tenders", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     who = ", ".join(f"{c.name} (${c.total_amount:,.0f})" for c in t.contractors[:5])
     return TestResult(
@@ -756,6 +776,7 @@ def _t_tender_concentration_meeting(session, council_id, meeting_id) -> TestResu
         verdict=f"{t.total_awards} tender(s) awarded this meeting totalling ${t.total_amount:,.0f}"
                 + (f": {who}" if who else "") + (f" ({t.redacted_awards} confidential)" if t.redacted_awards else ""),
         n=t.total_awards, era=era, detail_panel="tenders", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": t.total_awards, "denominator": None, "unit": "count"}, digest_floor=1.0,
     )
 
 
@@ -825,6 +846,7 @@ def _t_decider_supplier_conflict_meeting(session, council_id, meeting_id) -> Tes
             headline="No tender-award votes this meeting",
             verdict="No tender-award votes this meeting.",
             n=0, era=era, detail_panel="decider-supplier", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": 0, "unit": "count"}, digest_floor=0.0,
         )
     if not r.collisions:
         return TestResult(
@@ -837,6 +859,7 @@ def _t_decider_supplier_conflict_meeting(session, council_id, meeting_id) -> Tes
             verdict=f"{r.declared_votes} of {r.votes_on_tender_motions} tender-award votes declared an "
                      f"interest this meeting; no surname collisions with the winner found.",
             n=r.votes_on_tender_motions, era=era, detail_panel="decider-supplier", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": r.votes_on_tender_motions, "unit": "count"}, digest_floor=0.0,
         )
     names = sorted({c.councillor_name for c in r.collisions})
     lines = "; ".join(f"{c.councillor_name}'s surname appears in winner '{c.firm}' (${c.amount:,.0f})"
@@ -853,6 +876,8 @@ def _t_decider_supplier_conflict_meeting(session, council_id, meeting_id) -> Tes
         n=r.votes_on_tender_motions, era=era, detail_panel="decider-supplier",
         unit_of_analysis=UNIT_INDIVIDUAL, named_entities=names,
         scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": len(r.collisions), "denominator": r.votes_on_tender_motions, "unit": "count"},
+        digest_floor=1.0,
     )
 
 
@@ -1025,6 +1050,7 @@ def _t_big_dollar_leniency_meeting(session, council_id, meeting_id) -> TestResul
             headline="No planning applications decided this meeting",
             verdict="No planning applications decided this meeting.",
             n=0, era=era, detail_panel="big-dollar", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     approved = sum(1 for _v, s in rows if s == ApplicationStatus.APPROVED)
     valued = [v for v, _s in rows if v and v > 0]
@@ -1038,6 +1064,7 @@ def _t_big_dollar_leniency_meeting(session, council_id, meeting_id) -> TestResul
         headline=f"{len(rows)} application(s) decided this meeting, {approved} approved{val_str}",
         verdict=f"{len(rows)} application(s) decided this meeting, {approved} approved{val_str}.",
         n=len(rows), era=era, detail_panel="big-dollar", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": len(rows), "denominator": None, "unit": "count"}, digest_floor=0.0,
     )
 
 
@@ -1153,6 +1180,7 @@ def _t_unanimity_trend_meeting(session, council_id, meeting_id) -> TestResult:
             headline="No carried motions this meeting",
             verdict="No carried motions this meeting.",
             n=0, era=era, detail_panel="unanimity", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": 0, "unit": "count"}, digest_floor=0.0,
         )
     contested = sum(1 for va in carried if va > 0)
     return TestResult(
@@ -1163,6 +1191,7 @@ def _t_unanimity_trend_meeting(session, council_id, meeting_id) -> TestResult:
         headline=f"{contested} of {len(carried)} carried motions drew a dissenting vote this meeting",
         verdict=f"{contested} of {len(carried)} carried motions drew at least one dissenting vote this meeting.",
         n=len(carried), era=era, detail_panel="unanimity", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": contested, "denominator": len(carried), "unit": "count"}, digest_floor=0.0,
     )
 
 
@@ -1356,6 +1385,8 @@ def _t_deputation_dissent_meeting(session, council_id, meeting_id) -> TestResult
         verdict=f"{'A' if had_deputation else 'No'} public deputation was heard this meeting"
                 + (f"; {contested} of {len(rows)} carried motions were contested." if rows else "."),
         n=len(rows), era=era, detail_panel="deputations", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": 1 if had_deputation else 0, "denominator": None, "unit": "count"},
+        digest_floor=1.0 if had_deputation else 0.0,
     )
 
 
@@ -1443,6 +1474,7 @@ def _t_attendance_meeting(session, council_id, meeting_id) -> TestResult:
             headline="No vote rows recorded this meeting",
             verdict="No vote rows recorded this meeting.",
             n=0, era=era, detail_panel="attendance", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     by_councillor: dict[str, list[tuple]] = {}
     for ch, di, given, family in rows:
@@ -1468,6 +1500,7 @@ def _t_attendance_meeting(session, council_id, meeting_id) -> TestResult:
             headline="No unexplained absences this meeting" + note,
             verdict="No unexplained absences this meeting" + note + ".",
             n=len(rows), era=era, detail_panel="attendance", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     return TestResult(
         test_id="governance.attendance", title="Was anyone absent this meeting?",
@@ -1480,6 +1513,7 @@ def _t_attendance_meeting(session, council_id, meeting_id) -> TestResult:
         n=len(rows), era=era, detail_panel="attendance",
         unit_of_analysis=UNIT_INDIVIDUAL, named_entities=genuine_names,
         scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": len(genuine_names), "denominator": None, "unit": "count"}, digest_floor=1.0,
     )
 
 
@@ -1567,6 +1601,7 @@ def _t_engagement_meeting(session, council_id, meeting_id) -> TestResult:
         verdict=(f"{q} public question(s), {d} deputation(s), {p} petition(s) this meeting." if total
                  else "No recorded public questions, deputations, or petitions this meeting."),
         n=total, era=era, detail_panel="engagement", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": total, "denominator": None, "unit": "count"}, digest_floor=0.0,
     )
 
 
@@ -1649,6 +1684,7 @@ def _t_confidential_tender_size_meeting(session, council_id, meeting_id) -> Test
             headline="No confidential tenders (with a recorded amount) this meeting",
             verdict="No confidential tenders (with a recorded amount) this meeting.",
             n=0, era=era, detail_panel="confidential-tender-size", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     return TestResult(
         test_id="transparency.confidential_tender_size", title="Were any tenders this meeting confidential?",
@@ -1660,6 +1696,7 @@ def _t_confidential_tender_size_meeting(session, council_id, meeting_id) -> Test
                 + (f", vs a ${corpus_med:,} corpus-wide open-tender median." if corpus_med else "."),
         n=len(conf), base_rate=f"${corpus_med:,} corpus-wide open-tender median" if corpus_med else None,
         era=era, detail_panel="confidential-tender-size", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": len(conf), "denominator": None, "unit": "count"}, digest_floor=1.0,
     )
 
 
@@ -1766,6 +1803,7 @@ def _t_confidential_topics_meeting(session, council_id, meeting_id) -> TestResul
             headline="No confidential items this meeting",
             verdict="No confidential items this meeting.",
             n=0, era=era, detail_panel="confidential-topics", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     shown = "; ".join(d[:120] for d in descs[:5])
     return TestResult(
@@ -1776,6 +1814,7 @@ def _t_confidential_topics_meeting(session, council_id, meeting_id) -> TestResul
         headline=f"{len(descs)} item(s) closed to the public this meeting",
         verdict=f"{len(descs)} item(s) closed to the public this meeting: {shown}",
         n=len(descs), era=era, detail_panel="confidential-topics", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": len(descs), "denominator": None, "unit": "count"}, digest_floor=1.0,
     )
 
 
@@ -1828,6 +1867,7 @@ def _t_question_responsiveness_meeting(session, council_id, meeting_id) -> TestR
             headline="No public questions this meeting",
             verdict="No public questions this meeting.",
             n=0, era=era, detail_panel="question-responsiveness", scope=[SCOPE_SINGLE_MEETING],
+            stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
     on_notice_pct = round(100 * r.on_notice / total, 1)
     return TestResult(
@@ -1840,6 +1880,7 @@ def _t_question_responsiveness_meeting(session, council_id, meeting_id) -> TestR
                 f"({on_notice_pct}% on notice), vs a {corpus.pre_pct}% pre-Inquiry corpus baseline.",
         n=total, base_rate=f"{corpus.pre_pct}% pre-Inquiry corpus baseline", era=era,
         detail_panel="question-responsiveness", scope=[SCOPE_SINGLE_MEETING],
+        stat={"value": r.on_notice, "denominator": total, "unit": "count"}, digest_floor=0.0,
     )
 
 

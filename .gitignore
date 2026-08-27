@@ -40,6 +40,8 @@ data/census_summary.txt
 data/cambridge_typology_review.txt
 data/cambridge_sample.json
 data/*_profile.json
+data/*_meeting_baselines.json
+data/digest_preview/
 data/inventories/
 data/inventory_quality/
 data/sample_validation/

@@ -1,0 +1,28 @@
+{
+  "Ordinary Meeting of Council": "full_council",
+  "Council Meeting": "full_council",
+  "Ordinary Council Meeting": "full_council",
+  "Ordinary Meeting": "full_council",
+  "Ordinary": "full_council",
+  "Special Meeting of Council": "full_council",
+  "Special Council Meeting": "full_council",
+  "Special Meeting": "full_council",
+
+  "Annual General Meeting of Electors": "electors_meeting",
+  "Special Meeting of Electors": "electors_meeting",
+
+  "Public Art Committee Meeting": "committee_public_art",
+
+  "Development Committee": "committee_development",
+  "Development Committee Meeting": "committee_development",
+
+  "Policy and Legislation Committee": "committee_policy_legislation",
+  "Policy and Legislation Committee Meeting": "committee_policy_legislation",
+
+  "Audit and Risk Committee Meeting": "committee_audit_risk",
+  "Audit, Risk and Improvement Committee Meeting": "committee_audit_risk",
+
+  "Community and Resources Committee": "committee_community_resources",
+
+  "CEO Recruitment Committee Meeting": "committee_ceo_recruitment"
+}

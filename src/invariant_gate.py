@@ -52,8 +52,9 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Callable
 
 from src.analysis.tests import (
     ENTITY_RESOLUTION_CLEAN,
@@ -236,3 +237,120 @@ def derive_claim_tier(claims: list[TestResult]) -> str:
         if c.unit_of_analysis != UNIT_INSTITUTIONAL:
             return "full"
     return "public"
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# Per-claim tier derivation + institutional "reduced form" projections
+# (digest design plan §2/§3): the whole-batch rule above is deliberately
+# all-or-nothing (docs/INFORMATION_ARCHITECTURE.md §4) — right for a corpus
+# snapshot's handful of claims, wrong for a period digest, where a single
+# named-individual claim (an unexplained absence, a declared conflict) would
+# otherwise drop an entire period's candidate pool to full-tier. These
+# functions let each claim in a digest batch carry its own tier instead.
+# ─────────────────────────────────────────────────────────────────────────
+
+# The three SCOPE_SINGLE_MEETING generators that can emit a named claim
+# today (src/analysis/tests.py): `_t_recusal_overall_meeting` and
+# `_t_attendance_meeting` name people directly; `_t_decider_supplier_conflict_
+# meeting` names a councillor when a raw surname collision fires. Each
+# reduction below only strips what its own generator can put in named_entities
+# — it does not re-derive the claim from the DB, so it can only project what
+# the claim object already carries.
+def _reduce_recusal_management(c: TestResult) -> TestResult:
+    """conflict.recusal_management: the headline is already count-only
+    ("N conflict(s) of interest declared this meeting, by K councillor(s)")
+    — only `verdict` (the per-councillor action breakdown) and
+    `named_entities` carry names."""
+    n_names = len(c.named_entities)
+    return replace(
+        c,
+        verdict=(
+            f"{c.n or 0} conflict(s) of interest were declared this meeting, by {n_names} "
+            "councillor(s); see the full record for who declared and how each was managed."
+        ),
+        unit_of_analysis=UNIT_INSTITUTIONAL,
+        named_entities=[],
+    )
+
+
+def _reduce_attendance(c: TestResult) -> TestResult:
+    """governance.attendance: both `headline` and `verdict` name the absent
+    councillor(s) directly, so both need rewriting to a count-only form."""
+    n_names = len(c.named_entities)
+    text = (
+        f"{n_names} councillor(s) had at least one unexplained absence this meeting"
+        if n_names else "No unexplained absences this meeting"
+    )
+    return replace(c, headline=text, verdict=text + ".", unit_of_analysis=UNIT_INSTITUTIONAL,
+                    named_entities=[])
+
+
+def _reduce_decider_supplier_conflict(c: TestResult) -> TestResult:
+    """procurement.decider_supplier_conflict: the headline is already
+    count-only ("N surname collision(s) found... — unconfirmed"); `verdict`
+    names the councillor(s) and the winning firm(s)."""
+    n = len(c.named_entities)
+    return replace(
+        c,
+        verdict=(
+            f"{n} surname collision(s) were found between a tender winner and a voting "
+            "councillor this meeting — unconfirmed, provenance not checked; see the full "
+            "record for names and firms."
+        ),
+        unit_of_analysis=UNIT_INSTITUTIONAL,
+        named_entities=[],
+    )
+
+
+INSTITUTIONAL_PROJECTIONS: dict[str, Callable[[TestResult], TestResult]] = {
+    "conflict.recusal_management": _reduce_recusal_management,
+    "governance.attendance": _reduce_attendance,
+    "procurement.decider_supplier_conflict": _reduce_decider_supplier_conflict,
+}
+
+
+def project_to_institutional(c: TestResult) -> TestResult | None:
+    """The public-tier candidate for one claim, or `None` if none exists.
+
+    An already-institutional claim is its own candidate. An individual/
+    individual_implicating claim only has one if its test_id has a
+    registered reduction (`INSTITUTIONAL_PROJECTIONS`) — nothing today
+    reduces an `individual_implicating` claim (no generator produces one
+    yet), so this always returns `None` for that unit, matching
+    `derive_claim_tier`'s module docstring on why per-claim redaction isn't
+    built for it.
+    """
+    if c.unit_of_analysis == UNIT_INSTITUTIONAL:
+        return c
+    reducer = INSTITUTIONAL_PROJECTIONS.get(c.test_id)
+    if reducer is None:
+        return None
+    return reducer(c)
+
+
+def derive_claim_tiers(
+    claims: list[TestResult], min_n: int, known_names: set[tuple[str, str]] | None = None,
+) -> dict[str, str]:
+    """The per-claim sibling of `derive_claim_tier`: `test_id -> "public" |
+    "full"`, one entry per claim (by `test_id`, which is unique within a
+    single meeting's digest battery).
+
+    A claim is `"public"` iff its institutional candidate (itself, or its
+    `project_to_institutional` reduction) exists and clears the same S7
+    checks `run_invariant_gate` runs — reusing that function's own logic via
+    a one-claim gate call, rather than re-implementing the checks, so the two
+    can never drift apart. `data_ok=False` claims are `"full"`: they carry no
+    statistic, so there's nothing to safely publish.
+    """
+    tiers: dict[str, str] = {}
+    for c in claims:
+        if not c.data_ok:
+            tiers[c.test_id] = "full"
+            continue
+        candidate = project_to_institutional(c)
+        if candidate is None:
+            tiers[c.test_id] = "full"
+            continue
+        result = run_invariant_gate([candidate], min_n=min_n, known_names=known_names)
+        tiers[c.test_id] = "public" if result.passed else "full"
+    return tiers

@@ -1,0 +1,8 @@
+{
+  "interval": "week",
+  "display_window_months": 6,
+  "max_highlights": 4,
+  "min_salience": 0.7,
+  "min_baseline_meetings": 8,
+  "empty_period_behaviour": "emit_quiet_record"
+}

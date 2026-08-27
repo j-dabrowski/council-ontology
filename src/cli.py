@@ -1404,6 +1404,50 @@ def cmd_profile(args) -> None:
     console.print(f"[dim]vote choice distribution: {rq.vote_choice_distribution}[/dim]")
 
 
+def cmd_meeting_baselines(args) -> None:
+    """Per-meeting digest salience baselines (digest design plan §3 item 6):
+    runs the SCOPE_SINGLE_MEETING battery over every content-bearing minutes
+    meeting, grouped by (test_id, body_class) via config/meeting_bodies.json.
+    Writes data/<council>_meeting_baselines.json (gitignored, refreshed on
+    every run — same pattern as `council profile`). `council digest` and
+    `cmd_draft`'s period-digest step read this file; they never recompute it.
+    """
+    import json as _json
+    from datetime import datetime, timezone
+
+    from src.analysis.meeting_baselines import compute_meeting_baselines, meeting_baselines_to_dict
+    from src.analysis.queries import get_council_by_name
+    from src.storage.database import init_db, make_session_factory
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    short_name = COUNCILS[key]["short_name"]
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+    console.print(Panel(f"Computing meeting baselines for [bold]{key}[/bold]…", style="blue"))
+    mb = compute_meeting_baselines(session, council_obj.id, key, generated_at)
+    session.close()
+
+    output_path = Path("data") / f"{key}_meeting_baselines.json"
+    output_path.write_text(_json.dumps(meeting_baselines_to_dict(mb), indent=2))
+
+    console.print(Panel(f"Meeting baselines → [bold]{output_path}[/bold]", style="green"))
+    console.print(f"{mb.n_meetings_considered} content-bearing minutes meetings considered")
+    for test_id in sorted(mb.baselines):
+        by_body = mb.baselines[test_id]
+        parts = ", ".join(f"{bc}={tb.n_meetings}" for bc, tb in sorted(by_body.items()))
+        console.print(f"  [dim]{test_id}: {parts}[/dim]")
+
+
 def cmd_reply_packets(args) -> None:
     """S9 right of reply — packet assembly (docs/INFORMATION_ARCHITECTURE.md
     §3, src/reply_packets.py). Scripted: runs the battery fresh, groups every
@@ -2813,16 +2857,17 @@ def cmd_draft(args) -> None:
         None,
     )
     digest_payload = None
+    digest_claims = None
     if latest_meeting:
-        _dr = run_meeting_digest(session, council_id, latest_meeting.id)
+        digest_claims = run_meeting_digest(session, council_id, latest_meeting.id)
         digest_payload = {
             "published_at": generated_at,
             "council": key,
             "data": {
                 "meeting_id": latest_meeting.id,
                 "meeting_date": latest_meeting.meeting_date.isoformat(),
-                "summary": battery_summary(_dr),
-                "tests": [_asdict(r) for r in _dr],
+                "summary": battery_summary(digest_claims),
+                "tests": [_asdict(r) for r in digest_claims],
             },
         }
 
@@ -2833,6 +2878,51 @@ def cmd_draft(args) -> None:
         (c.given_name, c.family_name)
         for c in session.query(_Councillor.given_name, _Councillor.family_name).all()
     }
+
+    # S7's second call site (digest design plan §3 item 1): diagnostic only,
+    # unlike the corpus gate below — a period digest is EXPECTED to routinely
+    # contain UNIT_INDIVIDUAL claims (an unexplained absence, a declared
+    # conflict), and that's exactly the signal `derive_claim_tiers` consumes
+    # to decide which claims may enter the public candidate pool. So: report,
+    # never sys.exit. `local/digest_gate_report.json` is written alongside
+    # the digest artifacts below, once the output dir + session-independent
+    # data are both available.
+    from src.invariant_gate import load_min_n as _load_min_n_digest
+    from src.invariant_gate import run_invariant_gate as _run_gate_digest
+    digest_gate_report = None
+    if digest_claims is not None:
+        digest_gate = _run_gate_digest(digest_claims, min_n=_load_min_n_digest(), known_names=known_names)
+        digest_gate_report = {
+            "run_id": run_id,
+            "council": key,
+            "generated_at": generated_at,
+            "passed": digest_gate.passed,
+            "violations": [_asdict(v) for v in digest_gate.violations],
+        }
+
+    # Period digest (digest design plan §3 items 8/10) — composed while the
+    # session is still open (compose_period_digest queries the DB itself;
+    # meeting_baselines are read from the precomputed, gitignored file, never
+    # recomputed here). Skipped, not fatal, if `council meeting-baselines`
+    # hasn't been run yet for this council — a missing digest artifact should
+    # never block the corpus battery's draft.
+    period_digest = None
+    period_digest_skip_reason = None
+    try:
+        import json as _json_digest
+
+        from src.analysis.digest import compose_period_digest
+        from src.analysis.meeting_baselines import load_meeting_baselines
+
+        digest_policy = _json_digest.loads((Path("config") / "digest_policy.json").read_text())
+        baselines = load_meeting_baselines(Path("data") / f"{key}_meeting_baselines.json")
+        period_digest = compose_period_digest(
+            session, council_id, digest_policy["interval"],
+            datetime.now(timezone.utc).date(), baselines, digest_policy, min_n=_load_min_n_digest(),
+        )
+    except FileNotFoundError as exc:
+        period_digest_skip_reason = str(exc)
+
     session.close()
 
     # S7 invariant gate (docs/INFORMATION_ARCHITECTURE.md §3, C2) — scripted,
@@ -2889,8 +2979,29 @@ def cmd_draft(args) -> None:
             f"  [green]✓[/green] local/digest.json (meeting {m['meeting_id']}, "
             f"{m['meeting_date']}) [dim]— local review only, outside manifest/Editor scope[/dim]"
         )
+        (local_dir / "digest_gate_report.json").write_text(_json.dumps(digest_gate_report, indent=2))
+        n_v = len(digest_gate_report["violations"])
+        console.print(
+            f"  [{'green' if digest_gate_report['passed'] else 'yellow'}]"
+            f"{'✓' if digest_gate_report['passed'] else '○'}[/] local/digest_gate_report.json "
+            f"[dim]— diagnostic only, {n_v} violation(s), never blocks the draft[/dim]"
+        )
     else:
         console.print(f"  [yellow]○[/yellow] local/digest.json skipped — no minutes meeting with real content for {key}")
+
+    if period_digest is not None:
+        local_dir = output_dir / "local"
+        local_dir.mkdir(parents=True, exist_ok=True)
+        (local_dir / "period_digest.json").write_text(_json.dumps(period_digest, indent=2))
+        console.print(
+            f"  [green]✓[/green] local/period_digest.json "
+            f"({len(period_digest['meetings_covered'])} meeting(s), "
+            f"{len(period_digest['highlights'])} highlight(s))"
+        )
+    else:
+        console.print(
+            f"  [yellow]○[/yellow] local/period_digest.json skipped — {period_digest_skip_reason}"
+        )
 
     n_public = sum(1 for t in tiers.values() if t == "public")
     n_full = len(tiers) - n_public
@@ -3000,6 +3111,89 @@ def cmd_meeting_digest(args) -> None:
                 "tests": [_asdict(r) for r in results],
             },
         }, indent=2))
+        console.print(f"\n[dim]Saved: {out_path}[/dim]")
+
+
+def cmd_digest(args) -> None:
+    """Period digest preview (digest design plan §3 item 9) — a standalone
+    command for iterating on `config/digest_policy.json` without a full
+    draft run, same relationship `council meeting-digest` has to `cmd_draft`'s
+    automatic single-meeting digest. `cmd_draft` calls `compose_period_digest`
+    itself, automatically, using the configured `interval`; this command lets
+    you override `--interval`/`--period-end` and inspect the result directly.
+    Deliberately NOT a draft snapshot: writes only to a scratch path
+    (`data/digest_preview/`, gitignored) that `council publish` never reads.
+    """
+    import json as _json
+    from datetime import date as _date, datetime, timezone
+
+    from src.analysis.digest import compose_period_digest
+    from src.analysis.meeting_baselines import load_meeting_baselines
+    from src.analysis.queries import get_council_by_name
+    from src.invariant_gate import load_min_n
+    from src.storage.database import init_db, make_session_factory
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    short_name = COUNCILS[key]["short_name"]
+
+    policy = _json.loads((Path("config") / "digest_policy.json").read_text())
+    interval = args.interval or policy["interval"]
+
+    if args.period_end:
+        try:
+            period_end = _date.fromisoformat(args.period_end)
+        except ValueError:
+            console.print(f"[red]--period-end must be YYYY-MM-DD, got {args.period_end!r}[/red]")
+            sys.exit(1)
+    else:
+        period_end = datetime.now(timezone.utc).date()
+
+    baselines_path = Path("data") / f"{key}_meeting_baselines.json"
+    try:
+        baselines = load_meeting_baselines(baselines_path)
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        sys.exit(1)
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+
+    digest = compose_period_digest(
+        session, council_obj.id, interval, period_end, baselines, policy, min_n=load_min_n(),
+    )
+    session.close()
+
+    if digest["quiet"]:
+        mr = digest["most_recent_meeting"]
+        console.print(Panel(
+            f"[yellow]No confirmed minutes meetings in this {interval} ending {period_end}[/yellow]\n"
+            + (f"Most recent: {mr['meeting_type']} on {mr['meeting_date']}" if mr else "No meetings on record at all"),
+            style="yellow",
+        ))
+    else:
+        console.print(Panel(
+            f"Period digest — [bold]{key}[/bold], {interval} ending {period_end}\n"
+            f"{len(digest['meetings_covered'])} meeting(s) covered, "
+            f"{len(digest['candidates'])} candidate(s), {len(digest['highlights'])} highlight(s)",
+            style="blue",
+        ))
+        for h in digest["highlights"]:
+            deep = h["deep"]
+            console.print(f"\n[bold]{deep['test_id']}[/bold] (salience={h['salience']}, tier={h['tier']})")
+            console.print(f"  {deep['headline']}")
+
+    if args.save:
+        out_dir = Path("data/digest_preview") / key
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / f"{interval}_{period_end.isoformat()}.json"
+        out_path.write_text(_json.dumps(digest, indent=2))
         console.print(f"\n[dim]Saved: {out_path}[/dim]")
 
 
@@ -3469,6 +3663,17 @@ def main() -> None:
     )
     p_profile.add_argument("council", choices=list(COUNCILS))
     p_profile.set_defaults(func=cmd_profile)
+
+    # meeting-baselines (digest salience input — src/analysis/meeting_baselines.py)
+    p_meeting_baselines = sub.add_parser(
+        "meeting-baselines",
+        help="Per-meeting digest salience baselines, grouped by (test_id, body_class) "
+             "— a command, not a per-draft cost (src/analysis/meeting_baselines.py). "
+             "`council digest`/`council draft` read the file this writes; they never "
+             "recompute it.",
+    )
+    p_meeting_baselines.add_argument("council", choices=list(COUNCILS))
+    p_meeting_baselines.set_defaults(func=cmd_meeting_baselines)
 
     # explore (S3: Explorer — real `claude -p` session, generate/test hypotheses)
     p_explore = sub.add_parser(
@@ -3983,6 +4188,26 @@ def main() -> None:
     p_meeting_digest.add_argument("--save", action="store_true",
                                   help="also write JSON to data/meeting_digest_preview/<council>/")
     p_meeting_digest.set_defaults(func=cmd_meeting_digest)
+
+    # digest (period digest preview — src/analysis/digest.py, NOT publish-eligible
+    # until config/agent_switches.json's digest_publish_scope reaches PUBLIC)
+    p_digest = sub.add_parser(
+        "digest",
+        help="Period digest preview: salience-ranked claims across a window of "
+             "meetings, composed purely over already-computed meeting records "
+             "(src/analysis/digest.py). Requires `council meeting-baselines` to "
+             "have been run first. A review artifact, not a draft snapshot.",
+    )
+    p_digest.add_argument("council", choices=list(COUNCILS))
+    p_digest.add_argument(
+        "--interval", choices=["meeting", "week", "fortnight", "month"],
+        help="overrides config/digest_policy.json's configured interval",
+    )
+    p_digest.add_argument("--period-end", dest="period_end",
+                          help="YYYY-MM-DD; defaults to today")
+    p_digest.add_argument("--save", action="store_true",
+                          help="also write JSON to data/digest_preview/<council>/")
+    p_digest.set_defaults(func=cmd_digest)
 
     # editor-loop (S8: scripted Editor/Fixer review loop — the Conductor role, scripted)
     p_loop = sub.add_parser(
