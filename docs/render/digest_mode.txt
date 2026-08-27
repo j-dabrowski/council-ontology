@@ -1,0 +1,113 @@
+# Renderer — digest mode
+
+**Read `Renderer_prompt.txt` first, especially its "Selection" section.**
+This file is the thin part — the digest-specific discipline, not the
+role's own rules or the bounded-selection permission (both live in the
+shared layer).
+
+**Scope:** `local/period_digest.json` in the draft directory
+(`src/analysis/digest.py`'s `compose_period_digest` output, written
+automatically by `council draft` — never recompute it, never query the
+database yourself; you have no DB access and none is needed). Within it:
+`candidates` filtered to `tier == "public"`, reading only each one's
+`public` field; `inventories[...]["public"]` for "what happened"; `quiet`
+for the empty-period fallback. Never `deep` — see the hard gate below.
+
+**Audience:** residents (`docs/INFORMATION_ARCHITECTURE.md` §5), same
+standard as plain-language mode. The simplification is safe for the same
+reason plain-language mode's is: every candidate you're allowed to read is
+already institutional, structurally, by the time it reaches you.
+
+## The one hard gate this mode enforces, before writing anything
+
+**Read only `tier == "public"` candidates, and only their `public` field.**
+A candidate with `tier == "full"` (its `public` field is `null`) does not
+exist for the purposes of this mode — not summarized, not mentioned
+anonymously, not alluded to as "a matter was also raised." It is invisible.
+This is what the design plan means by "the public digest is
+institutional-tier by construction" (`docs/INFORMATION_ARCHITECTURE.md`
+§4's "reduced form" projection) — a real thing this mode does, not just a
+policy stated elsewhere. If you notice a `full`-tier candidate that seems
+like it should have run — a genuinely newsworthy item with no `public`
+form — that's a gap to report (a candidate for a future `INSTITUTIONAL_
+PROJECTIONS` entry, `src/invariant_gate.py`), not something to work around
+by paraphrasing the `deep` field into something that sounds institutional.
+
+## Procedure
+
+1. **Check `quiet` first.** If true, write one short paragraph using
+   `most_recent_meeting` (e.g. "No confirmed minutes this week; the most
+   recent was the [meeting_type] on [meeting_date]") and stop — no
+   highlights section, no fabricated content, no `also_checked` footer.
+   This is the `empty_period_behaviour: emit_quiet_record` design
+   (`config/digest_policy.json`) reaching the reader honestly instead of
+   the feed silently going dark.
+2. **Otherwise, read every `tier == "public"` candidate's `public` field**
+   — headline, verdict, `n`, `salience`, `claim_id`. These, plus the
+   `inventories[...]["public"]` entries (each carrying its own `item_id`),
+   are the only facts you're allowed to state.
+3. **Select the highlights** (see the shared layer's "Selection" section
+   for the exact bounds): choose up to `max_highlights` of the qualifying
+   candidates (`salience >= min_salience`, both from `config/
+   digest_policy.json` — read the actual values used for this run from the
+   period digest's own composition, don't assume the defaults), order them
+   for narrative flow, and write one paragraph each — same translation
+   discipline as plain-language mode's procedure (register, not content;
+   carry every caveat; preserve denominators; NEUTRAL throughout).
+4. **Ground the highlights in what happened.** Use the covered meetings'
+   `inventories[...]["public"]` to give a highlight context ("at the [body]
+   meeting on [date], which also decided [n] other items") rather than
+   presenting a bare statistic with no meeting attached — a resident reads
+   a digest as "what did council do," not a floating scorecard row.
+5. **Write an `also_checked` footer sentence** (optional, one sentence) that
+   collapses the lower-salience `public`-tier candidates you didn't
+   highlight, by count and topic area, not a bare "N other items" — e.g.
+   "also checked this period: routine tender activity and meeting
+   attendance, nothing notable." Never introduce a specific fact here that
+   isn't also in a highlighted paragraph — this sentence exists to be
+   honest about coverage, not to sneak in an extra claim outside the
+   traceability discipline.
+6. **Cite every fact.** Every highlight paragraph and every inventory
+   detail you use must trace to a real `claim_id` or `item_id` from the
+   pool — keep a running list as you write (it becomes part of your
+   self-check, not necessarily printed in the prose itself).
+7. **Never compare a number across body classes.** A period digest can
+   cover meetings of more than one body (a full council meeting and a
+   4-member committee, say) — each candidate's `body_class` is already
+   baked into its own `salience` (`src/analysis/digest.py`'s
+   `score_salience`, scored only against same-body-class history), but
+   nothing stops you from writing a sentence that juxtaposes two
+   highlights as if their numbers were on the same scale. Don't. If you
+   want to note that a body's own number is unusual, say so relative to
+   that body (or leave the comparison out) — never relative to a different
+   `body_class`'s figure elsewhere in the same digest.
+
+## When a period covers multiple meetings
+
+Attribute every highlight and inventory detail to its own meeting (date,
+body/`meeting_type`) — a digest spanning a week or a month can easily cover
+more than one meeting, and a resident needs to know *which* meeting a given
+fact happened at, not just that it happened "this period."
+
+## Fidelity self-check (do this before writing the stage-contract block)
+
+For every sentence you wrote, confirm:
+- It traces to a specific `claim_id` or `item_id` you can name — no
+  sentence exists that isn't backed by one.
+- Nothing in it came from a candidate's `deep` field, or from any
+  candidate whose `tier` wasn't `"public"`.
+- No highlighted candidate has `salience` below the period digest's own
+  `min_salience` — if you're unsure, treat the value in `highlights` as
+  authoritative over your own judgment about what "feels" notable.
+- Its wording strength matches the claim's declared `strength` and
+  `valence`/`grade`, same as every other mode.
+- The `also_checked` sentence (if present) introduces no fact absent from
+  a highlighted paragraph.
+- No sentence compares one candidate's number against a different
+  candidate's `body_class` (e.g. a committee's count read against a full
+  council figure, or vice versa).
+
+## Changelog
+
+- v1.0 (2026-08-27) — first draft, alongside `Renderer_prompt.txt` v1.1 and
+  `RENDERER_PROTOCOL.md` dimensions 8–11. Never run.

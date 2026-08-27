@@ -169,6 +169,7 @@ def test_meeting_inventory_includes_mover_and_seconder(session):
     inv = meeting_inventory(session, council_id, meeting_id)
     assert inv["motions"][0]["moved_by"] == "Jane Citizen"
     assert inv["motions"][0]["seconded_by"] == "Bo Sample"
+    assert inv["motions"][0]["item_id"] == f"{meeting_id}:motion:4"
     assert inv["meeting_type"] == "Policy and Legislation Committee Meeting"
 
 
@@ -198,6 +199,7 @@ def test_meeting_inventory_excludes_nil_item_placeholder_rows(session):
     inv = meeting_inventory(session, council_id, meeting_id)
     assert "confidential_item" not in inv["other_items_by_type"]
     assert "correspondence" in inv["other_items_by_type"]
+    assert inv["other_items_by_type"]["correspondence"][0]["item_id"] == f"{meeting_id}:other:correspondence:0"
 
 
 # ---------------------------------------------------------------------------
@@ -240,6 +242,7 @@ def test_compose_period_digest_floor_triggered_claim_becomes_a_highlight(session
     tender_highlight = next(h for h in result["highlights"] if h["deep"]["test_id"] == "procurement.concentration")
     assert tender_highlight["salience"] >= 0.7
     assert tender_highlight["tier"] == "public"
+    assert tender_highlight["claim_id"] == f"{meeting_id}:procurement.concentration"
 
 
 def test_compose_period_digest_committee_meeting_not_scored_against_full_council_baseline(session):

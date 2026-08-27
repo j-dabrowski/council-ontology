@@ -97,8 +97,13 @@ def meeting_inventory(session: Session, council_id: int, meeting_id: int) -> dic
         for c in session.query(Councillor).filter(Councillor.id.in_(councillor_ids)).all()
     } if councillor_ids else {}
 
+    # item_id: a stable citation anchor for the Renderer digest mode
+    # (RENDERER_PROTOCOL.md dimension 8) — "meeting:motion:<item_number>",
+    # falling back to a positional index when item_number is missing so
+    # every motion is still citable.
     items = [
         {
+            "item_id": f"{meeting_id}:motion:{m.item_number or idx}",
             "item_number": m.item_number,
             "title": m.title,
             "outcome": m.outcome.value if m.outcome else None,
@@ -108,7 +113,7 @@ def meeting_inventory(session: Session, council_id: int, meeting_id: int) -> dic
             "moved_by": names_by_id.get(m.moved_by_id),
             "seconded_by": names_by_id.get(m.seconded_by_id),
         }
-        for m in motions
+        for idx, m in enumerate(motions)
     ]
 
     departures = [
@@ -119,13 +124,18 @@ def meeting_inventory(session: Session, council_id: int, meeting_id: int) -> dic
 
     # "Nil items" standing-agenda placeholder headings aren't decided items
     # (same exclusion as the transparency_by_year fix — src/analysis/queries.py).
+    # item_id here is positional within its item_type bucket — other_items
+    # carries no natural per-row citation key the way a motion's item_number is.
     other_items_by_type: dict[str, list[dict]] = {}
     for oi in session.query(OtherItem).filter(OtherItem.meeting_id == meeting_id).all():
         if "nil item" in (oi.description or "").lower():
             continue
-        other_items_by_type.setdefault(oi.item_type, []).append(
-            {"description": oi.description, "is_confidential": oi.is_confidential}
-        )
+        bucket = other_items_by_type.setdefault(oi.item_type, [])
+        bucket.append({
+            "item_id": f"{meeting_id}:other:{oi.item_type}:{len(bucket)}",
+            "description": oi.description,
+            "is_confidential": oi.is_confidential,
+        })
 
     return {
         "meeting_id": meeting_id,
@@ -255,6 +265,10 @@ def compose_period_digest(
             tier = tiers.get(c.test_id, "full")
             public_candidate = project_to_institutional(c) if tier == "public" else None
             candidates.append({
+                # Stable citation anchor for the Renderer digest mode
+                # (RENDERER_PROTOCOL.md dimension 8) — unique within a period
+                # digest since it's meeting-qualified, unlike test_id alone.
+                "claim_id": f"{m.id}:{c.test_id}",
                 "meeting_id": m.id,
                 "meeting_date": m.meeting_date.isoformat(),
                 "body_class": body_class,

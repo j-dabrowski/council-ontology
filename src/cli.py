@@ -3711,17 +3711,18 @@ def main() -> None:
     )
     p_reply.set_defaults(func=cmd_reply_packets)
 
-    # render (S10: Renderer — real `claude -p` session, two modes)
+    # render (S10: Renderer — real `claude -p` session, three modes)
     p_render = sub.add_parser(
         "render",
         help="S10: Renderer — plain_language mode (institutional product -> resident "
-             "summary) or synthesis mode (deep product -> cross-claim prose), over a "
-             "draft that has already cleared S7/S8 (docs/AGENT_DESIGN.md §2). Neither "
+             "summary), synthesis mode (deep product -> cross-claim prose), or digest "
+             "mode (period product -> salience-ranked periodic summary), over a "
+             "draft that has already cleared S7/S8 (docs/AGENT_DESIGN.md §2). No "
              "mode is self-directing about which draft to render. Not yet wired into "
              "any workflow (no calibration data). A real `claude -p` session — "
              "docs/agent_prompts/renderer.txt",
     )
-    p_render.add_argument("mode", choices=["plain_language", "synthesis"])
+    p_render.add_argument("mode", choices=["plain_language", "synthesis", "digest"])
     p_render.add_argument("council", choices=list(COUNCILS))
     p_render.add_argument(
         "run_id",
