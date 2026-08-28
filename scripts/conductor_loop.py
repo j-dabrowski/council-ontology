@@ -108,16 +108,27 @@ def load_max_passes() -> int:
     return json.loads(CONFIG.read_text())["conductor_max_passes"]
 
 
-def run_draft(council: str) -> str:
+def run_draft(council: str, period_end: str | None = None, interval: str | None = None) -> str:
     """Runs `council draft <council>`, returns the new run_id.
 
     Mirrors draft.yml's own approach: glob for the one freshly-created
     run directory rather than parsing the command's stdout, so this has
     no dependency on log formatting.
+
+    `period_end`/`interval`, when given, are passed straight through to
+    `council draft`'s own same-named flags (src/cli.py) — every re-draft in
+    the loop then targets the same historical period consistently, rather
+    than only the first draft doing so and every later pass silently
+    reverting to "today" (`council draft`'s own default).
     """
+    cmd = ["council", "draft", council]
+    if period_end:
+        cmd += ["--period-end", period_end]
+    if interval:
+        cmd += ["--interval", interval]
     before = {p.name for p in (DATA_DRAFT / council).glob("*")} if (DATA_DRAFT / council).exists() else set()
-    print(f"\n>>> council draft {council}")
-    subprocess.run(["council", "draft", council], check=True, cwd=ROOT)
+    print(f"\n>>> {' '.join(cmd)}")
+    subprocess.run(cmd, check=True, cwd=ROOT)
     after = {p.name for p in (DATA_DRAFT / council).glob("*")}
     new_dirs = after - before
     if len(new_dirs) != 1:
@@ -266,14 +277,19 @@ def run_fixer(track: str, council: str, run_id: str, pass_num: int) -> None:
     subprocess.run(["council", "fixer", track, council, run_id], check=True, cwd=ROOT)
 
 
-def run_conductor_loop(council: str, max_passes: int, dry_run: bool) -> int:
+def run_conductor_loop(
+    council: str, max_passes: int, dry_run: bool,
+    period_end: str | None = None, interval: str | None = None,
+) -> int:
     if dry_run:
         print(f"[DRY RUN] Would run the loop for {council!r}, up to {max_passes} passes.")
+        if period_end or interval:
+            print(f"Every draft would target period_end={period_end!r} interval={interval!r}.")
         print("Would never call `council publish` at any point.")
         return 0
 
     for pass_num in range(1, max_passes + 1):
-        run_id = run_draft(council)
+        run_id = run_draft(council, period_end=period_end, interval=interval)
         draft_dir = DATA_DRAFT / council / run_id
 
         run_editor(council, run_id, pass_num)
@@ -368,12 +384,25 @@ def main() -> None:
         help="override conductor_max_passes from config/agent_switches.json",
     )
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument(
+        "--period-end", default=None,
+        help="YYYY-MM-DD, passed through to every `council draft` re-draft in the "
+             "loop — targets a historical period consistently across passes instead "
+             "of only the first draft doing so",
+    )
+    parser.add_argument(
+        "--interval", default=None, choices=["meeting", "week", "fortnight", "month"],
+        help="passed through to every `council draft` re-draft in the loop",
+    )
     args = parser.parse_args()
 
     max_passes = args.max_passes if args.max_passes is not None else load_max_passes()
 
     try:
-        sys.exit(run_conductor_loop(args.council, max_passes, args.dry_run))
+        sys.exit(run_conductor_loop(
+            args.council, max_passes, args.dry_run,
+            period_end=args.period_end, interval=args.interval,
+        ))
     except subprocess.CalledProcessError as exc:
         print(f"\nA step in the loop failed (exit {exc.returncode}): {exc.cmd}", file=sys.stderr)
         sys.exit(2)

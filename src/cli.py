@@ -2797,13 +2797,24 @@ def cmd_draft(args) -> None:
     import hashlib
     import json as _json
     from dataclasses import asdict as _asdict
-    from datetime import datetime, timezone
+    from datetime import date as _date, datetime, timezone
 
     key = args.council
     if key not in COUNCILS:
         console.print(f"[red]Unknown council: {key}[/red]")
         sys.exit(1)
     short_name = COUNCILS[key]["short_name"]
+
+    # Validated up front, same discipline as `council digest` — a malformed
+    # --period-end is a user-input error (fail fast, sys.exit), not a
+    # "digest unavailable" condition to swallow into a skip message below.
+    digest_period_end = datetime.now(timezone.utc).date()
+    if args.period_end:
+        try:
+            digest_period_end = _date.fromisoformat(args.period_end)
+        except ValueError:
+            console.print(f"[red]--period-end must be YYYY-MM-DD, got {args.period_end!r}[/red]")
+            sys.exit(1)
 
     run_id = f"draft_{datetime.now(timezone.utc):%Y%m%d_%H%M%S}"
     output_dir = Path("data/draft") / key / run_id
@@ -2915,10 +2926,11 @@ def cmd_draft(args) -> None:
         from src.analysis.meeting_baselines import load_meeting_baselines
 
         digest_policy = _json_digest.loads((Path("config") / "digest_policy.json").read_text())
+        digest_interval = args.interval or digest_policy["interval"]
         baselines = load_meeting_baselines(Path("data") / f"{key}_meeting_baselines.json")
         period_digest = compose_period_digest(
-            session, council_id, digest_policy["interval"],
-            datetime.now(timezone.utc).date(), baselines, digest_policy, min_n=_load_min_n_digest(),
+            session, council_id, digest_interval,
+            digest_period_end, baselines, digest_policy, min_n=_load_min_n_digest(),
         )
     except FileNotFoundError as exc:
         period_digest_skip_reason = str(exc)
@@ -4173,6 +4185,18 @@ def main() -> None:
              "(investigator + defamation-auditor gate before publish)",
     )
     p_draft.add_argument("council", choices=list(COUNCILS))
+    p_draft.add_argument(
+        "--interval", choices=["meeting", "week", "fortnight", "month"],
+        help="overrides config/digest_policy.json's configured interval for this "
+             "draft's automatic local/period_digest.json",
+    )
+    p_draft.add_argument(
+        "--period-end", dest="period_end",
+        help="YYYY-MM-DD; overrides 'today' as the automatic period digest's end "
+             "date — same override `council digest` already takes, for targeting a "
+             "historical period (e.g. testing Renderer/Editor against real content "
+             "instead of the current, possibly-quiet, week)",
+    )
     p_draft.set_defaults(func=cmd_draft)
 
     # meeting-digest (review artifact — docs/frontend/PRODUCT_ROADMAP.md F2,
@@ -4228,6 +4252,16 @@ def main() -> None:
         "--dry-run", action="store_true", dest="dry_run",
         help="print the plan and exit — no draft, no `claude` calls, no cost",
     )
+    p_loop.add_argument(
+        "--interval", choices=["meeting", "week", "fortnight", "month"],
+        help="passed through to every `council draft` re-draft in the loop, so the "
+             "whole chain targets the same period consistently across passes",
+    )
+    p_loop.add_argument(
+        "--period-end", dest="period_end",
+        help="YYYY-MM-DD, passed through to every `council draft` re-draft in the "
+             "loop — same override `council draft`/`council digest` already take",
+    )
 
     def _cmd_loop(a):
         import subprocess as _subprocess
@@ -4236,7 +4270,10 @@ def main() -> None:
 
         max_passes = a.max_passes if a.max_passes is not None else load_max_passes()
         try:
-            sys.exit(run_conductor_loop(a.council, max_passes, a.dry_run))
+            sys.exit(run_conductor_loop(
+                a.council, max_passes, a.dry_run,
+                period_end=a.period_end, interval=a.interval,
+            ))
         except _subprocess.CalledProcessError as exc:
             console.print(f"[red]A step in the loop failed (exit {exc.returncode}): {exc.cmd}[/red]")
             sys.exit(2)
