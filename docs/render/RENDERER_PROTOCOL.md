@@ -17,17 +17,22 @@ salience/tier pipeline digest mode's input is built from).
 
 ---
 
-## Status: v1.1, untested
+## Status: v1.2 — digest mode has real calibration data; plain-language and synthesis do not
 
-No mode has run yet. There is no calibration data — treat every
-threshold below as a starting point to be revised after the first real
-run, not a settled benchmark. Unlike every risk-editorial role in this
-pipeline (Editor, Fixer), Renderer's failure mode is never a defamation
-exposure — its input is already cleared before it runs (digest mode is
-the partial exception — see dimension 11). Its failure mode is
-**drift**: prose that reads well but no longer says exactly what its
-source claim said. That's the thing a human checks first on the first real
-run, not tone or readability.
+Plain-language and synthesis mode have never run — treat their thresholds
+as a starting point to be revised after their own first real runs, not a
+settled benchmark. Digest mode ran for real twice on 2026-08-28/31 (see
+"Calibration data" below) and cleared its benchmark on the second run, with
+one open judgment-call question noted, not a failure. Unlike every
+risk-editorial role in this pipeline (Editor, Fixer), Renderer's failure
+mode is never a defamation exposure — its input is already cleared before
+it runs (digest mode is the partial exception — see dimension 11). Its
+failure mode is **drift**: prose that reads well but no longer says
+exactly what its source claim said. That's the thing a human checks first
+on a first real run, not tone or readability — and on both real digest
+runs so far, fidelity held; the one real defect caught traced back to the
+*scripted* layer's own data, not to anything Renderer added or dropped in
+translation.
 
 ## Benchmark
 
@@ -116,8 +121,78 @@ Specific things to watch for on the first runs:
   meeting in it is real and content-bearing) — construct one manually the
   first time this runs.
 
+## Calibration data
+
+**2026-08-28/31 — digest mode's first two real runs, cambridge, `week`
+digest ending 2026-05-19 (meeting 258, Policy and Legislation Committee —
+the committee case in the benchmark corpus, not yet 271/245/184).** Not
+yet a run of the full six-meeting benchmark corpus — one meeting, twice,
+either side of a real bug fix. Full chain both times: `council draft` →
+`council render digest` → `council editor`.
+
+- **Run 1** (`draft_20260828_094239`): the pool's one qualifying candidate
+  (`transparency.confidential_topics`) had `digest_floor=1.0` from a real
+  data bug — `_t_confidential_topics_meeting` was counting a standing
+  "Confidential Reports – Nil" placeholder heading as a real closed item
+  (`other_items` id 12127). Digest mode rendered it faithfully: one
+  highlight, correctly citing `claim_id 258:transparency.confidential_topics`,
+  correctly sourced from the `public` field, correctly within the pool's
+  own bounds. **Editor caught the fabrication Renderer had no way to
+  catch** — BLOCKING, criterion `digest-fidelity`, tracing the claim past
+  its `claim_id` to the underlying `other_items` source quote ("7
+  CONFIDENTIAL REPORTS / Nil.") and finding it said the opposite of what
+  the rendered sentence claimed. This is a real, useful data point on what
+  `digest-fidelity` actually catches in practice: not just "does this
+  sentence cite a real id" (it did), but, followed one hop further, "is
+  what that id asserts actually true" — closer to dimension 1's ordinary
+  "spot-check the arithmetic, don't just trust the prose" discipline
+  applied to the period-claim surface than to citation-existence alone.
+  Worth folding that phrasing into `digest_mode.txt`'s check 4 explicitly
+  next time it's revised, though nothing about this run says Renderer's
+  own behavior needs to change — it did exactly what it was supposed to
+  with the input it was given.
+- **Fix, in between**: `pipeline`-track Fixer (real run) + one directly-made
+  fix closed the bug in all three places it existed
+  (`_t_confidential_topics`/`_t_confidential_topics_meeting`,
+  `transparency_by_year()`, `digest.py`'s `meeting_inventory()`) —
+  see `be978b6`.
+- **Run 2** (`draft_20260831_053445`), same period, post-fix: every
+  candidate's salience correctly dropped to 0.0 (below `min_salience`), so
+  `highlights` was correctly empty — `quiet: false` (a real meeting
+  happened) but zero highlights, a case the benchmark corpus doesn't
+  otherwise exercise (184 is `quiet: true`; this is "real meeting, nothing
+  cleared the bar"). Editor: **PASS**, 0 blocking. Renderer's own report
+  flagged a genuine open judgment call worth a human look: rather than
+  ship an empty digest, it wrote a paragraph grounding the meeting's real
+  content (17 parking-law submissions filed as correspondence, invisible
+  to `engagement.participation`'s own zero) without treating it as a
+  "highlight" — dimensions 8/9 (traceability, routine suppression) both
+  held (every fact still cited a real `item_id`, nothing crossed the
+  `min_salience` line into the highlighted band), but `digest_mode.txt`
+  has no explicit instruction either permitting or forbidding this move
+  for a non-quiet, zero-highlight period. Not a failure — the self-check
+  passed and Editor found nothing wrong with it — but genuinely untested
+  territory the mode file should probably say something about explicitly,
+  once a second real zero-highlight period confirms this is the right
+  shape and not a one-off judgment call.
+- **What this run does and doesn't establish**: fidelity held on both
+  passes (dimensions 1–5, 8, 9 all clean); dimensions 10 (body-appropriate
+  baselines) and 11 (no individual-unit claim in the public band) were
+  never actually stressed — this period covered exactly one meeting of one
+  body class, so there was nothing to compare across bodies, and no
+  individual-unit claim was in the candidate pool to begin with (meeting
+  258 has none). Meetings 271 and 245 (real named-individual claims in the
+  raw data) are still the ones that would actually test dimension 11 for
+  real; not run yet.
+
 ## Changelog
 
+- v1.2 (2026-08-31) — First real calibration data for digest mode (two
+  runs, cambridge/week/2026-05-19/meeting 258 — see "Calibration data"
+  above); plain-language and synthesis remain unrun. No dimension
+  threshold changed as a result — both runs passed on their own terms,
+  with one open (not failing) judgment-call question noted for a future
+  `digest_mode.txt` revision.
 - v1.1 (2026-08-27) — digest mode: dimensions 8–11 (two hard gates), the
   six-meeting benchmark corpus, alongside `Renderer_prompt.txt` v1.1 and
   `digest_mode.txt` (new). No calibration data for any mode yet.

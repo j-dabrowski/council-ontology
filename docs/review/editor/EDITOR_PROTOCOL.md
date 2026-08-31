@@ -20,11 +20,17 @@ workflow" (where this stage sits in the larger pipeline).
 
 ## Status: Editor is v0.8; real chains so far ran pre-split, against v0.3
 
-Dimension 9 (period-claim discipline, added 2026-08-27) has zero
-calibration data — no digest has ever been rendered, let alone reviewed.
-Treat it exactly as dimension 8 was treated at its own introduction:
-a starting judgment to be revised after the first real run against
-`local/digest_summary.md`, not a settled check.
+Dimension 9 (period-claim discipline, added 2026-08-27) got its first real
+data on 2026-08-28/31 — see "Calibration data" below. Both real passes
+came back clean on the dimension-9-specific checks (no jigsaw
+identification or body-mismatch risk found, correctly, since neither
+condition existed in that period's data); the one real catch traced back
+to Editor's ordinary step-1 accuracy discipline applied to the digest
+surface, not to a period-claim-specific failure mode. Two real digest
+passes is not enough to call dimension 9 calibrated — treat it as
+promising, not settled, until it's exercised against a period that
+actually contains a small-body or named-individual claim (meetings 271/245
+in `RENDERER_PROTOCOL.md`'s benchmark corpus, not run yet).
 
 Real Conductor-loop chains ran against Editor v0.3 in August 2026 (see the
 open-questions entries below, each citing a real
@@ -205,6 +211,53 @@ accuracy. A `human`-track flag is a third possible tagging error worth
 checking specifically: did it actually need a human, or was it routable to
 an ordinary track the editor missed?
 
+## Calibration data
+
+**2026-08-28/31 — the first two real chains to include a rendered digest
+in scope** (v0.8's period-claim review), cambridge, `week` digest ending
+2026-05-19, meeting 258 (Policy and Legislation Committee):
+
+- **Pass 1** (`draft_20260828_094239`) — **FAIL, 1 BLOCKING + 1 ADVISORY**,
+  both `criterion: digest-fidelity`, `tracks: [pipeline]`. The blocking
+  flag: the digest's one highlight claimed an item was closed to the
+  public; Editor traced the claim's `claim_id` back through
+  `local/period_digest.json` to its source (`other_items` id 12127) and
+  found the extracted quote — "7 CONFIDENTIAL REPORTS / Nil." — said the
+  opposite. Root cause: `_t_confidential_topics_meeting`
+  (`src/analysis/tests.py`) was counting a standing "Nil" placeholder
+  heading as a real closed item. The advisory flag caught the same bug's
+  corpus-wide shadow (~4 of 533 rows in the whole-corpus
+  `transparency.confidential_topics` test). **What this shows about
+  dimension 9 in practice**: the real catch didn't come from the two
+  digest-specific risk classes the dimension was written for (jigsaw
+  identification, body-mismatch) — this meeting had neither a
+  named-individual claim nor a cross-body comparison to catch. It came
+  from applying the *ordinary* step-1 "spot-check the arithmetic against
+  the source, don't just trust the prose" discipline to the digest surface
+  for the first time — `digest-fidelity` as written (`Editor_prompt.txt`'s
+  "Period-claim review" step 4) already covers this ("does every sentence
+  trace to a real id"), but the real value came from following the trace
+  one hop further, into the id's own evidentiary source, not just
+  confirming the id exists. Worth stating that explicitly in the next
+  revision of that step rather than leaving it implicit.
+  `pipeline`-track Fixer (real run) + a direct follow-up fix closed the
+  bug in all three places it existed — see `RENDERER_PROTOCOL.md`'s
+  matching calibration entry and commit `be978b6`.
+- **Pass 2** (`draft_20260831_053445`), same period, post-fix — **PASS, 0
+  blocking, 1 advisory** (`overclaim-language`, unrelated to the digest —
+  see the resolved "Superlative single-name call-outs" entry below).
+  Nothing in the digest itself was flagged: zero highlights this run
+  (every candidate's salience correctly dropped once the fabricated event
+  was gone), and Editor's own report confirmed clean tracing, no jigsaw
+  risk, no blended-baseline issue — the first clean run of the full
+  Renderer → Editor chain for a real period digest.
+- **What's still unverified**: both passes reviewed a period digest with
+  no named-individual claim in the candidate pool and only one body class
+  in the window — dimension 9's actual hard-gate territory (jigsaw
+  identification, body-mismatch) has not yet been exercised against real
+  data that could trigger it. Meetings 271/245 (`RENDERER_PROTOCOL.md`'s
+  benchmark corpus) are the next real test of that, not yet run.
+
 ## Open questions
 
 - **Should jigsaw identification be a hard gate?** — raised 2026-08-27
@@ -240,6 +293,21 @@ an ordinary track the editor missed?
   claim happens to clear. Not retroactively re-run against the 2026-08-22
   mayoral callout specifically — that's a candidate for the next real
   Editor run, not something to hand-verify here.
+
+  **Actually re-run 2026-08-31** (`draft_20260831_053445/defamation_review_1.md`,
+  pass 1, PASS/0 blocking — see "Calibration data" below). The check held,
+  and found the mirror-image case: not the original "least contested"
+  callout this entry names, but the *same panel's* "most contested"
+  claim (Marlene Anderton, 25.6%, n=10) — near-tied with Keri Shannon
+  (23.8%, n=98) on a base ten times larger. `MayoralAgendaPanel.tsx`'s
+  existing tie-caveat is grammatically scoped only to the least-contested
+  side, so this exact superlative-tie shape was still shippable on the
+  claim the 2026-08-23 fix didn't happen to word its caveat around. Filed
+  ADVISORY (not blocking — not compliance-adjacent, already gated behind a
+  click, `n` clears the small-n floor), `criterion: overclaim-language`.
+  Confirms the check mechanism works on live data; the concrete follow-up
+  is widening `MayoralAgendaPanel.tsx`'s caveat to cover both superlative
+  directions, not a prompt or protocol change.
 
 - **`<n>` numbering: per run-directory or per-chain?** — flagged 2026-08-22
   (Editor pass 2's own review, `data/draft/cambridge/draft_20260822_152453/defamation_review_1.md`,
@@ -310,6 +378,14 @@ the editor's flags against a human's independent read of the same draft.
 
 ## Changelog
 
+- v0.6 (2026-08-31) — First real calibration data for dimension 9 and for
+  a Conductor chain including a rendered digest (two passes, cambridge/
+  week/2026-05-19/meeting 258 — see "Calibration data" above); resolved
+  the "Superlative single-name call-outs" open question's outstanding
+  "not retroactively re-run" note with the actual re-run result. No
+  dimension definition or threshold changed — the real catch traced to
+  existing ordinary discipline (step 1's accuracy check) applied to the
+  digest surface, not to a gap in dimension 9's own definition.
 - v0.5 (2026-08-27) — Dimension 9, period-claim discipline
   (`Editor_prompt.txt` v0.8's "Period-claim review" section, active only
   when `local/digest_summary.md` exists): jigsaw identification,
