@@ -184,15 +184,24 @@ def _content_bearing_minutes_meetings_in_window(
     return q.order_by(Meeting.meeting_date.desc()).all()
 
 
-def _most_recent_content_bearing_meeting(session: Session, council_id: int) -> Meeting | None:
+def _most_recent_content_bearing_meeting(
+    session: Session, council_id: int, as_of: date | None = None,
+) -> Meeting | None:
+    """The single latest content-bearing minutes meeting, optionally cut off
+    at `as_of` (inclusive) — without this, `interval == "meeting"` and the
+    quiet-period fallback both silently ignored `period_end` and always
+    returned the corpus's true latest meeting regardless of what period was
+    asked for, making `--interval meeting --period-end <historical date>`
+    impossible to use for targeting one specific past meeting (found while
+    trying to do exactly that against meetings 271/245, 2026-08-31)."""
+    q = session.query(Meeting).filter(
+        Meeting.council_id == council_id, Meeting.document_type == "minutes",
+    )
+    if as_of is not None:
+        q = q.filter(Meeting.meeting_date <= as_of)
     return next(
         (
-            m for m in (
-                session.query(Meeting)
-                .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
-                .order_by(Meeting.meeting_date.desc())
-                .all()
-            )
+            m for m in q.order_by(Meeting.meeting_date.desc()).all()
             if session.query(Motion).filter(Motion.meeting_id == m.id).count() > 0
         ),
         None,
@@ -220,7 +229,7 @@ def compose_period_digest(
     }
 
     if interval == "meeting":
-        latest = _most_recent_content_bearing_meeting(session, council_id)
+        latest = _most_recent_content_bearing_meeting(session, council_id, as_of=period_end)
         meetings = [latest] if latest else []
     else:
         window_start = period_end - timedelta(days=_INTERVAL_DAYS[interval])
@@ -234,7 +243,7 @@ def compose_period_digest(
                 f"empty_period_behaviour={policy.get('empty_period_behaviour')!r} not "
                 "supported — only 'emit_quiet_record' is implemented"
             )
-        most_recent = _most_recent_content_bearing_meeting(session, council_id)
+        most_recent = _most_recent_content_bearing_meeting(session, council_id, as_of=period_end)
         return {
             "council_id": council_id,
             "interval": interval,

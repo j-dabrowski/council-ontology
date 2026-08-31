@@ -242,6 +242,40 @@ def test_compose_period_digest_empty_window_emits_quiet_record(session):
     assert result["candidates"] == []
 
 
+def test_compose_period_digest_quiet_record_respects_period_end(session):
+    # Regression: _most_recent_content_bearing_meeting() used to have no
+    # date filter at all, so the quiet-record fallback always named the
+    # corpus's true latest meeting regardless of period_end — a historical
+    # digest for an empty week would wrongly point at a meeting from months
+    # after that week. Found 2026-08-31 trying to target a specific past
+    # meeting via --interval meeting --period-end.
+    council_id = _council(session)
+    old_meeting_id = _meeting(session, council_id, date(2025, 1, 1))
+    _motion(session, old_meeting_id)
+    future_meeting_id = _meeting(session, council_id, date(2026, 12, 1))
+    _motion(session, future_meeting_id)
+
+    result = compose_period_digest(session, council_id, "week", date(2025, 6, 1),
+                                   _baselines(), _DEFAULT_POLICY, min_n=3)
+    assert result["quiet"] is True
+    assert result["most_recent_meeting"]["meeting_id"] == old_meeting_id
+
+
+def test_compose_period_digest_meeting_interval_respects_period_end(session):
+    # Regression, same bug: interval="meeting" ignored period_end entirely
+    # and always grabbed the corpus's true latest meeting.
+    council_id = _council(session)
+    target_meeting_id = _meeting(session, council_id, date(2026, 3, 24))
+    _motion(session, target_meeting_id)
+    later_meeting_id = _meeting(session, council_id, date(2026, 5, 12))
+    _motion(session, later_meeting_id)
+
+    result = compose_period_digest(session, council_id, "meeting", date(2026, 3, 24),
+                                   _baselines(), _DEFAULT_POLICY, min_n=3)
+    assert result["meetings_covered"][0]["meeting_id"] == target_meeting_id
+    assert len(result["meetings_covered"]) == 1
+
+
 def test_compose_period_digest_floor_triggered_claim_becomes_a_highlight(session):
     council_id = _council(session)
     meeting_id = _meeting(session, council_id, date(2026, 5, 12))
