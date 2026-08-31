@@ -9,7 +9,7 @@ export function CouncilHeader() {
   return (
     <div className="home-council-header">
       <h1 className="site-title">
-        City of{" "}
+        Town of{" "}
         <span className="council-select-wrap">
           <select
             className="council-select"
