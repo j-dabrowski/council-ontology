@@ -396,6 +396,51 @@ def _t_delegate_body_conflict(session, council_id, pc) -> TestResult:
     )
 
 
+def _same_body_meeting_types(session, meeting_id: int) -> list[str]:
+    """Every `meeting_type` sharing this meeting's body class.
+
+    A meeting-scoped test that quotes a "corpus-wide" baseline has to pool
+    that baseline from comparable meetings only — a committee's confidential
+    share isn't measured against full council's. The digest's salience layer
+    has always keyed its baselines on `(test_id, body_class)`
+    (`src/analysis/meeting_baselines.py`); until 2026-08-31 the baselines
+    rendered into the digest's own prose, one line away, pooled every minutes
+    meeting regardless of body. Cambridge's corpus is ~90% full_council, so a
+    full-council meeting barely moved — but every committee and electors
+    meeting was compared against a baseline that was mostly not its own kind.
+
+    Falls back to this meeting's own `meeting_type` alone when the type isn't
+    in `config/meeting_bodies.json`, matching `UNKNOWN_BODY_CLASS`'s
+    degrade-thin-rather-than-crash rule.
+    """
+    from src.analysis.meeting_baselines import body_class_of, load_meeting_bodies
+
+    m = session.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if m is None or not m.meeting_type:
+        return []
+    bodies = load_meeting_bodies()
+    cls = body_class_of(m.meeting_type, bodies)
+    peers = [mt for mt, c in bodies.items() if c == cls]
+    return peers or [m.meeting_type]
+
+
+def _comparable_label(session, meeting_id: int, types: list[str]) -> str:
+    """"across N comparable meetings" — the peer-pool size, stated.
+
+    A body-matched baseline is the comparable one but can be thin (Cambridge's
+    audit-committee class is 5 meetings). Naming the pool size lets a reader
+    calibrate, instead of reading a 5-meeting rate with the authority the old
+    14,000-item "corpus-wide" phrasing carried.
+    """
+    n = (session.query(Meeting)
+         .filter(Meeting.council_id == (session.query(Meeting.council_id)
+                                        .filter(Meeting.id == meeting_id).scalar()),
+                 Meeting.document_type == "minutes",
+                 Meeting.meeting_type.in_(types))
+         .count()) if types else 0
+    return f"across {n} comparable meeting{'s' if n != 1 else ''}"
+
+
 def _t_transparency(session, council_id, pc, meeting_id=None) -> TestResult:
     if meeting_id is not None:
         return _t_transparency_meeting(session, council_id, meeting_id)
@@ -424,8 +469,10 @@ def _t_transparency_meeting(session, council_id, meeting_id) -> TestResult:
     (never re-derived from the single meeting — see the module note by
     `transparency_by_year`'s meeting_id param). Institutional: a closed-item
     count names no one."""
+    body_types = _same_body_meeting_types(session, meeting_id)
+    comparable = _comparable_label(session, meeting_id, body_types)
     this = transparency_by_year(session, council_id, meeting_id=meeting_id)
-    corpus = transparency_by_year(session, council_id)
+    corpus = transparency_by_year(session, council_id, meeting_types=body_types)
     total = sum(y.total for y in this.years)
     conf = sum(y.confidential for y in this.years)
     pct = round(100 * conf / total, 1) if total else 0.0
@@ -441,8 +488,8 @@ def _t_transparency_meeting(session, council_id, meeting_id) -> TestResult:
         headline=f"{conf} of {total} items closed to the public this meeting ({pct}%)" if total
                  else "No confidential-eligible items this meeting",
         verdict=f"{conf} of {total} items were taken confidential this meeting, vs a {corpus_pct}% "
-                f"corpus-wide rate." if total else "No confidential-eligible items this meeting.",
-        n=total, base_rate=f"{corpus_pct}% corpus-wide", era=era, detail_panel="transparency",
+                f"rate {comparable}." if total else "No confidential-eligible items this meeting.",
+        n=total, base_rate=f"{corpus_pct}% {comparable}", era=era, detail_panel="transparency",
         scope=[SCOPE_SINGLE_MEETING],
         stat={"value": conf, "denominator": total, "unit": "count"},
         digest_floor=1.0 if conf >= 1 else 0.0,
@@ -1675,12 +1722,15 @@ def _t_confidential_tender_size_meeting(session, council_id, meeting_id) -> Test
         .filter(Meeting.id == meeting_id, Tender.amount.isnot(None), Tender.amount > 0).all()
     era = _meeting_label(session, meeting_id)
     conf = [a for a, ic in rows if ic]
-    corpus_open = [a for a, ic, _d in
-                   session.query(Tender.amount, Tender.is_confidential, Meeting.meeting_date)
-                   .join(Meeting, Tender.meeting_id == Meeting.id)
-                   .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
-                           Tender.amount.isnot(None), Tender.amount > 0).all()
-                   if not ic]
+    body_types = _same_body_meeting_types(session, meeting_id)
+    comparable = _comparable_label(session, meeting_id, body_types)
+    corpus_q = (session.query(Tender.amount, Tender.is_confidential, Meeting.meeting_date)
+                .join(Meeting, Tender.meeting_id == Meeting.id)
+                .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                        Tender.amount.isnot(None), Tender.amount > 0))
+    if body_types:
+        corpus_q = corpus_q.filter(Meeting.meeting_type.in_(body_types))
+    corpus_open = [a for a, ic, _d in corpus_q.all() if not ic]
     corpus_med = round(statistics.median(corpus_open)) if corpus_open else None
     if not conf:
         return TestResult(
@@ -1700,8 +1750,9 @@ def _t_confidential_tender_size_meeting(session, council_id, meeting_id) -> Test
         valence=NEUTRAL, grade=G_OBSERVATION,
         headline=f"{len(conf)} confidential tender(s) this meeting, ${max(conf):,.0f} largest",
         verdict=f"{len(conf)} confidential tender(s) this meeting (largest ${max(conf):,.0f})"
-                + (f", vs a ${corpus_med:,} corpus-wide open-tender median." if corpus_med else "."),
-        n=len(conf), base_rate=f"${corpus_med:,} corpus-wide open-tender median" if corpus_med else None,
+                + (f", vs a ${corpus_med:,} open-tender median {comparable}." if corpus_med else "."),
+        n=len(conf),
+        base_rate=f"${corpus_med:,} open-tender median, {comparable}" if corpus_med else None,
         era=era, detail_panel="confidential-tender-size", scope=[SCOPE_SINGLE_MEETING],
         stat={"value": len(conf), "denominator": None, "unit": "count"}, digest_floor=1.0,
     )
@@ -1877,8 +1928,10 @@ def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> Test
 def _t_question_responsiveness_meeting(session, council_id, meeting_id) -> TestResult:
     """This meeting's own answered-vs-on-notice split, next to the
     pre-Inquiry corpus baseline (never re-derived from this one meeting)."""
+    body_types = _same_body_meeting_types(session, meeting_id)
+    comparable = _comparable_label(session, meeting_id, body_types)
     r = public_question_responsiveness(session, council_id, meeting_id=meeting_id)
-    corpus = public_question_responsiveness(session, council_id)
+    corpus = public_question_responsiveness(session, council_id, meeting_types=body_types)
     era = _meeting_label(session, meeting_id)
     total = r.answered + r.on_notice
     if total == 0:
@@ -1900,8 +1953,9 @@ def _t_question_responsiveness_meeting(session, council_id, meeting_id) -> TestR
         valence=NEUTRAL, grade=G_OBSERVATION,
         headline=f"{r.answered} of {total} public question(s) answered live, {r.on_notice} taken on notice this meeting",
         verdict=f"{r.answered} of {total} public question(s) answered live this meeting "
-                f"({on_notice_pct}% on notice), vs a {corpus.pre_pct}% pre-Inquiry corpus baseline.",
-        n=total, base_rate=f"{corpus.pre_pct}% pre-Inquiry corpus baseline", era=era,
+                f"({on_notice_pct}% on notice), vs a {corpus.pre_pct}% pre-Inquiry baseline "
+                f"{comparable}.",
+        n=total, base_rate=f"{corpus.pre_pct}% pre-Inquiry baseline, {comparable}", era=era,
         detail_panel="question-responsiveness", scope=[SCOPE_SINGLE_MEETING],
         stat={"value": r.on_notice, "denominator": total, "unit": "count"}, digest_floor=0.0,
     )

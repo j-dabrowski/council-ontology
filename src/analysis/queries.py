@@ -59,6 +59,27 @@ def _year_filters(stmt, meeting_model, from_year: int | None, to_year: int | Non
     return stmt
 
 
+def _meeting_type_clause(meeting_types: list[str] | None, alias: str,
+                         params: dict) -> str:
+    """An `AND <alias>.meeting_type IN (...)` fragment plus its bound params,
+    or "" when unfiltered.
+
+    Lets a meeting-scoped test compare a meeting against a baseline pooled
+    from its OWN body class only. Without it a committee meeting's numbers
+    were measured against a baseline ~90% composed of full-council meetings
+    — the same non-comparability the digest's salience layer already avoids
+    by keying its baselines on `(test_id, body_class)`.
+    """
+    if not meeting_types:
+        return ""
+    keys = []
+    for i, mt in enumerate(meeting_types):
+        k = f"bmt{i}"
+        params[k] = mt
+        keys.append(f":{k}")
+    return f" AND {alias}.meeting_type IN ({', '.join(keys)})"
+
+
 def _year_filter_query(query, meeting_model, from_year: int | None, to_year: int | None,
                        meeting_id: int | None = None):
     """Apply optional from_year / to_year (or an exact meeting_id) filters to a
@@ -2954,7 +2975,8 @@ class TransparencyStats:
 
 
 def transparency_by_year(session: Session, council_id: int,
-                         meeting_id: int | None = None) -> TransparencyStats:
+                         meeting_id: int | None = None,
+                         meeting_types: list[str] | None = None) -> TransparencyStats:
     """
     Share of decided council items recorded as confidential, per year.
 
@@ -2994,29 +3016,31 @@ def transparency_by_year(session: Session, council_id: int,
     """
     from sqlalchemy import text as sql_text
 
+    params: dict = {"cid": council_id, "mid": meeting_id}
+    bt = _meeting_type_clause(meeting_types, "m", params)
     sql = sql_text(
-        """
+        f"""
         WITH allitems AS (
             SELECT m.meeting_date d, t.is_confidential c, 'tenders' AS cat
               FROM tenders t JOIN meetings m ON t.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
-               AND (:mid IS NULL OR m.id = :mid)
+               AND (:mid IS NULL OR m.id = :mid){bt}
             UNION ALL
             SELECT m.meeting_date, o.is_confidential, 'other'
               FROM other_items o JOIN meetings m ON o.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
-               AND (:mid IS NULL OR m.id = :mid)
+               AND (:mid IS NULL OR m.id = :mid){bt}
                AND o.description NOT LIKE 'Confidential Report%- Nil%'
             UNION ALL
             SELECT m.meeting_date, dd.is_confidential, 'delegated'
               FROM delegated_decisions dd JOIN meetings m ON dd.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
-               AND (:mid IS NULL OR m.id = :mid)
+               AND (:mid IS NULL OR m.id = :mid){bt}
             UNION ALL
             SELECT m.meeting_date, b.is_confidential, 'budget'
               FROM budget_items b JOIN meetings m ON b.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
-               AND (:mid IS NULL OR m.id = :mid)
+               AND (:mid IS NULL OR m.id = :mid){bt}
         )
         SELECT CAST(substr(d, 1, 4) AS INTEGER) yr,
                cat,
@@ -3027,7 +3051,7 @@ def transparency_by_year(session: Session, council_id: int,
          GROUP BY yr, cat
         """
     )
-    rows = session.execute(sql, {"cid": council_id, "mid": meeting_id}).fetchall()
+    rows = session.execute(sql, params).fetchall()
 
     per_year: dict[int, list[int]] = defaultdict(lambda: [0, 0])  # [total, conf]
     cat_totals: dict[str, dict[str, int]] = defaultdict(lambda: {"total": 0, "confidential": 0})
@@ -3661,6 +3685,7 @@ def public_question_responsiveness(
     min_year_n: int = 15,
     cell_cap: int = 60,
     meeting_id: int | None = None,
+    meeting_types: list[str] | None = None,
 ) -> PQResponsivenessStats:
     """Are public questions answered in the meeting, or 'taken on notice'?
 
@@ -3673,7 +3698,9 @@ def public_question_responsiveness(
     """
     from sqlalchemy import text
 
-    rows = session.execute(text("""
+    params: dict = {"cid": council_id, "mid": meeting_id}
+    bt = _meeting_type_clause(meeting_types, "mt", params)
+    rows = session.execute(text(f"""
         SELECT pq.id AS pid,
                CAST(strftime('%Y', mt.meeting_date) AS INTEGER) AS yr,
                mt.meeting_date AS mdate,
@@ -3683,8 +3710,8 @@ def public_question_responsiveness(
         FROM public_questions pq
         JOIN meetings mt ON pq.meeting_id = mt.id
         WHERE mt.council_id = :cid AND mt.document_type = 'minutes'
-          AND (:mid IS NULL OR mt.id = :mid)
-    """), {"cid": council_id, "mid": meeting_id}).all()
+          AND (:mid IS NULL OR mt.id = :mid){bt}
+    """), params).all()
 
     # overall + era + year tallies
     era_ct: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0])  # [answered, on_notice, blank]
