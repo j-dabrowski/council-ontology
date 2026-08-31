@@ -775,7 +775,13 @@ def _t_tender_concentration_meeting(session, council_id, meeting_id) -> TestResu
         valence=NEUTRAL, grade=G_OBSERVATION,
         headline=f"{t.total_awards} tender(s) awarded this meeting, ${t.total_amount:,.0f} total",
         verdict=f"{t.total_awards} tender(s) awarded this meeting totalling ${t.total_amount:,.0f}"
-                + (f": {who}" if who else "") + (f" ({t.redacted_awards} confidential)" if t.redacted_awards else ""),
+                # "redacted", not "confidential": `redacted_awards` counts awards with no
+                # identifiable recipient, which is a different set from the `is_confidential`
+                # awards `transparency.confidential_tender_size` counts. Calling both
+                # "confidential" made the two tests read as contradicting each other in the
+                # same digest paragraph (meeting 245, 2026-08-31).
+                + (f": {who}" if who else "")
+                + (f" ({t.redacted_awards} with a redacted recipient)" if t.redacted_awards else ""),
         n=t.total_awards, era=era, detail_panel="tenders", scope=[SCOPE_SINGLE_MEETING],
         stat={"value": t.total_awards, "denominator": None, "unit": "count"}, digest_floor=1.0,
     )

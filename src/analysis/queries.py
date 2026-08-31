@@ -9,6 +9,7 @@ These functions operate at the boundary between the three ontology layers:
 
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -2001,6 +2002,27 @@ def conflict_recusal_stats(
 # ---------------------------------------------------------------------------
 
 
+def _is_redacted_recipient(name: str) -> bool:
+    """True when `awarded_to` is a de-identification placeholder rather than a
+    real supplier — 'Respondent 4', 'Tenderer 1', 'Contractor 1' and friends.
+
+    Minutes redact an unsuccessful-or-confidential recipient by substituting a
+    numbered role noun, and the noun varies by report author. Matching only
+    'respondent%' (as this did until 2026-08-31) let 'Tenderer N' and
+    'Contractor N' through into the contractor aggregation, where they were
+    counted as real firms — inflating `named_awards`/`distinct_named` and
+    putting a placeholder in the top-contractors list a digest reads from.
+    """
+    n = name.lower().strip()
+    return bool(_REDACTED_RECIPIENT_RE.match(n))
+
+
+_REDACTED_RECIPIENT_RE = re.compile(
+    r"^(respondent|tenderer|contractor|supplier|bidder|proponent|applicant|"
+    r"submitter|company|party|entity)\b[\s\-#:.]*\d*$"
+)
+
+
 def _normalise_contractor(name: str) -> str:
     """Collapse spelling/whitespace/suffix variants so 'R J Vincent' == 'RJ Vincent'."""
     n = name.lower().strip()
@@ -2043,7 +2065,7 @@ class TenderConcentration:
     total_amount: float
     named_awards: int
     named_amount: float
-    redacted_awards: int       # confidential "Respondent N" placeholders + unnamed
+    redacted_awards: int       # de-identified recipient placeholders + unnamed
     redacted_amount: float
     distinct_named: int
     top10_amount: float
@@ -2114,7 +2136,7 @@ def tender_concentration(
 
     total_amount = 0.0
     total_awards = 0
-    redacted_awards = 0       # confidential "Respondent N" or no named recipient
+    redacted_awards = 0       # de-identified placeholder or no named recipient
     redacted_amount = 0.0
     agg_amount: dict[str, float] = defaultdict(float)
     agg_count: dict[str, int] = defaultdict(int)
@@ -2128,7 +2150,7 @@ def tender_concentration(
         total_awards += 1
         name = (awarded_to or "").strip()
         key = _normalise_contractor(name) if name else ""
-        if not key or name.lower().startswith("respondent"):
+        if not key or _is_redacted_recipient(name):
             redacted_awards += 1
             redacted_amount += amount
             continue
@@ -2362,7 +2384,6 @@ def decider_supplier_conflict(
             Meeting.document_type == "minutes",
             Tender.awarded_to.isnot(None),
             func.trim(Tender.awarded_to) != "",
-            ~func.lower(Tender.awarded_to).like("respondent%"),
         )
     )
     aw_q = _year_filter_query(aw_q, Meeting, from_year, to_year, meeting_id=meeting_id)
@@ -2375,6 +2396,8 @@ def decider_supplier_conflict(
     named_rows: list[tuple[int, str, float]] = []
     for tid, awarded_to, amount, ref in aw_q.all():
         name = awarded_to.strip()
+        if _is_redacted_recipient(name):
+            continue  # a placeholder has no surname to collide with
         amt = float(amount or 0)
         ck = _normalise_contractor(name)
         rk = _normalise_tender_ref(ref)
