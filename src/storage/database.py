@@ -62,8 +62,15 @@ def get_session(engine: Engine | None = None) -> Generator[Session, None, None]:
 
 
 # ---------------------------------------------------------------------------
-# Seed: register the City of Cambridge as the first target council
+# Seed: register the Town of Cambridge as the first target council
 # ---------------------------------------------------------------------------
+
+# The LGA is the *Town* of Cambridge — its own minutes, its own website path
+# ("/About/Town-Council/") and the WA Electoral Commission all say Town. This
+# row was seeded "City of Cambridge" from the start (fixed 2026-08-31), and
+# because it is the council name every snapshot and rendered digest reads,
+# the wrong name reached public-facing output.
+CAMBRIDGE_NAME = "Town of Cambridge"
 
 
 def seed_cambridge(session: Session) -> None:
@@ -71,10 +78,18 @@ def seed_cambridge(session: Session) -> None:
 
     existing = session.query(Council).filter_by(short_name="Cambridge").first()
     if existing:
+        # Doubles as the migration for databases seeded before the fix: there
+        # is no migration framework here, and the corpus DB lives in GCS
+        # rather than in git, so correcting the constant alone would leave
+        # every existing database still serving the wrong name.
+        if existing.name != CAMBRIDGE_NAME:
+            print(f"Correcting council name: {existing.name!r} -> {CAMBRIDGE_NAME!r}")
+            existing.name = CAMBRIDGE_NAME
+            session.commit()
         return
 
     cambridge = Council(
-        name="City of Cambridge",
+        name=CAMBRIDGE_NAME,
         short_name="Cambridge",
         state="WA",
         website="https://www.cambridge.wa.gov.au",
@@ -84,4 +99,4 @@ def seed_cambridge(session: Session) -> None:
     )
     session.add(cambridge)
     session.commit()
-    print("Seeded: City of Cambridge")
+    print(f"Seeded: {CAMBRIDGE_NAME}")

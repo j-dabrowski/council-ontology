@@ -1,5 +1,5 @@
 """
-Scraper for the City of Cambridge (WA) council minutes.
+Scraper for the Town of Cambridge (WA) council minutes.
 
 Discovery strategy (confirmed 2026-04-14):
 
@@ -562,7 +562,7 @@ def _extract_minutes_pdf_url(html: str) -> str | None:
 
 class CambridgeScraper(BaseCouncilScraper):
     """
-    Discovers and downloads City of Cambridge council minutes PDFs.
+    Discovers and downloads Town of Cambridge council minutes PDFs.
 
     Sources:
       - Sitemap (1994–2021, comprehensive)

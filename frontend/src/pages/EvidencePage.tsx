@@ -66,7 +66,7 @@ export function EvidencePage() {
         <div className="static-section">
           <h3 className="static-h2">Primary source</h3>
           <p>
-            All data is derived from publicly available City of Cambridge council
+            All data is derived from publicly available Town of Cambridge council
             meeting minutes, published at{" "}
             <a
               href="https://www.cambridge.wa.gov.au/council/council-meetings"
@@ -83,7 +83,7 @@ export function EvidencePage() {
 
       <footer className="site-footer">
         <p>
-          Source: City of Cambridge council meeting minutes (public record) ·
+          Source: Town of Cambridge council meeting minutes (public record) ·
           Data extracted via Anthropic Claude ·{" "}
           <a
             href="https://www.cambridge.wa.gov.au/council/council-meetings"

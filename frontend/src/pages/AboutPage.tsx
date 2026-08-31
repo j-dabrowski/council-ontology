@@ -22,7 +22,7 @@ export function AboutPage() {
         </p>
         <p>
           The same battery runs on every council we analyse — so you can compare
-          City of Cambridge against City of Fremantle against City of Perth on
+          Town of Cambridge against City of Fremantle against City of Perth on
           identical criteria. A green result means the data actively supports
           good practice. A critical result means a pattern the evidence warrants
           explaining. Nothing asserts wrongdoing.
@@ -124,7 +124,7 @@ export function AboutPage() {
       <section className="static-section">
         <h2 className="static-h2">Coverage</h2>
         <p>
-          Currently live: <strong>City of Cambridge, Western Australia</strong>{" "}
+          Currently live: <strong>Town of Cambridge, Western Australia</strong>{" "}
           (1995–2026 · 537 documents · 30-year corpus).
         </p>
         <p>

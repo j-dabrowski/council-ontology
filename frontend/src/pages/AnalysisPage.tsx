@@ -45,7 +45,7 @@ export function AnalysisPage() {
 
       <footer className="site-footer">
         <p>
-          Source: City of Cambridge council meeting minutes (public record) ·
+          Source: Town of Cambridge council meeting minutes (public record) ·
           Data extracted via Anthropic Claude ·{" "}
           <a
             href="https://www.cambridge.wa.gov.au/council/council-meetings"

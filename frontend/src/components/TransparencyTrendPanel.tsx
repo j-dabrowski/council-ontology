@@ -152,7 +152,7 @@ export function TransparencyTrendPanel() {
         Pools four item types that carry a confidentiality flag — tenders, "other items", delegated
         decisions and budget items — across meeting minutes. After holding at 1–4% for two decades,
         the confidential share quadrupled to a {data.peak_pct}% peak in {data.peak_year}, coinciding
-        with the state-appointed Authorised Inquiry into the City of Cambridge. Years with fewer than
+        with the state-appointed Authorised Inquiry into the Town of Cambridge. Years with fewer than
         50 recorded items excluded as too small to read.
       </p>
       <p className="chart-note">

@@ -15,7 +15,7 @@ Everything below was checked directly against `data/council.db` and the codebase
 | Total councillors | **400** (current) | `SELECT COUNT(*) FROM councillors;` on live `data/council.db` |
 | Total councillors (stale) | 405 | `SELECT COUNT(*) FROM councillors;` on `data/council.db.bak-predupe-20260624` — this is the **pre-dedupe** figure. The "405" claim in the original draft came from this old backup, not the current DB. Use 400. |
 | document_type breakdown | minutes 506 / agenda 66 / addendum 4 / unknown 4 (sums to 580) | `SELECT document_type, COUNT(*) FROM meetings GROUP BY document_type ORDER BY 2 DESC;` |
-| council row | 1 council: "City of Cambridge" (Cambridge, WA) | `SELECT * FROM councils;` — single-council corpus, confirms this isn't multi-council yet |
+| council row | 1 council: "Town of Cambridge" (Cambridge, WA) | `SELECT * FROM councils;` — single-council corpus, confirms this isn't multi-council yet |
 
 ## 2. Provenance claim (entity → source quote coverage)
 
@@ -173,7 +173,7 @@ Checked 2026-07-19, prompted by a hiring-post draft using "98% in-sample / 84% o
 
 ## 7. Draft prose (built only from the verified numbers above)
 
-The pipeline has now worked through 580 documents from the City of Cambridge, spanning meetings from 1995 to 2026, and extracted 14,013 motions and 16,249 recorded votes involving 400 councillors. The payload is that 98 percent of the roughly 45,000 entities pulled out of those documents - motions, planning applications, public questions, tenders, budget items, and the rest - carry at least one verbatim quote back to the source PDF, tied to a specific character offset in the original text. Nothing in the dataset floats free of its source.
+The pipeline has now worked through 580 documents from the Town of Cambridge, spanning meetings from 1995 to 2026, and extracted 14,013 motions and 16,249 recorded votes involving 400 councillors. The payload is that 98 percent of the roughly 45,000 entities pulled out of those documents - motions, planning applications, public questions, tenders, budget items, and the rest - carry at least one verbatim quote back to the source PDF, tied to a specific character offset in the original text. Nothing in the dataset floats free of its source.
 
 Scale alone does not tell you whether an extraction pipeline can be trusted, so the project runs a separate validation pass that checks each document's output against its own text: how much of what was extracted is backed by a quote, how much has been paraphrased rather than lifted verbatim, and whether the entity counts line up with an independent inventory pass. Run across the full corpus, quote completeness averages 84 percent, with 141 of 580 documents flagged FAIL. Restricted to meetings from 2024 onward - 87 documents, the subset that has had the most validation attention - quote completeness rises to 98 percent, paraphrase rate holds at 6 percent, and there are zero FAILs, only 57 PASS and 30 REVIEW. The two figures describe different slices of the same pipeline, not a contradiction, and the gap between them is itself informative: it is roughly the gap between the current extraction prompt and the older passes still waiting on a re-extraction pass.
 

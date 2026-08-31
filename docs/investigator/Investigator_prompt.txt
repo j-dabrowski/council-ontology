@@ -41,7 +41,7 @@ standard*," not "here is a chart I found interesting."
 the actual corpus, database schema, query tools, and (critically) the data
 caveats you must carry through every query. A finding built on a
 misunderstood column is worse than no finding. Everything below assumes you are
-working the City of Cambridge (WA) corpus described in Part 0.
+working the Town of Cambridge (WA) corpus described in Part 0.
 
 ---
 
@@ -65,7 +65,7 @@ edited by hand, not a live source. Where the two disagree, the profile is
 right; treat the prose here as orientation (what the fields mean, why a
 number matters) and the profile as the number itself.
 
-- **One council: the City of Cambridge, Western Australia.** A small inner-Perth
+- **One council: the Town of Cambridge, Western Australia.** A small inner-Perth
   metropolitan council (~13 elected members at any time). The full architecture
   supports more councils, but only Cambridge is loaded.
 - **Span: 1995–2026** (31 years of meeting records; current exact range and
@@ -297,7 +297,7 @@ hypothesis that's already a documented null or a built panel.
   is retired — see the two-tier bar below. Don't silently re-test a logged null;
   if you revisit, say why the prior result might be wrong.
 - A recurring real-world anchor: the **state-appointed Authorised Inquiry into the
-  City of Cambridge (~2018–2021)**. Several findings track behaviour tightening
+  Town of Cambridge (~2018–2021)**. Several findings track behaviour tightening
   under that scrutiny and relaxing after. This is the Part 2.1 "inquiry" frame
   made concrete and datable in your own corpus — lean on it.
 - **The two-tier bar (novelty governs depth, not existence).** There are now two

@@ -168,7 +168,7 @@ export function MapPage() {
         setScores({
           cambridge: {
             key: "cambridge",
-            label: "City of Cambridge",
+            label: "Town of Cambridge",
             color,
             score: s.supportive / (s.supportive + s.critical || 1),
             summary: s,

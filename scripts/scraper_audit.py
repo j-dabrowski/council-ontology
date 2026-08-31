@@ -104,7 +104,7 @@ Recovery options (in order of effort):
      or direct you to where they are published.
        Phone:  (08) 9347 6000
        Email:  admin@cambridge.wa.gov.au
-       Post:   City of Cambridge, PO Box 32, Wembley WA 6913
+       Post:   Town of Cambridge, PO Box 32, Wembley WA 6913
      Request: "Digital copies of Ordinary Council Meeting minutes for [months/year]
      that do not appear to be published on the council website."
 

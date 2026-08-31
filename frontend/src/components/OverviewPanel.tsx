@@ -155,7 +155,7 @@ export function OverviewPanel() {
   return (
     <Card
       title="What 30 Years of Minutes Say — the Big Picture"
-      subtitle={`A synthesis across every panel below · City of Cambridge · ${d.span} · ${d.n_minutes} minutes`}
+      subtitle={`A synthesis across every panel below · Town of Cambridge · ${d.span} · ${d.n_minutes} minutes`}
     >
       <div className="overview-thesis">
         <p>

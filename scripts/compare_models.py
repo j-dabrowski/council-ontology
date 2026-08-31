@@ -271,7 +271,7 @@ def save_report(
 # Entry point
 # ---------------------------------------------------------------------------
 
-_COUNCIL_NAMES = {"cambridge": "City of Cambridge"}
+_COUNCIL_NAMES = {"cambridge": "Town of Cambridge"}
 
 
 def run(args) -> None:
@@ -286,7 +286,7 @@ def run(args) -> None:
     manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
     meta = manifest.get(pdf_path.name, {})
     meeting_date_hint = meta.get("meeting_date")
-    council_name = _COUNCIL_NAMES.get(args.council, "City of Cambridge")
+    council_name = _COUNCIL_NAMES.get(args.council, "Town of Cambridge")
 
     if meeting_date_hint:
         console.print(f"[dim]Manifest date hint: {meeting_date_hint}[/dim]")

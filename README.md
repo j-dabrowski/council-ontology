@@ -2,7 +2,7 @@
 
 A research tool for modelling local council politics in Perth, WA. It scrapes public meeting minutes PDFs, uses Claude to extract structured data into a SQLite database, and runs a **standard battery of governance tests** over it — each result flagged supportive, neutral, or critical and anchored to a recognised criterion — surfaced through an interactive dashboard.
 
-**Current target:** City of Cambridge (Town Council), 580 documents covering 1995–2026.
+**Current target:** Town of Cambridge (Town Council), 580 documents covering 1995–2026.
 
 ---
 
@@ -729,7 +729,7 @@ src/
     ontology.py           — SQLAlchemy ORM (all three layers, 17 tables)
   scraper/
     base.py               — shared scraper interface and MinutesDocument type
-    cambridge.py          — City of Cambridge scraper (sitemap + Playwright + Wayback fallback)
+    cambridge.py          — Town of Cambridge scraper (sitemap + Playwright + Wayback fallback)
   extraction/
     extractor.py          — PDF text → Claude API; sync and batch modes
     schemas.py            — Pydantic models for structured Claude output (13 entity types)

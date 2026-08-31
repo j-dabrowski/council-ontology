@@ -449,7 +449,7 @@ class ExtractedMeeting(BaseModel):
     )
     council_name: Optional[str] = Field(
         default=None,
-        description="Full official name of the council, e.g. 'City of Cambridge'"
+        description="Full official name of the council, e.g. 'Town of Cambridge'"
     )
     meeting_type: Optional[str] = Field(
         default=None,
