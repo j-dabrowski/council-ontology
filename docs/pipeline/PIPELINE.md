@@ -1931,11 +1931,11 @@ council build-relationships cambridge        # refresh edges
   Exposed via `council analyse cambridge divergence [--from-year YYYY] [--limit N]`.
 
 - `scripts/geocode_sites.py` — Nominatim geocoding script. Reads sites where `latitude IS NULL`,
-  queries `nominatim.openstreetmap.org` with address + "City of Cambridge WA Australia" context,
-  writes `latitude`/`longitude` back. Rate-limited to 1.1 req/sec (Nominatim policy). Incremental
-  by default; `--force` re-geocodes existing. `--dry-run` shows what would be geocoded without
-  API calls. Note: `Site.latitude` and `Site.longitude` columns already existed in the schema —
-  no migration required.
+  queries `nominatim.openstreetmap.org` with the cleaned address plus a ", WA Australia" suffix
+  and `countrycodes=au`, writes `latitude`/`longitude` back. Rate-limited to 1.1 req/sec
+  (Nominatim policy). Incremental by default; `--force` re-geocodes existing. `--dry-run` shows
+  what would be geocoded without API calls. Note: `Site.latitude` and `Site.longitude` columns
+  already existed in the schema — no migration required.
   Exposed via `council geocode cambridge [--force] [--dry-run]`.
 
 - `src/cli.py` — 7 new `council analyse cambridge <query>` subcommands: `activity`, `trends`,
@@ -2415,20 +2415,23 @@ branch in `cmd_analyse`. One-line fix.
 
 **Script:** `scripts/geocode_sites.py`
 
-**New columns on `sites` table:**
-```sql
-ALTER TABLE sites ADD COLUMN lat REAL;
-ALTER TABLE sites ADD COLUMN lng REAL;
-ALTER TABLE sites ADD COLUMN geocode_status VARCHAR(10);
--- values: 'ok', 'failed', 'skipped'
-```
+**Columns on `sites` table** — as built, `Site.latitude` / `Site.longitude` already existed
+in the ontology, so no migration ran. The originally planned `lat`/`lng`/`geocode_status`
+triple was dropped: a NULL `latitude` already encodes "not geocoded yet" and is what drives
+the incremental skip, so a separate status column had nothing to add.
 
 **Logic:**
-1. Query all `sites` where `lat IS NULL` and `address IS NOT NULL`.
-2. For each address: prepend ", City of Cambridge WA" to the raw string for context.
+1. Query all `sites` for the council; unless `--force`, only those where `latitude IS NULL`.
+   Rows whose address is blank/"Unknown"/"N/A" are skipped in the loop, not the query.
+2. Strip council lot notation from the address (`_clean_address`: "Lot 82 (No. 25) Brighton
+   Street" -> "25 Brighton Street"), then append ", WA Australia" and pass `countrycodes=au`.
+   The LGA name is deliberately *not* in the query — most site addresses already carry their
+   own suburb, which localises better than the council name, and several council-owned sites
+   sit outside the LGA entirely (Tamala Park, in Mindarie, is the standing example).
 3. Call Nominatim geocoding API (free, no key required, rate-limit: 1 req/sec).
-4. Write `lat`, `lng`, `geocode_status` back to the DB.
-5. Incremental: skip sites with `geocode_status IS NOT NULL` unless `--force`.
+4. Write `latitude`, `longitude` back to the DB. There is no `geocode_status` column — a
+   failure leaves `latitude` NULL, which is what makes the next run pick the row up again.
+5. Incremental: a row with a `latitude` is skipped unless `--force`.
 
 **CLI:** `council geocode cambridge [--force] [--dry-run]`
 
