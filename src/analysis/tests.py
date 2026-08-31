@@ -1381,7 +1381,7 @@ def _t_deputation_dissent_meeting(session, council_id, meeting_id) -> TestResult
                   f"motions were contested" if had_deputation else
                   f"No public deputation this meeting; {contested} of {len(rows)} carried motions were contested")
                  if rows else
-                 (f"A public deputation was heard this meeting; no carried motions" if had_deputation
+                 ("A public deputation was heard this meeting; no carried motions" if had_deputation
                   else "No public deputation and no carried motions this meeting"),
         verdict=f"{'A' if had_deputation else 'No'} public deputation was heard this meeting"
                 + (f"; {contested} of {len(rows)} carried motions were contested." if rows else "."),
