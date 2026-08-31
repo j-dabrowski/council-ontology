@@ -2945,16 +2945,29 @@ def transparency_by_year(session: Session, council_id: int,
     `:mid IS NULL OR m.id = :mid` form keeps one SQL string for both modes.
 
     The `other_items` branch excludes rows whose description is a standing
-    "Nil items" placeholder heading (e.g. "Confidential Reports - Nil items")
-    — a section header meaning nothing was listed under it, not a decided
-    item, and not confidential just because the section it stands in for
-    would be (digest design plan, fact 5: meeting 258's "1 of 34 items
+    "Confidential Reports - Nil"-shaped placeholder heading (with or without
+    a "section"/"items"/"items reported" tail — e.g. "Confidential Reports -
+    Nil items") — a section header meaning nothing was listed under it, not a
+    decided item, and not confidential just because the section it stands in
+    for would be (digest design plan, fact 5: meeting 258's "1 of 34 items
     closed" was entirely this one placeholder row). SQLite's LIKE is
-    case-insensitive on ASCII, so one pattern covers "Nil"/"nil". Confirmed
-    2026-08-27 against live data: only 2 of 529 corpus-wide confidential
-    other_items rows match, so this doesn't move the corpus-wide baseline
-    `transparency.confidential_share` publishes — a per-meeting fix, not a
-    whole-corpus correction.
+    case-insensitive on ASCII, so one pattern covers "Nil"/"nil". Anchored to
+    "Confidential Report(s)" so it can't also swallow an unrelated standing
+    heading that happens to end "- Nil" (there are dozens — "Urgent Business
+    - Nil", "Applications for Leave of Absence - Nil", etc. — none of them
+    confidentiality-related, and blanket-excluding those would wrongly shrink
+    the denominator for years that legitimately have zero of those items).
+    Widened 2026-08-28 (defamation-review pass 1 generalization sweep,
+    `defamation_review_1.md`): the original `NOT LIKE '%nil item%'` pattern
+    missed the plain "Confidential Reports - Nil" shape (no "item(s)" word),
+    which left one real confidential-flagged row (`other_items.id=11809`,
+    2025-12-09) still counted. Confirmed 2026-08-28 against live data: the
+    corpus-wide `transparency.confidential_topics` scorecard test (a
+    separate query, `src/analysis/tests.py::_t_confidential_topics`) drops
+    from n=533 to n=530 once its own matching fix is applied — 3 of the 4
+    known placeholder rows fall inside that query's `document_type ==
+    "minutes"` scope, the 4th belongs to an agenda-type meeting and was
+    never in that n regardless.
     """
     from sqlalchemy import text as sql_text
 
@@ -2970,7 +2983,7 @@ def transparency_by_year(session: Session, council_id: int,
               FROM other_items o JOIN meetings m ON o.meeting_id = m.id
              WHERE m.council_id = :cid AND m.document_type = 'minutes'
                AND (:mid IS NULL OR m.id = :mid)
-               AND o.description NOT LIKE '%nil item%'
+               AND o.description NOT LIKE 'Confidential Report%- Nil%'
             UNION ALL
             SELECT m.meeting_date, dd.is_confidential, 'delegated'
               FROM delegated_decisions dd JOIN meetings m ON dd.meeting_id = m.id

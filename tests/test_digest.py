@@ -202,6 +202,22 @@ def test_meeting_inventory_excludes_nil_item_placeholder_rows(session):
     assert inv["other_items_by_type"]["correspondence"][0]["item_id"] == f"{meeting_id}:other:correspondence:0"
 
 
+def test_meeting_inventory_excludes_nil_placeholder_with_no_items_word(session):
+    # Regression: the original substring-only check here (`"nil item" in
+    # description.lower()`) missed this exact real-corpus shape — no
+    # "item(s)" word at all — the same gap Editor's defamation_review_1
+    # flag (draft_20260828_094239) found in the sibling confidential_topics
+    # call sites, fixed there via Fixer, then closed here too (2026-08-29).
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2025, 12, 9))
+    session.add(OtherItem(meeting_id=meeting_id, item_type="confidential_item",
+                           description="Confidential Reports - Nil", is_confidential=True))
+    session.flush()
+
+    inv = meeting_inventory(session, council_id, meeting_id)
+    assert "confidential_item" not in inv["other_items_by_type"]
+
+
 # ---------------------------------------------------------------------------
 # compose_period_digest
 # ---------------------------------------------------------------------------

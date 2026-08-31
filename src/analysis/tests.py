@@ -23,6 +23,7 @@ the heavy ones.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
@@ -1700,6 +1701,21 @@ def _t_confidential_tender_size_meeting(session, council_id, meeting_id) -> Test
     )
 
 
+# [36] placeholder "nil" confidential-reports headings (e.g. "Confidential
+# Reports - Nil items") are standing agenda-section headers, not decided
+# items — is_confidential=True on these rows is an extraction artifact, not
+# a real closed item. Anchored to the four known instances' shared shape
+# ("confidential reports [section] - nil...") so it doesn't also swallow a
+# real description that happens to mention "nil" mid-sentence.
+_NIL_PLACEHOLDER_RE = re.compile(
+    r"^confidential reports?(\s+section)?\s*-\s*nil\b", re.IGNORECASE
+)
+
+
+def _is_nil_placeholder(desc: str | None) -> bool:
+    return bool(desc) and bool(_NIL_PLACEHOLDER_RE.match(desc.strip()))
+
+
 # theme keyword buckets for [36] — legitimate statutory grounds vs contentious topics
 _CONF_THEMES = [
     ("Commercial-in-conf", r"commercial|in-confidence|negotiation|proposal|confidential"),
@@ -1720,7 +1736,6 @@ def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResu
     """
     if meeting_id is not None:
         return _t_confidential_topics_meeting(session, council_id, meeting_id)
-    import re as _re
     from src.models import OtherItem, DelegatedDecision
     descs: list[tuple[str, bool]] = []
     for model in (Tender, OtherItem, DelegatedDecision):
@@ -1729,6 +1744,8 @@ def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResu
             .join(Meeting, model.meeting_id == Meeting.id)
             .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
         ):
+            if _is_nil_placeholder(desc):
+                continue  # standing "Confidential Reports - Nil" heading, not a decided item
             descs.append(((desc or "").lower(), bool(ic)))
     total = len(descs)
     conf_total = sum(1 for _d, ic in descs if ic)
@@ -1741,7 +1758,7 @@ def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResu
     base = conf_total / total * 100
     theme_stat: list[tuple[str, int, int, float]] = []  # name, items, conf, lift
     for name, pat in _CONF_THEMES:
-        rx = _re.compile(pat)
+        rx = re.compile(pat)
         items = [ic for d, ic in descs if rx.search(d)]
         n = len(items)
         c = sum(1 for ic in items if ic)
@@ -1791,7 +1808,7 @@ def _t_confidential_topics_meeting(session, council_id, meeting_id) -> TestResul
             .join(Meeting, model.meeting_id == Meeting.id)
             .filter(Meeting.id == meeting_id, model.is_confidential.is_(True))
         ):
-            if desc:
+            if desc and not _is_nil_placeholder(desc):
                 descs.append(desc.strip())
     era = _meeting_label(session, meeting_id)
     if not descs:

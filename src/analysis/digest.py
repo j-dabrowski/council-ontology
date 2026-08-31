@@ -35,7 +35,7 @@ from sqlalchemy.orm import Session
 
 from src.analysis.divergence import officer_divergence
 from src.analysis.meeting_baselines import MeetingBaselines, body_class_of, load_meeting_bodies
-from src.analysis.tests import TestResult, run_meeting_digest
+from src.analysis.tests import TestResult, _is_nil_placeholder, run_meeting_digest
 from src.invariant_gate import derive_claim_tiers, project_to_institutional
 from src.models import Councillor, Meeting, Motion, OtherItem
 
@@ -122,13 +122,18 @@ def meeting_inventory(session: Session, council_id: int, meeting_id: int) -> dic
         if p.diverged
     ]
 
-    # "Nil items" standing-agenda placeholder headings aren't decided items
-    # (same exclusion as the transparency_by_year fix — src/analysis/queries.py).
+    # "Confidential Reports - Nil"-shaped standing-agenda placeholder headings
+    # aren't decided items — reuses tests.py's `_is_nil_placeholder` (the same
+    # anchored check `_t_confidential_topics`/transparency_by_year use) rather
+    # than a third, narrower reimplementation; the original substring-only
+    # version here missed "Confidential Reports - Nil" (no "item(s)" word),
+    # same gap Editor's defamation_review_1 flag found and Fixer closed
+    # elsewhere in this file's sibling call sites (2026-08-28/29).
     # item_id here is positional within its item_type bucket — other_items
     # carries no natural per-row citation key the way a motion's item_number is.
     other_items_by_type: dict[str, list[dict]] = {}
     for oi in session.query(OtherItem).filter(OtherItem.meeting_id == meeting_id).all():
-        if "nil item" in (oi.description or "").lower():
+        if _is_nil_placeholder(oi.description):
             continue
         bucket = other_items_by_type.setdefault(oi.item_type, [])
         bucket.append({
