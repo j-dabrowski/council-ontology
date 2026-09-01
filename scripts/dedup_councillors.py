@@ -105,6 +105,122 @@ FK_COLUMNS: list[tuple[str, str]] = [
 
 
 # ---------------------------------------------------------------------------
+# Electoral roll — the naming authority Pass 6 adjudicates against
+# ---------------------------------------------------------------------------
+
+DATA_DIR = Path(__file__).parent.parent / "data"
+
+# Minimum SequenceMatcher ratio for calling two GIVEN names orthographic
+# variants of each other (Pass 6). Deliberately the same value as the family
+# name threshold: this is the same kind of judgement about the same kind of
+# string. Note that Kate/Catherine scores far below this and is caught not by
+# similarity but by the roll printing "Catherine (Kate)" in one field — the
+# reason Pass 6 never relies on similarity alone.
+_GIVEN_VARIANT_THRESHOLD = 0.82
+
+
+def load_electoral_roll(council_slug: str | None) -> list[dict]:
+    """Rows from data/<council>_elections_raw.csv, the WA Electoral Commission
+    results already extracted for this corpus.
+
+    This is the authority on how a councillor's name is actually spelled on a
+    ballot, and it settles cases no amount of DB introspection can: the 2019
+    Cambridge row reads given_name "Catherine (Kate)", which is what makes
+    "Kate Barlow" and "Catherine Barlow" one person rather than two.
+
+    `councillor_terms` was derived from this same file (scripts/derive_terms.py)
+    but keeps only the dates — so the dedup passes have always had this
+    evidence's timing and never its names. Missing file (a council with no roll
+    extracted yet) degrades Pass 6 to report-only, never to guessing.
+    """
+    if not council_slug:
+        return []
+    path = DATA_DIR / f"{council_slug}_elections_raw.csv"
+    if not path.exists():
+        return []
+    import csv
+    with path.open() as fh:
+        return list(csv.DictReader(fh))
+
+
+def roll_given_tokens(given_field: str) -> set[str]:
+    """Every given-name form a single roll entry attests.
+
+    "Catherine (Kate)" -> {"catherine", "kate"}; "Tracey Anne" -> {"tracey",
+    "anne"}. A parenthesised alternate is the roll's own statement that two
+    forms name one candidate, which is exactly the SAME_COMBINED evidence
+    Pass 6 treats as conclusive.
+    """
+    return {t for t in re.split(r"[^A-Za-z]+", given_field or "") if t}  # noqa: RUF001
+
+
+def is_given_variant(a: str, b: str) -> bool:
+    """True when two given names are orthographic variants of one name —
+    a prefix relation (Rob/Robert, Andre/Andres) or high similarity
+    (Andres/Andrew, Tracey/Tracy). Never sufficient on its own to merge:
+    Pass 6 also requires the roll to attest exactly one of the two."""
+    a, b = a.lower().strip(), b.lower().strip()
+    if not a or not b or a == b:
+        return False
+    if a.startswith(b) or b.startswith(a):
+        return True
+    return SequenceMatcher(None, a, b).ratio() >= _GIVEN_VARIANT_THRESHOLD
+
+
+def adjudicate_pair(roll: list[dict], family: str, given_a: str, given_b: str) -> tuple[str, str]:
+    """Ask the electoral roll about two given-name forms of one family name.
+
+    Returns (verdict, evidence). Verdicts, strongest first:
+      SAME_COMBINED   one roll entry names both forms ("Catherine (Kate)")
+      DISTINCT        both forms stood as separate candidates in the SAME
+                      election — two real people, never merge
+      ONE_ATTESTED    exactly one form appears on any ballot; the other never
+      BOTH_ATTESTED   both appear, but in different elections — the roll
+                      cannot settle it; a human must
+      NO_ROLL_DATA    neither appears (pre-1999, or never stood as a candidate)
+    """
+    fam = family.lower().strip()
+    a, b = given_a.lower().strip(), given_b.lower().strip()
+    rows = [r for r in roll if (r.get("family_name") or "").lower().strip() == fam]
+
+    for r in rows:
+        toks = {t.lower() for t in roll_given_tokens(r.get("given_name", ""))}
+        if a in toks and b in toks:
+            return ("SAME_COMBINED",
+                    f"roll {r.get('election_date')} {r.get('ward')} lists "
+                    f"'{r.get('given_name')} {r.get('family_name')}'")
+
+    by_election: dict[str, set[str]] = defaultdict(set)
+    a_rows: list[dict] = []
+    b_rows: list[dict] = []
+    for r in rows:
+        toks = {t.lower() for t in roll_given_tokens(r.get("given_name", ""))}
+        if a in toks:
+            by_election[r.get("election_date", "")].add(a)
+            a_rows.append(r)
+        if b in toks:
+            by_election[r.get("election_date", "")].add(b)
+            b_rows.append(r)
+
+    for election, forms in by_election.items():
+        if a in forms and b in forms:
+            return ("DISTINCT",
+                    f"both stood as separate candidates at the {election} election")
+
+    def _cite(rs: list[dict]) -> str:
+        return ", ".join(f"{r.get('election_date')} {r.get('ward')}" for r in rs[:3])
+
+    if a_rows and not b_rows:
+        return ("ONE_ATTESTED", f"'{given_a}' on the roll ({_cite(a_rows)}); '{given_b}' never")
+    if b_rows and not a_rows:
+        return ("ONE_ATTESTED", f"'{given_b}' on the roll ({_cite(b_rows)}); '{given_a}' never")
+    if a_rows and b_rows:
+        return ("BOTH_ATTESTED",
+                f"'{given_a}' ({_cite(a_rows)}) and '{given_b}' ({_cite(b_rows)}), different elections")
+    return ("NO_ROLL_DATA", "neither form appears on any ballot in the roll")
+
+
+# ---------------------------------------------------------------------------
 # Name helpers (mirrors extractor._normalise_councillor_name)
 # ---------------------------------------------------------------------------
 
@@ -152,6 +268,29 @@ def is_real_given(given: str | None) -> bool:
 # ---------------------------------------------------------------------------
 # DB helpers
 # ---------------------------------------------------------------------------
+
+def apply_merge(conn: sqlite3.Connection, bad_id: int, tgt_id: int) -> None:
+    """Repoint every councillor-keyed FK from `bad_id` to `tgt_id`, then delete
+    the source row. The one subtlety is `votes`: it carries
+    UNIQUE(motion_id, councillor_id), so any motion both records voted on has
+    to lose the source row before the remap, or the UPDATE fails.
+
+    Extracted 2026-09-01 so the pass machinery and `--merge-pair` share one
+    implementation — the FK list and the UNIQUE workaround were previously
+    written out twice, and a hand-written SQL merge would have been a third.
+    """
+    for table, col in FK_COLUMNS:
+        if table == "votes" and col == "councillor_id":
+            conn.execute(
+                "DELETE FROM votes WHERE councillor_id = ? AND motion_id IN ("
+                "  SELECT motion_id FROM votes WHERE councillor_id = ?)",
+                (bad_id, tgt_id),
+            )
+        conn.execute(
+            f"UPDATE {table} SET {col} = ? WHERE {col} = ?", (tgt_id, bad_id),
+        )
+    conn.execute("DELETE FROM councillors WHERE id = ?", (bad_id,))
+
 
 def load_councillors(conn: sqlite3.Connection) -> list[dict]:
     rows = conn.execute(
@@ -417,7 +556,8 @@ def find_target(
 # Main
 # ---------------------------------------------------------------------------
 
-def run(apply: bool = False, use_terms: bool = False) -> None:
+def run(apply: bool = False, use_terms: bool = False,
+        council: str | None = "cambridge") -> None:
     conn = sqlite3.connect(DB)
     conn.execute("PRAGMA journal_mode=WAL")
 
@@ -831,6 +971,112 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     skipped = still_skipped2
 
     # -------------------------------------------------------------------
+    # Pass 6: given-name variants of one identically-spelled family name,
+    # adjudicated against the electoral roll.
+    #
+    # The shape Passes 1-5 all structurally miss: TWO well-formed records,
+    # both with real given names, sharing a correctly-spelled family name
+    # ("Andres Timmermanis" / "Andrew Timmermanis"). No title or placeholder
+    # (Pass 1), no empty given_name (Passes 2 and 5), no family-name
+    # misspelling (Pass 3), no field transposition (Pass 4). Found 2026-08-24
+    # by an Editor pass and escalated to a human on every run since, because
+    # nothing in this script was looking for it.
+    #
+    # Name similarity alone must never merge these — a real second councillor
+    # with the same surname looks identical to a variant from the DB side, and
+    # both records here carry real votes to lose. So the roll adjudicates and
+    # similarity only narrows: an auto-merge needs the roll to name both forms
+    # in ONE entry ("Catherine (Kate) Barlow" — conclusive on its own), or to
+    # attest exactly one form AND the two to be orthographic variants. Anything
+    # weaker is held with its evidence printed, and a roll DISTINCT verdict
+    # (both forms standing at the same election) is reported as a
+    # never-merge, which is the finding that most needs surfacing.
+    # -------------------------------------------------------------------
+    variant_merges: list[tuple[dict, dict, str]] = []
+    variant_held: list[tuple[dict, dict, str]] = []
+    variant_distinct: list[tuple[dict, dict, str]] = []
+
+    roll = load_electoral_roll(council)
+
+    def _roll_attests(c: dict) -> bool:
+        fam = (c["norm_family"] or "").lower().strip()
+        giv = (c["norm_given"] or "").lower().strip()
+        return any(
+            (r.get("family_name") or "").lower().strip() == fam
+            and giv in {t.lower() for t in roll_given_tokens(r.get("given_name", ""))}
+            for r in roll
+        )
+
+    def _attested_givens(family: str) -> set[str]:
+        """Every given-name form the roll attests for this family name."""
+        fam = family.lower().strip()
+        out: set[str] = set()
+        for r in roll:
+            if (r.get("family_name") or "").lower().strip() == fam:
+                out |= {t.lower() for t in roll_given_tokens(r.get("given_name", ""))}
+        return out
+
+    for _fam_key, group in sorted(by_family.items()):
+        real = [c for c in group
+                if is_real_given(c["norm_given"]) and c["id"] not in merging_ids]
+        for i, a in enumerate(real):
+            for b in real[i + 1:]:
+                if a["id"] in merging_ids or b["id"] in merging_ids:
+                    # Already slated by an earlier pair in this same group —
+                    # re-reporting it as a held pair is noise, not a decision.
+                    continue
+                if (a["norm_family"] or "").lower() != (b["norm_family"] or "").lower():
+                    continue
+                if (a["norm_given"] or "").lower() == (b["norm_given"] or "").lower():
+                    continue
+                verdict, evidence = adjudicate_pair(
+                    roll, a["norm_family"], a["norm_given"], b["norm_given"])
+
+                if verdict == "DISTINCT":
+                    variant_distinct.append((a, b, evidence))
+                    continue
+                if _shares_motion(a["id"], b["id"]):
+                    # Hard disqualifier, checked before any positive evidence:
+                    # UNIQUE(motion_id, councillor_id) means two records that
+                    # both voted on one motion cannot be one person.
+                    if verdict in ("SAME_COMBINED", "ONE_ATTESTED"):
+                        variant_distinct.append(
+                            (a, b, f"{evidence}; BUT they share a motion — cannot be one person"))
+                    continue
+
+                variant = is_given_variant(a["norm_given"], b["norm_given"])
+                if verdict == "SAME_COMBINED":
+                    minor, major = (a, b) if _identity_activity(a["id"]) < _identity_activity(b["id"]) else (b, a)
+                    variant_merges.append(
+                        (minor, major, f"[Pass 6] roll names both forms in one entry — {evidence}"))
+                    merging_ids.add(minor["id"])
+                elif verdict == "ONE_ATTESTED" and variant:
+                    # Merge INTO the form the ballot actually attests, not
+                    # into whichever record happens to hold more votes.
+                    major, minor = (a, b) if _roll_attests(a) else (b, a)
+                    # An initial or short form can be a variant of more than
+                    # one attested name in the same family ("J Smith" where the
+                    # roll carries both John and James). Whichever pair the
+                    # loop reached first would win, silently, and destroy a
+                    # real councillor's record — so ambiguity holds instead.
+                    rivals = sorted(
+                        g for g in _attested_givens(a["norm_family"])
+                        if is_given_variant(minor["norm_given"], g)
+                    )
+                    if len(rivals) > 1:
+                        variant_held.append((minor, major, (
+                            f"[Pass 6] '{minor['norm_given']}' is an equally good variant of "
+                            f"{len(rivals)} attested names ({', '.join(rivals)}) — ambiguous")))
+                        continue
+                    variant_merges.append(
+                        (minor, major, f"[Pass 6] unattested given-name variant — {evidence}"))
+                    merging_ids.add(minor["id"])
+                elif verdict == "ONE_ATTESTED":
+                    continue  # attested/unattested but not a name variant: a different person
+                elif variant:
+                    variant_held.append((a, b, f"[Pass 6] {verdict} — {evidence}"))
+
+    # -------------------------------------------------------------------
     # Term annotation — always computed; affects --apply behaviour only
     # when --use-terms is set
     # -------------------------------------------------------------------
@@ -875,13 +1121,19 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     print(f"Family-only stubs : {len(family_only)}")
     print(f"Field-swap pairs  : {len(swap_merges) + len(swap_held)}")
     print(f"Orphan stubs      : {len(dup_decl_merges) + len(dup_decl_held)}")
-    print(f"Merges planned    : {len(auto) + len(swap_merges) + len(dup_decl_merges)}")
+    print(f"Given-name variants: {len(variant_merges) + len(variant_held) + len(variant_distinct)}")
+    print(f"Merges planned    : "
+          f"{len(auto) + len(swap_merges) + len(dup_decl_merges) + len(variant_merges)}")
     if held:
         print(f"Held for review   : {len(held)}")
     if swap_held:
         print(f"Held (field-swap) : {len(swap_held)}")
     if dup_decl_held:
         print(f"Held (orphan)     : {len(dup_decl_held)}")
+    if variant_held:
+        print(f"Held (name variant): {len(variant_held)}")
+    if variant_distinct:
+        print(f"Confirmed distinct : {len(variant_distinct)}")
     print(f"In-place fixes    : {len(in_place)}")
     print(f"Skipped/ambiguous : {len(skipped)}")
     n_terms = sum(1 for v in terms.values() if v)
@@ -931,6 +1183,26 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
         for c, reason in dup_decl_held:
             print(f"  [{c['id']}]  {_label(c)}  —  {reason}")
 
+    if variant_merges:
+        print(f"\n--- Given-name variant merges, Pass 6 ({len(variant_merges)}) ---")
+        for bad, tgt, reason in variant_merges:
+            print(f"  [{bad['id']}→{tgt['id']}]  {_label(bad)}  →  {_label(tgt)}")
+            print(f"           reason: {reason}")
+
+    if variant_held:
+        print(f"\n--- Held — given-name variant, needs review ({len(variant_held)}) ---")
+        for a, b, reason in variant_held:
+            print(f"  [{a['id']} ↔ {b['id']}]  {_label(a)}  ↔  {_label(b)}")
+            print(f"           {reason}")
+            print(f"           decide with: council dedup --merge-pair {a['id']} {b['id']}"
+                  f"   (or {b['id']} {a['id']})")
+
+    if variant_distinct:
+        print(f"\n--- Confirmed DISTINCT — never merge ({len(variant_distinct)}) ---")
+        for a, b, reason in variant_distinct:
+            print(f"  [{a['id']} ✕ {b['id']}]  {_label(a)}  ✕  {_label(b)}")
+            print(f"           {reason}")
+
     if in_place:
         print(f"\n--- In-place normalisations ({len(in_place)}) ---")
         for c, ng, nf, ns in in_place:
@@ -948,34 +1220,12 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     # -------------------------------------------------------------------
     # Apply — only auto-confirmed merges when --use-terms is active
     # -------------------------------------------------------------------
-    merges_to_apply = [(b, t, r) for b, t, r, _ in auto] + swap_merges + dup_decl_merges
+    merges_to_apply = ([(b, t, r) for b, t, r, _ in auto]
+                       + swap_merges + dup_decl_merges + variant_merges)
     print(f"\nApplying {len(merges_to_apply)} merges + {len(in_place)} in-place fixes …")
 
     for bad, tgt, _ in merges_to_apply:
-        bad_id = tgt_id = bad["id"], tgt["id"]
-        bad_id, tgt_id = bad["id"], tgt["id"]
-
-        for table, col in FK_COLUMNS:
-            if table == "votes" and col == "councillor_id":
-                # Delete duplicate votes before remapping to avoid UNIQUE(motion_id, councillor_id)
-                conn.execute("""
-                    DELETE FROM votes
-                    WHERE councillor_id = ?
-                      AND motion_id IN (
-                          SELECT motion_id FROM votes WHERE councillor_id = ?
-                      )
-                """, (bad_id, tgt_id))
-                conn.execute(
-                    "UPDATE votes SET councillor_id = ? WHERE councillor_id = ?",
-                    (tgt_id, bad_id),
-                )
-            else:
-                conn.execute(
-                    f"UPDATE {table} SET {col} = ? WHERE {col} = ?",
-                    (tgt_id, bad_id),
-                )
-
-        conn.execute("DELETE FROM councillors WHERE id = ?", (bad_id,))
+        apply_merge(conn, bad["id"], tgt["id"])
 
     for c, ng, nf, ns in in_place:
         # If the target slug already exists (race condition), merge instead
@@ -983,24 +1233,7 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
             "SELECT id FROM councillors WHERE slug = ? AND id != ?", (ns, c["id"])
         ).fetchone()
         if existing:
-            tgt_id = existing[0]
-            for table, col in FK_COLUMNS:
-                if table == "votes" and col == "councillor_id":
-                    conn.execute("""
-                        DELETE FROM votes
-                        WHERE councillor_id = ?
-                          AND motion_id IN (SELECT motion_id FROM votes WHERE councillor_id = ?)
-                    """, (c["id"], tgt_id))
-                    conn.execute(
-                        "UPDATE votes SET councillor_id = ? WHERE councillor_id = ?",
-                        (tgt_id, c["id"]),
-                    )
-                else:
-                    conn.execute(
-                        f"UPDATE {table} SET {col} = ? WHERE {col} = ?",
-                        (tgt_id, c["id"]),
-                    )
-            conn.execute("DELETE FROM councillors WHERE id = ?", (c["id"],))
+            apply_merge(conn, c["id"], existing[0])
         else:
             conn.execute(
                 "UPDATE councillors SET given_name = ?, family_name = ?, slug = ? WHERE id = ?",
@@ -1012,6 +1245,58 @@ def run(apply: bool = False, use_terms: bool = False) -> None:
     print(f"Done.  Councillors: {len(councillors)} → {after}\n")
 
 
+def merge_pair(from_id: int, into_id: int, apply: bool = False) -> None:
+    """Execute one merge a human has explicitly decided on.
+
+    The outlet for what the passes deliberately refuse to do themselves —
+    a BOTH_ATTESTED Pass 6 pair, say, where the roll cannot settle it and
+    only a person reading the minutes or the election record can. Runs the
+    same `apply_merge()` the passes use, so a hand-made decision still goes
+    through the tested FK/UNIQUE handling rather than ad-hoc SQL.
+
+    Refuses a pair that shares a motion: that is the one fact in the schema
+    which proves two records are different people, and no human instruction
+    should be able to talk the script past it.
+    """
+    conn = sqlite3.connect(DB)
+    conn.execute("PRAGMA journal_mode=WAL")
+    rows = {
+        r[0]: r for r in conn.execute(
+            "SELECT id, given_name, family_name, slug FROM councillors WHERE id IN (?, ?)",
+            (from_id, into_id),
+        )
+    }
+    for cid in (from_id, into_id):
+        if cid not in rows:
+            print(f"No councillor with id={cid}.")
+            raise SystemExit(1)
+
+    shared = conn.execute(
+        "SELECT COUNT(*) FROM votes a JOIN votes b ON a.motion_id = b.motion_id "
+        "WHERE a.councillor_id = ? AND b.councillor_id = ?",
+        (from_id, into_id),
+    ).fetchone()[0]
+
+    def _fmt(cid: int) -> str:
+        _i, g, f, _sl = rows[cid]
+        n = conn.execute("SELECT COUNT(*) FROM votes WHERE councillor_id=?", (cid,)).fetchone()[0]
+        return f"'{(g or '').strip()} {(f or '').strip()}'.strip() [id={cid}, votes={n}]"
+
+    print(f"\nMerge  {_fmt(from_id)}\n   →   {_fmt(into_id)}")
+    if shared:
+        print(f"\nREFUSED: these two both voted on {shared} shared motion(s). "
+              "votes carries UNIQUE(motion_id, councillor_id), so they cannot be "
+              "the same person — merging would destroy a real councillor's record.")
+        raise SystemExit(1)
+    print("  shared motions: 0 (not disqualified)")
+    if not apply:
+        print("\n[DRY RUN]  Pass --apply to write this merge.\n")
+        return
+    apply_merge(conn, from_id, into_id)
+    conn.commit()
+    print(f"\nMerged. Councillor {from_id} deleted.\n")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Deduplicate councillor records in council.db")
     parser.add_argument("--apply", action="store_true", help="Write changes (default: dry run)")
@@ -1021,8 +1306,20 @@ def main() -> None:
         dest="use_terms",
         help="Annotate merges with councillor_terms coverage; with --apply, only apply TERM ✓ merges",
     )
+    parser.add_argument(
+        "--merge-pair",
+        nargs=2,
+        type=int,
+        metavar=("FROM_ID", "INTO_ID"),
+        help="Execute one explicitly-decided merge instead of running the passes",
+    )
+    parser.add_argument("--council", default="cambridge",
+                        help="Council slug, for the electoral roll Pass 6 reads (default: cambridge)")
     args = parser.parse_args()
-    run(apply=args.apply, use_terms=args.use_terms)
+    if args.merge_pair:
+        merge_pair(args.merge_pair[0], args.merge_pair[1], apply=args.apply)
+        return
+    run(apply=args.apply, use_terms=args.use_terms, council=args.council)
 
 
 if __name__ == "__main__":

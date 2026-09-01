@@ -4120,17 +4120,27 @@ def main() -> None:
         "dedup",
         help="Deduplicate councillor records — merge title/placeholder/stub variants (scripts/dedup_councillors.py)",
     )
-    p_dedup.add_argument("council", choices=list(COUNCILS), nargs="?",
-                         help="Council (unused — dedup operates globally; kept for CLI consistency)")
+    p_dedup.add_argument("council", choices=list(COUNCILS), nargs="?", default="cambridge",
+                         help="Council — selects the electoral roll Pass 6 adjudicates against; "
+                              "the other passes operate globally")
     p_dedup.add_argument("--apply", action="store_true", help="Write changes (default: dry run)")
     p_dedup.add_argument(
         "--use-terms", action="store_true", dest="use_terms",
         help="Annotate merges with councillor_terms coverage; with --apply only applies TERM ✓ merges",
     )
+    p_dedup.add_argument(
+        "--merge-pair", nargs=2, type=int, metavar=("FROM_ID", "INTO_ID"), dest="merge_pair",
+        help="Execute one explicitly-decided merge instead of running the passes "
+             "(the outlet for a pair Pass 6 holds because the roll can't settle it)",
+    )
 
     def _cmd_dedup(a):
+        from scripts.dedup_councillors import merge_pair as _merge_pair
         from scripts.dedup_councillors import run as _run
-        _run(apply=a.apply, use_terms=a.use_terms)
+        if a.merge_pair:
+            _merge_pair(a.merge_pair[0], a.merge_pair[1], apply=a.apply)
+            return
+        _run(apply=a.apply, use_terms=a.use_terms, council=a.council)
 
     p_dedup.set_defaults(func=_cmd_dedup)
 
