@@ -305,6 +305,7 @@ The non-obvious edges, spelled out:
 | improving the researcher prompt | `research/RESEARCH_PROTOCOL.md` (benchmark) → bump `research/Researcher_prompt.txt` |
 | running an exploration session (new hypotheses) | `council explore` (`investigator/Explorer_prompt.txt` underneath) → `investigator/INVESTIGATIONS.md` (record) |
 | codifying a finding into the test battery | `council refine` (`investigator/Refiner_prompt.txt` underneath) → `src/analysis/tests.py` + `queries.py` |
+| adding a governance test, or re-wording its public-facing copy | `config/test_registry.json` — the registry row (id/category/title/question/principles/etc.); `src/analysis/tests.py` still owns the computation |
 | running the frozen battery in production | `council draft <council>` — scripted; Runner is archived, this was always its whole job under the hood |
 | improving the exploration prompt | `investigator/EXPLORATION_PROTOCOL.md` (benchmark) → bump `Explorer_prompt.txt` |
 | improving the refinement prompt / harness | `investigator/REFINEMENT_PROTOCOL.md` (benchmark) → bump `Refiner_prompt.txt` |

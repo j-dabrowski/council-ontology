@@ -57,6 +57,19 @@ narrative claim can't be derived from the fields the snapshot actually exposes
 such cross-reference exists in `PowerData`), drop the claim rather than hardcode
 it — don't invent a data field just to justify keeping the sentence.
 
+### Panel copy comes from the registry, not JSX
+
+A battery-test panel's heading, subtitle and valence must come from its
+`ResolvedTest` (`title_technical`, `question_technical`, `valence` — joined
+from `config/test_registry.json` by `frontend/src/registry/index.ts`'s
+`resolveTests()`), never typed as a JSX literal. Adding a battery test means
+adding a registry row: `run_test_battery`/`run_meeting_digest`
+(`src/analysis/tests.py`) refuse to run at all if the registry and
+`_GENERATORS` disagree, so a new test with no row — or a row with no
+generator — fails loudly rather than silently shipping a battery short one
+test. See `docs/frontend/TEST_REGISTRY_PLAN.md` for the registry's full
+design.
+
 ### Cross-cutting behaviours — DONE (apply to every panel)
 - [x] **Auto-scroll to opened detail** — `DrillDown` calls `scrollIntoView` on open.
 - [x] **Back-link to the scorecard row** — `Card` takes a `backTo="sc-<panel>"`

@@ -158,3 +158,31 @@ model even needs to check (per-panel vs. per-field), so deciding that first
 avoids building the wrong shape twice.
 
 ---
+
+### Test registry — deliberately open (Phase 1 built, 2026-09-04)
+
+`config/test_registry.json` (`docs/frontend/TEST_REGISTRY_PLAN.md`) replaced
+the three separately-authored copy sources (Scorecard/Analysis/Digest) with
+one registry row per test. Several fields shipped empty on purpose, not by
+oversight:
+
+- **`question_public` / `title_public` / `method` / `caveats`** — unfilled
+  (`""` / `[]`) on all 29 rows. A lay-facing rewrite of the technical copy,
+  and the method/caveat prose an auditor would want, are their own
+  editorial pass, not something mechanically extractable from `tests.py`.
+- **`objection` / `response`** — `null` on all 29 rows, typed but not
+  written; a separate pass, not blocked on anything built here.
+- **`public_interest`** — `false` on all 29 rows. No lay-facing surface can
+  be built off this field yet — it needs the `question_public`/`title_public`
+  pass above before it means anything.
+- **Meeting-scoped copy stays in `src/analysis/tests.py`**, not the
+  registry. A `title_meeting`/`question_meeting` pair (so `DigestPage.tsx`
+  could stop reading the raw snapshot's own `title`/`question` — see
+  TEST_REGISTRY_PLAN.md Step 9) is a deliberately deferred registry
+  addition.
+- **Phase 2** (`TrendsChart` / `PlanningTrendChart` / `PlanningObjectionsPanel`
+  / `InterestsChart` — the four institutional orphans) and **Phase 3** (the
+  four individual-implicating orphans, gated on tier derivation/entity
+  resolution work) are outstanding — see TEST_REGISTRY_PLAN.md Steps 11–12.
+
+---

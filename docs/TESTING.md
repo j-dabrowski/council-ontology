@@ -53,6 +53,15 @@ elsewhere says to.
   `src/analysis/tests.py`, which fails the moment a battery test is added,
   renamed, or removed without updating the register. From
   `src/analysis/coverage_register.py`.
+- **`test_test_registry.py`** — the canonical test registry's own parity
+  checks (`docs/frontend/TEST_REGISTRY_PLAN.md` Step 4): every
+  `config/test_registry.json` row's `id` has a `src.analysis.tests`
+  `_GENERATORS` entry and vice versa; `has_deep_dive` agrees with
+  `frontend/src/bespokePanels.tsx`'s `BESPOKE_PANELS` keys, both directions;
+  `order` is exactly `1..29` and unique; every `category` is one of the
+  four; every `detail_panel` is unique and non-empty; every
+  `evidence_query` names a real function in `queries.py`/`divergence.py`/
+  `tests.py`. Source/JSON reads only — no DB.
 - **`test_reply_packets.py`** — S9 right-of-reply packet assembly:
   grouping by named person (scoped to `unit=individual` claims with no
   reply on file; a claim naming two people appears in both packets;
@@ -273,6 +282,14 @@ reviews the candidate output, and Fixer's track-scoped modes
 (`docs/review/fixer/`) act on whatever it flags. Nothing about drafting is
 risky: it never touches git or the public directory, so it can run as often
 as needed.
+
+That battery logic is itself registry-driven: `config/test_registry.json`
+(`docs/frontend/TEST_REGISTRY_PLAN.md`) is the one file stating which tests
+exist, in what order, and (for the whole-corpus battery) their rendered
+title/question — `run_test_battery`/`run_meeting_digest`
+(`src/analysis/tests.py`) walk its rows and refuse to run at all if the
+registry and `_GENERATORS` disagree. `config/test_registry.json` is
+load-bearing for `council draft`, not just for the frontend.
 
 Before `manifest.json` is written, `council draft` runs the **S7 invariant
 gate** (`src/invariant_gate.py`, `docs/INFORMATION_ARCHITECTURE.md` §3) over
