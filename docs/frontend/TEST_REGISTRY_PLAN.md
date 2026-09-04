@@ -1,10 +1,11 @@
 # Canonical Test Registry — findings + build plan
 
-Status: **Phase 1 built** (Steps 1–10, 2026-09-04). Written 2026-09-04.
+Status: **Phase 1 and 2 built** (Steps 1–11, 2026-09-04). Written 2026-09-04.
 Audience: the person handing Part E's steps, one at a time, to a fresh model
 instance. Parts A–D are the context every step assumes — kept as the record
 of the pre-registry state, not updated to describe the current one.
-Phases 2–3 (Steps 11–12) are still outstanding.
+Phase 2 turned out to be one panel, not four — see A.5's 2026-09-04
+correction. Phase 3 (Step 12, now five panels) is still outstanding.
 
 ---
 
