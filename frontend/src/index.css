@@ -870,6 +870,24 @@ a:hover { text-decoration: underline; }
 .valence-critical   { color: var(--bad-t); background: var(--bad-bg); border-color: var(--bad-bd); }
 .valence-nodata     { color: var(--nil-t); background: var(--nil-bg); border-color: var(--nil-bd); }
 
+/* ── severity chips (four-tier grouping of the seven G_* grades) ────────── */
+.severity-chip {
+  flex: none;
+  align-self: flex-start;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+.severity-strength    { color: var(--ok-t);  background: var(--ok-bg);  border-color: var(--ok-bd);  }
+.severity-observation { color: var(--neu-t); background: var(--neu-bg); border-color: var(--neu-bd); }
+.severity-concern     { color: var(--bad-t); background: var(--bad-bg); border-color: var(--bad-bd); }
+.severity-nodata      { color: var(--nil-t); background: var(--nil-bg); border-color: var(--nil-bd); }
+
 .card-title {
   font-size: 1.05rem;
   font-weight: 600;
@@ -1335,8 +1353,6 @@ a:hover { text-decoration: underline; }
 .sc-row-main { flex: 1; min-width: 0; }
 .sc-row-head { display: flex; align-items: baseline; gap: 10px; justify-content: space-between; }
 .sc-row-title { font-size: 0.92rem; font-weight: 600; color: var(--text-hi); }
-.sc-row-grade { flex: none; font-size: 10.5px; font-weight: 600; color: var(--text-muted);
-  text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
 .sc-row-headline { font-size: 0.84rem; color: var(--text-md); margin-top: 3px; }
 .sc-row-verdict { font-size: 0.8rem; color: var(--text-muted); margin-top: 3px; line-height: 1.45; }
 .sc-row-meta { display: flex; flex-wrap: wrap; gap: 6px 12px; margin-top: 7px;
@@ -1348,8 +1364,6 @@ a:hover { text-decoration: underline; }
   border: 1px solid var(--sc-bad-bd); border-radius: 4px; padding: 3px 7px; display: inline-block; }
 .sc-row.sc-supportive { box-shadow: inset 3px 0 0 -1px var(--sc-ok-sh); }
 .sc-row.sc-critical   { box-shadow: inset 3px 0 0 -1px var(--sc-bad-sh); }
-.sc-row.sc-supportive .sc-row-grade { color: var(--sc-ok-n);  }
-.sc-row.sc-critical .sc-row-grade   { color: var(--sc-bad-n); }
 
 @media (max-width: 640px) {
   .sc-summary { grid-template-columns: repeat(2, 1fr); }
@@ -1441,12 +1455,6 @@ a:hover { text-decoration: underline; }
 .bt-headline.bt-supportive { border-left-color: var(--stat-g); }
 .bt-headline.bt-neutral    { border-left-color: var(--link);   }
 .bt-headline.bt-critical   { border-left-color: var(--bad-t);  }
-.bt-grade {
-  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-.bt-headline.bt-supportive .bt-grade { color: var(--sc-ok-n);  }
-.bt-headline.bt-critical .bt-grade   { color: var(--sc-bad-n); }
 .bt-headline-text { font-size: 1.02rem; color: var(--text-hi); font-weight: 500; line-height: 1.4; }
 .bt-meta { color: var(--text-faint); }
 .bt-meta .sc-genre { color: var(--genre); }

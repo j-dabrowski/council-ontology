@@ -2,6 +2,7 @@ import { useData } from "../hooks/useData";
 import { api, ScorecardData, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { ValenceChip } from "./ValenceChip";
+import { SeverityChip } from "./SeverityChip";
 import { resolveTests } from "../registry";
 import { groupByCategory } from "../registry/grouping";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -21,7 +22,7 @@ function TestRow({ t, flaggedNames }: { t: ResolvedTest; flaggedNames?: string[]
       <div className="sc-row-main">
         <div className="sc-row-head">
           <span className="sc-row-title">{t.title_technical}</span>
-          <span className="sc-row-grade">{t.severity}</span>
+          <SeverityChip severity={t.severity} />
         </div>
         {flaggedNames && (
           <div className="sc-row-guardrail">

@@ -5,6 +5,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api, ScorecardData, TestChart, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { SeverityChip } from "./SeverityChip";
 import { resolveTests } from "../registry";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { findNamedCouncillorsInText, redactNamedCouncillors } from "../guardrail";
@@ -110,7 +111,7 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cll
         </div>
       )}
       <div className={`bt-headline bt-${t.valence}`}>
-        <span className="bt-grade">{t.severity}</span>
+        <SeverityChip severity={t.severity} />
         <span className="bt-headline-text">{headline}</span>
       </div>
 
