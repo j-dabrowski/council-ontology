@@ -1,19 +1,20 @@
 """
 Unit tests for src/analysis/coverage_register.py — the S4 coverage register
 verifier:
-  - extract_shipped_test_ids() against a small synthetic source string
-    (both the TestResult(test_id=...) and _nodata(...) call shapes)
+  - extract_shipped_test_ids() / extract_meeting_scope_test_ids() against a
+    small synthetic registry fixture (JSON, the same shape as
+    config/test_registry.json)
   - verify_register() catching each drift direction (unknown-test-id,
     orphan-generator) and confirming clean input
   - the real register (docs/investigator/coverage_register.json) against
-    the real battery (src/analysis/tests.py) — this is the actual
+    the real battery (config/test_registry.json) — this is the actual
     always-on CI check: it fails the moment a battery test is added,
     renamed, or removed without updating the register
 
-All hermetic: extract_shipped_test_ids parses source text (no DB, no
+All hermetic: extract_shipped_test_ids reads a JSON file (no DB, no
 execution of the extraction pipeline itself).
 """
-import ast
+import json
 
 import pytest
 
@@ -25,63 +26,61 @@ from src.analysis.coverage_register import (
     verify_register,
 )
 
-FIXTURE_SOURCE = '''
-def _t_a(session, council_id, pc):
-    return TestResult(
-        test_id="dim.alpha",
-        title="t", genre="g", principle="p", question="q",
-        valence="neutral", grade="g", headline="h", verdict="v",
-    )
+
+def _write_registry(tmp_path, rows):
+    path = tmp_path / "fixture_registry.json"
+    path.write_text(json.dumps(rows))
+    return path
 
 
-def _t_b(session, council_id, pc):
-    if not ok:
-        return _nodata("dim.beta", "title", "genre", "principle", "question")
-    return TestResult(
-        test_id="dim.beta",
-        title="t", genre="g", principle="p", question="q",
-        valence="neutral", grade="g", headline="h", verdict="v",
-    )
-
-
-def _t_placeholder(session, council_id, pc):
-    return _nodata("dim.gamma", "title", "genre", "principle", "question")
-
-
-def _t_unregistered(session, council_id, pc):
-    return TestResult(
-        test_id="dim.not_in_battery",
-        title="t", genre="g", principle="p", question="q",
-        valence="neutral", grade="g", headline="h", verdict="v",
-    )
-
-
-_BATTERY = [_t_a, _t_b, _t_placeholder]
-'''
+def _row(id_, meeting_scope=False):
+    """A minimal registry row — only the two fields extract_* reads."""
+    return {"id": id_, "meeting_scope": meeting_scope}
 
 
 # ---------------------------------------------------------------------------
 # extract_shipped_test_ids
 # ---------------------------------------------------------------------------
 
-def test_extract_finds_keyword_and_nodata_shapes(tmp_path):
-    path = tmp_path / "fixture_tests.py"
-    path.write_text(FIXTURE_SOURCE)
-    ids = extract_shipped_test_ids(path)
-    assert ids == {"dim.alpha", "dim.beta", "dim.gamma"}
+def test_extract_shipped_test_ids_reads_every_row(tmp_path):
+    path = _write_registry(tmp_path, [_row("dim.alpha"), _row("dim.beta"), _row("dim.gamma")])
+    assert extract_shipped_test_ids(path) == {"dim.alpha", "dim.beta", "dim.gamma"}
 
 
-def test_extract_ignores_functions_not_in_battery(tmp_path):
-    path = tmp_path / "fixture_tests.py"
-    path.write_text(FIXTURE_SOURCE)
-    ids = extract_shipped_test_ids(path)
-    assert "dim.not_in_battery" not in ids
-
-
-def test_extract_empty_battery_gives_empty_set(tmp_path):
-    path = tmp_path / "fixture_tests.py"
-    path.write_text("_BATTERY = []\n")
+def test_extract_shipped_test_ids_empty_registry_gives_empty_set(tmp_path):
+    path = _write_registry(tmp_path, [])
     assert extract_shipped_test_ids(path) == set()
+
+
+def test_extract_shipped_test_ids_raises_on_missing_file(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        extract_shipped_test_ids(tmp_path / "does_not_exist.json")
+
+
+def test_extract_shipped_test_ids_raises_when_not_a_list(tmp_path):
+    path = tmp_path / "fixture_registry.json"
+    path.write_text(json.dumps({"not": "a list"}))
+    with pytest.raises(ValueError, match="JSON array"):
+        extract_shipped_test_ids(path)
+
+
+# ---------------------------------------------------------------------------
+# extract_meeting_scope_test_ids
+# ---------------------------------------------------------------------------
+
+def test_extract_meeting_scope_finds_only_flagged_rows(tmp_path):
+    path = _write_registry(tmp_path, [
+        _row("dim.alpha", meeting_scope=True),
+        _row("dim.beta", meeting_scope=False),
+    ])
+    assert extract_meeting_scope_test_ids(path) == {"dim.alpha"}
+    # dim.beta ships but isn't meeting-scoped — correctly absent.
+    assert extract_shipped_test_ids(path) == {"dim.alpha", "dim.beta"}
+
+
+def test_extract_meeting_scope_empty_when_no_row_is_flagged(tmp_path):
+    path = _write_registry(tmp_path, [_row("dim.alpha"), _row("dim.beta")])
+    assert extract_meeting_scope_test_ids(path) == set()
 
 
 # ---------------------------------------------------------------------------
@@ -137,7 +136,7 @@ def test_verify_empty_register_flags_every_shipped_id_as_orphan():
 
 # ---------------------------------------------------------------------------
 # the real thing: docs/investigator/coverage_register.json vs. the real
-# battery in src/analysis/tests.py — fails if either drifts from the other
+# battery in config/test_registry.json — fails if either drifts from the other
 # ---------------------------------------------------------------------------
 
 def test_real_register_matches_real_battery():
@@ -160,90 +159,17 @@ def test_real_register_is_well_formed():
         assert isinstance(dim["tests"], list)
 
 
-def test_real_battery_source_file_exists_at_expected_path():
+def test_real_test_registry_file_exists_at_expected_path():
     # extract_shipped_test_ids' default path is derived, not hardcoded twice
-    from src.analysis.coverage_register import TESTS_SOURCE_PATH
-    assert TESTS_SOURCE_PATH.exists()
-    assert ast.parse(TESTS_SOURCE_PATH.read_text())  # parses without error
-
-
-def test_extract_shipped_test_ids_raises_when_battery_shape_is_unrecognised(tmp_path):
-    # A refactor like `_BATTERY = _CORE + _EXTRA` yields no names. Failing
-    # loudly here beats returning an empty set, which would report every
-    # register entry as an unknown test_id and send the maintainer to the
-    # wrong file.
-    src = tmp_path / "tests.py"
-    src.write_text("_CORE = []\n_EXTRA = []\n_BATTERY = _CORE + _EXTRA\n")
-    with pytest.raises(ValueError, match="_BATTERY"):
-        extract_shipped_test_ids(src)
-
-
-def test_extract_shipped_test_ids_handles_an_annotated_battery_assignment(tmp_path):
-    src = tmp_path / "tests.py"
-    src.write_text(
-        "def _t_x():\n"
-        "    return TestResult(test_id='fixture.x')\n"
-        "_BATTERY: list = [_t_x]\n"
-    )
-    assert extract_shipped_test_ids(src) == {"fixture.x"}
-
-
-# ---------------------------------------------------------------------------
-# extract_meeting_scope_test_ids — the granularity axis's real-data input
-# (digest design plan, Explorer v3.1)
-# ---------------------------------------------------------------------------
-
-_MEETING_FIXTURE_SOURCE = '''
-def _t_a(session, council_id, pc, meeting_id=None):
-    if meeting_id is not None:
-        return _t_a_meeting(session, council_id, meeting_id)
-    return TestResult(
-        test_id="dim.alpha",
-        title="t", genre="g", principle="p", question="q",
-        valence="neutral", grade="g", headline="h", verdict="v",
-    )
-
-
-def _t_a_meeting(session, council_id, meeting_id):
-    return TestResult(
-        test_id="dim.alpha",
-        title="t", genre="g", principle="p", question="q",
-        valence="neutral", grade="g", headline="h", verdict="v",
-    )
-
-
-def _t_b(session, council_id, pc):
-    return TestResult(
-        test_id="dim.beta",
-        title="t", genre="g", principle="p", question="q",
-        valence="neutral", grade="g", headline="h", verdict="v",
-    )
-
-
-_BATTERY = [_t_a, _t_b]
-_MEETING_BATTERY = [_t_a]
-'''
-
-
-def test_extract_meeting_scope_finds_only_meeting_battery_members(tmp_path):
-    path = tmp_path / "fixture_tests.py"
-    path.write_text(_MEETING_FIXTURE_SOURCE)
-    assert extract_meeting_scope_test_ids(path) == {"dim.alpha"}
-    # dim.beta ships in _BATTERY but has no _meeting sibling / isn't in
-    # _MEETING_BATTERY — correctly absent from the meeting-scope set.
-    assert extract_shipped_test_ids(path) == {"dim.alpha", "dim.beta"}
-
-
-def test_extract_meeting_scope_empty_when_no_meeting_battery(tmp_path):
-    path = tmp_path / "fixture_tests.py"
-    path.write_text("_BATTERY = []\n_MEETING_BATTERY = []\n")
-    assert extract_meeting_scope_test_ids(path) == set()
+    from src.analysis.coverage_register import DEFAULT_TEST_REGISTRY_PATH
+    assert DEFAULT_TEST_REGISTRY_PATH.exists()
+    assert json.loads(DEFAULT_TEST_REGISTRY_PATH.read_text())  # parses without error
 
 
 def test_real_meeting_battery_source_parses_and_is_a_subset_of_shipped_ids():
     meeting_ids = extract_meeting_scope_test_ids()
     shipped_ids = extract_shipped_test_ids()
-    assert meeting_ids  # the real _MEETING_BATTERY is non-empty
+    assert meeting_ids  # the real registry has at least one meeting-scoped row
     assert meeting_ids <= shipped_ids
 
 

@@ -58,6 +58,7 @@ from src.analysis.queries import (
     _normalise_contractor,
 )
 from src.analysis.divergence import officer_divergence
+from src.test_registry import RegistryRow, load_test_registry
 
 # ── valence + grade vocabulary ──────────────────────────────────────────────
 SUPPORTIVE = "supportive"   # the council does well here (a strength / a clean test)
@@ -1962,40 +1963,65 @@ def _t_question_responsiveness_meeting(session, council_id, meeting_id) -> TestR
 
 
 # ── registry ────────────────────────────────────────────────────────────────
-# Ordered roughly by genre. Each entry is a (session, council_id, precomputed) -> TestResult.
-_BATTERY = [
+# Which tests exist and what order they run in is config/test_registry.json's
+# call (docs/frontend/TEST_REGISTRY_PLAN.md B.3) — this dict has no opinion
+# on membership or order, only "given an id, which function computes it."
+# run_test_battery/run_meeting_digest walk the registry and look up here.
+_GENERATORS = {
     # Integrity / procurement
-    _t_threshold_gaming, _t_procurement_incumbency, _t_single_source, _t_tender_concentration,
-    _t_decider_supplier_conflict,
+    "procurement.threshold_gaming": _t_threshold_gaming,
+    "procurement.incumbency": _t_procurement_incumbency,
+    "procurement.single_source": _t_single_source,
+    "procurement.concentration": _t_tender_concentration,
+    "procurement.decider_supplier_conflict": _t_decider_supplier_conflict,
     # Integrity / conflict
-    _t_recusal_overall, _t_recusal_trend, _t_delegate_body_conflict,
+    "conflict.recusal_management": _t_recusal_overall,
+    "conflict.recusal_trend": _t_recusal_trend,
+    "conflict.delegate_body_conflict": _t_delegate_body_conflict,
     # Governance / planning fairness
-    _t_big_dollar_leniency, _t_repeat_applicant, _t_objection_dose,
+    "planning.big_dollar_leniency": _t_big_dollar_leniency,
+    "planning.repeat_applicant": _t_repeat_applicant,
+    "planning.objection_responsiveness": _t_objection_dose,
     # Governance / culture
-    _t_officer_divergence, _t_voting_power, _t_oversight_body_capture, _t_unanimity_trend, _t_mayoral,
-    _t_sponsorship, _t_tenure, _t_freshman, _t_election_cycle, _t_attendance,
+    "governance.officer_ratification": _t_officer_divergence,
+    "governance.power_spread": _t_voting_power,
+    "governance.oversight_body_capture": _t_oversight_body_capture,
+    "governance.unanimity_trend": _t_unanimity_trend,
+    "governance.chair_capture": _t_mayoral,
+    "governance.durable_faction": _t_sponsorship,
+    "governance.incumbency": _t_tenure,
+    "governance.freshman_effect": _t_freshman,
+    "governance.election_cycle": _t_election_cycle,
+    "governance.attendance": _t_attendance,
     # Transparency
-    _t_transparency, _t_confidential_tender_size, _t_confidential_topics,
+    "transparency.confidential_share": _t_transparency,
+    "transparency.confidential_tender_size": _t_confidential_tender_size,
+    "transparency.confidential_topics": _t_confidential_topics,
     # Financial
-    _t_eoy_spending, _t_reserve_trajectory,
+    "finance.eoy_spending": _t_eoy_spending,
+    "finance.reserve_trajectory": _t_reserve_trajectory,
     # Engagement
-    _t_engagement, _t_deputation_dissent, _t_question_responsiveness,
-]
+    "engagement.participation": _t_engagement,
+    "engagement.deputation_dissent": _t_deputation_dissent,
+    "engagement.question_responsiveness": _t_question_responsiveness,
+}
 
-# The SCOPE_SINGLE_MEETING-eligible subset of _BATTERY (docs/frontend/
-# PRODUCT_ROADMAP.md F2) — an explicit list, matching _BATTERY's own style,
-# rather than a dry-run scope check: every function here accepts a
-# meeting_id kwarg (see each one's meeting-scoped sibling, e.g.
-# _t_recusal_overall_meeting) and produces a factual recount of that one
-# meeting, not a corpus-wide rate.
-_MEETING_BATTERY = [
-    _t_tender_concentration, _t_decider_supplier_conflict,
-    _t_recusal_overall,
-    _t_big_dollar_leniency, _t_objection_dose,
-    _t_officer_divergence, _t_unanimity_trend, _t_attendance,
-    _t_transparency, _t_confidential_tender_size, _t_confidential_topics,
-    _t_engagement, _t_deputation_dissent, _t_question_responsiveness,
-]
+
+def _load_registry_or_raise() -> list[RegistryRow]:
+    """The battery must refuse to run on a partial/mismatched registry
+    (TEST_REGISTRY_PLAN.md Step 3 item 5) — a row with no generator, or a
+    generator with no row, is a bug worth stopping the run for, not silently
+    producing 28 tests."""
+    registry = load_test_registry()
+    registry_ids = {row.id for row in registry}
+    generator_ids = set(_GENERATORS)
+    if registry_ids != generator_ids:
+        raise RuntimeError(
+            "config/test_registry.json and _GENERATORS disagree — "
+            f"registry rows with no generator: {sorted(registry_ids - generator_ids)}; "
+            f"generators with no registry row: {sorted(generator_ids - registry_ids)}"
+        )
+    return registry
 
 
 def run_test_battery(session: Session, council_id: int,
@@ -2008,13 +2034,21 @@ def run_test_battery(session: Session, council_id: int,
     oversight — to avoid recomputing the heavy ones.
     """
     pc = precomputed or {}
+    registry = _load_registry_or_raise()
     results: list[TestResult] = []
-    for fn in _BATTERY:
+    for row in registry:
+        fn = _GENERATORS[row.id]
         try:
-            results.append(fn(session, council_id, pc))
+            r = fn(session, council_id, pc)
+            # The registry authors the rendered title/question (B.5) — this
+            # is also what keeps the S7 invariant gate's scan of these two
+            # fields checking the text actually displayed.
+            r.title = row.title_technical
+            r.question = row.question_technical
+            results.append(r)
         except Exception as exc:  # a broken test must not sink the battery
             results.append(TestResult(
-                test_id=getattr(fn, "__name__", "unknown"),
+                test_id=row.id,
                 title=fn.__name__.replace("_t_", "").replace("_", " "),
                 genre="(error)", principle="—", question="—",
                 valence=NEUTRAL, grade=G_NODATA, data_ok=False,
@@ -2037,8 +2071,12 @@ def run_meeting_digest(session: Session, council_id: int, meeting_id: int) -> li
     `tests/test_publish_gate.py`) for why, and `council meeting-digest`'s own
     docstring for the separate one-off manual preview path.
     """
+    registry = _load_registry_or_raise()
     results: list[TestResult] = []
-    for fn in _MEETING_BATTERY:
+    for row in registry:
+        if not row.meeting_scope:
+            continue
+        fn = _GENERATORS[row.id]
         try:
             results.append(fn(session, council_id, {}, meeting_id=meeting_id))
         except Exception as exc:  # a broken test must not sink the digest
