@@ -58,7 +58,19 @@ function draftOverlay(): Plugin {
 
 export default defineConfig({
   plugins: [react(), draftOverlay()],
+  resolve: {
+    alias: {
+      // config/test_registry.json is council-agnostic and read by both the
+      // Python battery (src/test_registry.py) and the frontend — this alias
+      // is how the frontend reaches the one copy instead of a duplicated one
+      // inside frontend/. See docs/frontend/TEST_REGISTRY_PLAN.md Step 1.
+      '@registry': resolve(__dirname, '../config/test_registry.json'),
+    },
+  },
   server: {
+    fs: {
+      allow: ['..'],
+    },
     proxy: {
       '/api': 'http://localhost:8000',
     },
