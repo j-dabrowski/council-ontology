@@ -2,6 +2,7 @@ import { useData } from "../hooks/useData";
 import { api, AlignmentPair } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
+import { surname } from "../surname";
 
 function rateColor(rate: number) {
   // 100% = deep green, 95% = mid green, <90% = yellow
@@ -53,7 +54,7 @@ export function AlignmentHeatmap() {
               <th></th>
               {names.map((n) => (
                 <th key={n} className="heatmap-col-label" title={n}>
-                  {n.split(" ").slice(-1)[0]}
+                  {surname(n)}
                 </th>
               ))}
             </tr>
@@ -61,7 +62,7 @@ export function AlignmentHeatmap() {
           <tbody>
             {names.map((rowName) => (
               <tr key={rowName}>
-                <td className="heatmap-row-label">{rowName.split(" ").slice(-1)[0]}</td>
+                <td className="heatmap-row-label">{surname(rowName)}</td>
                 {names.map((colName) => {
                   if (rowName === colName) {
                     return <td key={colName} className="heatmap-self" />;

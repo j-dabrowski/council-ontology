@@ -127,16 +127,15 @@ export function ConflictRecusalPanel() {
   const drillSubtitle = (p: RecusalProfile) => {
     const blended = `all declared interests: ${p.recused}/${p.declared_votes} (${Math.round(p.recusal_rate * 100)}%)`;
     if (p.must_leave_recusal_rate === null) {
-      return `${p.declarations.length} on record · no must-leave conflicts on record · ${blended}`;
+      return `${p.declarations.length} matched votes · no must-leave conflicts among them · ${blended}`;
     }
     const mustLeave = `must-leave conflicts: ${p.must_leave_recused}/${p.must_leave_declared} (${Math.round(p.must_leave_recusal_rate * 100)}%)`;
-    return `${p.declarations.length} on record · ${mustLeave} · ${blended}`;
+    return `${p.declarations.length} matched votes · ${mustLeave} · ${blended}`;
   };
 
   const chartData = data.profiles
     .map((p) => ({
       ...p,
-      shortName: p.name.split(" ").slice(-1)[0] || p.name,
       // Blended rate — drives the histogram above and the "declared items"
       // stat; unrelated to compliance grading.
       pct: +(p.recusal_rate * 100).toFixed(0),
@@ -293,10 +292,10 @@ export function ConflictRecusalPanel() {
           not the blended rate quoted elsewhere on this page, because a councillor can post a low
           blended rate purely out of lawful "impartiality" declarations they are entitled to stay and
           vote on. Green = usually steps out on a mandatory conflict; amber/red = usually stays and
-          votes on one; <strong>grey = no must-leave declarations on record</strong> — only lawful
+          votes on one; <strong>grey = no must-leave conflicts among this councillor's matched votes</strong> — only lawful
           "impartiality" ones, so no compliance colour applies. {smallNExcluded > 0 && (
             <>{smallNExcluded} further councillor{smallNExcluded === 1 ? "" : "s"} with{" "}
-            {SMALL_N_FLOOR} or fewer must-leave declarations on record{" "}
+            {SMALL_N_FLOOR} or fewer must-leave conflicts among their matched votes{" "}
             {smallNExcluded === 1 ? "is" : "are"} not shown by name here — too small a sample to
             attribute a legally-mandatory compliance rate to one person. </>
           )}The spread among the shown bars is stark: some councillors recuse on the clear majority

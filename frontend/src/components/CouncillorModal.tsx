@@ -1,7 +1,49 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { useData } from "../hooks/useData";
-import { api, CouncillorProfile, CouncillorsData } from "../api";
+import { api, CouncillorProfile, CouncillorsData, ConflictRecusalData, RecusalProfile } from "../api";
 import { SourceQuote } from "./DrillDown";
+import { surname } from "../surname";
+
+// Same floor as ConflictRecusalPanel.tsx/InterestsChart.tsx/RecusalTrendPanel.tsx —
+// a named must-leave *percentage* resting on 3 or fewer records isn't
+// defensible (a single misattributed declaration can flip it). The counts
+// themselves are still shown below the floor: withholding "complied with both
+// of 2" would suppress the exculpatory fact, not just an unreliable rate.
+const SMALL_N_FLOOR = 3;
+
+// The blended "N of M recused" figure conflates legally-mandatory ("must
+// leave") conflicts with lawful "impartiality" interests a councillor is
+// entitled to stay and vote on — leading with it alone reintroduces the
+// exact misleading-blend pattern ConflictRecusalPanel.tsx was fixed to stop
+// leading with (docs/review, blocking flag, draft_20260904_061041 pass 1).
+// `profile.declarations` here is truncated to the most recent rows, so it
+// can't be counted client-side for an accurate must-leave total — this pulls
+// the same per-councillor aggregate `declared.json` already computes for
+// ConflictRecusalPanel's own drill-down instead.
+function declaredInterestsSummary(profile: CouncillorProfile, recusal: RecusalProfile | null): string {
+  const blended = `all declared interests: ${profile.n_recused}/${profile.n_declarations}` +
+    (profile.recusal_rate != null ? ` (${Math.round(profile.recusal_rate * 100)}%)` : "");
+  // Every figure here counts declarations matched to a vote at item level
+  // (src/analysis/queries.py's _linked_declared_votes), NOT the councillor's
+  // full declaration record — an unmatched declaration is absent from both
+  // numerator and denominator. Saying "on record" here would be false: a
+  // councillor can hold must-leave declarations that matched no vote and so
+  // are counted nowhere below.
+  if (!recusal) return `${profile.n_declarations} on record`;
+  if (recusal.must_leave_recusal_rate === null) {
+    return `no must-leave conflicts among matched votes · ${blended}`;
+  }
+  if (recusal.must_leave_declared <= SMALL_N_FLOOR) {
+    // Counts, no percentage — states what happened without resting a named
+    // rate on a handful of records.
+    return `must-leave conflicts: ${recusal.must_leave_recused} of ` +
+      `${recusal.must_leave_declared} matched votes (too few to express as a rate) · ${blended}`;
+  }
+  const mustLeave = `must-leave conflicts: ${recusal.must_leave_recused} of ` +
+    `${recusal.must_leave_declared} matched votes ` +
+    `(${Math.round(recusal.must_leave_recusal_rate * 100)}%)`;
+  return `${mustLeave} · ${blended}`;
+}
 
 // ── Context ──────────────────────────────────────────────────────────────────
 
@@ -33,8 +75,7 @@ export function CouncillorTick({ x, y, payload }: {
   x: number | string; y: number | string; payload: { value: string };
 }) {
   const { open } = useCouncillor();
-  const parts = (payload.value ?? "").trim().split(/\s+/);
-  const label = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+  const label = surname(payload.value ?? "");
   return (
     <text
       x={x} y={y} dy={4}
@@ -58,7 +99,9 @@ const TYPE_LABEL: Record<string, string> = {
 
 function pct(v: number) { return `${Math.round(v * 100)}%`; }
 
-function ProfileModal({ profile, onClose }: { profile: CouncillorProfile; onClose: () => void }) {
+function ProfileModal({ profile, recusal, onClose }: {
+  profile: CouncillorProfile; recusal: RecusalProfile | null; onClose: () => void;
+}) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
@@ -179,15 +222,16 @@ function ProfileModal({ profile, onClose }: { profile: CouncillorProfile; onClos
               <div className="cllr-section-title">
                 Declared interests
                 <span className="cllr-section-meta">
-                  {" "}{profile.n_recused} of {profile.n_declarations} recused
-                  {profile.recusal_rate != null && ` (${Math.round(profile.recusal_rate * 100)}%)`}
+                  {" "}{declaredInterestsSummary(profile, recusal)}
                 </span>
               </div>
               <p className="cllr-meta">
-                Blends every declared-interest type — legally-mandatory ("must
-                leave") conflicts and lawful "impartiality" interests a
+                "All declared interests" blends legally-mandatory ("must
+                leave") conflicts with lawful "impartiality" interests a
                 councillor is entitled to stay and vote on — see the "must
-                leave" tag on each row below for which is which.
+                leave" tag on each row below for which is which. Counts cover
+                declarations matched to a vote at item level, so a
+                councillor's full declaration record may be larger.
               </p>
               {profile.declarations.map((d, i) => {
                 const t = d.interest_type ?? "other";
@@ -248,14 +292,18 @@ function ProfileModal({ profile, onClose }: { profile: CouncillorProfile; onClos
 export function CouncillorProvider({ children }: { children: React.ReactNode }) {
   const [name, setName] = useState<string | null>(null);
   const { data } = useData<CouncillorsData>(() => api.councillors());
+  const { data: recusalData } = useData<ConflictRecusalData>(() => api.declared());
   const open = useCallback((n: string) => setName(n), []);
 
   const profile = name && data ? (data.by_name[name] ?? null) : null;
+  const recusal = name && recusalData
+    ? (recusalData.profiles.find((p) => p.name === name) ?? null)
+    : null;
 
   return (
     <CouncillorCtx.Provider value={{ open }}>
       {children}
-      {profile && <ProfileModal profile={profile} onClose={() => setName(null)} />}
+      {profile && <ProfileModal profile={profile} recusal={recusal} onClose={() => setName(null)} />}
     </CouncillorCtx.Provider>
   );
 }

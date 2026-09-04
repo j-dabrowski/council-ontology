@@ -3,6 +3,7 @@ import { api, SponsorshipData, SponsorEdge, SponsorNode } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
 import { Reveal } from "./DrillDown";
+import { surname } from "../surname";
 
 const KIND_COLOR: Record<string, string> = {
   alliance: "#22c55e",   // sponsor AND vote together — a real working bloc
@@ -10,10 +11,6 @@ const KIND_COLOR: Record<string, string> = {
   mixed: "#94a3b8",
 };
 
-function lastName(n: string): string {
-  const p = n.trim().split(/\s+/);
-  return p.length > 1 ? p[p.length - 1] : n;
-}
 
 // ── Part 2: deterministic circular node-link diagram of the 2000s network ──
 function OldGuardNetwork({ nodes, edges }: { nodes: SponsorNode[]; edges: SponsorEdge[] }) {
@@ -54,7 +51,7 @@ function OldGuardNetwork({ nodes, edges }: { nodes: SponsorNode[]; edges: Sponso
             <circle cx={p.x} cy={p.y} r={r} fill="#1e293b" stroke="#64748b" strokeWidth={1.5} />
             <text x={lx} y={p.y + 4} fontSize={12} fill="#cbd5e1"
               textAnchor={right ? "start" : "end"}
-              style={{ cursor: "pointer" }} onClick={() => open(n.name)}>{lastName(n.name)}</text>
+              style={{ cursor: "pointer" }} onClick={() => open(n.name)}>{surname(n.name)}</text>
           </g>
         );
       })}
@@ -66,9 +63,9 @@ function EdgeRow({ e, denom }: { e: SponsorEdge; denom: number }) {
   return (
     <div className="spon-edge-row">
       <span className="spon-edge-names">
-        <CouncillorLink name={e.name_a}>{lastName(e.name_a)}</CouncillorLink>
+        <CouncillorLink name={e.name_a}>{surname(e.name_a)}</CouncillorLink>
         {" "}<span className="spon-amp">&amp;</span>{" "}
-        <CouncillorLink name={e.name_b}>{lastName(e.name_b)}</CouncillorLink>
+        <CouncillorLink name={e.name_b}>{surname(e.name_b)}</CouncillorLink>
         <span className="spon-edge-era"> · {e.era_label}</span>
       </span>
       <div className="spon-edge-bar-track">
@@ -142,7 +139,7 @@ export function SponsorshipNetworkPanel() {
             e.g. {topAlliances.map((e, i) => (
               <span key={i}>
                 {i > 0 && " and "}
-                {lastName(e.name_a)}–{lastName(e.name_b)}
+                {surname(e.name_a)}–{surname(e.name_b)}
               </span>
             ))}
           </Reveal></>

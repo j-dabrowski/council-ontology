@@ -3,6 +3,7 @@ import { api, ScorecardData, ScorecardTest, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { ValenceChip } from "./ValenceChip";
 import { groupTestsByGenre } from "../groupTestsByGenre";
+import { surnameForms } from "../surname";
 
 // Structural guardrail: a test's headline/verdict must never carry a named
 // individual through this always-visible slot unnoticed — any valence, not
@@ -13,8 +14,9 @@ import { groupTestsByGenre } from "../groupTestsByGenre";
 // devtools open, which is exactly the audience this guards.
 function findNamedCouncillorsInText(text: string, councillorNames: string[]): string[] {
   return councillorNames.filter((name) => {
-    const last = name.trim().split(/\s+/).slice(-1)[0];
-    return last.length > 2 && text.includes(last);
+    // Both the particle-aware surname ("Le Page") and the bare last token
+    // ("Page") — a redaction guardrail must never match less than before.
+    return surnameForms(name).some((f) => f.length > 2 && text.includes(f));
   });
 }
 
@@ -25,8 +27,7 @@ function escapeRegExp(s: string): string {
 function redactNamedCouncillors(text: string, names: string[]): string {
   if (!names.length) return text;
   const alternatives = names.flatMap((name) => {
-    const last = name.trim().split(/\s+/).slice(-1)[0];
-    return [escapeRegExp(name), escapeRegExp(last)];
+    return [name, ...surnameForms(name)].map(escapeRegExp);
   });
   const pattern = new RegExp(alternatives.join("|"), "g");
   return text.replace(pattern, "[named individual — flagged for review]");

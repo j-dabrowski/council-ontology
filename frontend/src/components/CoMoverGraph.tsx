@@ -3,6 +3,7 @@ import { useRef, useEffect, useState, useCallback } from "react";
 import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { surname } from "../surname";
 
 export function CoMoverGraph() {
   const { data, loading, error } = useData(() => api.coMovers());
@@ -89,7 +90,7 @@ export function CoMoverGraph() {
               ctx.font = `${fontSize}px sans-serif`;
               ctx.fillStyle = "#f1f5f9";
               ctx.textAlign = "center";
-              ctx.fillText(label.split(" ").slice(-1)[0], node.x ?? 0, (node.y ?? 0) + r + fontSize);
+              ctx.fillText(surname(label), node.x ?? 0, (node.y ?? 0) + r + fontSize);
             }
           }}
         />

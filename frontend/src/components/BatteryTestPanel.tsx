@@ -5,6 +5,7 @@ import {
 import { useData } from "../hooks/useData";
 import { api, ScorecardData, ScorecardTest, TestChart, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { surnameForms } from "../surname";
 
 const VALENCE_FILL: Record<string, string> = {
   supportive: "#4ade80", neutral: "#60a5fa", critical: "#f87171",
@@ -20,8 +21,9 @@ const HIGHLIGHT_FILL = "#fbbf24";
 // devtools open, which is exactly the audience this guards.
 function findNamedCouncillorsInText(text: string, councillorNames: string[]): string[] {
   return councillorNames.filter((name) => {
-    const last = name.trim().split(/\s+/).slice(-1)[0];
-    return last.length > 2 && text.includes(last);
+    // Both the particle-aware surname ("Le Page") and the bare last token
+    // ("Page") — a redaction guardrail must never match less than before.
+    return surnameForms(name).some((f) => f.length > 2 && text.includes(f));
   });
 }
 
@@ -32,8 +34,7 @@ function escapeRegExp(s: string): string {
 function redactNamedCouncillors(text: string, names: string[]): string {
   if (!names.length) return text;
   const alternatives = names.flatMap((name) => {
-    const last = name.trim().split(/\s+/).slice(-1)[0];
-    return [escapeRegExp(name), escapeRegExp(last)];
+    return [name, ...surnameForms(name)].map(escapeRegExp);
   });
   const pattern = new RegExp(alternatives.join("|"), "g");
   return text.replace(pattern, "[named individual — flagged for review]");

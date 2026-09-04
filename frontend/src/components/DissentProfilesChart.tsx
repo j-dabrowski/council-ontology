@@ -6,6 +6,7 @@ import { useData } from "../hooks/useData";
 import { api, DissenterProfile } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
+import { surname } from "../surname";
 
 function dissenterColor(profile: DissenterProfile): string {
   const r = profile.dissent_rate;
@@ -57,7 +58,7 @@ export function DissentProfilesChart() {
     .filter((p) => p.total_votes_on_carried >= 50)
     .map((p) => ({
       ...p,
-      shortName: p.name.split(" ").slice(-1)[0],
+      shortName: surname(p.name),
       pct: +(p.dissent_rate * 100).toFixed(1),
     }))
     // Show top 20 by dissent rate to keep the chart readable

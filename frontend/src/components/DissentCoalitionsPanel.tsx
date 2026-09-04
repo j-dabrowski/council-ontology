@@ -6,6 +6,7 @@ import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
+import { surname } from "../surname";
 
 export function DissentCoalitionsPanel() {
   const { data, loading, error } = useData(() => api.dissent());
@@ -39,8 +40,8 @@ export function DissentCoalitionsPanel() {
           <div className="coalition-hero">
             <span className="coalition-count">{topCoalition.shared_dissent}</span>
             <span className="coalition-text">
-              times <strong>{topCoalition.name_a.split(" ").slice(-1)[0]}</strong> &amp;{" "}
-              <strong>{topCoalition.name_b.split(" ").slice(-1)[0]}</strong> voted against
+              times <strong>{surname(topCoalition.name_a)}</strong> &amp;{" "}
+              <strong>{surname(topCoalition.name_b)}</strong> voted against
               the same carried motion — the chamber's tightest opposition pairing
             </span>
           </div>
