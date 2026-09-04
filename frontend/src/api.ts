@@ -598,7 +598,6 @@ export interface TestChart {
 export interface ScorecardTest {
   test_id: string;
   title: string;
-  genre: string;
   principle: string;
   question: string;
   valence: Valence;

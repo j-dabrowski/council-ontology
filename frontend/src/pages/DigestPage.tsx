@@ -4,8 +4,8 @@ import { BatteryTestCard } from "../components/BatteryTestPanel";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { useData } from "../hooks/useData";
 import { api, DigestData, CouncillorsData } from "../api";
-import { groupTestsByGenre } from "../groupTestsByGenre";
 import { resolveTests } from "../registry";
+import { groupByCategory } from "../registry/grouping";
 
 // Local-review-only surface for the single-meeting digest, computed
 // automatically for the latest minutes meeting by every `council draft` run
@@ -35,7 +35,23 @@ export function DigestPage() {
     );
   }
 
-  const groups = groupTestsByGenre(data.tests);
+  // The digest snapshot carries only the 14 meeting_scope tests, so this
+  // resolves to 14 rows, not 29 — correct, not padded; a category with none
+  // of its tests meeting-scoped simply doesn't appear.
+  //
+  // title_technical/question_technical are put back to the snapshot's own
+  // meeting-scoped phrasing ("Did anyone declare a conflict this meeting?")
+  // on this surface only: the registry has no title_meeting/question_meeting
+  // pair yet — that's a deliberately deferred Step 10 addition — and
+  // substituting the corpus-wide copy here would silently change what the
+  // digest says. category/principles/detail_panel come from the registry
+  // like every other surface.
+  const byId = new Map(data.tests.map((t) => [t.test_id, t]));
+  const resolved = resolveTests(data.tests).map((r) => {
+    const raw = byId.get(r.id)!;
+    return { ...r, title_technical: raw.title, question_technical: raw.question };
+  });
+  const groups = groupByCategory(resolved);
   const meetingDate = new Date(`${data.meeting_date}T00:00:00`).toLocaleDateString("en-AU", {
     day: "numeric", month: "long", year: "numeric",
   });
@@ -60,24 +76,11 @@ export function DigestPage() {
             <section className="grid-full">
               <h3 className="analysis-group-heading">{g.name}</h3>
             </section>
-            {g.tests.map((t) => {
-              // BatteryTestCard now takes a ResolvedTest (Step 7) — resolved
-              // here per-row purely to keep compiling; title_technical/
-              // question_technical are put straight back to the snapshot's
-              // own meeting-scoped phrasing ("Did anyone declare a conflict
-              // this meeting?"), since the registry has no meeting-scoped
-              // copy field yet and substituting its corpus-wide title would
-              // silently change what this page says (TEST_REGISTRY_PLAN.md
-              // Step 9, not done here).
-              const [resolved] = resolveTests([t]);
-              if (!resolved) return null;
-              const test = { ...resolved, title_technical: t.title, question_technical: t.question };
-              return (
-                <section className="grid-full" key={t.test_id}>
-                  <BatteryTestCard test={test} cllrData={cllrData} />
-                </section>
-              );
-            })}
+            {g.tests.map((t) => (
+              <section className="grid-full" key={t.id}>
+                <BatteryTestCard test={t} cllrData={cllrData} />
+              </section>
+            ))}
           </Fragment>
         ))}
       </main>
