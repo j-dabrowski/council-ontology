@@ -7,6 +7,7 @@ import { useData } from "../hooks/useData";
 import { api, ContractorTotal, TenderAward } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
 const fmtM = (n: number) => `$${(n / 1e6).toFixed(1)}M`;
 const fmt$ = (n: number) =>
@@ -53,7 +54,7 @@ const CustomTooltip = ({ active, payload }: {
   );
 };
 
-export function TenderConcentrationPanel() {
+export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.tenders());
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -75,10 +76,10 @@ export function TenderConcentrationPanel() {
 
   return (
     <Card
-      title="Where Cambridge's Tender Money Went"
-      subtitle="Awarded contracts with a disclosed value · 1995–2026"
-      valence="neutral"
-      backTo="sc-tenders"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

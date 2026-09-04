@@ -1,4 +1,5 @@
 import { ComponentType } from "react";
+import type { ResolvedTest } from "./registry/types";
 import { DivergencePanel } from "./components/DivergencePanel";
 import { EngagementChart } from "./components/EngagementChart";
 import { ConflictRecusalPanel } from "./components/ConflictRecusalPanel";
@@ -17,7 +18,7 @@ import { SponsorshipNetworkPanel } from "./components/SponsorshipNetworkPanel";
 // free). Deliberately opt-in and manual (docs/frontend/INTERACTIVITY.md's
 // recipe) — a test with no entry here still renders, via BatteryTestPanel,
 // so missing from this map is never a visibility gap, only a polish one.
-export const BESPOKE_PANELS: Record<string, ComponentType> = {
+export const BESPOKE_PANELS: Record<string, ComponentType<{ test: ResolvedTest }>> = {
   "conflict.recusal_management": ConflictRecusalPanel,
   "conflict.recusal_trend": RecusalTrendPanel,
   "procurement.concentration": TenderConcentrationPanel,

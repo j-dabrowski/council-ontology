@@ -3,8 +3,9 @@ import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { SourceQuote } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
-export function DivergencePanel() {
+export function DivergencePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.divergence());
   const [expanded, setExpanded] = useState<number | null>(null);
 
@@ -24,7 +25,7 @@ export function DivergencePanel() {
   }
 
   return (
-    <Card title="Officer Recommendation Compliance" subtitle={yearRange} valence="critical" backTo="sc-divergence">
+    <Card title={test.title_technical} subtitle={test.question_technical} valence={test.valence} backTo={`sc-${test.detail_panel}`}>
       <div className="divergence-hero">
         <span className="hero-number">{pct}</span>
         <span className="hero-label">

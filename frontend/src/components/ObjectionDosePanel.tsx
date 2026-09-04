@@ -7,6 +7,7 @@ import { useData } from "../hooks/useData";
 import { api, ObjectionDoseBucket, DoseApp } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
 const LABELS: Record<string, string> = {
   "0": "No objectors",
@@ -52,7 +53,7 @@ function AppRow({ app }: { app: DoseApp }) {
   );
 }
 
-export function ObjectionDosePanel() {
+export function ObjectionDosePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.dose());
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -77,10 +78,10 @@ export function ObjectionDosePanel() {
 
   return (
     <Card
-      title="How Many Objectors Does It Take to Sink a Development?"
-      subtitle="Refusal rate by number of community objections · decided applications, 1995–2026"
-      valence="supportive"
-      backTo="sc-dose"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

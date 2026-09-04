@@ -8,6 +8,7 @@ import { useData } from "../hooks/useData";
 import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
 const ERA_LABEL: Record<string, string> = {
@@ -103,7 +104,7 @@ const TypeEraTooltip = ({ active, payload, label }: {
   );
 };
 
-export function RecusalTrendPanel() {
+export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<RecusalData>(() => api.recusal());
   const [selected, setSelected] = useState<{ era: string; type: string } | null>(null);
 
@@ -148,10 +149,10 @@ export function RecusalTrendPanel() {
 
   return (
     <Card
-      title="Declared, Then Stayed — the Quiet Collapse of Recusal"
-      subtitle="Did declaring a conflict still mean leaving the room? · serious (financial/proximity) interests, 1995–2026"
-      valence="critical"
-      backTo="sc-recusal"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

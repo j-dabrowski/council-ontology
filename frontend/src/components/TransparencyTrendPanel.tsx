@@ -7,6 +7,7 @@ import { useData } from "../hooks/useData";
 import { api, TransparencyYear, ConfidentialItem } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
 const KIND_LABELS: Record<string, string> = {
   tender: "Tender",
@@ -52,7 +53,7 @@ function ConfItemRow({ item }: { item: ConfidentialItem }) {
   );
 }
 
-export function TransparencyTrendPanel() {
+export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.transparency());
   const [selected, setSelected] = useState<number | null>(null);
 
@@ -74,10 +75,10 @@ export function TransparencyTrendPanel() {
 
   return (
     <Card
-      title="Did the Council Go Dark?"
-      subtitle="Share of decided items recorded as confidential, 1995–2026"
-      valence="critical"
-      backTo="sc-transparency"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

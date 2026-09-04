@@ -35,7 +35,7 @@ export function AnalysisPage() {
               const Bespoke = BESPOKE_PANELS[t.id];
               return (
                 <section className="grid-full" id={`panel-${t.detail_panel}`} key={t.id}>
-                  {Bespoke ? <Bespoke /> : <BatteryTestPanel testId={t.id} />}
+                  {Bespoke ? <Bespoke test={t} /> : <BatteryTestPanel testId={t.id} />}
                 </section>
               );
             })}

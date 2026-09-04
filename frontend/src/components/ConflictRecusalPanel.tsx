@@ -8,6 +8,7 @@ import { api, RecusalProfile, DeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
+import type { ResolvedTest } from "../registry/types";
 
 const TYPE_LABEL: Record<string, string> = {
   financial: "Financial", proximity: "Proximity",
@@ -110,7 +111,7 @@ const HistTooltip = ({ active, payload }: {
   );
 };
 
-export function ConflictRecusalPanel() {
+export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.declared());
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -178,10 +179,10 @@ export function ConflictRecusalPanel() {
 
   return (
     <Card
-      title="Declaring a Conflict — Do Councillors Step Out, or Vote Anyway?"
-      subtitle="Behaviour on votes where the councillor declared an interest · 1995–2026"
-      valence="critical"
-      backTo="sc-declared"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

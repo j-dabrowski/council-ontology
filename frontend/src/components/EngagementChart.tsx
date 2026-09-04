@@ -4,8 +4,9 @@ import {
 import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import type { ResolvedTest } from "../registry/types";
 
-export function EngagementChart() {
+export function EngagementChart({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.engagement());
 
   if (loading) return <LoadingCard />;
@@ -19,7 +20,7 @@ export function EngagementChart() {
   }));
 
   return (
-    <Card title="Public Engagement by Year" subtitle="Questions, deputations and petitions at meetings" valence="neutral" backTo="sc-engagement">
+    <Card title={test.title_technical} subtitle={test.question_technical} valence={test.valence} backTo={`sc-${test.detail_panel}`}>
       <ResponsiveContainer width="100%" height={340}>
         <BarChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />

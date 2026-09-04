@@ -4,6 +4,7 @@ import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
 import { Reveal } from "./DrillDown";
 import { surname } from "../surname";
+import type { ResolvedTest } from "../registry/types";
 
 const KIND_COLOR: Record<string, string> = {
   alliance: "#22c55e",   // sponsor AND vote together — a real working bloc
@@ -81,7 +82,7 @@ function EdgeRow({ e, denom }: { e: SponsorEdge; denom: number }) {
   );
 }
 
-export function SponsorshipNetworkPanel() {
+export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<SponsorshipData>(() => api.sponsorship());
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -97,10 +98,10 @@ export function SponsorshipNetworkPanel() {
 
   return (
     <Card
-      title="Who Backed Whom — the Sponsorship Network a Unanimous Vote Hides"
-      subtitle="Cambridge votes together ~90% of the time. Who SECONDS whose motions reveals the working blocs the vote record can't · 1996–2023"
-      valence="neutral"
-      backTo="sc-sponsorship"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       {/* convergence hero */}
       <div className="planning-hero-row">

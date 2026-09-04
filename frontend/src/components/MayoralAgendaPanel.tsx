@@ -8,6 +8,7 @@ import { api, MayorContest, MayoralMotion } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
+import type { ResolvedTest } from "../registry/types";
 
 const MayorTooltip = ({ active, payload }: {
   active?: boolean;
@@ -40,7 +41,7 @@ function MotionRow({ m }: { m: MayoralMotion }) {
   );
 }
 
-export function MayoralAgendaPanel() {
+export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.mayoral());
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -67,10 +68,10 @@ export function MayoralAgendaPanel() {
 
   return (
     <Card
-      title="Does the Council Fall in Line Behind the Mayor?"
-      subtitle="Dissent on motions moved by the sitting Mayor vs everyone else · 1999–2026"
-      valence="supportive"
-      backTo="sc-mayoral"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

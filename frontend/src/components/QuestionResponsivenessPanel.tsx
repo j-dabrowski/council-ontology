@@ -8,6 +8,7 @@ import { useData } from "../hooks/useData";
 import { api, QuestionResponsivenessData, PQResponseDetail, PQYearPoint } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
 const ERA_LABEL: Record<string, string> = {
@@ -77,7 +78,7 @@ const EraTooltip = ({ active, payload, label }: {
   );
 };
 
-export function QuestionResponsivenessPanel() {
+export function QuestionResponsivenessPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<QuestionResponsivenessData>(
     () => api.questionResponsiveness());
   const [selectedEra, setSelectedEra] = useState<string | null>(null);
@@ -109,10 +110,10 @@ export function QuestionResponsivenessPanel() {
 
   return (
     <Card
-      title="Answered in the Room — or Quietly Taken on Notice?"
-      subtitle="Are residents' public questions answered in the meeting, or deferred? · 1995–2026"
-      valence="critical"
-      backTo="sc-question-responsiveness"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

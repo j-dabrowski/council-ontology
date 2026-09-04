@@ -7,6 +7,7 @@ import { api, TenureProfile } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 import { Reveal } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
 const HIST_ORDER = ["<2y", "2-5y", "5-10y", "10-15y", "15y+"];
 
@@ -25,7 +26,7 @@ const LeaderTooltip = ({ active, payload }: {
   );
 };
 
-export function TenurePanel() {
+export function TenurePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.tenure());
 
   if (loading) return <LoadingCard />;
@@ -48,10 +49,10 @@ export function TenurePanel() {
 
   return (
     <Card
-      title="Lifers and Blow-ins — How Long Do Councillors Last?"
-      subtitle="Length of service from first to last recorded vote · councillors with ≥20 votes"
-      valence="neutral"
-      backTo="sc-tenure"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

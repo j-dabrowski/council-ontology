@@ -9,6 +9,7 @@ import { api, PowerProfile, ContestedVoteDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
+import type { ResolvedTest } from "../registry/types";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -68,7 +69,7 @@ const ScatterTooltip = ({ active, payload }: {
   );
 };
 
-export function PowerPanel() {
+export function PowerPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.power());
   const [selected, setSelected] = useState<string | null>(null);
 
@@ -145,10 +146,10 @@ export function PowerPanel() {
 
   return (
     <Card
-      title="Who Wins — Power on a Split Council"
-      subtitle={`Every motion that drew a dissenting vote and carried or was lost · ${data.n_contested.toLocaleString()} contested decisions, 1995–2026`}
-      valence="critical"
-      backTo="sc-power"
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">
