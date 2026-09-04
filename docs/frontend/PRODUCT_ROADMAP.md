@@ -180,9 +180,16 @@ oversight:
   could stop reading the raw snapshot's own `title`/`question` — see
   TEST_REGISTRY_PLAN.md Step 9) is a deliberately deferred registry
   addition.
-- **Phase 2** (`TrendsChart` / `PlanningTrendChart` / `PlanningObjectionsPanel`
-  / `InterestsChart` — the four institutional orphans) and **Phase 3** (the
-  four individual-implicating orphans, gated on tier derivation/entity
-  resolution work) are outstanding — see TEST_REGISTRY_PLAN.md Steps 11–12.
+- **Phase 2 is done** (2026-09-04) — `TrendsChart` wired to
+  `governance.unanimity_trend`, its only real member. `PlanningTrendChart`
+  and `PlanningObjectionsPanel` turned out to already be retired in
+  `INVESTIGATIONS.md` with documented reasons (a rejected-on-the-merits
+  measure and a duplicate of `planning.objection_responsiveness`,
+  respectively) — not gaps, not attempted. `InterestsChart` turned out to
+  chart and name individual councillors, same as the Phase 3 panels, and was
+  reclassified there rather than wired up as institutional.
+- **Phase 3** (`InterestsChart` plus the four other individual-implicating
+  orphans, gated on tier derivation/entity resolution work) is outstanding —
+  see TEST_REGISTRY_PLAN.md Step 12.
 
 ---

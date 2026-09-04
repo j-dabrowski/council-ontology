@@ -334,8 +334,8 @@
     "objection": null,
     "response": null,
     "evidence_query": "tests._t_unanimity_trend",
-    "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "evidence_snapshot": "trends",
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
     "detail_panel": "unanimity"

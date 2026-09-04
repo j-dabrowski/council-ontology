@@ -5,8 +5,9 @@ import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
+import type { ResolvedTest } from "../registry/types";
 
-export function ContestationChart() {
+export function ContestationChart({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.trends());
 
   if (loading) return <LoadingCard />;
@@ -19,7 +20,12 @@ export function ContestationChart() {
   }));
 
   return (
-    <Card title="Contestation Rate by Year" subtitle="% of carried motions with ≥1 dissenting vote" valence="neutral">
+    <Card
+      title={test.title_technical}
+      subtitle={test.question_technical}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
+    >
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />

@@ -103,14 +103,45 @@ they are missing a route and a registry row:
 
 | Component | Snapshot | Query | Phase |
 |---|---|---|---|
-| `TrendsChart` (`ContestationChart`) | `trends.json` | `contestation_by_year` | 2 |
-| `PlanningTrendChart` | `planning.json` | `planning_trend_by_year` | 2 |
-| `PlanningObjectionsPanel` | `planning.json` | `planning_objection_stats` | 2 |
-| `InterestsChart` (the chart export only) | `interests.json` | `interest_declarations_summary` | 2 |
+| `TrendsChart` (`ContestationChart`) | `trends.json` | `contestation_by_year` | 2 — **done** (Step 11) |
+| `PlanningTrendChart` | `planning.json` | `planning_trend_by_year` | retired, not Phase 2 — see below |
+| `PlanningObjectionsPanel` | `planning.json` | `planning_objection_stats` | retired, not Phase 2 — see below |
+| `InterestsChart` (the chart export only) | `interests.json` | `interest_declarations_summary` | **3**, corrected 2026-09-04 — see below |
 | `DissentProfilesChart` | `dissent.json` | `dissent_profiles` | 3 |
 | `DissentCoalitionsPanel` | `dissent.json` | `dissent_coalition_pairs` | 3 |
 | `AlignmentHeatmap` | `alignment.json` | `voting_alignment_matrix` | 3 |
 | `CoMoverGraph` | `co-movers.json` | `co_mover_pairs` | 3 |
+
+**2026-09-04, executing Step 11 — three corrections to the table above,**
+found by actually reading `INVESTIGATIONS.md`'s 2026-06-26 panel-consolidation
+entry and the component source, not by re-reading this plan harder:
+
+- `TrendsChart` — as planned. Wired to `governance.unanimity_trend`; numbers
+  checked against the scorecard row across all 31 overlapping years in real
+  data, exact agreement. Done.
+- `PlanningObjectionsPanel` and `PlanningTrendChart` are **not** "no existing
+  test covers these" — `INVESTIGATIONS.md` already retired both, with reasons:
+  `PlanningObjectionsPanel` is a coarser binary (with/without objection)
+  duplicate of `planning.objection_responsiveness`'s dose-response bucketing
+  (confirmed by reading both components); `PlanningTrendChart` was looked at
+  and rejected on the merits ("approval-rate trend isn't a quality
+  criterion"). Neither is Phase 2 work. Codifying a new test for either now
+  would mean overriding a documented prior investigative judgment, not
+  filling a gap — out of scope unless a human deliberately reopens that
+  question.
+- `InterestsChart` **moves to Phase 3.** It renders a per-councillor bar
+  chart with the councillor's name on the axis (folded only below a small-N
+  floor within each interest-type category, same pattern as
+  `ConflictRecusalPanel` — the name itself is never hidden). That's
+  `individual_implicating`, the exact thing the "four Phase 3 panels...
+  chart and name individual councillors" line below was already describing;
+  the original table just put it in the wrong column. Phase 3 is five
+  panels, not four. `config/test_registry.json` can't record "known
+  individual-implicating candidate, not yet built" as a row with the
+  frontend routing suppressed — Step 4's parity test enforces a strict 1:1
+  between registry rows and real `_GENERATORS` entries, so a row only exists
+  once a real, computed test does. This table is where that classification
+  lives instead.
 
 Two things make the split above non-negotiable:
 
@@ -118,7 +149,7 @@ Two things make the split above non-negotiable:
   ("what share of carried motions drew at least one dissenting vote, over
   time") — a test that has no bespoke panel today. That one needs no new test at
   all, only a `BESPOKE_PANELS` entry.
-- The four Phase 3 panels **chart and name individual councillors**. Every test
+- The five Phase 3 panels **chart and name individual councillors**. Every test
   in the battery today is `UNIT_INSTITUTIONAL` — `tests.py` says so explicitly
   and `src/invariant_gate.py` enforces it at S7. Giving them registry rows means
   the system's first `individual_implicating` claims, which pulls in tier
@@ -652,35 +683,33 @@ same 14 cards with the same meeting-scoped headings as before.
 
 ---
 
-### Step 11 — PHASE 2: re-wire the four institutional orphans
+### Step 11 — PHASE 2: re-wire the institutional orphan — DONE 2026-09-04
 
-All four already have published snapshots and query functions (A.5) — this is
-routing and registry work, not analysis work.
+Turned out to be one panel, not four — see A.5's 2026-09-04 correction above.
 
 - **`TrendsChart` (`ContestationChart`)** — its measure *is*
-  `governance.unanimity_trend`. Add it to `BESPOKE_PANELS` under that id, flip
-  that row's `has_deep_dive` to `true`, set `evidence_snapshot: "trends"`. No new
-  test. Confirm the panel's own copy comes from the registry row (Step 8's rule)
-  and that its numbers agree with the scorecard row's — if they disagree, stop
-  and report; two measures of the same thing that differ is a finding, not a
-  merge conflict.
-- **`PlanningTrendChart`, `PlanningObjectionsPanel`, `InterestsChart`** — no
-  existing test covers these. Each needs a battery test codified the project's
-  normal way: `council refine` (`docs/investigator/Refiner_prompt.txt`, governed
-  by `REFINEMENT_PROTOCOL.md`), which also emits the S7 declaration block and
-  updates `coverage_register.json`. **Do not hand-write a `TestResult` generator
-  to shortcut this** — the refinement protocol is what makes a test
-  council-agnostic and benchmark-verified. Then add the registry row and the
-  `BESPOKE_PANELS` entry.
+  `governance.unanimity_trend`. Added to `BESPOKE_PANELS` under that id, that
+  row's `has_deep_dive` flipped to `true`, `evidence_snapshot: "trends"` set.
+  No new test. Panel's own copy confirmed coming from the registry row
+  (Step 8's rule); its numbers agreed with the scorecard row's exactly across
+  all 31 overlapping years in real data.
+- **`PlanningTrendChart`, `PlanningObjectionsPanel`** — not attempted.
+  `INVESTIGATIONS.md` already retired both with documented reasons (a
+  duplicate, and a rejected-on-the-merits measure respectively — A.5 above)
+  before this plan was written; codifying a test for either would override
+  that judgment, not fill a gap. Left alone.
+- **`InterestsChart`** — reclassified to Phase 3 (A.5 above); not attempted
+  here.
 
-Acceptance: `/analysis` renders four more panels; `pytest -q` green including
-`test_coverage_register.py`; `council draft` clean.
+Acceptance (revised): `/analysis` renders one more panel (`TrendsChart`);
+`pytest -q` green including `test_coverage_register.py` and
+`test_test_registry.py`; `council draft` clean — met.
 
 ---
 
-### Step 12 — PHASE 3: the individual-implicating orphans
+### Step 12 — PHASE 3: the individual-implicating orphans (now five)
 
-`DissentProfilesChart`, `DissentCoalitionsPanel`, `AlignmentHeatmap`,
+`InterestsChart`, `DissentProfilesChart`, `DissentCoalitionsPanel`, `AlignmentHeatmap`,
 `CoMoverGraph` chart and name individual councillors. Every battery test today
 is `UNIT_INSTITUTIONAL`; these would be the system's first
 `individual_implicating` claims.

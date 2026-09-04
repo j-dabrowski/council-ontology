@@ -12,6 +12,7 @@ import { MayoralAgendaPanel } from "./components/MayoralAgendaPanel";
 import { PowerPanel } from "./components/PowerPanel";
 import { QuestionResponsivenessPanel } from "./components/QuestionResponsivenessPanel";
 import { SponsorshipNetworkPanel } from "./components/SponsorshipNetworkPanel";
+import { ContestationChart } from "./components/TrendsChart";
 
 // test_id -> dedicated component, for the tests that have earned a bespoke
 // panel (richer drill-down than the generic BatteryTestPanel gives for
@@ -31,4 +32,5 @@ export const BESPOKE_PANELS: Record<string, ComponentType<{ test: ResolvedTest }
   "engagement.question_responsiveness": QuestionResponsivenessPanel,
   "engagement.participation": EngagementChart,
   "planning.objection_responsiveness": ObjectionDosePanel,
+  "governance.unanimity_trend": ContestationChart,
 };
