@@ -3,42 +3,16 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, ReferenceLine, LabelList,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ScorecardData, ScorecardTest, TestChart, CouncillorsData } from "../api";
+import { api, ScorecardData, TestChart, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
-import { surnameForms } from "../surname";
+import { resolveTests } from "../registry";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { findNamedCouncillorsInText, redactNamedCouncillors } from "../guardrail";
 
 const VALENCE_FILL: Record<string, string> = {
   supportive: "#4ade80", neutral: "#60a5fa", critical: "#f87171",
 };
 const HIGHLIGHT_FILL = "#fbbf24";
-
-// Structural guardrail: a test's headline/verdict must never carry a named
-// individual through this always-visible slot unnoticed — any valence, not
-// just critical, since a supportive-valence test about the council can still
-// contain an unflattering clause about one person (see docs/review, BLOCKING
-// flag 4, 2026-08-22 pass 1). A hit is redacted in the rendered output itself
-// (not just logged) — a console-only warning is invisible to anyone without
-// devtools open, which is exactly the audience this guards.
-function findNamedCouncillorsInText(text: string, councillorNames: string[]): string[] {
-  return councillorNames.filter((name) => {
-    // Both the particle-aware surname ("Le Page") and the bare last token
-    // ("Page") — a redaction guardrail must never match less than before.
-    return surnameForms(name).some((f) => f.length > 2 && text.includes(f));
-  });
-}
-
-function escapeRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function redactNamedCouncillors(text: string, names: string[]): string {
-  if (!names.length) return text;
-  const alternatives = names.flatMap((name) => {
-    return [name, ...surnameForms(name)].map(escapeRegExp);
-  });
-  const pattern = new RegExp(alternatives.join("|"), "g");
-  return text.replace(pattern, "[named individual — flagged for review]");
-}
 
 function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
   const base = VALENCE_FILL[valence] ?? "#60a5fa";
@@ -98,35 +72,35 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
 }
 
 /**
- * Renders one already-resolved ScorecardTest: chart + headline + verdict +
+ * Renders one already-resolved ResolvedTest: chart + headline + verdict +
  * meta, plus the named-individual guardrail. Pure presentational component —
  * where the test came from (the whole-corpus scorecard, a single-meeting
  * digest) is the caller's problem, not this one's, so this is what both
  * BatteryTestPanel (corpus-wide, fetches by testId) and DigestPage
  * (single-meeting, already has the full test list) render through.
  */
-export function BatteryTestCard({ test: t, cllrData }: { test: ScorecardTest; cllrData: CouncillorsData | null }) {
+export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   let flaggedNames: string[] = [];
   if (cllrData) {
     flaggedNames = findNamedCouncillorsInText(
-      `${t.headline} ${t.verdict}`,
+      `${t.finding} ${t.verdict}`,
       Object.keys(cllrData.by_name)
     );
     if (flaggedNames.length) {
       console.error(
-        `[scorecard guardrail] ${t.valence}-valence test "${t.test_id}" names ` +
+        `[scorecard guardrail] ${t.valence}-valence test "${t.id}" names ` +
         `${flaggedNames.join(", ")} in its headline/verdict — redacted in the rendered output ` +
         `pending review; see docs/review/editor/Editor_prompt.txt`
       );
     }
   }
-  const headline = flaggedNames.length ? redactNamedCouncillors(t.headline, flaggedNames) : t.headline;
+  const headline = flaggedNames.length ? redactNamedCouncillors(t.finding, flaggedNames) : t.finding;
   const verdict = flaggedNames.length ? redactNamedCouncillors(t.verdict, flaggedNames) : t.verdict;
 
   return (
     <Card
-      title={t.title}
-      subtitle={t.question}
+      title={t.title_technical}
+      subtitle={t.question_technical}
       valence={t.valence}
       backTo={t.detail_panel ? `sc-${t.detail_panel}` : undefined}
     >
@@ -136,7 +110,7 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ScorecardTest; cl
         </div>
       )}
       <div className={`bt-headline bt-${t.valence}`}>
-        <span className="bt-grade">{t.grade}</span>
+        <span className="bt-grade">{t.severity}</span>
         <span className="bt-headline-text">{headline}</span>
       </div>
 
@@ -154,8 +128,8 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ScorecardTest; cl
 
       <p className="chart-note">{verdict}</p>
       <p className="chart-note bt-meta">
-        <span className="sc-genre">{t.genre}</span>
-        {" · "}{t.principle}
+        <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
+        {" · "}{t.principles.join(" · ")}
         {t.n != null && <> · n&nbsp;=&nbsp;{t.n.toLocaleString()}</>}
         {t.base_rate && <> · {t.base_rate}</>}
         {t.era && <> · {t.era}</>}
@@ -175,7 +149,7 @@ export function BatteryTestPanel({ testId }: { testId: string }) {
   const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-  const t: ScorecardTest | undefined = data.tests.find((x) => x.test_id === testId);
+  const t = resolveTests(data.tests).find((x) => x.id === testId);
   if (!t) return <ErrorCard msg={`test ${testId} not found`} />;
 
   return <BatteryTestCard test={t} cllrData={cllrData} />;

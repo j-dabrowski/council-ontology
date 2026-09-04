@@ -5,6 +5,7 @@ import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { useData } from "../hooks/useData";
 import { api, DigestData, CouncillorsData } from "../api";
 import { groupTestsByGenre } from "../groupTestsByGenre";
+import { resolveTests } from "../registry";
 
 // Local-review-only surface for the single-meeting digest, computed
 // automatically for the latest minutes meeting by every `council draft` run
@@ -59,11 +60,24 @@ export function DigestPage() {
             <section className="grid-full">
               <h3 className="analysis-group-heading">{g.name}</h3>
             </section>
-            {g.tests.map((t) => (
-              <section className="grid-full" key={t.test_id}>
-                <BatteryTestCard test={t} cllrData={cllrData} />
-              </section>
-            ))}
+            {g.tests.map((t) => {
+              // BatteryTestCard now takes a ResolvedTest (Step 7) — resolved
+              // here per-row purely to keep compiling; title_technical/
+              // question_technical are put straight back to the snapshot's
+              // own meeting-scoped phrasing ("Did anyone declare a conflict
+              // this meeting?"), since the registry has no meeting-scoped
+              // copy field yet and substituting its corpus-wide title would
+              // silently change what this page says (TEST_REGISTRY_PLAN.md
+              // Step 9, not done here).
+              const [resolved] = resolveTests([t]);
+              if (!resolved) return null;
+              const test = { ...resolved, title_technical: t.title, question_technical: t.question };
+              return (
+                <section className="grid-full" key={t.test_id}>
+                  <BatteryTestCard test={test} cllrData={cllrData} />
+                </section>
+              );
+            })}
           </Fragment>
         ))}
       </main>

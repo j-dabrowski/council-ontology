@@ -4,7 +4,8 @@ import { BatteryTestPanel } from "../components/BatteryTestPanel";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { useData } from "../hooks/useData";
 import { api, ScorecardData } from "../api";
-import { groupTestsByGenre } from "../groupTestsByGenre";
+import { resolveTests } from "../registry";
+import { groupByCategory } from "../registry/grouping";
 import { BESPOKE_PANELS } from "../bespokePanels";
 
 // Every battery test gets a panel, driven by the published scorecard data —
@@ -18,7 +19,7 @@ export function AnalysisPage() {
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
-  const groups = groupTestsByGenre(data.tests);
+  const groups = groupByCategory(resolveTests(data.tests));
 
   return (
     <div className="app">
@@ -31,11 +32,10 @@ export function AnalysisPage() {
               <h3 className="analysis-group-heading">{g.name}</h3>
             </section>
             {g.tests.map((t) => {
-              const Bespoke = BESPOKE_PANELS[t.test_id];
-              const slug = t.detail_panel ?? t.test_id;
+              const Bespoke = BESPOKE_PANELS[t.id];
               return (
-                <section className="grid-full" id={`panel-${slug}`} key={t.test_id}>
-                  {Bespoke ? <Bespoke /> : <BatteryTestPanel testId={t.test_id} />}
+                <section className="grid-full" id={`panel-${t.detail_panel}`} key={t.id}>
+                  {Bespoke ? <Bespoke /> : <BatteryTestPanel testId={t.id} />}
                 </section>
               );
             })}
