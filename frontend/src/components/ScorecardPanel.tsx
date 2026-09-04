@@ -1,8 +1,10 @@
 import { useData } from "../hooks/useData";
-import { api, ScorecardData, ScorecardTest, CouncillorsData } from "../api";
+import { api, ScorecardData, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { ValenceChip } from "./ValenceChip";
-import { groupTestsByGenre } from "../groupTestsByGenre";
+import { resolveTests } from "../registry";
+import { groupByCategory } from "../registry/grouping";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { surnameForms } from "../surname";
 
 // Structural guardrail: a test's headline/verdict must never carry a named
@@ -33,8 +35,8 @@ function redactNamedCouncillors(text: string, names: string[]): string {
   return text.replace(pattern, "[named individual — flagged for review]");
 }
 
-function TestRow({ t, flaggedNames }: { t: ScorecardTest; flaggedNames?: string[] }) {
-  const headline = flaggedNames ? redactNamedCouncillors(t.headline, flaggedNames) : t.headline;
+function TestRow({ t, flaggedNames }: { t: ResolvedTest; flaggedNames?: string[] }) {
+  const headline = flaggedNames ? redactNamedCouncillors(t.finding, flaggedNames) : t.finding;
   const verdict = flaggedNames ? redactNamedCouncillors(t.verdict, flaggedNames) : t.verdict;
   return (
     <div
@@ -46,8 +48,8 @@ function TestRow({ t, flaggedNames }: { t: ScorecardTest; flaggedNames?: string[
       </div>
       <div className="sc-row-main">
         <div className="sc-row-head">
-          <span className="sc-row-title">{t.title}</span>
-          <span className="sc-row-grade">{t.grade}</span>
+          <span className="sc-row-title">{t.title_technical}</span>
+          <span className="sc-row-grade">{t.severity}</span>
         </div>
         {flaggedNames && (
           <div className="sc-row-guardrail">
@@ -57,8 +59,8 @@ function TestRow({ t, flaggedNames }: { t: ScorecardTest; flaggedNames?: string[
         <div className="sc-row-headline">{headline}</div>
         <div className="sc-row-verdict">{verdict}</div>
         <div className="sc-row-meta">
-          <span className="sc-genre">{t.genre}</span>
-          <span className="sc-principle">{t.principle}</span>
+          <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
+          <span className="sc-principle">{t.principles.join(" · ")}</span>
           {t.n != null && <span className="sc-n">n&nbsp;=&nbsp;{t.n.toLocaleString()}</span>}
           {t.era && <span className="sc-era">{t.era}</span>}
           {t.detail_panel && (
@@ -93,7 +95,7 @@ export function ScorecardPanel() {
     }
   }
 
-  const groups = groupTestsByGenre(data.tests);
+  const groups = groupByCategory(resolveTests(data.tests));
 
   return (
     <Card
@@ -131,7 +133,7 @@ export function ScorecardPanel() {
       {groups.map((g) => (
         <div key={g.name} className="sc-group">
           <p className="section-heading">{g.name}</p>
-          {g.tests.map((t) => <TestRow key={t.test_id} t={t} flaggedNames={flagged.get(t.test_id)} />)}
+          {g.tests.map((t) => <TestRow key={t.id} t={t} flaggedNames={flagged.get(t.id)} />)}
         </div>
       ))}
 
