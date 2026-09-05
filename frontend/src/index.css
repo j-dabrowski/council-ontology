@@ -888,6 +888,34 @@ a:hover { text-decoration: underline; }
 .severity-concern     { color: var(--bad-t); background: var(--bad-bg); border-color: var(--bad-bd); }
 .severity-nodata      { color: var(--nil-t); background: var(--nil-bg); border-color: var(--nil-bd); }
 
+/* ── objection / response (ObjectionResponse.tsx) — two fixed, identically-
+   styled labelled slots; the repetition across every instance is the point ── */
+.objection-response {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+.objection-response-row {
+  border-left: 3px solid var(--border);
+  padding-left: 12px;
+}
+.objection-response-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 3px;
+}
+.objection-response-text {
+  font-size: 0.84rem;
+  color: var(--text-md);
+  line-height: 1.5;
+  margin: 0;
+}
+
 .card-title {
   font-size: 1.05rem;
   font-weight: 600;
