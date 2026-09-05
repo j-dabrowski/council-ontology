@@ -269,7 +269,7 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
         {data.must_leave_inquiry_n}, post {data.must_leave_post_n}. Declaration→vote matched at item
         level (item reference ↔ agenda item).
       </p>
-      <ObjectionResponse test={test} />
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
     </Card>
   );
 }

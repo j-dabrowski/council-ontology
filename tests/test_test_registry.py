@@ -7,9 +7,9 @@ three things that must agree with it: `_GENERATORS` (src/analysis/tests.py),
 queries.py/divergence.py/tests.py functions its `evidence_query` values
 name. All hermetic: source/JSON reads only, no DB, no network.
 
-Deliberately NOT asserted here: question_public / title_public / method /
-objection non-empty — those are filled in a later pass (B.8); asserting them
-now would fail on every intermediate commit before that pass lands.
+Deliberately NOT asserted here: question_public / title_public / method
+non-empty — those are filled in a later pass; asserting them now would fail
+on every intermediate commit before that pass lands.
 """
 from __future__ import annotations
 
@@ -83,6 +83,17 @@ def test_detail_panel_is_unique_and_non_empty():
     assert not empty, f"rows with an empty detail_panel: {empty}"
     panels = [row.detail_panel for row in registry]
     assert len(panels) == len(set(panels)), "detail_panel values must be unique"
+
+
+def test_every_row_has_a_non_empty_objection_and_response():
+    """All 29, not just today's critical ones (PANEL_FRAMING_PLAN.md B.2) —
+    valence is computed per run, so a test that flips to critical next month
+    must already have its pair rather than rendering an empty block."""
+    bad = [
+        row.id for row in load_test_registry()
+        if not row.objection or not row.response
+    ]
+    assert not bad, f"rows with an empty objection/response: {bad}"
 
 
 def test_evidence_query_names_a_real_function():

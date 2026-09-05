@@ -157,7 +157,7 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
         with the state-appointed Authorised Inquiry into the Town of Cambridge. Years with fewer than
         50 recorded items excluded as too small to read.
       </p>
-      <ObjectionResponse test={test} />
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
     </Card>
   );
 }

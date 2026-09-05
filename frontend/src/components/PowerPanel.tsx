@@ -308,7 +308,7 @@ export function PowerPanel({ test }: { test: ResolvedTest }) {
         )}
       </p>
 
-      <ObjectionResponse test={test} />
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
     </Card>
   );
 }

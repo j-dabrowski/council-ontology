@@ -204,7 +204,7 @@ export function QuestionResponsivenessPanel({ test }: { test: ResolvedTest }) {
         </DrillDown>
       )}
 
-      <ObjectionResponse test={test} />
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
     </Card>
   );
 }

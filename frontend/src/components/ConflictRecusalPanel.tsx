@@ -306,7 +306,7 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
         </p>
       </Reveal>
 
-      <ObjectionResponse test={test} />
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
     </Card>
   );
 }

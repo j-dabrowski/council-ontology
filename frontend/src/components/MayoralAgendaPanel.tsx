@@ -8,6 +8,7 @@ import { api, MayorContest, MayoralMotion } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 const MayorTooltip = ({ active, payload }: {
@@ -158,12 +159,9 @@ export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
           </Reveal></>
         )}
       </p>
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
       <p className="chart-note">
-        <strong>Read as a strength:</strong> a chamber that votes against its own Mayor <em>more</em>
-        than against a backbencher is the opposite of chair capture — dissent is recorded freely and
-        the most powerful member earns no deference at the gavel. That is Accountability and
-        Objectivity demonstrably upheld. Severity: a good-governance strength (no chair capture) ·
-        Nolan Accountability, Objectivity.
+        Severity: a good-governance strength (no chair capture) · Nolan Accountability, Objectivity.
       </p>
     </Card>
   );

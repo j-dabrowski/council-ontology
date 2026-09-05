@@ -7,6 +7,7 @@ import { useData } from "../hooks/useData";
 import { api, ContractorTotal, TenderAward } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 const fmtM = (n: number) => `$${(n / 1e6).toFixed(1)}M`;
@@ -162,15 +163,10 @@ export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
         span multiple awards. Roughly a third of all tendered dollars sit behind confidential
         tender reports and so cannot be attributed to a named contractor here.
       </p>
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
       <p className="chart-note">
-        <strong>The credit, stated plainly:</strong> concentration is the nature of big civil
-        contracts, not evidence of capture. The {fmtM(data.named_amount)} of named work is spread
-        across <strong>{data.distinct_named} contractors</strong>, and on three independent integrity
-        tests — threshold-gaming, entrenched incumbents, repeat-player advantage — this record comes
-        back <strong>clean</strong>. The redaction share is a transparency issue worth watching, but
-        the procurement record itself reads as a <strong>good-governance strength</strong>. Severity:
-        a demonstrated strength on integrity, with a transparency Observation on redaction · CIPFA
-        principles F, G.
+        Severity: a demonstrated strength on integrity, with a transparency Observation on redaction
+        · CIPFA principles F, G.
       </p>
     </Card>
   );

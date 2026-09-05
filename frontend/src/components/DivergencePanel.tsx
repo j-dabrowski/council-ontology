@@ -98,7 +98,7 @@ export function DivergencePanel({ test }: { test: ResolvedTest }) {
             Exceptions are motions where council DEFERRED or LOST something officers had recommended.
             Motion-text amendments (where council carried a modified version) are not yet detected.
           </p>
-          <ObjectionResponse test={test} />
+          {test.valence === "critical" && <ObjectionResponse test={test} />}
         </>
       )}
     </Card>

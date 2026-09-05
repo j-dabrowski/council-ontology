@@ -3,6 +3,7 @@ import { api, SponsorshipData, SponsorEdge, SponsorNode } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
 import { Reveal } from "./DrillDown";
+import { ObjectionResponse } from "./ObjectionResponse";
 import { surname } from "../surname";
 import type { ResolvedTest } from "../registry/types";
 
@@ -215,9 +216,11 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
         guard <strong>consolidated</strong> across 2000–07 (clusters of 10–11), then <strong>fragmented</strong>
         {" "}after the 2007 election (down to 4). No comparably durable bloc has formed since: the 2016–19
         figure is a small hyperactive chamber where nearly everyone sponsored everyone, and 2020–23 reshuffles
-        again. <em>Note: descriptive structural history, not a significance test — cross-term persistence is
-        visible but, on this corpus, rests on too few high-lift edges per term to prove statistically.</em>
-        {" "}Severity: Observation · maps to CIPFA principle B (how the chamber conducts its business).
+        again.
+      </p>
+      {test.valence === "critical" && <ObjectionResponse test={test} />}
+      <p className="chart-note">
+        Severity: Observation · maps to CIPFA principle B (how the chamber conducts its business).
       </p>
     </Card>
   );
