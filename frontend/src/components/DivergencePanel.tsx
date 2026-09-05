@@ -3,6 +3,7 @@ import { useData } from "../hooks/useData";
 import { api } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { SourceQuote } from "./DrillDown";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 export function DivergencePanel({ test }: { test: ResolvedTest }) {
@@ -97,15 +98,7 @@ export function DivergencePanel({ test }: { test: ResolvedTest }) {
             Exceptions are motions where council DEFERRED or LOST something officers had recommended.
             Motion-text amendments (where council carried a modified version) are not yet detected.
           </p>
-          <p className="chart-note">
-            A hostile reader would say: if officers get their way {pct} of the time, "debate" is
-            theatre and the substantive decision is made upstream, in who writes the recommendation.
-            In the council's defence: exceptions are a genuine minority, not an absent check — this
-            council departed from an officer recommendation {data.diverged_count} times across{" "}
-            {data.total_matched} matched items, and every one of those departures is listed and
-            inspectable above, not buried inside an otherwise-unanimous-looking vote. Divergence is
-            rare, but real.
-          </p>
+          <ObjectionResponse test={test} />
         </>
       )}
     </Card>

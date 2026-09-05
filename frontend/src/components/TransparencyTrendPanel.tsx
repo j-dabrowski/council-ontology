@@ -7,6 +7,7 @@ import { useData } from "../hooks/useData";
 import { api, TransparencyYear, ConfidentialItem } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 const KIND_LABELS: Record<string, string> = {
@@ -156,16 +157,7 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
         with the state-appointed Authorised Inquiry into the Town of Cambridge. Years with fewer than
         50 recorded items excluded as too small to read.
       </p>
-      <p className="chart-note">
-        <strong>In the council's defence:</strong> the {data.pre_era_pct}% two-decade baseline is a
-        genuinely <em>open</em> record, and an Authorised Inquiry legitimately generates confidential
-        business — legal advice and personnel matters under active investigation — so a spike in those
-        exact years is partly expected, and it <em>reverted</em> afterward. The data concedes that; what
-        it still raises is the <em>scale</em> (one in six decisions closed at the peak, 62% of that year's
-        tenders) and the timing. Read in the round: a transparent council that went unusually quiet during
-        its own inquiry, not a habitually secretive one. Severity: Governance-concern against a strong
-        baseline · Nolan Openness, CIPFA principle B.
-      </p>
+      <ObjectionResponse test={test} />
     </Card>
   );
 }

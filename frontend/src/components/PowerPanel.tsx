@@ -9,6 +9,7 @@ import { api, PowerProfile, ContestedVoteDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -307,16 +308,7 @@ export function PowerPanel({ test }: { test: ResolvedTest }) {
         )}
       </p>
 
-      <p className="chart-note">
-        A hostile reader would say: however contested a vote looks on paper, the same handful of
-        councillors win most of the time, so "debate" is theatre for a fixed majority — win rates
-        span as wide as {pct(topWinner.win_rate)} down to {pct(bottom.win_rate)}, and{" "}
-        {losers.length} councillors have lost more contested votes than they've won. In the
-        council's defence: that spread resets every election rather than calcifying around one
-        clique — the term-by-term chart above shows real churn in who's on top — and dissent is not
-        merely symbolic: {pct(fail)} of contested motions actually fail, so objecting carries real
-        leverage, not just recorded protest.
-      </p>
+      <ObjectionResponse test={test} />
     </Card>
   );
 }

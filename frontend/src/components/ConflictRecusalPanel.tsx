@@ -8,6 +8,7 @@ import { api, RecusalProfile, DeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 const TYPE_LABEL: Record<string, string> = {
@@ -305,14 +306,7 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
         </p>
       </Reveal>
 
-      <p className="chart-note">
-        <strong>In the council's defence:</strong> the first limb of the safeguard plainly works —
-        declaring an interest lifts recusal about {factor}×, so disclosure is real, not cosmetic, and
-        many of these declarations are lawful "impartiality" interests the member is *entitled* to stay
-        and vote on. The data concedes that. What it still raises is the *manage* limb: staying and
-        voting three times out of four leaves the identify–disclose–<strong>manage</strong> chain
-        breaking at the last link. Severity: Governance-concern · Nolan Integrity, Objectivity.
-      </p>
+      <ObjectionResponse test={test} />
     </Card>
   );
 }

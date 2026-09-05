@@ -6,6 +6,7 @@ import { useData } from "../hooks/useData";
 import { api, ScorecardData, TestChart, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { SeverityChip } from "./SeverityChip";
+import { ObjectionResponse } from "./ObjectionResponse";
 import { resolveTests } from "../registry";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { findNamedCouncillorsInText, redactNamedCouncillors } from "../guardrail";
@@ -128,6 +129,7 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cll
       )}
 
       <p className="chart-note">{verdict}</p>
+      {t.valence === "critical" && <ObjectionResponse test={t} />}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
         {" · "}{t.principles.join(" · ")}

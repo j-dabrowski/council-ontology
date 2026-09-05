@@ -8,6 +8,7 @@ import { useData } from "../hooks/useData";
 import { api, QuestionResponsivenessData, PQResponseDetail, PQYearPoint } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
@@ -203,17 +204,7 @@ export function QuestionResponsivenessPanel({ test }: { test: ResolvedTest }) {
         </DrillDown>
       )}
 
-      <p className="chart-note">
-        A hostile reader would say: "nine in ten questions are still answered — there's no problem."
-        The relevant number is the <em>shift</em>: deferral tripled ({data.pre_pct}%→{data.inquiry_pct}%)
-        exactly when the council was under inquiry and never returned to baseline
-        ({data.post_pct}% after), and the measure understates it. A councillor's defender would answer:
-        "2020 was COVID — meetings went remote and detailed questions were reasonably answered in
-        writing." The data concedes the {data.peak_year} peak is partly a remote-meeting artefact — but
-        the rise began in 2018–19 <em>before</em> COVID and persisted through 2022–2025 after it, so the
-        Inquiry-era caution, not the pandemic alone, carries the trend. "On notice" is lawful and often
-        appropriate for complex questions, so this is a responsiveness concern (CIPFA-B), not impropriety.
-      </p>
+      <ObjectionResponse test={test} />
     </Card>
   );
 }

@@ -8,6 +8,7 @@ import { useData } from "../hooks/useData";
 import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
+import { ObjectionResponse } from "./ObjectionResponse";
 import type { ResolvedTest } from "../registry/types";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
@@ -264,16 +265,11 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
       )}
 
       <p className="chart-note">
-        A hostile reader would say: "recusal fell only because declarations shifted to <em>impartiality</em>
-        interests, where the law lets you stay and vote." True in part — impartiality declarations did
-        balloon. But the collapse shows up <em>within</em> the must-leave categories too: proximity
-        recusal fell from {byTE.inquiry.proximity}% to {byTE.post.proximity}% after the Inquiry
-        (n={byTE.inquiry.proximity_n}→{byTE.post.proximity_n}). Financial conflicts alone can't show a
-        trend either way — there was only one post-2022 financial declaration on record
-        (n={data.financial_post_n}). Faded bars are n&lt;20 (directional). Must-leave totals: pre{" "}
-        {data.must_leave_pre_n}, Inquiry {data.must_leave_inquiry_n}, post {data.must_leave_post_n}.
-        {" "}Declaration→vote matched at item level (item reference ↔ agenda item).
+        Faded bars are n&lt;20 (directional). Must-leave totals: pre {data.must_leave_pre_n}, Inquiry{" "}
+        {data.must_leave_inquiry_n}, post {data.must_leave_post_n}. Declaration→vote matched at item
+        level (item reference ↔ agenda item).
       </p>
+      <ObjectionResponse test={test} />
     </Card>
   );
 }
