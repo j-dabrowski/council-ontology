@@ -201,6 +201,7 @@ export function InterestsChart() {
 export function Card({
   title,
   subtitle,
+  finding,
   valence,
   valenceLabel,
   backTo,
@@ -208,6 +209,11 @@ export function Card({
 }: {
   title: string;
   subtitle?: string;
+  // The measure's result, rendered as the subhead in place of `subtitle`
+  // when present (PANEL_FRAMING_PLAN.md B.5 — heading states the measure,
+  // subhead states the finding). Callers must pass it already guarded
+  // through <RedactedText>; Card itself does no redaction.
+  finding?: React.ReactNode;
   valence?: "supportive" | "neutral" | "critical";
   valenceLabel?: string;
   backTo?: string; // scorecard row anchor id (e.g. "sc-declared") to link back up
@@ -218,7 +224,11 @@ export function Card({
       <div className="card-header">
         <div className="card-header-titles">
           <h2 className="card-title">{title}</h2>
-          {subtitle && <span className="card-subtitle">{subtitle}</span>}
+          {finding ? (
+            <span className="card-subtitle">{finding}</span>
+          ) : subtitle ? (
+            <span className="card-subtitle">{subtitle}</span>
+          ) : null}
         </div>
         <div className="card-header-meta">
           {backTo && (

@@ -27,3 +27,38 @@ export function redactNamedCouncillors(text: string, names: string[]): string {
   const pattern = new RegExp(alternatives.join("|"), "g");
   return text.replace(pattern, "[named individual — flagged for review]");
 }
+
+// The one guarded render path for any rendered string that might carry a
+// named individual (PANEL_FRAMING_PLAN.md B.5's safety requirement — a
+// guardrail that covers only some render paths is not a guardrail).
+// Self-contained: pass the raw text and the full councillor name list, and
+// this computes its own flagged set and its own redaction — no render path
+// can drift from checking one thing while showing another. `testId`/`field`
+// are for the console message only (e.g. testId="conflict.recusal_trend",
+// field="finding").
+export function RedactedText({
+  text,
+  names,
+  testId,
+  field,
+}: {
+  text: string;
+  names: string[];
+  testId?: string;
+  field?: string;
+}) {
+  const flagged = findNamedCouncillorsInText(text, names);
+  if (!flagged.length) return <>{text}</>;
+  console.error(
+    `[guardrail] test "${testId ?? "?"}" names ${flagged.join(", ")} in its ${field ?? "text"}` +
+    ` — redacted in the rendered output pending review; see docs/review/editor/Editor_prompt.txt`
+  );
+  return (
+    <>
+      <div className="sc-row-guardrail">
+        ⚠ Named-individual claim flagged for editorial review — redacted pending sign-off
+      </div>
+      {redactNamedCouncillors(text, flagged)}
+    </>
+  );
+}

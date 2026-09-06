@@ -4,12 +4,13 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, RecusalProfile, DeclarationDetail } from "../api";
+import { api, RecusalProfile, DeclarationDetail, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 import { ObjectionResponse } from "./ObjectionResponse";
-import type { ResolvedTest } from "../registry/types";
+import { RedactedText } from "../guardrail";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const TYPE_LABEL: Record<string, string> = {
   financial: "Financial", proximity: "Proximity",
@@ -112,12 +113,14 @@ const HistTooltip = ({ active, payload }: {
   );
 };
 
-export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
+export function ConflictRecusalPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const { data, loading, error } = useData(() => api.declared());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const selectedProfile = selected
     ? data.profiles.find((p) => p.name === selected) ?? null
@@ -181,7 +184,7 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
   return (
     <Card
       title={test.title_technical}
-      subtitle={test.question_technical}
+      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
       backTo={`sc-${test.detail_panel}`}
     >
@@ -307,6 +310,11 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
       </Reveal>
 
       {test.valence === "critical" && <ObjectionResponse test={test} />}
+      <p className="chart-note bt-meta">
+        <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
+        {" · "}{test.principles.join(" · ")}
+        {" · "}{test.question_technical}
+      </p>
     </Card>
   );
 }

@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useData } from "../hooks/useData";
-import { api } from "../api";
+import { api, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { SourceQuote } from "./DrillDown";
 import { ObjectionResponse } from "./ObjectionResponse";
-import type { ResolvedTest } from "../registry/types";
+import { RedactedText } from "../guardrail";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
-export function DivergencePanel({ test }: { test: ResolvedTest }) {
+export function DivergencePanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const { data, loading, error } = useData(() => api.divergence());
   const [expanded, setExpanded] = useState<number | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const pct = data.compliance_rate != null
     ? `${(data.compliance_rate * 100).toFixed(0)}%`
@@ -26,7 +29,12 @@ export function DivergencePanel({ test }: { test: ResolvedTest }) {
   }
 
   return (
-    <Card title={test.title_technical} subtitle={test.question_technical} valence={test.valence} backTo={`sc-${test.detail_panel}`}>
+    <Card
+      title={test.title_technical}
+      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
+    >
       <div className="divergence-hero">
         <span className="hero-number">{pct}</span>
         <span className="hero-label">
@@ -101,6 +109,11 @@ export function DivergencePanel({ test }: { test: ResolvedTest }) {
           {test.valence === "critical" && <ObjectionResponse test={test} />}
         </>
       )}
+      <p className="chart-note bt-meta">
+        <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
+        {" · "}{test.principles.join(" · ")}
+        {" · "}{test.question_technical}
+      </p>
     </Card>
   );
 }

@@ -2,15 +2,18 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api } from "../api";
+import { api, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
-import type { ResolvedTest } from "../registry/types";
+import { RedactedText } from "../guardrail";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
-export function EngagementChart({ test }: { test: ResolvedTest }) {
+export function EngagementChart({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const { data, loading, error } = useData(() => api.engagement());
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const chartData = data.map((d) => ({
     year: d.year,
@@ -20,7 +23,12 @@ export function EngagementChart({ test }: { test: ResolvedTest }) {
   }));
 
   return (
-    <Card title={test.title_technical} subtitle={test.question_technical} valence={test.valence} backTo={`sc-${test.detail_panel}`}>
+    <Card
+      title={test.title_technical}
+      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
+      valence={test.valence}
+      backTo={`sc-${test.detail_panel}`}
+    >
       <ResponsiveContainer width="100%" height={340}>
         <BarChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -38,6 +46,11 @@ export function EngagementChart({ test }: { test: ResolvedTest }) {
       </ResponsiveContainer>
       <p className="chart-note">
         Public engagement across the full 30-year corpus (1995–2026).
+      </p>
+      <p className="chart-note bt-meta">
+        <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
+        {" · "}{test.principles.join(" · ")}
+        {" · "}{test.question_technical}
       </p>
     </Card>
   );

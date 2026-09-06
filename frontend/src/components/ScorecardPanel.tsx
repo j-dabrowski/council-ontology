@@ -6,11 +6,9 @@ import { SeverityChip } from "./SeverityChip";
 import { resolveTests } from "../registry";
 import { groupByCategory } from "../registry/grouping";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
-import { findNamedCouncillorsInText, redactNamedCouncillors } from "../guardrail";
+import { RedactedText } from "../guardrail";
 
-function TestRow({ t, flaggedNames }: { t: ResolvedTest; flaggedNames?: string[] }) {
-  const headline = flaggedNames ? redactNamedCouncillors(t.finding, flaggedNames) : t.finding;
-  const verdict = flaggedNames ? redactNamedCouncillors(t.verdict, flaggedNames) : t.verdict;
+function TestRow({ t, councillorNames }: { t: ResolvedTest; councillorNames: string[] }) {
   return (
     <div
       className={`sc-row sc-${t.valence}${t.data_ok ? "" : " sc-nodata"}`}
@@ -24,13 +22,12 @@ function TestRow({ t, flaggedNames }: { t: ResolvedTest; flaggedNames?: string[]
           <span className="sc-row-title">{t.title_technical}</span>
           <SeverityChip severity={t.severity} />
         </div>
-        {flaggedNames && (
-          <div className="sc-row-guardrail">
-            ⚠ Named-individual claim flagged for editorial review — redacted pending sign-off
-          </div>
-        )}
-        <div className="sc-row-headline">{headline}</div>
-        <div className="sc-row-verdict">{verdict}</div>
+        <div className="sc-row-headline">
+          <RedactedText text={t.finding} names={councillorNames} testId={t.id} field="finding" />
+        </div>
+        <div className="sc-row-verdict">
+          <RedactedText text={t.verdict} names={councillorNames} testId={t.id} field="verdict" />
+        </div>
         <div className="sc-row-meta">
           <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
           <span className="sc-principle">{t.principles.join(" · ")}</span>
@@ -51,22 +48,7 @@ export function ScorecardPanel() {
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
   const s = data.summary;
-
-  const flagged = new Map<string, string[]>();
-  if (cllrData) {
-    const names = Object.keys(cllrData.by_name);
-    for (const t of data.tests) {
-      const hits = findNamedCouncillorsInText(`${t.headline} ${t.verdict}`, names);
-      if (hits.length) {
-        flagged.set(t.test_id, hits);
-        console.error(
-          `[scorecard guardrail] ${t.valence}-valence test "${t.test_id}" names ` +
-          `${hits.join(", ")} in its headline/verdict — redacted in the rendered output ` +
-          `pending review; see docs/review/editor/Editor_prompt.txt`
-        );
-      }
-    }
-  }
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const groups = groupByCategory(resolveTests(data.tests));
 
@@ -106,7 +88,7 @@ export function ScorecardPanel() {
       {groups.map((g) => (
         <div key={g.name} className="sc-group">
           <p className="section-heading">{g.name}</p>
-          {g.tests.map((t) => <TestRow key={t.id} t={t} flaggedNames={flagged.get(t.id)} />)}
+          {g.tests.map((t) => <TestRow key={t.id} t={t} councillorNames={councillorNames} />)}
         </div>
       ))}
 

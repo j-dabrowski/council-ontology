@@ -1,11 +1,12 @@
 import { useData } from "../hooks/useData";
-import { api, SponsorshipData, SponsorEdge, SponsorNode } from "../api";
+import { api, SponsorshipData, SponsorEdge, SponsorNode, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
 import { Reveal } from "./DrillDown";
 import { ObjectionResponse } from "./ObjectionResponse";
+import { RedactedText } from "../guardrail";
 import { surname } from "../surname";
-import type { ResolvedTest } from "../registry/types";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const KIND_COLOR: Record<string, string> = {
   alliance: "#22c55e",   // sponsor AND vote together — a real working bloc
@@ -83,10 +84,12 @@ function EdgeRow({ e, denom }: { e: SponsorEdge; denom: number }) {
   );
 }
 
-export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
+export function SponsorshipNetworkPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const { data, loading, error } = useData<SponsorshipData>(() => api.sponsorship());
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const maxAllyLift = Math.max(...data.alliances.map((e) => e.lift), 3);
   const maxEras = Math.max(...data.eras.map((e) => e.cluster_size), 1);
@@ -100,7 +103,7 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
   return (
     <Card
       title={test.title_technical}
-      subtitle={test.question_technical}
+      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
       backTo={`sc-${test.detail_panel}`}
     >
@@ -216,6 +219,11 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
         again.
       </p>
       {test.valence === "critical" && <ObjectionResponse test={test} />}
+      <p className="chart-note bt-meta">
+        <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
+        {" · "}{test.principles.join(" · ")}
+        {" · "}{test.question_technical}
+      </p>
     </Card>
   );
 }

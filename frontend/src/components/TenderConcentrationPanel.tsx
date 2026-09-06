@@ -4,11 +4,12 @@ import {
   ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ContractorTotal, TenderAward } from "../api";
+import { api, ContractorTotal, TenderAward, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { ObjectionResponse } from "./ObjectionResponse";
-import type { ResolvedTest } from "../registry/types";
+import { RedactedText } from "../guardrail";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const fmtM = (n: number) => `$${(n / 1e6).toFixed(1)}M`;
 const fmt$ = (n: number) =>
@@ -55,12 +56,14 @@ const CustomTooltip = ({ active, payload }: {
   );
 };
 
-export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
+export function TenderConcentrationPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const { data, loading, error } = useData(() => api.tenders());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const chartData = data.contractors.map((c) => ({
     ...c,
@@ -78,7 +81,7 @@ export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
   return (
     <Card
       title={test.title_technical}
-      subtitle={test.question_technical}
+      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
       backTo={`sc-${test.detail_panel}`}
     >
@@ -164,6 +167,11 @@ export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
         tender reports and so cannot be attributed to a named contractor here.
       </p>
       {test.valence === "critical" && <ObjectionResponse test={test} />}
+      <p className="chart-note bt-meta">
+        <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
+        {" · "}{test.principles.join(" · ")}
+        {" · "}{test.question_technical}
+      </p>
     </Card>
   );
 }

@@ -4,11 +4,12 @@ import {
   ResponsiveContainer, CartesianGrid, ReferenceArea, ReferenceLine,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, TransparencyYear, ConfidentialItem } from "../api";
+import { api, TransparencyYear, ConfidentialItem, CouncillorsData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { ObjectionResponse } from "./ObjectionResponse";
-import type { ResolvedTest } from "../registry/types";
+import { RedactedText } from "../guardrail";
+import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const KIND_LABELS: Record<string, string> = {
   tender: "Tender",
@@ -54,12 +55,14 @@ function ConfItemRow({ item }: { item: ConfidentialItem }) {
   );
 }
 
-export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
+export function TransparencyTrendPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const { data, loading, error } = useData(() => api.transparency());
   const [selected, setSelected] = useState<number | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const chartData = data.years.filter((y) => y.total >= 50);
 
@@ -77,7 +80,7 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
   return (
     <Card
       title={test.title_technical}
-      subtitle={test.question_technical}
+      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
       backTo={`sc-${test.detail_panel}`}
     >
@@ -158,6 +161,11 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
         50 recorded items excluded as too small to read.
       </p>
       {test.valence === "critical" && <ObjectionResponse test={test} />}
+      <p className="chart-note bt-meta">
+        <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
+        {" · "}{test.principles.join(" · ")}
+        {" · "}{test.question_technical}
+      </p>
     </Card>
   );
 }

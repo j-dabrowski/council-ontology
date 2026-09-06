@@ -9,7 +9,7 @@ import { SeverityChip } from "./SeverityChip";
 import { ObjectionResponse } from "./ObjectionResponse";
 import { resolveTests } from "../registry";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
-import { findNamedCouncillorsInText, redactNamedCouncillors } from "../guardrail";
+import { RedactedText } from "../guardrail";
 
 const VALENCE_FILL: Record<string, string> = {
   supportive: "#4ade80", neutral: "#60a5fa", critical: "#f87171",
@@ -82,38 +82,17 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
  * (single-meeting, already has the full test list) render through.
  */
 export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
-  let flaggedNames: string[] = [];
-  if (cllrData) {
-    flaggedNames = findNamedCouncillorsInText(
-      `${t.finding} ${t.verdict}`,
-      Object.keys(cllrData.by_name)
-    );
-    if (flaggedNames.length) {
-      console.error(
-        `[scorecard guardrail] ${t.valence}-valence test "${t.id}" names ` +
-        `${flaggedNames.join(", ")} in its headline/verdict — redacted in the rendered output ` +
-        `pending review; see docs/review/editor/Editor_prompt.txt`
-      );
-    }
-  }
-  const headline = flaggedNames.length ? redactNamedCouncillors(t.finding, flaggedNames) : t.finding;
-  const verdict = flaggedNames.length ? redactNamedCouncillors(t.verdict, flaggedNames) : t.verdict;
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   return (
     <Card
       title={t.title_technical}
-      subtitle={t.question_technical}
+      finding={<RedactedText text={t.finding} names={councillorNames} testId={t.id} field="finding" />}
       valence={t.valence}
       backTo={t.detail_panel ? `sc-${t.detail_panel}` : undefined}
     >
-      {flaggedNames.length > 0 && (
-        <div className="sc-row-guardrail">
-          ⚠ Named-individual claim flagged for editorial review — redacted pending sign-off
-        </div>
-      )}
       <div className={`bt-headline bt-${t.valence}`}>
         <SeverityChip severity={t.severity} />
-        <span className="bt-headline-text">{headline}</span>
       </div>
 
       {/* "Not computable" reflects data_ok, not chart presence — a real,
@@ -128,11 +107,14 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cll
         </div>
       )}
 
-      <p className="chart-note">{verdict}</p>
+      <p className="chart-note">
+        <RedactedText text={t.verdict} names={councillorNames} testId={t.id} field="verdict" />
+      </p>
       {t.valence === "critical" && <ObjectionResponse test={t} />}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
         {" · "}{t.principles.join(" · ")}
+        {" · "}{t.question_technical}
         {t.n != null && <> · n&nbsp;=&nbsp;{t.n.toLocaleString()}</>}
         {t.base_rate && <> · {t.base_rate}</>}
         {t.era && <> · {t.era}</>}

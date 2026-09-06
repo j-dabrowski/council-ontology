@@ -3,7 +3,7 @@ import { CouncilHeader } from "../components/CouncilHeader";
 import { BatteryTestPanel } from "../components/BatteryTestPanel";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { useData } from "../hooks/useData";
-import { api, ScorecardData } from "../api";
+import { api, ScorecardData, CouncillorsData } from "../api";
 import { resolveTests } from "../registry";
 import { groupByCategory } from "../registry/grouping";
 import { BESPOKE_PANELS } from "../bespokePanels";
@@ -16,6 +16,7 @@ import { BESPOKE_PANELS } from "../bespokePanels";
 // with a working anchor link with no frontend change required.
 export function AnalysisPage() {
   const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
+  const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
@@ -35,7 +36,7 @@ export function AnalysisPage() {
               const Bespoke = BESPOKE_PANELS[t.id];
               return (
                 <section className="grid-full" id={`panel-${t.detail_panel}`} key={t.id}>
-                  {Bespoke ? <Bespoke test={t} /> : <BatteryTestPanel testId={t.id} />}
+                  {Bespoke ? <Bespoke test={t} cllrData={cllrData} /> : <BatteryTestPanel testId={t.id} />}
                 </section>
               );
             })}
