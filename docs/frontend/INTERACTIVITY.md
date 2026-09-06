@@ -57,34 +57,43 @@ narrative claim can't be derived from the fields the snapshot actually exposes
 such cross-reference exists in `PowerData`), drop the claim rather than hardcode
 it — don't invent a data field just to justify keeping the sentence.
 
-### Panel copy comes from the registry, not JSX
+### A panel is body-only — the analysis page owns the shell
 
-A battery-test panel's heading, subhead and valence must come from its
-`ResolvedTest` (`title_technical`, `finding`, `valence` — joined from
-`config/test_registry.json` by `frontend/src/registry/index.ts`'s
-`resolveTests()`), never typed as a JSX literal. The heading states the
-measure (`title_technical`); the subhead states the finding, rendered only
-through `<RedactedText>` (`frontend/src/guardrail.tsx`) — never the raw
-string, since a finding can carry a named individual. `question_technical`
-lives in the panel's meta line, beside its principles, not the subhead.
-Adding a battery test means adding a registry row: `run_test_battery`/
-`run_meeting_digest` (`src/analysis/tests.py`) refuse to run at all if the
-registry and `_GENERATORS` disagree, so a new test with no row — or a row
-with no generator — fails loudly rather than silently shipping a battery
-short one test. See `docs/frontend/TEST_REGISTRY_PLAN.md` for the
-registry's full design.
+`AnalysisPage.tsx` composes one shell per registry row: `<Card>` (heading
+`title_technical`, subhead `finding`, valence, a back-link to the scorecard)
+→ `<SeverityChip>` → the registered panel's own body → `<ObjectionResponse>`
+when the test is critical. A panel component itself renders none of that —
+no `<Card>`, no chip, no counter-argument block — only its chart and its own
+explanatory prose. `frontend/src/registry/components.tsx`'s `PANEL_COMPONENTS`
+map is what registers a component against a test id; every entry is
+body-only, whether it's one of the bespoke, richer panels or the generic
+`BatteryTestBody` that draws a plain chart from the snapshot's payload. See
+`docs/frontend/SURFACE_PROJECTION_PLAN.md` B.3 for why (it removed thirteen
+duplicated `<Card>`/chip/`ObjectionResponse` call sites) and its C.2 for the
+per-panel checklist.
 
-### Counter-argument and severity copy are fixed-vocabulary, not prose
+Two consequences that follow from this, both load-bearing:
 
-A panel's counter-argument text is registry-sourced (`objection` /
-`response` on the same `ResolvedTest`) and rendered only through
-`<ObjectionResponse>` — two fixed labels, "Objection" and "Response,"
-never a bespoke phrase like "A hostile reader would say" or "In the
-council's defence." Severity is rendered only through `<SeverityChip>` —
-never a raw "Severity: …" sentence in a panel's own prose. A panel body
-carries neither pattern as a string literal; see
-`docs/frontend/PANEL_FRAMING_PLAN.md` for the full design and the
-concession/reservation each rewrite had to preserve.
+- **Panel copy still comes from the registry, not JSX.** The heading states
+  the measure (`title_technical`); the subhead states the finding, rendered
+  only through `<RedactedText>` (`frontend/src/guardrail.tsx`) — never the
+  raw string, since a finding can carry a named individual. `question_technical`
+  lives in the panel's own meta line, beside its principles, not the subhead.
+  Adding a battery test means adding a registry row: `run_test_battery`/
+  `run_meeting_digest` (`src/analysis/tests.py`) refuse to run at all if the
+  registry and `_GENERATORS` disagree, so a new test with no row — or a row
+  with no generator — fails loudly rather than silently shipping a battery
+  short one test. See `docs/frontend/TEST_REGISTRY_PLAN.md` for the
+  registry's full design.
+- **Counter-argument and severity copy stay fixed-vocabulary, not prose** —
+  and now that the shell renders both, a panel *cannot* reintroduce a
+  bespoke phrase like "A hostile reader would say" without also duplicating
+  the block, which is the point. `<ObjectionResponse>` is two fixed labels,
+  "Objection" and "Response," sourced from `objection`/`response` on the
+  same `ResolvedTest`; `<SeverityChip>` is the only severity renderer — never
+  a raw "Severity: …" sentence in a panel's own prose. See
+  `docs/frontend/PANEL_FRAMING_PLAN.md` for the full design and the
+  concession/reservation each rewrite had to preserve.
 
 **Pre-deploy check**, alongside the hardcoded-name rule above — run from
 `frontend/`, must return nothing:
@@ -96,12 +105,44 @@ grep -rn "hostile reader\|council's defence\|credit, stated plainly\|Read as a s
 A hit means a retired label survived a rewrite, or a new panel introduced
 one from scratch.
 
+### Cross-surface links resolve through one anchor module, nowhere else
+
+The scorecard's "↓ jump to full panel" link and the analysis panel's "↑
+Scorecard" back-link both go through `frontend/src/registry/anchors.ts`
+(`analysisHref`, `scorecardHref`, `useScrollToTest`) — never a hand-written
+`href`. `App.tsx`'s `HashRouter` owns the URL hash for routing, so a bare
+fragment (`#panel-declared`) can't coexist with a route; the anchors module
+deep-links through a search param on the hash route instead
+(`#/analysis?test=<id>`) and scrolls the matching `[data-test-id]` element
+into view. The anchor hook on an element is `data-test-id={t.id}` — the raw
+registry id — never an HTML `id` derived by substituting characters in it
+(test ids contain dots, which `querySelector("#a.b")` would parse as a
+class). See `docs/frontend/SURFACE_PROJECTION_PLAN.md` B.2 for the full
+design, including why `useScrollToTest` keeps re-snapping to the target for
+a few seconds after it first appears (a chart mounting further down the page
+can still grow the page and move the target after the first scroll).
+
+**Pre-deploy check**, run from `frontend/`:
+
+```
+grep -rn '#panel-\|#sc-\|href="#' src/
+```
+
+Expect only the anchors module's own comment plus ordinary whole-route
+navigation (`href="#/about"`, `href="#/contact"`, `href="#/analysis"` in
+`AboutPage.tsx`/`ContactPage.tsx`/`EvidencePage.tsx`) — those are page-to-page
+links, not test-id anchors, and this check doesn't cover them. Any other hit
+is a hand-written test anchor that should go through `anchors.ts` instead.
+
 ### Cross-cutting behaviours — DONE (apply to every panel)
 - [x] **Auto-scroll to opened detail** — `DrillDown` calls `scrollIntoView` on open.
-- [x] **Back-link to the scorecard row** — `Card` takes a `backTo="sc-<panel>"`
-  prop → "↑ Scorecard" link; scorecard rows carry `id="sc-<panel>"` and flash on
-  `:target`. Wired on all 10 scorecard-linked panels.
-- [x] **Scorecard → panel jump links** — each scorecard row links to `#panel-<snapshot>`.
+- [x] **Back-link to the scorecard row** — `Card` takes a `backTo={testId}`
+  prop → "↑ Scorecard" link built by `scorecardHref()`; the target scorecard
+  row carries `data-test-id={t.id}` and flashes via `useScrollToTest()`'s
+  highlight class. Wired on every analysis panel (the shell supplies it, not
+  each panel — see "Cross-surface links" above).
+- [x] **Scorecard → panel jump links** — each scorecard row with a deep dive
+  links via `analysisHref(t.id)`.
 - [x] **Light/dark mode** — all panels must respect system appearance preference.
   Use CSS custom properties as the single source of truth for colours. Default
   `:root` defines the light theme; `@media (prefers-color-scheme: dark) { :root { ... } }`
@@ -116,7 +157,8 @@ one from scratch.
 
 ### Infra already in place
 `DrillDown.tsx` (`DrillDown` + `SourceQuote`); `Card` `valence` + `backTo` props;
-`ValenceChip`; sc-row anchors; `extraction_evidence` quote counts by table —
+`ValenceChip`; `registry/anchors.ts` (cross-surface `data-test-id` anchors);
+`extraction_evidence` quote counts by table —
 motions 29 283 · other_items 16 332 · planning_applications 5 861 ·
 public_questions 5 787 · budget_items 4 604 · interest_declarations 2 097 ·
 deputations 1 553 · delegated_decisions 1 342 · tenders 1 326 · committee_reports

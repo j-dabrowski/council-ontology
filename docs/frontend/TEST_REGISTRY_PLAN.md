@@ -229,6 +229,17 @@ Reading the registry tells you which tests have deep dives. Step 4's test
 asserts agreement **in both directions**: `true` with no component is an error,
 and a component whose row says `false` is an error.
 
+**2026-09-06 correction (`SURFACE_PROJECTION_PLAN.md` B.1):** this decision's
+meaning of `has_deep_dive` — "has a *bespoke* component" — turned out to be
+narrower than the field's original definition ("an analysis panel exists for
+this test"). It's now the wider reading: 27 rows, not 13 — the 14
+chart-bearing tests that used to render through `BatteryTestPanel` only
+because they had no registry entry now get one too, pointing at the shared
+`BatteryTestBody`. The bespoke-vs-generic distinction this decision draws
+didn't go away; it moved into the component registry itself, which records
+it one line per test. `bespokePanels.tsx` is `frontend/src/registry/
+components.tsx` now, exporting `PANEL_COMPONENTS`.
+
 ### B.5 The registry authors the rendered copy — including for the S7 gate.
 
 **This one is a safety property, not a preference.** `src/invariant_gate.py`

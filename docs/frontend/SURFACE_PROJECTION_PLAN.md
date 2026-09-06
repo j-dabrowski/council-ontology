@@ -1,6 +1,6 @@
 # Scorecard and Analysis as pure registry projections
 
-Status: **plan only, nothing built.** Written 2026-09-06.
+Status: **built** (Steps 1–6, 2026-09-06). Written 2026-09-06.
 Third in the sequence: `TEST_REGISTRY_PLAN.md` (built) established the registry;
 `PANEL_FRAMING_PLAN.md` (built) fixed the labels, the severity chip and the
 headings. This plan makes the two surfaces projections of the registry rather

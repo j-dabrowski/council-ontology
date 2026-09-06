@@ -57,7 +57,7 @@ elsewhere says to.
   checks (`docs/frontend/TEST_REGISTRY_PLAN.md` Step 4): every
   `config/test_registry.json` row's `id` has a `src.analysis.tests`
   `_GENERATORS` entry and vice versa; `has_deep_dive` agrees with
-  `frontend/src/bespokePanels.tsx`'s `BESPOKE_PANELS` keys, both directions;
+  `frontend/src/registry/components.tsx`'s `PANEL_COMPONENTS` keys, both directions;
   `order` is exactly `1..29` and unique; every `category` is one of the
   four; every `detail_panel` is unique and non-empty; every
   `evidence_query` names a real function in `queries.py`/`divergence.py`/

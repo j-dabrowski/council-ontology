@@ -322,7 +322,7 @@ The non-obvious edges, spelled out:
 | planning the end-to-end order to run all stages (CLI + agents) for a new corpus | `pipeline/PIPELINE.md` ("Longer term → Corpus onboarding order") — design sketch, not built; first-corpus vs subsequent-corpus sequencing |
 | planning for many-council, recurring/scheduled operation (after onboarding) | `pipeline/PIPELINE.md` ("Longer term → Production scale") — design sketch, not built; cross-referenced from `review/CONDUCTOR.md` |
 | implementing (or revising) the 2026-08-23 top-down redesign — claim object, invariant gate, tier products, role changes | `INFORMATION_ARCHITECTURE.md` (the flow) + `AGENT_DESIGN.md` (owners, file deltas, §6 build order) — read the coverage audit row above them first |
-| building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX |
+| building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX; a panel is registered in `frontend/src/registry/components.tsx` and renders body-only — the analysis page's shell owns the card, severity chip and Objection/Response |
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |
 | weighing risk, funding, or direction | `strategy/PRIVATE_ASSESSMENT.md` |
 | flipping a gate that controls agent behavior (data-enrichment freeze, researcher default gate mode, conductor pass cap) | `config/agent_switches.json` (loaded by `src/agent_config.py`) — not the prose docs that describe each gate |
