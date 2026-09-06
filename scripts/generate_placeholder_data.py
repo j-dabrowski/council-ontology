@@ -545,6 +545,16 @@ def build_overview() -> dict:
     }
 
 
+def build_watch() -> dict:
+    """Empty, not fake (docs/frontend/WATCH_FEED_PLAN.md Step 5) — unlike
+    every other placeholder here, this is genuinely zero rows rather than
+    invented meeting content: a build before the first real `council
+    publish` should render an empty /watch feed, not an error, and there is
+    no safe way to fabricate a plausible-looking exception without it
+    reading as a real finding."""
+    return {"council": "cambridge", "generated_at": GENERATED_AT, "n_meetings": 0, "meetings": []}
+
+
 def build_councillors() -> dict:
     by_name = {}
     for i, name in enumerate(NAMES):
@@ -594,6 +604,7 @@ SNAPSHOTS = {
     "sponsorship": build_sponsorship,
     "overview": build_overview,
     "councillors": build_councillors,
+    "watch": build_watch,
 }
 
 

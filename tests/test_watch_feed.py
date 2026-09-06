@@ -16,7 +16,12 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.analysis.meeting_baselines import MeetingBaselines, TestBaseline, compute_watch_feed
+from src.analysis.meeting_baselines import (
+    MeetingBaselines,
+    TestBaseline,
+    compute_watch_feed,
+    project_watch_feed_to_public,
+)
 from src.models import Base, Council, Meeting, Motion, Tender
 from src.storage.database import _enable_wal_and_fk
 
@@ -180,3 +185,77 @@ def test_provenance_is_null_for_a_meeting_with_no_recorded_pdf(session):
     assert prov["run_id"] is None
     assert prov["run_id_count"] == 0
     assert prov["validation_status"] is None
+
+
+# ---------------------------------------------------------------------------
+# project_watch_feed_to_public (Step 5 — the B.3 filter + re-verification)
+# ---------------------------------------------------------------------------
+
+def _exc(test_id="a.test", public=True, finding="A finding", verdict="A verdict") -> dict:
+    return {
+        "test_id": test_id, "threshold_kind": "any_occurrence", "baseline_median": 0.0,
+        "why": "value 1", "stat": {"value": 1, "denominator": None, "unit": "count"},
+        "deep": {"finding": finding, "verdict": verdict, "valence": "critical", "severity": "Integrity flag"},
+        "public": (
+            {"finding": finding, "verdict": verdict, "valence": "critical", "severity": "Integrity flag"}
+            if public else None
+        ),
+    }
+
+
+def _row(meeting_id=1, exceptions=None) -> dict:
+    exceptions = exceptions if exceptions is not None else [_exc()]
+    return {
+        "meeting_id": meeting_id, "meeting_date": "2026-01-01", "meeting_type": "Ordinary Council Meeting",
+        "body_class": "full_council", "counts": {"items": 1, "motions": 1, "other_items": 0},
+        "tests": {"run": 14, "exceptions": len(exceptions), "within_baseline": 14 - len(exceptions)},
+        "exceptions": exceptions,
+        "provenance": {"pdf_filename": None, "pdf_url": None, "extracted_at": None,
+                       "run_id": None, "run_id_count": 0, "model": None,
+                       "validation_status": None, "coverage_ratio": None},
+    }
+
+
+def test_a_withheld_exception_is_dropped_and_counted():
+    feed = {"council": "test", "generated_at": "x", "n_meetings": 1,
+            "meetings": [_row(exceptions=[_exc(public=True), _exc(test_id="b.test", public=False)])]}
+    published, gate = project_watch_feed_to_public(feed, min_n=3)
+    row = published["meetings"][0]
+    assert [e["test_id"] for e in row["exceptions"]] == ["a.test"]
+    assert row["exceptions_withheld"] == 1
+    assert gate.passed
+
+
+def test_published_exception_carries_the_public_fields_flattened():
+    feed = {"council": "test", "generated_at": "x", "n_meetings": 1,
+            "meetings": [_row(exceptions=[_exc(finding="A public finding", verdict="A public verdict")])]}
+    published, _gate = project_watch_feed_to_public(feed, min_n=3)
+    exc = published["meetings"][0]["exceptions"][0]
+    assert exc["finding"] == "A public finding"
+    assert exc["verdict"] == "A public verdict"
+    assert exc["valence"] == "critical"
+    assert exc["severity"] == "Integrity flag"
+    assert exc["threshold_kind"] == "any_occurrence"
+    assert exc["baseline_median"] == 0.0
+
+
+def test_a_row_with_nothing_withheld_reports_zero():
+    feed = {"council": "test", "generated_at": "x", "n_meetings": 1,
+            "meetings": [_row(exceptions=[_exc()])]}
+    published, _gate = project_watch_feed_to_public(feed, min_n=3)
+    assert published["meetings"][0]["exceptions_withheld"] == 0
+
+
+def test_reverification_catches_a_leaked_name_in_what_survived():
+    # Simulates a bug in the filter itself: a "public" view that still names
+    # someone. This must fail even though it already carries a "public"
+    # marker — the re-check operates on the actual shipped text, independent
+    # of the tier bookkeeping that put it there.
+    known_names = {("Jane", "Citizen")}
+    feed = {"council": "test", "generated_at": "x", "n_meetings": 1,
+            "meetings": [_row(exceptions=[
+                _exc(finding="Jane Citizen had an unexplained absence", verdict="Jane Citizen was absent."),
+            ])]}
+    _published, gate = project_watch_feed_to_public(feed, min_n=3, known_names=known_names)
+    assert not gate.passed
+    assert gate.violations[0].check == "name-free-text"

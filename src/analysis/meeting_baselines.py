@@ -26,8 +26,8 @@ from pathlib import Path
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.analysis.tests import run_meeting_digest
-from src.invariant_gate import derive_claim_tiers, project_to_institutional
+from src.analysis.tests import ENTITY_RESOLUTION_CLEAN, UNIT_INSTITUTIONAL, TestResult, run_meeting_digest
+from src.invariant_gate import GateResult, derive_claim_tiers, project_to_institutional, run_invariant_gate
 from src.models import Councillor, Meeting, Motion
 from src.provenance import meeting_provenance
 from src.test_registry import RegistryRow, load_test_registry
@@ -239,6 +239,59 @@ def compute_watch_feed(
         "n_meetings": len(rows),
         "meetings": rows,
     }
+
+
+def project_watch_feed_to_public(
+    feed: dict, min_n: int, known_names: set[tuple[str, str]] | None = None,
+) -> tuple[dict, GateResult]:
+    """The B.3 filter: from `compute_watch_feed()`'s full deep/public feed,
+    build the shape that actually ships — public-tier exceptions only, each
+    row carrying `exceptions_withheld` for the ones dropped (WATCH_FEED_PLAN.md
+    B.3: "a dropped claim is recorded, not silently absent").
+
+    Then re-verifies: reconstructs a minimal claim per surviving exception
+    from exactly the text about to ship (nothing else — no title/question,
+    since C.2's exception shape carries neither) and runs
+    `run_invariant_gate` over all of them at once. This is independent of
+    the per-claim tier check `derive_claim_tiers` already did (which decided
+    what to *keep*) — it instead checks what's actually in the *output*, so
+    it can only fail from a bug in this function's own filtering, not from
+    the per-claim gate call it's re-running.
+    """
+    published_meetings = []
+    synthetic_claims: list[TestResult] = []
+    for row in feed["meetings"]:
+        published_exceptions = []
+        withheld = 0
+        for exc in row["exceptions"]:
+            if exc["public"] is None:
+                withheld += 1
+                continue
+            published = {
+                "test_id": exc["test_id"],
+                "threshold_kind": exc["threshold_kind"],
+                "baseline_median": exc["baseline_median"],
+                "why": exc["why"],
+                "stat": exc["stat"],
+                **exc["public"],
+            }
+            published_exceptions.append(published)
+            synthetic_claims.append(TestResult(
+                test_id=published["test_id"], title="", genre="", principle="", question="",
+                valence=published["valence"], grade=published["severity"],
+                headline=published["finding"], verdict=published["verdict"],
+                unit_of_analysis=UNIT_INSTITUTIONAL, named_entities=[],
+                entity_resolution=ENTITY_RESOLUTION_CLEAN,
+            ))
+        published_meetings.append({
+            **{k: v for k, v in row.items() if k != "exceptions"},
+            "exceptions": published_exceptions,
+            "exceptions_withheld": withheld,
+        })
+
+    published_feed = {**feed, "meetings": published_meetings}
+    gate = run_invariant_gate(synthetic_claims, min_n=min_n, known_names=known_names)
+    return published_feed, gate
 
 
 def meeting_baselines_to_dict(mb: MeetingBaselines) -> dict:

@@ -199,31 +199,49 @@ def test_verify_draft_integrity_flags_hash_drift(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# The single-meeting digest (`cmd_draft`, src/cli.py) must be invisible to
-# both `council publish` and Editor: it lands in a `local/` subdirectory,
-# outside the manifest's `snapshots` list and outside the non-recursive
-# `*.json` glob both of them use. Enforced here rather than only reasoned
-# about, per docs/review/editor/Editor_prompt.txt v0.7's `local/` exclusion.
+# The moved draft/publish boundary (docs/frontend/WATCH_FEED_PLAN.md B.3/
+# B.4/Step 5): the single-meeting digest and the period digest (`cmd_draft`,
+# src/cli.py) must stay invisible to both `council publish` and Editor —
+# they land in a `local/` subdirectory, outside the manifest's `snapshots`
+# list and outside the non-recursive `*.json` glob both of them use
+# (docs/review/editor/Editor_prompt.txt v0.7's `local/` exclusion). watch.json
+# is the opposite case: a root-level, manifest-listed, publishable snapshot
+# like any other, because its own claims are filtered and re-verified
+# per-claim (project_watch_feed_to_public()) before cmd_draft ever writes it.
+# Both directions are asserted here so neither can silently regress.
 # ---------------------------------------------------------------------------
 
-def test_digest_is_excluded_from_manifest_and_glob(tmp_path):
+def test_digest_and_period_digest_stay_excluded_watch_is_a_real_snapshot(tmp_path):
     overview_path = tmp_path / "overview.json"
     overview_path.write_text('{"a": 1}')
+    watch_path = tmp_path / "watch.json"
+    watch_path.write_text('{"data": {"n_meetings": 1, "meetings": []}}')
 
     (tmp_path / "manifest.json").write_text(json.dumps({
         "run_id": "run_1",
         "council": "cambridge",
         "generated_at": "2026-08-27T12:00:00Z",
-        "snapshots": ["overview"],
-        "file_hashes": {"overview": snapshot_hash(overview_path)},
-        "tiers": {"overview": "public"},
+        "snapshots": ["overview", "watch"],
+        "file_hashes": {
+            "overview": snapshot_hash(overview_path),
+            "watch": snapshot_hash(watch_path),
+        },
+        "tiers": {"overview": "public", "watch": "public"},
     }))
 
     local_dir = tmp_path / "local"
     local_dir.mkdir()
     (local_dir / "digest.json").write_text('{"data": {"tests": []}}')
+    (local_dir / "period_digest.json").write_text('{"quiet": true}')
 
     manifest = load_draft_manifest(tmp_path)
+    # digest.json / period_digest.json: still local/-only, still invisible.
     assert "digest" not in manifest.snapshots
-    assert verify_draft_integrity(tmp_path, manifest) == []
+    assert "period_digest" not in manifest.snapshots
     assert "digest" not in {p.stem for p in tmp_path.glob("*.json")}
+    assert "period_digest" not in {p.stem for p in tmp_path.glob("*.json")}
+    # watch.json: a real, root-level, manifest-listed, publishable snapshot.
+    assert "watch" in manifest.snapshots
+    assert "watch" in {p.stem for p in tmp_path.glob("*.json")}
+    assert manifest.tiers["watch"] == "public"
+    assert verify_draft_integrity(tmp_path, manifest) == []

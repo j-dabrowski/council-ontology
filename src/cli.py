@@ -1871,16 +1871,25 @@ def cmd_analyse(args) -> None:
 # Everything defaults to "full" (private) unless explicitly listed here as
 # "public", or (for claim-bearing snapshots — see `_tier_of`) derived from
 # the claims themselves — fail-safe direction either way, so an unlisted or
-# newly-derived-full snapshot is never accidentally exposed. Static entries
-# here are for snapshots with no claim-derivation path of their own; none
-# exist yet, so this stays empty. See docs/TESTING.md.
-SNAPSHOT_TIER: dict[str, str] = {}
+# newly-derived-full snapshot is never accidentally exposed. "watch" is
+# static "public" rather than claim-derived (see CLAIM_DERIVED_SNAPSHOTS
+# below) because by the time it's written it already IS public-tier only —
+# project_watch_feed_to_public() (docs/frontend/WATCH_FEED_PLAN.md B.3/Step 5)
+# filtered and re-verified it per claim before cmd_draft ever calls _tier_of.
+SNAPSHOT_TIER: dict[str, str] = {"watch": "public"}
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
 # tier-derivation rule (src/invariant_gate.py's derive_claim_tier). Only
 # "scorecard" is built directly from TestResult claims today; every other
 # snapshot is per-councillor profile data, out of scope for claim-level tier
 # derivation until it's represented as claim objects too.
+#
+# "watch" is claim-derived too but deliberately NOT listed here:
+# derive_claim_tier() is whole-batch (one individual-implicating claim drops
+# the *entire* snapshot to full-tier) — wrong for watch.json, where a single
+# withheld exception among 1000+ must not sink the other 505 meetings' worth
+# of public content. Its claims are filtered per-claim instead, before this
+# function ever runs (see SNAPSHOT_TIER's comment above).
 CLAIM_DERIVED_SNAPSHOTS = ("scorecard",)
 
 
@@ -2981,6 +2990,44 @@ def cmd_draft(args) -> None:
         ))
         sys.exit(1)
 
+    # /watch feed, public projection (docs/frontend/WATCH_FEED_PLAN.md B.3/
+    # Step 5) — filters compute_watch_feed()'s deep/public pairs down to
+    # public-tier exceptions only, then re-verifies the result independently
+    # of the per-claim tier check that selected it (see
+    # project_watch_feed_to_public()'s own docstring). A failure here can
+    # only mean a bug in that filter, not a real defamation risk that made it
+    # to the frontend — but it still blocks the draft the same way the S7
+    # gate above does, before manifest.json exists.
+    if watch_feed is not None:
+        from src.analysis.meeting_baselines import project_watch_feed_to_public
+        published_watch_feed, watch_gate = project_watch_feed_to_public(
+            watch_feed, min_n=load_min_n(), known_names=known_names,
+        )
+        if not watch_gate.passed:
+            lines = "\n".join(
+                f"  · [{v.test_id}] {v.check}: {v.detail}" for v in watch_gate.violations
+            )
+            console.print(Panel(
+                f"[red]✗ watch feed re-verification failed after filtering[/red]\n\n{lines}\n\n"
+                "[dim]This can only happen from a bug in the per-claim filter itself — "
+                "the per-claim tier check that selected these claims already passed. "
+                "No manifest.json was written.[/dim]",
+                style="red",
+            ))
+            sys.exit(1)
+        (output_dir / "watch.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": published_watch_feed,
+        }, indent=2))
+        written.append("watch")
+        n_exceptions = sum(len(r["exceptions"]) for r in published_watch_feed["meetings"])
+        n_withheld = sum(r["exceptions_withheld"] for r in published_watch_feed["meetings"])
+        console.print(
+            f"  [green]✓[/green] watch.json ({published_watch_feed['n_meetings']} meeting(s), "
+            f"{n_exceptions} published exception(s), {n_withheld} withheld)"
+        )
+    else:
+        console.print(f"  [yellow]○[/yellow] watch.json skipped — {watch_feed_skip_reason}")
+
     file_hashes = {
         name: hashlib.sha256((output_dir / f"{name}.json").read_bytes()).hexdigest()
         for name in written
@@ -3028,19 +3075,6 @@ def cmd_draft(args) -> None:
         console.print(
             f"  [yellow]○[/yellow] local/period_digest.json skipped — {period_digest_skip_reason}"
         )
-
-    if watch_feed is not None:
-        (output_dir / "watch.json").write_text(_json.dumps({
-            "published_at": generated_at, "data": watch_feed,
-        }, indent=2))
-        n_exceptions = sum(r["tests"]["exceptions"] for r in watch_feed["meetings"])
-        console.print(
-            f"  [green]✓[/green] watch.json ({watch_feed['n_meetings']} meeting(s), "
-            f"{n_exceptions} total exception(s)) "
-            "[dim]— draft root, not yet in manifest.snapshots (Step 5)[/dim]"
-        )
-    else:
-        console.print(f"  [yellow]○[/yellow] watch.json skipped — {watch_feed_skip_reason}")
 
     n_public = sum(1 for t in tiers.values() if t == "public")
     n_full = len(tiers) - n_public

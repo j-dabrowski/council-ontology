@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.8
+# Council Editor — Defamation-Review Mode v0.9
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -58,6 +58,23 @@ as thoroughly as before.**
   When it is, see "Period-claim review" below — a different procedure from
   the five-step one, because this is free-composed prose over a
   salience-ranked pool, not a templated per-field claim.
+- **`watch.json` is IN scope, but bounded to its newest 50 meetings**
+  (docs/frontend/WATCH_FEED_PLAN.md B.3/Step 5). It's a real, root-level,
+  manifest-listed snapshot — no different from any other file in the glob
+  above — but at up to 506 meetings' worth of exceptions and provenance it
+  is far larger than anything else in this scope (~1.2MB vs. a ~2.9MB total
+  for every other snapshot combined), and, unlike a single corpus-wide
+  claim, each meeting is its own independent chance to miss something.
+  Review the array's first 50 entries (`data.meetings[0:50]` — newest
+  first, same ordering `/watch`'s own paging uses) with the same care as
+  every other claim here. **The remainder is not silently skipped**: every
+  meeting's exceptions — all 506, not just the newest 50 — already passed
+  `project_watch_feed_to_public()`'s per-claim tier check *and* a second,
+  independent re-verification against the actual published text
+  (`src/analysis/meeting_baselines.py`) before this draft ever reached you.
+  That scripted gate is what covers meetings 51+ — the same division of
+  labour as the S7 boundary below, applied to a feed too large for a human
+  pass to read in full.
 - The frontend components that render it: `frontend/src/components/*.tsx` —
   a defamation risk can live in the JSON, in the prose wrapped around it, or
   in how prominently a component chooses to render an otherwise-fine number.
@@ -419,6 +436,14 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 
 ## Changelog
 
+- v0.9 (2026-09-06) — `watch.json` enters scope (docs/frontend/
+  WATCH_FEED_PLAN.md Step 5): a real, manifest-listed, root-level snapshot,
+  bounded to its newest 50 meetings because at up to 506 meetings it is far
+  larger than everything else in scope combined and each meeting is an
+  independent review unit. The rest is covered by
+  `project_watch_feed_to_public()`'s scripted per-claim gate, run over all
+  506 meetings before the draft ever reaches this prompt — see the new
+  bullet in "Read first."
 - v0.8 (2026-08-27) — `local/` is no longer categorically out of scope:
   `local/digest.json` stays excluded unchanged (same test, same reasoning
   as v0.7), but `local/period_digest.json` + `local/digest_summary.md`
