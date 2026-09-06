@@ -7,9 +7,9 @@ three things that must agree with it: `_GENERATORS` (src/analysis/tests.py),
 queries.py/divergence.py/tests.py functions its `evidence_query` values
 name. All hermetic: source/JSON reads only, no DB, no network.
 
-Deliberately NOT asserted here: question_public / title_public / method
-non-empty — those are filled in a later pass; asserting them now would fail
-on every intermediate commit before that pass lands.
+Deliberately NOT asserted here: question_public / method non-empty — those
+are filled in a later pass; asserting them now would fail on every
+intermediate commit before that pass lands.
 """
 from __future__ import annotations
 
@@ -94,6 +94,11 @@ def test_every_row_has_a_non_empty_objection_and_response():
         if not row.objection or not row.response
     ]
     assert not bad, f"rows with an empty objection/response: {bad}"
+
+
+def test_every_row_has_a_non_empty_title_public():
+    bad = [row.id for row in load_test_registry() if not row.title_public]
+    assert not bad, f"rows with an empty title_public: {bad}"
 
 
 def test_evidence_query_names_a_real_function():

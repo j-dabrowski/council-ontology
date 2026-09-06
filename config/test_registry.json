@@ -6,7 +6,7 @@
     "question_technical": "Is there excess mass just below the threshold that triggers competitive tender?",
     "question_public": "",
     "title_technical": "Tender values around the competitive-tender threshold",
-    "title_public": "",
+    "title_public": "Contracts sized just under the tender limit",
     "principles": [
       "Nolan Objectivity",
       "CIPFA-A (IBAC Operation Royston)"
@@ -29,7 +29,7 @@
     "question_technical": "Is any supplier both a frequent repeat-winner and a big-dollar incumbent?",
     "question_public": "",
     "title_technical": "Repeat winners and big-dollar incumbents",
-    "title_public": "",
+    "title_public": "Firms that keep winning work",
     "principles": [
       "ICAC supplier-panel risk",
       "CIPFA-F"
@@ -52,7 +52,7 @@
     "question_technical": "What share of tenders had no competitive field?",
     "question_public": "",
     "title_technical": "Single-source and direct-negotiation share",
-    "title_public": "",
+    "title_public": "Contracts awarded without competition",
     "principles": [
       "ICAC direct-negotiation guidance"
     ],
@@ -74,7 +74,7 @@
     "question_technical": "Is tendered spend concentrated, and how much is awarded confidentially?",
     "question_public": "",
     "title_technical": "Tender awards by contractor",
-    "title_public": "",
+    "title_public": "Who gets the council's contract money",
     "principles": [
       "CIPFA-F, G"
     ],
@@ -96,7 +96,7 @@
     "question_technical": "When council awards a tender, is a conflict declared \u2014 and does the winner ever match a councillor's known connections?",
     "question_public": "",
     "title_technical": "Declared interests on tender awards",
-    "title_public": "",
+    "title_public": "Conflicts declared when contracts are awarded",
     "principles": [
       "Nolan Objectivity",
       "CIPFA-A/F"
@@ -119,7 +119,7 @@
     "question_technical": "When an interest is declared, is it *managed* \u2014 i.e. does the member recuse?",
     "question_public": "",
     "title_technical": "Recusal following a declared interest",
-    "title_public": "",
+    "title_public": "When councillors declare a conflict, do they leave?",
     "principles": [
       "Nolan Integrity, Objectivity",
       "CIPFA-A"
@@ -142,7 +142,7 @@
     "question_technical": "Did stepping out of serious conflicts change around external scrutiny?",
     "question_public": "",
     "title_technical": "Recusal rate before, during and after external scrutiny",
-    "title_public": "",
+    "title_public": "Did behaviour change when outsiders were watching?",
     "principles": [
       "Nolan Accountability",
       "CIPFA-A"
@@ -165,7 +165,7 @@
     "question_technical": "When a councillor is Council's own appointed delegate/board member on an external body, do they declare an interest before voting on that body's business \u2014 the same disclosure regime a private supplier relationship gets?",
     "question_public": "",
     "title_technical": "Declaration rate of council-appointed delegates",
-    "title_public": "",
+    "title_public": "Councillors voting on bodies they sit on",
     "principles": [
       "Nolan Objectivity/Integrity",
       "CIPFA-A"
@@ -188,7 +188,7 @@
     "question_technical": "Does approval rate vary with the estimated value of the development?",
     "question_public": "",
     "title_technical": "Approval rate by development value",
-    "title_public": "",
+    "title_public": "Whether expensive developments get approved more easily",
     "principles": [
       "CIPFA-D",
       "Nolan Objectivity"
@@ -211,7 +211,7 @@
     "question_technical": "Do repeat builders/agents get approved at a higher rate than one-shot applicants?",
     "question_public": "",
     "title_technical": "Approval rate by applicant frequency",
-    "title_public": "",
+    "title_public": "Whether regular applicants do better",
     "principles": [
       "ICAC favouritism risk",
       "Nolan Objectivity"
@@ -234,7 +234,7 @@
     "question_technical": "Does refusal rise with the number of residents objecting to an application?",
     "question_public": "",
     "title_technical": "Refusal rate by objection count",
-    "title_public": "",
+    "title_public": "Whether objecting changes the outcome",
     "principles": [
       "CIPFA-B \u2014 meaningful stakeholder engagement"
     ],
@@ -256,7 +256,7 @@
     "question_technical": "How often does council depart from the officer recommendation?",
     "question_public": "",
     "title_technical": "Departures from the officer recommendation",
-    "title_public": "",
+    "title_public": "How often councillors overrule their staff",
     "principles": [
       "CIPFA-F",
       "the 'visible contest is theatre' prior"
@@ -279,7 +279,7 @@
     "question_technical": "On contested votes, how unequal is who actually wins \u2014 and is it accountable?",
     "question_public": "",
     "title_technical": "Outcomes on contested votes",
-    "title_public": "",
+    "title_public": "Who wins when the council disagrees",
     "principles": [
       "CIPFA-B",
       "Nolan Accountability"
@@ -302,7 +302,7 @@
     "question_technical": "Does membership on the council's Audit Committee / CEO Performance Review Committee skew toward the chamber's habitual winners, or draw broadly \u2014 including from its habitual dissenters?",
     "question_public": "",
     "title_technical": "Oversight-committee membership against chamber win rates",
-    "title_public": "",
+    "title_public": "Who sits on the committees that check the council",
     "principles": [
       "CIPFA-A (internal audit/oversight function)",
       "Nolan Accountability"
@@ -325,7 +325,7 @@
     "question_technical": "What share of carried motions drew at least one dissenting vote, over time?",
     "question_public": "",
     "title_technical": "Share of carried motions drawing dissent",
-    "title_public": "",
+    "title_public": "How often councillors disagree with each other",
     "principles": [
       "CIPFA-B \u2014 how the chamber conducts business"
     ],
@@ -347,7 +347,7 @@
     "question_technical": "Do the Mayor's own motions get an easier ride than backbench motions?",
     "question_public": "",
     "title_technical": "Dissent rate on the Mayor's motions against backbench motions",
-    "title_public": "",
+    "title_public": "Whether the Mayor gets an easier ride",
     "principles": [
       "Nolan Accountability, Objectivity"
     ],
@@ -369,7 +369,7 @@
     "question_technical": "Do voting/sponsorship blocs persist across electoral terms (an entrenched bloc)?",
     "question_public": "",
     "title_technical": "Sponsorship and voting blocs across electoral terms",
-    "title_public": "",
+    "title_public": "Whether the same group votes together year after year",
     "principles": [
       "CIPFA-B",
       "the Perth root-cause genre"
@@ -394,7 +394,7 @@
     "question_technical": "How entrenched is the chamber \u2014 long-server-heavy, or renewing?",
     "question_public": "",
     "title_technical": "Tenure and turnover",
-    "title_public": "",
+    "title_public": "How long councillors stay",
     "principles": [
       "CIPFA-A, E"
     ],
@@ -416,7 +416,7 @@
     "question_technical": "Do councillors dissent at a different rate in their first year than later?",
     "question_public": "",
     "title_technical": "Dissent rate in a councillor's first year against later years",
-    "title_public": "",
+    "title_public": "Whether new councillors vote differently",
     "principles": [
       "CIPFA-E \u2014 leadership capacity"
     ],
@@ -438,7 +438,7 @@
     "question_technical": "Is dissent higher in the pre-election window than the rest of the cycle?",
     "question_public": "",
     "title_technical": "Dissent rate in the pre-election window",
-    "title_public": "",
+    "title_public": "Whether councillors change behaviour before an election",
     "principles": [
       "Nolan Selflessness"
     ],
@@ -460,7 +460,7 @@
     "question_technical": "What share of cast-vote opportunities are ABSENT, and is that recusal or disengagement?",
     "question_public": "",
     "title_technical": "Absence from votes, split by recusal and non-attendance",
-    "title_public": "",
+    "title_public": "How often councillors miss votes",
     "principles": [
       "Nolan Accountability \u2014 submit to scrutiny"
     ],
@@ -482,7 +482,7 @@
     "question_technical": "What share of decided items is confidential, and is it rising?",
     "question_public": "",
     "title_technical": "Share of decided items closed to the public",
-    "title_public": "",
+    "title_public": "What gets decided behind closed doors",
     "principles": [
       "Nolan Openness",
       "CIPFA-B"
@@ -505,7 +505,7 @@
     "question_technical": "Do confidential tenders carry higher dollar values than open ones?",
     "question_public": "",
     "title_technical": "Tender values, confidential against open",
-    "title_public": "",
+    "title_public": "Whether the secret contracts are the big ones",
     "principles": [
       "Nolan Openness",
       "CIPFA-G \u2014 transparency/audit"
@@ -528,7 +528,7 @@
     "question_technical": "Does confidentiality track lawful statutory grounds or politically contentious topics?",
     "question_public": "",
     "title_technical": "Subject matter of confidential items",
-    "title_public": "",
+    "title_public": "What kinds of things get kept confidential",
     "principles": [
       "Nolan Openness",
       "CIPFA-B \u2014 openness & engagement"
@@ -551,7 +551,7 @@
     "question_technical": "Do tender dollars cluster into the final months of the budget cycle?",
     "question_public": "",
     "title_technical": "Tender spend by month of the budget year",
-    "title_public": "",
+    "title_public": "Whether spending rushes at the end of the budget year",
     "principles": [
       "CIPFA-F \u2014 financial management"
     ],
@@ -573,7 +573,7 @@
     "question_technical": "Are reserves being depleted (the s.114 precursor)?",
     "question_public": "",
     "title_technical": "Reserve balances over time",
-    "title_public": "",
+    "title_public": "Whether the council's savings are running down",
     "principles": [
       "CIPFA Financial Resilience Index"
     ],
@@ -595,7 +595,7 @@
     "question_technical": "What is the volume and trend of public questions, deputations and petitions?",
     "question_public": "",
     "title_technical": "Public questions, deputations and petitions over time",
-    "title_public": "",
+    "title_public": "How much residents take part in meetings",
     "principles": [
       "CIPFA-B \u2014 openness & stakeholder engagement"
     ],
@@ -617,7 +617,7 @@
     "question_technical": "Do meetings with a public deputation see more contested votes?",
     "question_public": "",
     "title_technical": "Contested-vote rate at meetings with a deputation",
-    "title_public": "",
+    "title_public": "Whether meetings get livelier when residents speak",
     "principles": [
       "CIPFA-B \u2014 stakeholder engagement"
     ],
@@ -639,7 +639,7 @@
     "question_technical": "What share of public questions are deferred rather than answered in the meeting, over time?",
     "question_public": "",
     "title_technical": "Public questions taken on notice against answered in the meeting",
-    "title_public": "",
+    "title_public": "Are residents' questions actually answered?",
     "principles": [
       "CIPFA-B \u2014 openness & stakeholder engagement",
       "Nolan Accountability"
