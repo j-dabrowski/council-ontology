@@ -24,6 +24,16 @@ export type Severity =
   | "Integrity flag"
   | "Not computable on this corpus"
 
+// The per-test threshold that decides whether a meeting's claim on this test
+// is an "exception" worth surfacing on /watch, vs collapsing into the
+// one-line summary (docs/frontend/WATCH_FEED_PLAN.md B.2). Non-null exactly
+// when meeting_scope is true (14 rows today).
+export type DigestThreshold =
+  | { kind: "any_occurrence" }
+  | { kind: "percentile"; min_salience: number }
+  | { kind: "ratio"; vs: "median"; min: number }
+  | { kind: "absolute"; min: number }
+
 // The static, council-agnostic half of a test — authored once in
 // config/test_registry.json. Never carries a computed number or a finding.
 export interface TestRegistryEntry {
@@ -45,6 +55,7 @@ export interface TestRegistryEntry {
   has_deep_dive: boolean
   public_interest: boolean
   meeting_scope: boolean
+  digest_threshold: DigestThreshold | null
   detail_panel: string
 }
 

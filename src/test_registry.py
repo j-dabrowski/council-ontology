@@ -48,6 +48,7 @@ class RegistryRow:
     public_interest: bool
     meeting_scope: bool
     detail_panel: str
+    digest_threshold: dict | None = None
     code: str | None = None
 
 

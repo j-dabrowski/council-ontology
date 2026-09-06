@@ -102,6 +102,37 @@ def test_every_row_has_a_non_empty_title_public():
     assert not bad, f"rows with an empty title_public: {bad}"
 
 
+def test_digest_threshold_is_non_null_exactly_when_meeting_scope():
+    registry = load_test_registry()
+    mismatched = [
+        row.id for row in registry
+        if (row.digest_threshold is not None) != row.meeting_scope
+    ]
+    assert not mismatched, f"digest_threshold/meeting_scope disagree for: {mismatched}"
+
+
+def test_digest_threshold_matches_one_of_the_four_kinds():
+    bad = []
+    for row in load_test_registry():
+        dt = row.digest_threshold
+        if dt is None:
+            continue
+        kind = dt.get("kind")
+        if kind == "any_occurrence":
+            ok = set(dt) == {"kind"}
+        elif kind == "percentile":
+            ok = set(dt) == {"kind", "min_salience"} and 0 <= dt["min_salience"] <= 1
+        elif kind == "ratio":
+            ok = set(dt) == {"kind", "vs", "min"} and dt["min"] > 0
+        elif kind == "absolute":
+            ok = set(dt) == {"kind", "min"} and dt["min"] > 0
+        else:
+            ok = False
+        if not ok:
+            bad.append((row.id, dt))
+    assert not bad, f"digest_threshold doesn't match one of the four kinds: {bad}"
+
+
 def test_evidence_query_names_a_real_function():
     queries_fns = _defined_function_names(QUERIES_SOURCE)
     divergence_fns = _defined_function_names(DIVERGENCE_SOURCE)

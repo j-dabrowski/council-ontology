@@ -20,6 +20,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "threshold-gaming"
   },
   {
@@ -43,6 +44,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "incumbency"
   },
   {
@@ -65,6 +67,7 @@
     "has_deep_dive": false,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "single-source"
   },
   {
@@ -87,6 +90,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "tenders"
   },
   {
@@ -110,6 +116,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "decider-supplier"
   },
   {
@@ -133,6 +142,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "declared"
   },
   {
@@ -156,6 +168,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "recusal"
   },
   {
@@ -179,6 +192,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "delegate-body-conflict"
   },
   {
@@ -202,6 +216,10 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "percentile",
+      "min_salience": 0.7
+    },
     "detail_panel": "big-dollar"
   },
   {
@@ -225,6 +243,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "repeat-applicant"
   },
   {
@@ -247,6 +266,10 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "percentile",
+      "min_salience": 0.7
+    },
     "detail_panel": "dose"
   },
   {
@@ -270,6 +293,10 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "percentile",
+      "min_salience": 0.7
+    },
     "detail_panel": "divergence"
   },
   {
@@ -293,6 +320,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "power"
   },
   {
@@ -316,6 +344,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "oversight-body-capture"
   },
   {
@@ -338,6 +367,10 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "percentile",
+      "min_salience": 0.7
+    },
     "detail_panel": "unanimity"
   },
   {
@@ -360,6 +393,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "mayoral"
   },
   {
@@ -385,6 +419,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "sponsorship"
   },
   {
@@ -407,6 +442,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "tenure"
   },
   {
@@ -429,6 +465,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "freshman"
   },
   {
@@ -451,6 +488,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "election-cycle"
   },
   {
@@ -473,6 +511,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "attendance"
   },
   {
@@ -496,6 +537,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "transparency"
   },
   {
@@ -519,6 +563,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "confidential-tender-size"
   },
   {
@@ -542,6 +589,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "confidential-topics"
   },
   {
@@ -564,6 +614,7 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "eoy"
   },
   {
@@ -586,6 +637,7 @@
     "has_deep_dive": false,
     "public_interest": false,
     "meeting_scope": false,
+    "digest_threshold": null,
     "detail_panel": "reserve"
   },
   {
@@ -608,6 +660,10 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "percentile",
+      "min_salience": 0.7
+    },
     "detail_panel": "engagement"
   },
   {
@@ -630,6 +686,9 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "any_occurrence"
+    },
     "detail_panel": "deputations"
   },
   {
@@ -653,6 +712,10 @@
     "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
+    "digest_threshold": {
+      "kind": "percentile",
+      "min_salience": 0.7
+    },
     "detail_panel": "question-responsiveness"
   }
 ]
