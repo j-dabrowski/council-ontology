@@ -6,10 +6,10 @@ import { useData } from "../hooks/useData";
 import { api, ScorecardData, CouncillorsData } from "../api";
 import { resolveTests } from "../registry";
 import { groupByCategory } from "../registry/grouping";
-import { BESPOKE_PANELS } from "../bespokePanels";
+import { PANEL_COMPONENTS } from "../registry/components";
 
 // Every battery test gets a panel, driven by the published scorecard data —
-// not a hardcoded per-test_id list. A test with a BESPOKE_PANELS entry gets
+// not a hardcoded per-test_id list. A test with a PANEL_COMPONENTS entry gets
 // its dedicated component; everything else renders through the generic
 // BatteryTestPanel (which "gets a panel for free", per its own docstring).
 // This is what makes a newly Refiner-codified, published test show up here
@@ -33,7 +33,7 @@ export function AnalysisPage() {
               <h3 className="analysis-group-heading">{g.name}</h3>
             </section>
             {g.tests.map((t) => {
-              const Bespoke = BESPOKE_PANELS[t.id];
+              const Bespoke = PANEL_COMPONENTS[t.id];
               return (
                 <section className="grid-full" id={`panel-${t.detail_panel}`} key={t.id}>
                   {Bespoke ? <Bespoke test={t} cllrData={cllrData} /> : <BatteryTestPanel testId={t.id} />}

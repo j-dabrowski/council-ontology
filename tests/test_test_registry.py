@@ -3,7 +3,7 @@ Parity checks for config/test_registry.json (docs/frontend/
 TEST_REGISTRY_PLAN.md Step 4) — the registry is now the one place that
 states which tests exist; these tests catch it silently drifting from the
 three things that must agree with it: `_GENERATORS` (src/analysis/tests.py),
-`BESPOKE_PANELS` (frontend/src/bespokePanels.tsx), and the real
+`PANEL_COMPONENTS` (frontend/src/registry/components.tsx), and the real
 queries.py/divergence.py/tests.py functions its `evidence_query` values
 name. All hermetic: source/JSON reads only, no DB, no network.
 
@@ -20,7 +20,7 @@ from src.analysis.tests import _GENERATORS
 from src.test_registry import load_test_registry
 
 ROOT = Path(__file__).resolve().parent.parent
-BESPOKE_PANELS_PATH = ROOT / "frontend" / "src" / "bespokePanels.tsx"
+PANEL_COMPONENTS_PATH = ROOT / "frontend" / "src" / "registry" / "components.tsx"
 QUERIES_SOURCE = ROOT / "src" / "analysis" / "queries.py"
 DIVERGENCE_SOURCE = ROOT / "src" / "analysis" / "divergence.py"
 TESTS_SOURCE = ROOT / "src" / "analysis" / "tests.py"
@@ -33,11 +33,12 @@ _VALID_CATEGORIES = {
 }
 
 
-def _bespoke_panel_ids() -> set[str]:
-    """BESPOKE_PANELS is one flat `Record<string, ComponentType>` literal
-    (see frontend/src/bespokePanels.tsx) — its keys are every test_id with a
-    bespoke deep-dive panel today."""
-    text = BESPOKE_PANELS_PATH.read_text()
+def _panel_component_ids() -> set[str]:
+    """PANEL_COMPONENTS is one flat `Record<string, ComponentType>` literal
+    (see frontend/src/registry/components.tsx) — its keys are every test_id
+    that renders a panel on /analysis today, whether via a bespoke component
+    or the generic BatteryTestCard."""
+    text = PANEL_COMPONENTS_PATH.read_text()
     return set(re.findall(r'"([a-z_]+\.[a-z_]+)":\s*\w+,', text))
 
 
@@ -56,14 +57,14 @@ def test_every_registry_id_has_a_generator_and_vice_versa():
     )
 
 
-def test_has_deep_dive_matches_bespoke_panels_both_directions():
+def test_has_deep_dive_matches_panel_components_both_directions():
     registry_deep_ids = {row.id for row in load_test_registry() if row.has_deep_dive}
-    bespoke_ids = _bespoke_panel_ids()
-    only_registry = registry_deep_ids - bespoke_ids
-    only_bespoke = bespoke_ids - registry_deep_ids
-    assert not only_registry and not only_bespoke, (
-        f"has_deep_dive=true with no BESPOKE_PANELS entry: {sorted(only_registry)}; "
-        f"BESPOKE_PANELS entry with has_deep_dive=false (or missing): {sorted(only_bespoke)}"
+    panel_ids = _panel_component_ids()
+    only_registry = registry_deep_ids - panel_ids
+    only_panels = panel_ids - registry_deep_ids
+    assert not only_registry and not only_panels, (
+        f"has_deep_dive=true with no PANEL_COMPONENTS entry: {sorted(only_registry)}; "
+        f"PANEL_COMPONENTS entry with has_deep_dive=false (or missing): {sorted(only_panels)}"
     )
 
 

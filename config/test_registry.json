@@ -17,7 +17,7 @@
     "response": "That is the honest limit of a distributional test: it can only see gaming that leaves a visible fingerprint in the amount distribution itself. What it does rule out is the simplest and most common form \u2014 deliberately shaving a contract's value down to duck the competitive-tender threshold \u2014 which is exactly the pattern real procurement-integrity audits look for first.",
     "evidence_query": "tests._t_threshold_gaming",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "threshold-gaming"
@@ -40,7 +40,7 @@
     "response": "The two-part overlap test is deliberately a high bar, aimed at the clearest capture signature: an entrenched supplier a council keeps handing both frequent and lucrative work. A quieter pattern would need a different measure, but this one catches the single most recognisable form of supplier-panel risk auditors flag first.",
     "evidence_query": "tests._t_procurement_incumbency",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "incumbency"
@@ -107,7 +107,7 @@
     "response": "That coverage gap is real, and the result should be read within it. What the test does establish, across every tender-award vote it can see, is that the two checkable signatures of a hidden connection \u2014 a shared surname with a councillor, or an interest that should have been declared but wasn't \u2014 turn up nothing, consistent with the separate clean results for threshold-gaming and incumbency on the supplier side.",
     "evidence_query": "decider_supplier_conflict",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
     "detail_panel": "decider-supplier"
@@ -176,7 +176,7 @@
     "response": "The small per-body counts are why no single body's raw percentage is treated as the finding \u2014 what the test reads instead is the *contrast* between bodies: seats that are a public appointment, not a personal stake, cluster near zero, while the one body where councillors can hold a genuine private interest sits materially higher. That shape is a more robust signal than any one body's number, even at this sample size.",
     "evidence_query": "delegate_body_conflict",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "delegate-body-conflict"
@@ -199,7 +199,7 @@
     "response": "A coarse quartile split is a deliberately blunt first pass: it's the measure that would catch the most legible form of value-based leniency, a steady tilt from cheap to expensive projects. It doesn't rule out a narrower pattern, but establishing that the broad relationship is flat is still worth knowing before looking for something subtler.",
     "evidence_query": "tests._t_big_dollar_leniency",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
     "detail_panel": "big-dollar"
@@ -222,7 +222,7 @@
     "response": "Grouping by named applicant is the most direct read of favouritism the record supports, and it's a deliberately generous test for a real effect: if repeat filers were getting an easier ride, the highest-frequency bucket is exactly where it would show up first. A flat result across frequency bands rules out the most legible form of that risk, even if it can't see one hidden behind a shifting company name.",
     "evidence_query": "tests._t_repeat_applicant",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "repeat-applicant"
@@ -313,7 +313,7 @@
     "response": "The era-pooled comparison is the most data the appointee cohort can support, and even at that scale the point holds: appointee win rates run across almost the whole spectrum of the chamber, from consistent winners to frequent dissenters, rather than clustering among the powerful. A modern-era-only cut is a natural refinement, not a reason to doubt the pooled result.",
     "evidence_query": "oversight_body_capture",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "oversight-body-capture"
@@ -426,7 +426,7 @@
     "response": "That confound is exactly why the pooled early-vs-late figures here are read as descriptive, not causal \u2014 and the more rigorous per-councillor comparison that controls for era came back a clean null. Reporting both the naive comparison and that caveat, rather than only the flattering one, is the point of running the test at all.",
     "evidence_query": "tests._t_freshman",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "freshman"
@@ -448,7 +448,7 @@
     "response": "It's a deliberately simple test for a specific, checkable claim \u2014 that dissent spikes in the run-up to an election \u2014 and a small, confound-prone difference is itself the honest answer: it doesn't support a strong electoral-positioning effect, rather than manufacturing one out of a blunt window.",
     "evidence_query": "tests._t_election_cycle",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "election-cycle"
@@ -470,7 +470,7 @@
     "response": "That risk sits with the conflict-declaration tests elsewhere in this battery, not this one \u2014 here, taking the record at face value, the ABSENT figure is overwhelmingly lawful step-outs rather than disengagement, which is itself worth knowing before assuming a raw absence rate reflects how often councillors simply don't show up.",
     "evidence_query": "tests._t_attendance",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
     "detail_panel": "attendance"
@@ -516,7 +516,7 @@
     "response": "The small sample is why this is stated as directional rather than definitive. But the gap this measure can't see cuts the other way: tenders missing a recorded amount are excluded from the comparison entirely, and that missingness biases toward understating any real difference, not manufacturing one \u2014 so a small but real sample is, if anything, an undersell of the true gap. Confidentiality on a tender is often lawful in its own right, so this is a visibility concern rather than evidence of impropriety.",
     "evidence_query": "tests._t_confidential_tender_size",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
     "detail_panel": "confidential-tender-size"
@@ -539,7 +539,7 @@
     "response": "That noise is acknowledged directly and it biases in the safer direction: coarse keyword matching is more likely to over-count development-related closures than to hide them, so a result showing the most contentious topic is the *least* closed is, if anything, a conservative reading in the council's favour, not a generous one.",
     "evidence_query": "tests._t_confidential_topics",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
     "detail_panel": "confidential-topics"
@@ -561,7 +561,7 @@
     "response": "The test is built with that in mind: it isn't asking whether the final month differs from the baseline at all, but whether it differs by enough to look like a deliberate use-it-or-lose-it dump rather than ordinary lumpy capital timing \u2014 and the threshold for calling that a concern is set well above the even-spread expectation, not at it.",
     "evidence_query": "tests._t_eoy_spending",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": false,
     "detail_panel": "eoy"
@@ -627,7 +627,7 @@
     "response": "That confound is stated plainly rather than papered over: the small gap found here is read as inconclusive precisely because busy meetings independently attract both more deputations and more contested motions, not as evidence either way about deputations' own effect.",
     "evidence_query": "tests._t_deputation_dissent",
     "evidence_snapshot": null,
-    "has_deep_dive": false,
+    "has_deep_dive": true,
     "public_interest": false,
     "meeting_scope": true,
     "detail_panel": "deputations"
