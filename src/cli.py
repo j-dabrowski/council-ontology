@@ -2919,6 +2919,7 @@ def cmd_draft(args) -> None:
     # never block the corpus battery's draft.
     period_digest = None
     period_digest_skip_reason = None
+    baselines = None
     try:
         import json as _json_digest
 
@@ -2934,6 +2935,19 @@ def cmd_draft(args) -> None:
         )
     except FileNotFoundError as exc:
         period_digest_skip_reason = str(exc)
+
+    # /watch feed (docs/frontend/WATCH_FEED_PLAN.md Step 4) — one row per
+    # minutes meeting, corpus-wide, over the same baselines file the period
+    # digest above just tried to load. Written to the draft root itself
+    # (alongside scorecard.json, below), not to local/ — B.3 makes it a
+    # published snapshot; Step 5 wires it into manifest.snapshots.
+    watch_feed = None
+    watch_feed_skip_reason = period_digest_skip_reason
+    if baselines is not None:
+        from src.analysis.meeting_baselines import compute_watch_feed
+        watch_feed = compute_watch_feed(
+            session, council_id, key, generated_at, baselines, min_n=_load_min_n_digest(),
+        )
 
     session.close()
 
@@ -3014,6 +3028,19 @@ def cmd_draft(args) -> None:
         console.print(
             f"  [yellow]○[/yellow] local/period_digest.json skipped — {period_digest_skip_reason}"
         )
+
+    if watch_feed is not None:
+        (output_dir / "watch.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": watch_feed,
+        }, indent=2))
+        n_exceptions = sum(r["tests"]["exceptions"] for r in watch_feed["meetings"])
+        console.print(
+            f"  [green]✓[/green] watch.json ({watch_feed['n_meetings']} meeting(s), "
+            f"{n_exceptions} total exception(s)) "
+            "[dim]— draft root, not yet in manifest.snapshots (Step 5)[/dim]"
+        )
+    else:
+        console.print(f"  [yellow]○[/yellow] watch.json skipped — {watch_feed_skip_reason}")
 
     n_public = sum(1 for t in tiers.values() if t == "public")
     n_full = len(tiers) - n_public
@@ -3207,6 +3234,64 @@ def cmd_digest(args) -> None:
         out_path = out_dir / f"{interval}_{period_end.isoformat()}.json"
         out_path.write_text(_json.dumps(digest, indent=2))
         console.print(f"\n[dim]Saved: {out_path}[/dim]")
+
+
+def cmd_watch(args) -> None:
+    """The /watch feed, computed standalone (docs/frontend/WATCH_FEED_PLAN.md
+    Step 4) — one row per minutes meeting, corpus-wide, without a full
+    `council draft` run. Writes to a scratch path (`data/watch_preview/`,
+    gitignored), same relationship `council digest` has to `cmd_draft`'s
+    automatic period digest. `cmd_draft` calls `compute_watch_feed` directly
+    and writes the real `watch.json` into the draft root — see that command.
+    """
+    import json as _json
+    from datetime import datetime, timezone
+
+    from src.analysis.meeting_baselines import compute_watch_feed, load_meeting_baselines
+    from src.analysis.queries import get_council_by_name
+    from src.invariant_gate import load_min_n
+    from src.storage.database import init_db, make_session_factory
+
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    short_name = COUNCILS[key]["short_name"]
+
+    baselines_path = Path("data") / f"{key}_meeting_baselines.json"
+    try:
+        baselines = load_meeting_baselines(baselines_path)
+    except FileNotFoundError as exc:
+        console.print(f"[red]{exc}[/red]")
+        sys.exit(1)
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_obj = get_council_by_name(session, short_name)
+    if not council_obj:
+        console.print(f"[red]Council '{short_name}' not found in DB[/red]")
+        sys.exit(1)
+
+    generated_at = datetime.now(timezone.utc).isoformat()
+    console.print(Panel(f"Computing the /watch feed for [bold]{key}[/bold]…", style="blue"))
+    feed = compute_watch_feed(
+        session, council_obj.id, key, generated_at, baselines, min_n=load_min_n(),
+    )
+    session.close()
+
+    n_exceptions = sum(r["tests"]["exceptions"] for r in feed["meetings"])
+    n_quiet = sum(1 for r in feed["meetings"] if r["tests"]["exceptions"] == 0)
+    console.print(Panel(
+        f"[bold]{key}[/bold]: {feed['n_meetings']} minutes meeting(s), "
+        f"{n_exceptions} total exception(s) across the corpus, {n_quiet} quiet meeting(s)",
+        style="green",
+    ))
+
+    out_dir = Path("data/watch_preview") / key
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "watch.json"
+    out_path.write_text(_json.dumps({"published_at": generated_at, "data": feed}, indent=2))
+    console.print(f"[dim]Saved: {out_path}[/dim]")
 
 
 def cmd_publish(args) -> None:
@@ -4243,6 +4328,18 @@ def main() -> None:
     p_digest.add_argument("--save", action="store_true",
                           help="also write JSON to data/digest_preview/<council>/")
     p_digest.set_defaults(func=cmd_digest)
+
+    # watch (the /watch feed, standalone — docs/frontend/WATCH_FEED_PLAN.md
+    # Step 4; requires `council meeting-baselines` to have been run first)
+    p_watch = sub.add_parser(
+        "watch",
+        help="The /watch feed: one row per minutes meeting, corpus-wide, "
+             "computed standalone (data/watch_preview/<council>/watch.json). "
+             "Requires `council meeting-baselines` to have been run first. "
+             "`council draft` writes the real watch.json into the draft root itself.",
+    )
+    p_watch.add_argument("council", choices=list(COUNCILS))
+    p_watch.set_defaults(func=cmd_watch)
 
     # editor-loop (S8: scripted Editor/Fixer review loop — the Conductor role, scripted)
     p_loop = sub.add_parser(

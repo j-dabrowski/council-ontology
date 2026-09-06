@@ -27,7 +27,10 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.analysis.tests import run_meeting_digest
-from src.models import Meeting, Motion
+from src.invariant_gate import derive_claim_tiers, project_to_institutional
+from src.models import Councillor, Meeting, Motion
+from src.provenance import meeting_provenance
+from src.test_registry import RegistryRow, load_test_registry
 
 DEFAULT_MEETING_BODIES_PATH = Path(__file__).resolve().parent.parent.parent / "config" / "meeting_bodies.json"
 
@@ -115,6 +118,127 @@ def compute_meeting_baselines(
         council=council_key, generated_at=generated_at,
         n_meetings_considered=len(meetings), baselines=baselines,
     )
+
+
+def _all_minutes_meetings(session: Session, council_id: int) -> list[Meeting]:
+    """Every minutes meeting, content-bearing or not — unlike
+    `_content_bearing_minutes_meetings` above (which exists to keep a
+    stub/placeholder row out of the *baseline distributions*), the watch
+    feed shows one row per minutes meeting regardless (docs/frontend/
+    WATCH_FEED_PLAN.md B.4: 506 rows for Cambridge, not 460)."""
+    return (
+        session.query(Meeting)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+        .order_by(Meeting.meeting_date.desc())
+        .all()
+    )
+
+
+def compute_watch_feed(
+    session: Session, council_id: int, council_key: str, generated_at: str,
+    baselines: MeetingBaselines, min_n: int,
+    meeting_bodies: dict[str, str] | None = None,
+    registry: list[RegistryRow] | None = None,
+    validation_dir: Path | None = None,
+    batch_jobs_dir: Path | None = None,
+) -> dict:
+    """Part C.2's per-meeting watch record, over every minutes meeting
+    (docs/frontend/WATCH_FEED_PLAN.md B.4) — the same corpus-wide pass this
+    module already runs for the baseline distributions, extended to also
+    emit the record `/watch` needs. Reuses `run_meeting_digest()` (one
+    source of truth for what a meeting's claims are, same as
+    `compute_meeting_baselines` above) and `deviates()`
+    (`src.analysis.digest`, B.1/B.2) for the per-test exception check.
+
+    Each exception carries both a `deep` and a `public` view of its
+    rendered fields (mirroring `compose_period_digest()`'s own deep/public
+    split per candidate, B.3) — `public` is `None` when this claim's tier is
+    `"full"`. Step 5 decides which view the published snapshot actually
+    carries; this function keeps both so that decision doesn't have to be
+    made here.
+    """
+    # Local import: src.analysis.digest imports this module at top level
+    # (MeetingBaselines/body_class_of/load_meeting_bodies), so a module-level
+    # import here would be circular.
+    from src.analysis.digest import deviates, meeting_inventory
+
+    meeting_bodies = meeting_bodies if meeting_bodies is not None else load_meeting_bodies()
+    registry = registry if registry is not None else load_test_registry()
+    registry_by_id = {row.id: row for row in registry if row.meeting_scope}
+
+    meetings = _all_minutes_meetings(session, council_id)
+    meeting_ids = [m.id for m in meetings]
+    provenance_kwargs = {}
+    if validation_dir is not None:
+        provenance_kwargs["validation_dir"] = validation_dir
+    if batch_jobs_dir is not None:
+        provenance_kwargs["batch_jobs_dir"] = batch_jobs_dir
+    provenance_by_meeting = meeting_provenance(session, meeting_ids, **provenance_kwargs)
+    known_names = {(c.given_name, c.family_name) for c in session.query(Councillor).all()}
+    _null_provenance = {
+        "pdf_filename": None, "pdf_url": None, "extracted_at": None,
+        "run_id": None, "run_id_count": 0, "model": None,
+        "validation_status": None, "coverage_ratio": None,
+    }
+
+    rows: list[dict] = []
+    for m in meetings:
+        body_class = body_class_of(m.meeting_type, meeting_bodies)
+        claims = run_meeting_digest(session, council_id, m.id)
+        tiers = derive_claim_tiers(claims, min_n=min_n, known_names=known_names)
+
+        inv = meeting_inventory(session, council_id, m.id)
+        n_motions = len(inv["motions"])
+        n_other = sum(len(v) for v in inv["other_items_by_type"].values())
+
+        exceptions: list[dict] = []
+        for c in claims:
+            entry = registry_by_id.get(c.test_id)
+            if entry is None:  # a broken generator's error result carries no row
+                continue
+            result = deviates(c, baselines, body_class, entry)
+            if not result["is_exception"]:
+                continue
+            public_c = project_to_institutional(c) if tiers.get(c.test_id) == "public" else None
+            exceptions.append({
+                "test_id": c.test_id,
+                "threshold_kind": result["threshold_kind"],
+                "baseline_median": result["baseline_median"],
+                "why": result["why"],
+                "stat": c.stat,
+                "deep": {
+                    "finding": c.headline, "verdict": c.verdict,
+                    "valence": c.valence, "severity": c.grade,
+                },
+                "public": (
+                    {
+                        "finding": public_c.headline, "verdict": public_c.verdict,
+                        "valence": public_c.valence, "severity": public_c.grade,
+                    } if public_c is not None else None
+                ),
+            })
+
+        rows.append({
+            "meeting_id": m.id,
+            "meeting_date": m.meeting_date.isoformat(),
+            "meeting_type": m.meeting_type,
+            "body_class": body_class,
+            "counts": {"items": n_motions + n_other, "motions": n_motions, "other_items": n_other},
+            "tests": {
+                "run": len(claims),
+                "exceptions": len(exceptions),
+                "within_baseline": len(claims) - len(exceptions),
+            },
+            "exceptions": exceptions,
+            "provenance": provenance_by_meeting.get(m.id, _null_provenance),
+        })
+
+    return {
+        "council": council_key,
+        "generated_at": generated_at,
+        "n_meetings": len(rows),
+        "meetings": rows,
+    }
 
 
 def meeting_baselines_to_dict(mb: MeetingBaselines) -> dict:

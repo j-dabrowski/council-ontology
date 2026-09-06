@@ -64,6 +64,7 @@ data/reply_packets/
 # F2) — deliberately separate from data/draft/ so it can never be mistaken
 # for, or picked up by, the publish pipeline.
 data/meeting_digest_preview/
+data/watch_preview/
 
 .cache/
 
