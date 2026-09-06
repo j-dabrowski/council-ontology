@@ -6,6 +6,7 @@ import { useData } from "../hooks/useData";
 import { api, WatchData, WatchMeeting, WatchException, CouncillorsData } from "../api";
 import { REGISTRY_BY_ID } from "../registry";
 import type { ResolvedTest } from "../registry/types";
+import { useScrollToMeeting } from "../registry/anchors";
 
 const PAGE_SIZE = 50;
 
@@ -81,8 +82,11 @@ function ProvenanceFooter({ provenance: p }: { provenance: WatchMeeting["provena
   );
 }
 
-function WatchRow({ row, cllrData }: { row: WatchMeeting; cllrData: CouncillorsData | null }) {
-  const [open, setOpen] = useState(false);
+function WatchRow({
+  row, cllrData, open, onToggle,
+}: {
+  row: WatchMeeting; cllrData: CouncillorsData | null; open: boolean; onToggle: () => void;
+}) {
   const { counts, tests } = row;
   const summary = tests.exceptions === 0
     ? `nothing outside baseline · ${tests.run} tests run, all within norms`
@@ -90,7 +94,7 @@ function WatchRow({ row, cllrData }: { row: WatchMeeting; cllrData: CouncillorsD
 
   return (
     <div className="watch-row" data-meeting-id={row.meeting_id}>
-      <button className="watch-row-toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+      <button className="watch-row-toggle" onClick={onToggle} aria-expanded={open}>
         <span className="watch-row-mark">{open ? "▾" : "▸"}</span>
         <span className="watch-row-date">{formatDate(row.meeting_date)}</span>
         <span className="watch-row-type">{row.meeting_type}</span>
@@ -127,6 +131,15 @@ export function WatchPage() {
   const { data, loading, error } = useData<WatchData>(() => api.watch());
   const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
   const [page, setPage] = useState(0);
+  const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
+
+  // docs/frontend/WATCH_FEED_PLAN.md Step 7 — the OverviewPage strip links
+  // to #/watch?meeting=<id>; WatchPage's rows start collapsed, unlike a
+  // scorecard/analysis row, so arriving via that link must also expand the
+  // named row, not just scroll to it.
+  useScrollToMeeting((meetingId) => {
+    setExpandedIds((prev) => (prev.has(meetingId) ? prev : new Set(prev).add(meetingId)));
+  });
 
   const pageCount = data ? Math.max(1, Math.ceil(data.meetings.length / PAGE_SIZE)) : 1;
   const pageRows = useMemo(
@@ -137,6 +150,12 @@ export function WatchPage() {
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
+  const toggle = (meetingId: number) => setExpandedIds((prev) => {
+    const next = new Set(prev);
+    if (next.has(meetingId)) next.delete(meetingId); else next.add(meetingId);
+    return next;
+  });
+
   return (
     <div className="app">
       <CouncilHeader />
@@ -146,7 +165,13 @@ export function WatchPage() {
         </p>
         <div className="watch-feed">
           {pageRows.map((row) => (
-            <WatchRow key={row.meeting_id} row={row} cllrData={cllrData} />
+            <WatchRow
+              key={row.meeting_id}
+              row={row}
+              cllrData={cllrData}
+              open={expandedIds.has(row.meeting_id)}
+              onToggle={() => toggle(row.meeting_id)}
+            />
           ))}
         </div>
         {pageCount > 1 && (

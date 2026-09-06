@@ -1,4 +1,5 @@
 import { CouncilHeader } from "../components/CouncilHeader";
+import { LatestMeetingStrip } from "../components/LatestMeetingStrip";
 import { OverviewPanel } from "../components/OverviewPanel";
 import { ScorecardPanel } from "../components/ScorecardPanel";
 
@@ -8,6 +9,9 @@ export function OverviewPage() {
       <CouncilHeader />
 
       <main className="main-grid">
+        <section className="grid-full">
+          <LatestMeetingStrip />
+        </section>
         <section className="grid-full">
           <OverviewPanel />
         </section>

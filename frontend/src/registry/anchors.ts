@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 
 // The one place either cross-page deep-link direction is expressed
@@ -23,6 +23,14 @@ export function scorecardHref(testId: string): string {
   return `#/?test=${encodeURIComponent(testId)}`;
 }
 
+// docs/frontend/WATCH_FEED_PLAN.md Step 7 — the latest-meeting strip's link
+// into its row on /watch. Same query-param-on-the-hash-route shape as the
+// test anchors above; `data-meeting-id` is the matching attribute (already
+// carried by every WatchPage row for exactly this).
+export function watchHref(meetingId: number): string {
+  return `#/watch?meeting=${encodeURIComponent(meetingId)}`;
+}
+
 const HIGHLIGHT_CLASS = "test-target";
 const HIGHLIGHT_MS = 2500;
 // The target element may not exist yet on first render — the snapshot is
@@ -36,22 +44,36 @@ const HIGHLIGHT_MS = 2500;
 // by-then-stale endpoint and silently overwrites a later correction.)
 const WATCH_TIMEOUT_MS = 5000;
 
-// Reads ?test=<id> off the current route, scrolls the element carrying a
-// matching data-test-id into view, and flags it with a highlight class.
-export function useScrollToTest(): void {
+// Shared by useScrollToTest/useScrollToMeeting below: reads `param` off the
+// current route, watches the DOM for the first element whose `attr` matches
+// its value (the target may not exist yet — the snapshot is still
+// fetching), scrolls it into view, flags it with a highlight class, and
+// calls `onMatch` (if given) once — e.g. WatchPage uses this to expand the
+// row a CSS class alone can't open.
+function useScrollToMatch(param: string, attr: string, onMatch?: (value: string) => void): void {
   const [searchParams] = useSearchParams();
-  const testId = searchParams.get("test");
+  const value = searchParams.get(param);
+  // Read through refs, not the effect's dependency array: `attr` is a
+  // per-call-site constant and `onMatch` is typically a fresh closure every
+  // render (WatchPage passes one inline) — depending on either would re-run
+  // the scroll/highlight on every unrelated re-render instead of once per
+  // `value` change.
+  const attrRef = useRef(attr);
+  attrRef.current = attr;
+  const onMatchRef = useRef(onMatch);
+  onMatchRef.current = onMatch;
 
   useEffect(() => {
-    if (!testId) return;
+    if (!value) return;
 
-    const selector = `[data-test-id="${testId}"]`;
+    const selector = `[${attrRef.current}="${value}"]`;
     let highlightTimer: number | undefined;
     let giveUpTimer: number | undefined;
     let resizeObserver: ResizeObserver | undefined;
     let mutationObserver: MutationObserver | undefined;
 
     const watch = (el: Element) => {
+      onMatchRef.current?.(value);
       const snap = () => el.scrollIntoView({ behavior: "auto", block: "start" });
       snap();
       el.classList.add(HIGHLIGHT_CLASS);
@@ -83,5 +105,19 @@ export function useScrollToTest(): void {
       window.clearTimeout(giveUpTimer);
       window.clearTimeout(highlightTimer);
     };
-  }, [testId]);
+  }, [value]);
+}
+
+// Reads ?test=<id> off the current route, scrolls the element carrying a
+// matching data-test-id into view, and flags it with a highlight class.
+export function useScrollToTest(): void {
+  useScrollToMatch("test", "data-test-id");
+}
+
+// Reads ?meeting=<id> off the current route, scrolls the matching
+// data-meeting-id row into view, flags it, and calls `onMatch` with the
+// numeric meeting id so the caller can expand it (WatchPage's rows are
+// collapsed by default, unlike a scorecard/analysis row).
+export function useScrollToMeeting(onMatch: (meetingId: number) => void): void {
+  useScrollToMatch("meeting", "data-meeting-id", (v) => onMatch(Number(v)));
 }
