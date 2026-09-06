@@ -101,12 +101,14 @@ export function ScorecardPanel() {
       </div>
 
       <p className="chart-note sc-intro">
-        Unlike the panels below — which earn their place by being <em>surprising</em> — the
-        scorecard reports <strong>every</strong> standard test, including the ones the council
-        passes. A clean result ("no threshold-gaming found") is shown, not hidden, so the reader
-        sees the good and the neutral alongside the concerning. Because every council runs the
-        identical battery with stable test IDs, these results are <strong>comparable across
-        councils</strong>, not just notes about Cambridge.
+        Every standard governance test this corpus can run is reported here, including the ones
+        the council passes — a clean result ("no threshold-gaming found") is shown, not hidden.
+        The battery is built to run <strong>unmodified on any Western Australian council</strong>{" "}
+        whose minutes yield the required schema, with the same test id on every one, so a result
+        here lines up <strong>test by test</strong> against any other council's, not just
+        Cambridge's. A "not computable" row is part of that comparison too: it says this corpus's
+        records don't carry what the test needs — a statement about record-keeping, not a finding
+        about the council's conduct.
       </p>
 
       {groups.map((g) => (
@@ -119,9 +121,10 @@ export function ScorecardPanel() {
       <p className="chart-note">
         Valence maps to the severity ladders: <strong>supportive</strong> = a strength or a clean
         integrity test; <strong>neutral</strong> = descriptive; <strong>critical</strong> = a
-        Best Value / CIPFA-principle concern. Each test states its n and era; where a panel below
-        explores it in depth, the row says so. "Not computable" rows are honest about the corpus's
-        data limits — themselves a comparable signal across councils.
+        Best Value / CIPFA-principle concern. Each test states its n and era; a row with a fuller
+        writeup links straight to it on <a href="#/analysis">Analysis</a>. "Not computable" rows
+        are honest about the corpus's data limits — themselves a comparable signal across
+        councils.
       </p>
     </Card>
   );
