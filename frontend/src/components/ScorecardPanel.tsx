@@ -9,6 +9,19 @@ import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { RedactedText } from "../guardrail";
 import { analysisHref, useScrollToTest } from "../registry/anchors";
 
+// Mirrors src/analysis/tests.py's battery_summary(): "not computable" comes
+// from data_ok, not valence, since a data_ok:false row's own valence is
+// still "neutral" (TEST_REGISTRY_PLAN.md B.6) — bucketing on valence alone
+// would double-count it as both neutral and not-computable.
+function deriveSummary(tests: ResolvedTest[]) {
+  return {
+    n_supportive: tests.filter((t) => t.data_ok && t.valence === "supportive").length,
+    n_neutral: tests.filter((t) => t.data_ok && t.valence === "neutral").length,
+    n_critical: tests.filter((t) => t.data_ok && t.valence === "critical").length,
+    n_not_computable: tests.filter((t) => !t.data_ok).length,
+  };
+}
+
 function TestRow({ t, councillorNames }: { t: ResolvedTest; councillorNames: string[] }) {
   return (
     <div
@@ -49,10 +62,19 @@ export function ScorecardPanel() {
   useScrollToTest();
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-  const s = data.summary;
   const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
-  const groups = groupByCategory(resolveTests(data.tests));
+  const resolvedTests = resolveTests(data.tests);
+  const groups = groupByCategory(resolvedTests);
+
+  const s = deriveSummary(resolvedTests);
+  (Object.keys(s) as (keyof typeof s)[]).forEach((key) => {
+    if (s[key] !== data.summary[key]) {
+      console.error(
+        `ScorecardPanel: derived ${key}=${s[key]} disagrees with data.summary.${key}=${data.summary[key]}`
+      );
+    }
+  });
 
   return (
     <Card
