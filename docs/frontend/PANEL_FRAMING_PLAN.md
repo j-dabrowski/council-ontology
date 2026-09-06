@@ -1,6 +1,6 @@
 # Panel framing — fixed labels, one severity ladder, measure-stating headings
 
-Status: **plan only, nothing built.** Written 2026-09-04.
+Status: **built** (Steps 1–9, 2026-09-04 through 2026-09-06). Written 2026-09-04.
 Follows `TEST_REGISTRY_PLAN.md`, which is built through Step 11 — this plan
 assumes `config/test_registry.json`, `resolveTests()` and `ResolvedTest` exist.
 Audience: the person handing Part D's steps, one at a time, to a fresh model

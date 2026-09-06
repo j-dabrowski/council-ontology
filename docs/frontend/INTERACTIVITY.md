@@ -59,16 +59,42 @@ it — don't invent a data field just to justify keeping the sentence.
 
 ### Panel copy comes from the registry, not JSX
 
-A battery-test panel's heading, subtitle and valence must come from its
-`ResolvedTest` (`title_technical`, `question_technical`, `valence` — joined
-from `config/test_registry.json` by `frontend/src/registry/index.ts`'s
-`resolveTests()`), never typed as a JSX literal. Adding a battery test means
-adding a registry row: `run_test_battery`/`run_meeting_digest`
-(`src/analysis/tests.py`) refuse to run at all if the registry and
-`_GENERATORS` disagree, so a new test with no row — or a row with no
-generator — fails loudly rather than silently shipping a battery short one
-test. See `docs/frontend/TEST_REGISTRY_PLAN.md` for the registry's full
-design.
+A battery-test panel's heading, subhead and valence must come from its
+`ResolvedTest` (`title_technical`, `finding`, `valence` — joined from
+`config/test_registry.json` by `frontend/src/registry/index.ts`'s
+`resolveTests()`), never typed as a JSX literal. The heading states the
+measure (`title_technical`); the subhead states the finding, rendered only
+through `<RedactedText>` (`frontend/src/guardrail.tsx`) — never the raw
+string, since a finding can carry a named individual. `question_technical`
+lives in the panel's meta line, beside its principles, not the subhead.
+Adding a battery test means adding a registry row: `run_test_battery`/
+`run_meeting_digest` (`src/analysis/tests.py`) refuse to run at all if the
+registry and `_GENERATORS` disagree, so a new test with no row — or a row
+with no generator — fails loudly rather than silently shipping a battery
+short one test. See `docs/frontend/TEST_REGISTRY_PLAN.md` for the
+registry's full design.
+
+### Counter-argument and severity copy are fixed-vocabulary, not prose
+
+A panel's counter-argument text is registry-sourced (`objection` /
+`response` on the same `ResolvedTest`) and rendered only through
+`<ObjectionResponse>` — two fixed labels, "Objection" and "Response,"
+never a bespoke phrase like "A hostile reader would say" or "In the
+council's defence." Severity is rendered only through `<SeverityChip>` —
+never a raw "Severity: …" sentence in a panel's own prose. A panel body
+carries neither pattern as a string literal; see
+`docs/frontend/PANEL_FRAMING_PLAN.md` for the full design and the
+concession/reservation each rewrite had to preserve.
+
+**Pre-deploy check**, alongside the hardcoded-name rule above — run from
+`frontend/`, must return nothing:
+
+```
+grep -rn "hostile reader\|council's defence\|credit, stated plainly\|Read as a strength\|honesty layer\|Severity:" src/
+```
+
+A hit means a retired label survived a rewrite, or a new panel introduced
+one from scratch.
 
 ### Cross-cutting behaviours — DONE (apply to every panel)
 - [x] **Auto-scroll to opened detail** — `DrillDown` calls `scrollIntoView` on open.

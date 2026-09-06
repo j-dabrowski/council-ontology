@@ -166,15 +166,23 @@ the three separately-authored copy sources (Scorecard/Analysis/Digest) with
 one registry row per test. Several fields shipped empty on purpose, not by
 oversight:
 
-- **`question_public` / `title_public` / `method` / `caveats`** — unfilled
-  (`""` / `[]`) on all 29 rows. A lay-facing rewrite of the technical copy,
-  and the method/caveat prose an auditor would want, are their own
-  editorial pass, not something mechanically extractable from `tests.py`.
-- **`objection` / `response`** — `null` on all 29 rows, typed but not
-  written; a separate pass, not blocked on anything built here.
+- **`question_public` / `method`** — still unfilled (`""`) on all 29 rows.
+  The method prose an auditor would want is its own editorial pass, not
+  something mechanically extractable from `tests.py`.
+- **`title_public`** — filled on all 29 rows (`docs/frontend/
+  PANEL_FRAMING_PLAN.md` Step 7, plain-English/resident-facing). Still has
+  **no consumer** — no lay-facing surface reads it yet; populating the field
+  didn't build one.
+- **`objection` / `response`** — filled on all 29 rows, number-free
+  (PANEL_FRAMING_PLAN.md Steps 3–4). Rendered through `<ObjectionResponse>`
+  for `valence === "critical"` tests only; a supportive/neutral test's pair
+  exists but renders nothing until it flips.
+- **`caveats`** — populated for one row so far (`governance.durable_faction`,
+  PANEL_FRAMING_PLAN.md Step 5) and still **not rendered anywhere** — adding
+  a renderer was explicitly out of scope for that work.
 - **`public_interest`** — `false` on all 29 rows. No lay-facing surface can
-  be built off this field yet — it needs the `question_public`/`title_public`
-  pass above before it means anything.
+  be built off this field yet — it needs the `question_public` pass above
+  before it means anything (`title_public` alone isn't sufficient).
 - **Meeting-scoped copy stays in `src/analysis/tests.py`**, not the
   registry. A `title_meeting`/`question_meeting` pair (so `DigestPage.tsx`
   could stop reading the raw snapshot's own `title`/`question` — see

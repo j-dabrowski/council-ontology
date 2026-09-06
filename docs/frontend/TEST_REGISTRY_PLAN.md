@@ -675,10 +675,11 @@ same 14 cards with the same meeting-scoped headings as before.
 - `docs/TESTING.md` — `config/test_registry.json` is now load-bearing for
   `council draft`; note `tests/test_test_registry.py` in the CI section.
 - `docs/frontend/PRODUCT_ROADMAP.md` — record what is deliberately open:
-  `question_public` / `title_public` / `method` / `caveats` unfilled;
-  `objection` / `response` awaiting their own pass; `public_interest` all `false`
-  so no lay-facing surface can be built from it yet; meeting-scoped copy still in
-  `tests.py`; Phases 2 and 3 outstanding.
+  `question_public` / `method` unfilled; `public_interest` all `false` so no
+  lay-facing surface can be built from it yet; meeting-scoped copy still in
+  `tests.py`; Phases 2 and 3 outstanding. (`title_public`, `objection`/
+  `response` and — for one row so far — `caveats` were since filled in by
+  `docs/frontend/PANEL_FRAMING_PLAN.md` Steps 4/5/7, 2026-09-05/06.)
 - Mark this file's status **Phase 1 built**; leave Parts A–D as the record of the
   pre-registry state.
 
