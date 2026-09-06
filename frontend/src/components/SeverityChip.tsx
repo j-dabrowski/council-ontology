@@ -21,7 +21,7 @@ const SEVERITY_META: Record<Severity, { tier: SeverityTier; rank: number; label:
 // A fixed-vocabulary chip that groups the battery's seven severity grades
 // into four visual tiers (strength / observation / concern / no data), same
 // shape and placement discipline as ValenceChip. The label is always the
-// grade string itself — never prefixed with the word "Severity:".
+// grade string itself, rendered with no leading label word of any kind.
 export function SeverityChip({ severity }: { severity: Severity }) {
   const meta = SEVERITY_META[severity];
   return <span className={`severity-chip severity-${meta.tier}`}>{meta.label}</span>;

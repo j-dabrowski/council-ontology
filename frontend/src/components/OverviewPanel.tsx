@@ -1,6 +1,7 @@
 import { useData } from "../hooks/useData";
 import { api, OverviewData } from "../api";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { ObjectionResponse } from "./ObjectionResponse";
 
 interface Insight {
   n: number;
@@ -191,17 +192,23 @@ export function OverviewPanel() {
         ))}
       </div>
 
-      <p className="chart-note overview-honesty">
-        <strong>The honesty layer.</strong> The nulls are load-bearing: the <em>absence</em> of
-        financial-corruption signatures is itself a finding — on three independent integrity tests
-        the tender record comes back clean. The reading is deliberately <strong>balanced</strong>:
-        strengths (insight 8) are graded where earned on a positive ladder (sound practice →
-        good-governance strength), concerns sit at <strong>Observation</strong> or{" "}
-        <strong>Governance-concern</strong> altitude — a pattern that warrants explanation against a
-        named principle, never an assertion of wrongdoing or intent — and each is weighted to the
-        strength of its evidence, not amplified by default. Each links to a panel below where the
-        figure, its sample size, and its caveats are laid out in full.
-      </p>
+      <ObjectionResponse
+        objection={
+          "A synthesis this evenly balanced — crediting the council on several fronts while " +
+          "also naming concerns — looks like it could be padding out the good news to soften " +
+          "the bad, rather than reporting what the evidence actually supports."
+        }
+        response={
+          "The nulls are load-bearing here, not padding: the absence of a financial-corruption " +
+          "signature is itself a finding, arrived at through independent integrity tests on the " +
+          "tender record, not silence because nothing was checked. The grading is deliberately " +
+          "even-handed in both directions — a strength is placed on its ladder only as high as " +
+          "the evidence supports, and a concern sits at Observation or Governance-concern " +
+          "altitude, never higher, without amplifying it into an assertion of wrongdoing or " +
+          "intent. Every figure above links to a panel below where the number, its sample size, " +
+          "and its caveats are laid out in full for a reader to check."
+        }
+      />
     </Card>
   );
 }

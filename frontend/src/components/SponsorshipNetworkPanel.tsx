@@ -183,10 +183,7 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
         densest sponsorship cluster in 30 years. But it is <em>not</em> a single voting bloc: several of the
         strongest ties are <span style={{ color: KIND_COLOR.procedural }}>procedural</span> — members who
         sponsored deep into the network yet voted against those same colleagues on divisive items.
-        "Old guard" describes a working establishment, not a unified faction. Severity: Observation ·
-        n={data.oldguard_nodes.filter((n) => n.in_core).length} core councillors,{" "}
-        {data.oldguard_edges.length} sponsorship ties, {data.oldguard_label} · maps to CIPFA principle
-        B (how the chamber conducts its business).
+        "Old guard" describes a working establishment, not a unified faction.
       </p>
 
       {/* ── Part 3 — structural history ── */}
@@ -219,9 +216,6 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
         again.
       </p>
       {test.valence === "critical" && <ObjectionResponse test={test} />}
-      <p className="chart-note">
-        Severity: Observation · maps to CIPFA principle B (how the chamber conducts its business).
-      </p>
     </Card>
   );
 }

@@ -164,10 +164,6 @@ export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
         tender reports and so cannot be attributed to a named contractor here.
       </p>
       {test.valence === "critical" && <ObjectionResponse test={test} />}
-      <p className="chart-note">
-        Severity: a demonstrated strength on integrity, with a transparency Observation on redaction
-        · CIPFA principles F, G.
-      </p>
     </Card>
   );
 }

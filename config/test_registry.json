@@ -375,7 +375,9 @@
       "the Perth root-cause genre"
     ],
     "method": "",
-    "caveats": [],
+    "caveats": [
+      "Descriptive structural history, not a significance test: cross-term persistence rests on too few high-lift sponsorship edges per electoral term to prove statistically."
+    ],
     "objection": "A sponsorship network that looks dense and long-lived could just be pattern-matching on a small, noisy sample \u2014 with only a handful of high-lift ties surviving each electoral term, what looks like a persistent faction could be coincidence dressed up as a network.",
     "response": "This is descriptive structural history, not a significance test: the consolidation and later fragmentation is a real, visible pattern in who sponsored whom, but cross-term persistence rests on too few high-lift edges per term to prove statistically. Read the shape \u2014 a bloc that formed, held for years, then broke apart with no comparable successor \u2014 as the finding, not any single edge's exact weight.",
     "evidence_query": "sponsorship_network",

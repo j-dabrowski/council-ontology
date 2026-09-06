@@ -160,9 +160,6 @@ export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
         )}
       </p>
       {test.valence === "critical" && <ObjectionResponse test={test} />}
-      <p className="chart-note">
-        Severity: a good-governance strength (no chair capture) · Nolan Accountability, Objectivity.
-      </p>
     </Card>
   );
 }
