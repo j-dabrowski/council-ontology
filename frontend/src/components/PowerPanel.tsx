@@ -5,12 +5,10 @@ import {
   LineChart, Line, Legend,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, PowerProfile, ContestedVoteDetail, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { api, PowerProfile, ContestedVoteDetail } from "../api";
+import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
-import { ObjectionResponse } from "./ObjectionResponse";
-import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
@@ -71,14 +69,12 @@ const ScatterTooltip = ({ active, payload }: {
   );
 };
 
-export function PowerPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function PowerPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.power());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-
-  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const selectedProfile = selected
     ? data.profiles.find((p) => p.name === selected) ?? null
@@ -149,12 +145,7 @@ export function PowerPanel({ test, cllrData }: { test: ResolvedTest; cllrData: C
     : null;
 
   return (
-    <Card
-      title={test.title_technical}
-      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
-      valence={test.valence}
-      backTo={test.id}
-    >
+    <>
       <div className="planning-hero-row">
         <div className="planning-stat">
           <Reveal label="top win rate">
@@ -311,12 +302,11 @@ export function PowerPanel({ test, cllrData }: { test: ResolvedTest; cllrData: C
         )}
       </p>
 
-      {test.valence === "critical" && <ObjectionResponse test={test} />}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
         {" · "}{test.principles.join(" · ")}
         {" · "}{test.question_technical}
       </p>
-    </Card>
+    </>
   );
 }

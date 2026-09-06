@@ -2,19 +2,16 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { api } from "../api";
+import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
-import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
-export function ContestationChart({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function ContestationChart({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.trends());
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-
-  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const chartData = data.contestation.map((r) => ({
     year: r.year,
@@ -23,12 +20,7 @@ export function ContestationChart({ test, cllrData }: { test: ResolvedTest; cllr
   }));
 
   return (
-    <Card
-      title={test.title_technical}
-      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
-      valence={test.valence}
-      backTo={test.id}
-    >
+    <>
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
@@ -85,6 +77,6 @@ export function ContestationChart({ test, cllrData }: { test: ResolvedTest; cllr
         {" · "}{test.principles.join(" · ")}
         {" · "}{test.question_technical}
       </p>
-    </Card>
+    </>
   );
 }

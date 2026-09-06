@@ -4,12 +4,10 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, LabelList, ReferenceLine,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, MayorContest, MayoralMotion, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { api, MayorContest, MayoralMotion } from "../api";
+import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
-import { ObjectionResponse } from "./ObjectionResponse";
-import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const MayorTooltip = ({ active, payload }: {
@@ -43,14 +41,12 @@ function MotionRow({ m }: { m: MayoralMotion }) {
   );
 }
 
-export function MayoralAgendaPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.mayoral());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-
-  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const chartData = data.per_mayor.map((m) => ({ ...m, shortName: m.name }));
   const height = Math.max(220, chartData.length * 42);
@@ -71,12 +67,7 @@ export function MayoralAgendaPanel({ test, cllrData }: { test: ResolvedTest; cll
     : null;
 
   return (
-    <Card
-      title={test.title_technical}
-      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
-      valence={test.valence}
-      backTo={test.id}
-    >
+    <>
       <div className="planning-hero-row">
         <div className="planning-stat">
           <span className="planning-stat-num planning-stat-recent">{data.other_contest_pct}%</span>
@@ -162,12 +153,11 @@ export function MayoralAgendaPanel({ test, cllrData }: { test: ResolvedTest; cll
           </Reveal></>
         )}
       </p>
-      {test.valence === "critical" && <ObjectionResponse test={test} />}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
         {" · "}{test.principles.join(" · ")}
         {" · "}{test.question_technical}
       </p>
-    </Card>
+    </>
   );
 }

@@ -1,7 +1,9 @@
 import { Fragment } from "react";
 import { CouncilHeader } from "../components/CouncilHeader";
-import { BatteryTestPanel } from "../components/BatteryTestPanel";
-import { LoadingCard, ErrorCard } from "../components/InterestsChart";
+import { Card, LoadingCard, ErrorCard } from "../components/InterestsChart";
+import { SeverityChip } from "../components/SeverityChip";
+import { ObjectionResponse } from "../components/ObjectionResponse";
+import { RedactedText } from "../guardrail";
 import { useData } from "../hooks/useData";
 import { api, ScorecardData, CouncillorsData } from "../api";
 import { resolveTests } from "../registry";
@@ -9,12 +11,11 @@ import { groupByCategory } from "../registry/grouping";
 import { PANEL_COMPONENTS } from "../registry/components";
 import { useScrollToTest } from "../registry/anchors";
 
-// Every battery test gets a panel, driven by the published scorecard data —
-// not a hardcoded per-test_id list. A test with a PANEL_COMPONENTS entry gets
-// its dedicated component; everything else renders through the generic
-// BatteryTestPanel (which "gets a panel for free", per its own docstring).
-// This is what makes a newly Refiner-codified, published test show up here
-// with a working anchor link with no frontend change required.
+// The page composes the shell; a registered panel only draws its body
+// (docs/frontend/SURFACE_PROJECTION_PLAN.md B.3). Every row where
+// has_deep_dive is true has a PANEL_COMPONENTS entry (Step 1's parity
+// guarantee), so there is no bespoke/generic fork here any more — the
+// registered component IS the panel, whichever kind it is.
 export function AnalysisPage() {
   const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
   const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
@@ -22,7 +23,8 @@ export function AnalysisPage() {
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
-  const groups = groupByCategory(resolveTests(data.tests));
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
+  const groups = groupByCategory(resolveTests(data.tests).filter((t) => t.has_deep_dive));
 
   return (
     <div className="app">
@@ -35,10 +37,21 @@ export function AnalysisPage() {
               <h3 className="analysis-group-heading">{g.name}</h3>
             </section>
             {g.tests.map((t) => {
-              const Bespoke = PANEL_COMPONENTS[t.id];
+              const PanelBody = PANEL_COMPONENTS[t.id];
               return (
                 <section className="grid-full" data-test-id={t.id} key={t.id}>
-                  {Bespoke ? <Bespoke test={t} cllrData={cllrData} /> : <BatteryTestPanel testId={t.id} />}
+                  <Card
+                    title={t.title_technical}
+                    finding={<RedactedText text={t.finding} names={councillorNames} testId={t.id} field="finding" />}
+                    valence={t.valence}
+                    backTo={t.id}
+                  >
+                    <div className={`bt-headline bt-${t.valence}`}>
+                      <SeverityChip severity={t.severity} />
+                    </div>
+                    <PanelBody test={t} cllrData={cllrData} />
+                    {t.valence === "critical" && <ObjectionResponse test={t} />}
+                  </Card>
                 </section>
               );
             })}

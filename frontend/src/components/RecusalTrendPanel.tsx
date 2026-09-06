@@ -5,11 +5,9 @@ import {
   BarChart, Bar, Legend, Cell,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
+import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
-import { ObjectionResponse } from "./ObjectionResponse";
-import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
@@ -106,14 +104,12 @@ const TypeEraTooltip = ({ active, payload, label }: {
   );
 };
 
-export function RecusalTrendPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<RecusalData>(() => api.recusal());
   const [selected, setSelected] = useState<{ era: string; type: string } | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-
-  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const selectedCell = selected
     ? data.by_type_era.find(
@@ -152,12 +148,7 @@ export function RecusalTrendPanel({ test, cllrData }: { test: ResolvedTest; cllr
   }));
 
   return (
-    <Card
-      title={test.title_technical}
-      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
-      valence={test.valence}
-      backTo={test.id}
-    >
+    <>
       <div className="planning-hero-row">
         <div className="planning-stat">
           <span className="planning-stat-num planning-stat-recent">{data.must_leave_inquiry_pct}%</span>
@@ -272,12 +263,11 @@ export function RecusalTrendPanel({ test, cllrData }: { test: ResolvedTest; cllr
         {data.must_leave_inquiry_n}, post {data.must_leave_post_n}. Declaration→vote matched at item
         level (item reference ↔ agenda item).
       </p>
-      {test.valence === "critical" && <ObjectionResponse test={test} />}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
         {" · "}{test.principles.join(" · ")}
         {" · "}{test.question_technical}
       </p>
-    </Card>
+    </>
   );
 }

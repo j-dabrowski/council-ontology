@@ -3,11 +3,10 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, LabelList,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, TenureProfile, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { api, TenureProfile } from "../api";
+import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 import { Reveal } from "./DrillDown";
-import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const HIST_ORDER = ["<2y", "2-5y", "5-10y", "10-15y", "15y+"];
@@ -27,13 +26,11 @@ const LeaderTooltip = ({ active, payload }: {
   );
 };
 
-export function TenurePanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function TenurePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.tenure());
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-
-  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   // Sorted here rather than trusted from the backend, so a future ordering
   // change on the pipeline side can't silently misattribute "longest serving"
@@ -51,12 +48,7 @@ export function TenurePanel({ test, cllrData }: { test: ResolvedTest; cllrData: 
   const hist = HIST_ORDER.map((k) => ({ bucket: k, count: data.histogram[k] ?? 0 }));
 
   return (
-    <Card
-      title={test.title_technical}
-      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
-      valence={test.valence}
-      backTo={test.id}
-    >
+    <>
       <div className="planning-hero-row">
         <div className="planning-stat">
           <Reveal label="longest serving">
@@ -135,6 +127,6 @@ export function TenurePanel({ test, cllrData }: { test: ResolvedTest; cllrData: 
         {" · "}{test.principles.join(" · ")}
         {" · "}{test.question_technical}
       </p>
-    </Card>
+    </>
   );
 }

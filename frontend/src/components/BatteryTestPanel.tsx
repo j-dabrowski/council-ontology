@@ -2,12 +2,10 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell, ReferenceLine, LabelList,
 } from "recharts";
-import { useData } from "../hooks/useData";
-import { api, ScorecardData, TestChart, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { TestChart, CouncillorsData } from "../api";
+import { Card } from "./InterestsChart";
 import { SeverityChip } from "./SeverityChip";
 import { ObjectionResponse } from "./ObjectionResponse";
-import { resolveTests } from "../registry";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { RedactedText } from "../guardrail";
 
@@ -74,27 +72,18 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
 }
 
 /**
- * Renders one already-resolved ResolvedTest: chart + headline + verdict +
- * meta, plus the named-individual guardrail. Pure presentational component —
- * where the test came from (the whole-corpus scorecard, a single-meeting
- * digest) is the caller's problem, not this one's, so this is what both
- * BatteryTestPanel (corpus-wide, fetches by testId) and DigestPage
- * (single-meeting, already has the full test list) render through.
+ * Body-only generic renderer for a battery test with no bespoke component:
+ * chart + verdict + meta, plus the named-individual guardrail. No Card, no
+ * severity chip, no Objection/Response — the analysis page's shell supplies
+ * those uniformly for every registered panel
+ * (docs/frontend/SURFACE_PROJECTION_PLAN.md B.3). This is what
+ * PANEL_COMPONENTS points the chart-only tests at.
  */
-export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function BatteryTestBody({ test: t, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   return (
-    <Card
-      title={t.title_technical}
-      finding={<RedactedText text={t.finding} names={councillorNames} testId={t.id} field="finding" />}
-      valence={t.valence}
-      backTo={t.id}
-    >
-      <div className={`bt-headline bt-${t.valence}`}>
-        <SeverityChip severity={t.severity} />
-      </div>
-
+    <>
       {/* "Not computable" reflects data_ok, not chart presence — a real,
           computed result can legitimately have no chart (e.g. a single-
           meeting point stat has nothing to trend), and showing the "not
@@ -110,7 +99,6 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cll
       <p className="chart-note">
         <RedactedText text={t.verdict} names={councillorNames} testId={t.id} field="verdict" />
       </p>
-      {t.valence === "critical" && <ObjectionResponse test={t} />}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
         {" · "}{t.principles.join(" · ")}
@@ -119,23 +107,31 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cll
         {t.base_rate && <> · {t.base_rate}</>}
         {t.era && <> · {t.era}</>}
       </p>
-    </Card>
+    </>
   );
 }
 
 /**
- * Generic panel for a battery test that has no bespoke component. Reads the
- * already-loaded scorecard snapshot, finds the test by id, and renders it via
- * BatteryTestCard. One component serves every "simple" test, so a new battery
- * test gets a panel for free.
+ * The card-wrapped form of BatteryTestBody — Card, severity chip and
+ * Objection/Response, all in one call. DigestPage renders meeting-scoped
+ * tests outside the analysis shell, so it still needs this wrapped variant;
+ * the shell itself uses BatteryTestBody directly and supplies its own Card.
  */
-export function BatteryTestPanel({ testId }: { testId: string }) {
-  const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
-  const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
-  if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
-  const t = resolveTests(data.tests).find((x) => x.id === testId);
-  if (!t) return <ErrorCard msg={`test ${testId} not found`} />;
+export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
-  return <BatteryTestCard test={t} cllrData={cllrData} />;
+  return (
+    <Card
+      title={t.title_technical}
+      finding={<RedactedText text={t.finding} names={councillorNames} testId={t.id} field="finding" />}
+      valence={t.valence}
+      backTo={t.id}
+    >
+      <div className={`bt-headline bt-${t.valence}`}>
+        <SeverityChip severity={t.severity} />
+      </div>
+      <BatteryTestBody test={t} cllrData={cllrData} />
+      {t.valence === "critical" && <ObjectionResponse test={t} />}
+    </Card>
+  );
 }

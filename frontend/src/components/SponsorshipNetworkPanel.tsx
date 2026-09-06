@@ -1,10 +1,8 @@
 import { useData } from "../hooks/useData";
-import { api, SponsorshipData, SponsorEdge, SponsorNode, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { api, SponsorshipData, SponsorEdge, SponsorNode } from "../api";
+import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
 import { Reveal } from "./DrillDown";
-import { ObjectionResponse } from "./ObjectionResponse";
-import { RedactedText } from "../guardrail";
 import { surname } from "../surname";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
@@ -84,12 +82,10 @@ function EdgeRow({ e, denom }: { e: SponsorEdge; denom: number }) {
   );
 }
 
-export function SponsorshipNetworkPanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<SponsorshipData>(() => api.sponsorship());
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-
-  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const maxAllyLift = Math.max(...data.alliances.map((e) => e.lift), 3);
   const maxEras = Math.max(...data.eras.map((e) => e.cluster_size), 1);
@@ -101,12 +97,7 @@ export function SponsorshipNetworkPanel({ test, cllrData }: { test: ResolvedTest
   const topAlliances = [...data.alliances].sort((a, b) => b.lift - a.lift).slice(0, 2);
 
   return (
-    <Card
-      title={test.title_technical}
-      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
-      valence={test.valence}
-      backTo={test.id}
-    >
+    <>
       {/* convergence hero */}
       <div className="planning-hero-row">
         <div className="planning-stat">
@@ -218,12 +209,11 @@ export function SponsorshipNetworkPanel({ test, cllrData }: { test: ResolvedTest
         figure is a small hyperactive chamber where nearly everyone sponsored everyone, and 2020–23 reshuffles
         again.
       </p>
-      {test.valence === "critical" && <ObjectionResponse test={test} />}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
         {" · "}{test.principles.join(" · ")}
         {" · "}{test.question_technical}
       </p>
-    </Card>
+    </>
   );
 }

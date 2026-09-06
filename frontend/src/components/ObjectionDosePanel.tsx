@@ -4,10 +4,9 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, LabelList,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ObjectionDoseBucket, DoseApp, CouncillorsData } from "../api";
-import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { api, ObjectionDoseBucket, DoseApp } from "../api";
+import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
-import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const LABELS: Record<string, string> = {
@@ -54,14 +53,12 @@ function AppRow({ app }: { app: DoseApp }) {
   );
 }
 
-export function ObjectionDosePanel({ test, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
+export function ObjectionDosePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.dose());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
-
-  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   const chartData = data.buckets.map((b) => ({
     ...b,
@@ -80,12 +77,7 @@ export function ObjectionDosePanel({ test, cllrData }: { test: ResolvedTest; cll
   const selBucket = selected != null ? data.buckets.find((b) => b.label === selected) : null;
 
   return (
-    <Card
-      title={test.title_technical}
-      finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
-      valence={test.valence}
-      backTo={test.id}
-    >
+    <>
       <div className="planning-hero-row">
         <div className="planning-stat">
           <span className="planning-stat-num planning-stat-recent">{lone?.refusal_pct}%</span>
@@ -163,6 +155,6 @@ export function ObjectionDosePanel({ test, cllrData }: { test: ResolvedTest; cll
         {" · "}{test.principles.join(" · ")}
         {" · "}{test.question_technical}
       </p>
-    </Card>
+    </>
   );
 }
