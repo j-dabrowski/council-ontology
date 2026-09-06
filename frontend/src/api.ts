@@ -624,13 +624,54 @@ export interface ScorecardData {
   tests: ScorecardTest[];
 }
 
-// A single-meeting digest (see `digest` below): the same shape as
-// ScorecardData, plus which meeting it's for — src/cli.py's cmd_draft writes
-// meeting_id/meeting_date alongside summary/tests inside the same `data`
-// object getSnapshot unwraps.
-export interface DigestData extends ScorecardData {
+// The published `/watch` feed (docs/frontend/WATCH_FEED_PLAN.md C.2) — one
+// row per minutes meeting, newest first, corpus-wide. Written by `council
+// draft`'s `compute_watch_feed()` then filtered to public-tier claims only
+// by `project_watch_feed_to_public()` before it ever reaches a snapshot
+// (src/analysis/meeting_baselines.py), so every field here is already safe
+// to render as-is — no separate deep/full view exists on this surface.
+export interface WatchException {
+  test_id: string;
+  threshold_kind: "any_occurrence" | "percentile" | "ratio" | "absolute";
+  baseline_median: number | null;
+  // Scripted, never authored, and never a claim about anyone (C.2) — safe
+  // to render verbatim, unlike `finding`/`verdict`.
+  why: string;
+  stat: Record<string, unknown> | null;
+  finding: string;
+  verdict: string;
+  valence: Valence;
+  severity: string;
+}
+
+export interface WatchProvenance {
+  pdf_filename: string | null;
+  pdf_url: string | null;
+  extracted_at: string | null;
+  run_id: string | null;
+  run_id_count: number;
+  model: string | null;
+  validation_status: string | null;
+  coverage_ratio: number | null;
+}
+
+export interface WatchMeeting {
   meeting_id: number;
   meeting_date: string;
+  meeting_type: string;
+  body_class: string;
+  counts: { items: number; motions: number; other_items: number };
+  tests: { run: number; exceptions: number; within_baseline: number };
+  exceptions: WatchException[];
+  exceptions_withheld: number;
+  provenance: WatchProvenance;
+}
+
+export interface WatchData {
+  council: string;
+  generated_at: string;
+  n_meetings: number;
+  meetings: WatchMeeting[];
 }
 
 export const api = {
@@ -655,10 +696,8 @@ export const api = {
   sponsorship:  () => getSnapshot<SponsorshipData>("sponsorship"),
   overview:     () => getSnapshot<OverviewData>("overview"),
   councillors:  () => getSnapshot<CouncillorsData>("councillors"),
-  // Local-review-only: computed automatically by every `council draft` run
-  // (src/cli.py's cmd_draft) into local/digest.json, outside the publish
-  // manifest — only reachable in Draft mode via the draftOverlay() plugin.
-  // In Publish mode (including the published site) this always 404s to the
-  // standard "Snapshot not found" ErrorCard, since digest data never ships.
-  digest:       () => getSnapshot<DigestData>("digest"),
+  // Published (docs/frontend/WATCH_FEED_PLAN.md B.3) — renders in both Draft
+  // and Publish mode via the normal getSnapshot() path, unlike the old
+  // local-review-only digest it replaces.
+  watch:        () => getSnapshot<WatchData>("watch"),
 };

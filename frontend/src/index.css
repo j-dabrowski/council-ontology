@@ -1602,3 +1602,137 @@ a:hover { text-decoration: underline; }
 .cllr-vote-row:last-child { border-bottom: none; }
 .cllr-partner-count { font-size: 0.8rem; color: var(--text-dim); }
 .cllr-truncated { font-size: 0.78rem; color: var(--text-dim); font-style: italic; margin-top: 8px; }
+
+/* ── /watch feed ──────────────────────────────────────────────────────────── */
+
+.watch-page {
+  max-width: 820px;
+  margin: 32px auto 0;
+}
+
+.watch-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.watch-row {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.watch-row-toggle {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  width: 100%;
+  padding: 14px 18px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.watch-row-mark {
+  color: var(--text-faint);
+  font-size: 0.8rem;
+  flex: none;
+}
+
+.watch-row-date {
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.watch-row-type {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.watch-row-summary {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.watch-row-detail {
+  padding: 0 18px 18px;
+  border-top: 1px solid var(--border-muted);
+}
+
+.watch-exception {
+  margin-top: 16px;
+}
+
+.watch-why {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  font-style: italic;
+  margin: 8px 0 0;
+}
+
+.watch-withheld {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin: 16px 0 0;
+}
+
+.watch-provenance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  margin: 16px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border-muted);
+}
+
+.watch-provenance > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.watch-provenance dt {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+
+.watch-provenance dd {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.watch-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.watch-pager button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 14px;
+  cursor: pointer;
+  color: var(--text-md);
+  font: inherit;
+}
+
+.watch-pager button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

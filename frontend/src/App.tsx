@@ -1,11 +1,11 @@
-import { HashRouter, Routes, Route } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { CouncillorProvider } from "./components/CouncillorModal";
 import { DevModeSwitch } from "./components/DevModeSwitch";
 import { Logo } from "./components/Logo";
 import { SiteNav } from "./components/SiteNav";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AnalysisPage } from "./pages/AnalysisPage";
-import { DigestPage } from "./pages/DigestPage";
+import { WatchPage } from "./pages/WatchPage";
 import { EvidencePage } from "./pages/EvidencePage";
 import { MapPage } from "./pages/MapPage";
 import { AboutPage } from "./pages/AboutPage";
@@ -26,7 +26,8 @@ export default function App() {
           <Routes>
             <Route path="/" element={<OverviewPage />} />
             <Route path="/analysis" element={<AnalysisPage />} />
-            <Route path="/digest" element={<DigestPage />} />
+            <Route path="/watch" element={<WatchPage />} />
+            <Route path="/digest" element={<Navigate to="/watch" replace />} />
             <Route path="/evidence" element={<EvidencePage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/about" element={<AboutPage />} />

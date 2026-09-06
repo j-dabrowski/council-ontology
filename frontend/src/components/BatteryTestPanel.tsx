@@ -113,9 +113,10 @@ export function BatteryTestBody({ test: t, cllrData }: { test: ResolvedTest; cll
 
 /**
  * The card-wrapped form of BatteryTestBody — Card, severity chip and
- * Objection/Response, all in one call. DigestPage renders meeting-scoped
- * tests outside the analysis shell, so it still needs this wrapped variant;
- * the shell itself uses BatteryTestBody directly and supplies its own Card.
+ * Objection/Response, all in one call. WatchPage renders each meeting's
+ * exceptions outside the analysis shell, so it still needs this wrapped
+ * variant; the shell itself uses BatteryTestBody directly and supplies its
+ * own Card.
  */
 export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
