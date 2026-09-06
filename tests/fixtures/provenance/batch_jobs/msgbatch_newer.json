@@ -1,0 +1,18 @@
+{
+  "batch_id": "msgbatch_newer",
+  "council": "testcouncil",
+  "council_name": "Test Council",
+  "submitted_at": "2026-03-01T00:00:00+00:00",
+  "model": "claude-haiku-4-5-20251001",
+  "max_chars": null,
+  "n_docs": 1,
+  "request_count": 1,
+  "id_map": {
+    "ccc33333__c0of1": {
+      "pdf_path": "data/raw/testcouncil/ccc33333.pdf",
+      "chunk_idx": 0,
+      "n_chunks": 1,
+      "meeting_date_hint": "2026-02-01"
+    }
+  }
+}

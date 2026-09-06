@@ -1,0 +1,24 @@
+{
+  "batch_id": "msgbatch_older",
+  "council": "testcouncil",
+  "council_name": "Test Council",
+  "submitted_at": "2026-01-01T00:00:00+00:00",
+  "model": "claude-haiku-4-5-20251001",
+  "max_chars": null,
+  "n_docs": 2,
+  "request_count": 2,
+  "id_map": {
+    "aaa11111__c0of1": {
+      "pdf_path": "data/raw/testcouncil/aaa11111.pdf",
+      "chunk_idx": 0,
+      "n_chunks": 1,
+      "meeting_date_hint": "2026-01-01"
+    },
+    "ccc33333__c0of1": {
+      "pdf_path": "data/raw/testcouncil/ccc33333.pdf",
+      "chunk_idx": 0,
+      "n_chunks": 1,
+      "meeting_date_hint": "2026-02-01"
+    }
+  }
+}
