@@ -84,7 +84,7 @@ export function ObjectionDosePanel({ test, cllrData }: { test: ResolvedTest; cll
       title={test.title_technical}
       finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
-      backTo={`sc-${test.detail_panel}`}
+      backTo={test.id}
     >
       <div className="planning-hero-row">
         <div className="planning-stat">

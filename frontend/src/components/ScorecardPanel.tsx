@@ -7,12 +7,13 @@ import { resolveTests } from "../registry";
 import { groupByCategory } from "../registry/grouping";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { RedactedText } from "../guardrail";
+import { analysisHref, useScrollToTest } from "../registry/anchors";
 
 function TestRow({ t, councillorNames }: { t: ResolvedTest; councillorNames: string[] }) {
   return (
     <div
       className={`sc-row sc-${t.valence}${t.data_ok ? "" : " sc-nodata"}`}
-      id={t.detail_panel ? `sc-${t.detail_panel}` : undefined}
+      data-test-id={t.id}
     >
       <div className="sc-row-flag">
         <ValenceChip valence={t.valence} notComputable={!t.data_ok} />
@@ -33,8 +34,8 @@ function TestRow({ t, councillorNames }: { t: ResolvedTest; councillorNames: str
           <span className="sc-principle">{t.principles.join(" · ")}</span>
           {t.n != null && <span className="sc-n">n&nbsp;=&nbsp;{t.n.toLocaleString()}</span>}
           {t.era && <span className="sc-era">{t.era}</span>}
-          {t.detail_panel && (
-            <a className="sc-detail" href={`#panel-${t.detail_panel}`}>↓ jump to full panel</a>
+          {t.has_deep_dive && (
+            <a className="sc-detail" href={analysisHref(t.id)}>↓ jump to full panel</a>
           )}
         </div>
       </div>
@@ -45,6 +46,7 @@ function TestRow({ t, councillorNames }: { t: ResolvedTest; councillorNames: str
 export function ScorecardPanel() {
   const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
   const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
+  useScrollToTest();
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
   const s = data.summary;

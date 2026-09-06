@@ -782,7 +782,7 @@ a:hover { text-decoration: underline; }
 }
 
 /* keep a jumped-to panel clear of the top of the viewport */
-.main-grid > section[id] { scroll-margin-top: 24px; }
+.main-grid > section { scroll-margin-top: 24px; }
 
 .detail-divider {
   margin-top: 16px;
@@ -1471,8 +1471,9 @@ a:hover { text-decoration: underline; }
 /* scroll anchoring */
 .sc-row { scroll-margin-top: 16px; }
 .drill  { scroll-margin-top: 16px; }
-/* briefly flag a scorecard row when it's the jump target */
-.sc-row:target { box-shadow: inset 3px 0 0 -1px var(--sc-tgt), 0 0 0 1px var(--sc-tgt-bd); border-radius: 6px; }
+/* briefly flag an element as the cross-page deep-link target
+   (frontend/src/registry/anchors.ts's useScrollToTest) */
+.test-target { box-shadow: inset 3px 0 0 -1px var(--sc-tgt), 0 0 0 1px var(--sc-tgt-bd); border-radius: 6px; }
 
 /* ── Generic battery-test panel (BatteryTestPanel) ─────────────────────── */
 .bt-headline {

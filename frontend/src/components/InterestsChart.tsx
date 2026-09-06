@@ -6,6 +6,7 @@ import { api } from "../api";
 import { ValenceChip } from "./ValenceChip";
 import { Reveal } from "./DrillDown";
 import { CouncillorTick } from "./CouncillorModal";
+import { scorecardHref } from "../registry/anchors";
 
 const COLORS = {
   financial: "#ef4444",
@@ -216,7 +217,7 @@ export function Card({
   finding?: React.ReactNode;
   valence?: "supportive" | "neutral" | "critical";
   valenceLabel?: string;
-  backTo?: string; // scorecard row anchor id (e.g. "sc-declared") to link back up
+  backTo?: string; // test id (registry `id`) to link back to that row on the scorecard
   children: React.ReactNode;
 }) {
   return (
@@ -232,7 +233,7 @@ export function Card({
         </div>
         <div className="card-header-meta">
           {backTo && (
-            <a className="card-back" href={`#${backTo}`} title="Back to this test on the scorecard">
+            <a className="card-back" href={scorecardHref(backTo)} title="Back to this test on the scorecard">
               ↑ Scorecard
             </a>
           )}

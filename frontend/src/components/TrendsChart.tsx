@@ -27,7 +27,7 @@ export function ContestationChart({ test, cllrData }: { test: ResolvedTest; cllr
       title={test.title_technical}
       finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
-      backTo={`sc-${test.detail_panel}`}
+      backTo={test.id}
     >
       <ResponsiveContainer width="100%" height={320}>
         <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>

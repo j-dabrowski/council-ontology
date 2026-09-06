@@ -7,6 +7,7 @@ import { api, ScorecardData, CouncillorsData } from "../api";
 import { resolveTests } from "../registry";
 import { groupByCategory } from "../registry/grouping";
 import { PANEL_COMPONENTS } from "../registry/components";
+import { useScrollToTest } from "../registry/anchors";
 
 // Every battery test gets a panel, driven by the published scorecard data —
 // not a hardcoded per-test_id list. A test with a PANEL_COMPONENTS entry gets
@@ -17,6 +18,7 @@ import { PANEL_COMPONENTS } from "../registry/components";
 export function AnalysisPage() {
   const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
   const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
+  useScrollToTest();
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
@@ -35,7 +37,7 @@ export function AnalysisPage() {
             {g.tests.map((t) => {
               const Bespoke = PANEL_COMPONENTS[t.id];
               return (
-                <section className="grid-full" id={`panel-${t.detail_panel}`} key={t.id}>
+                <section className="grid-full" data-test-id={t.id} key={t.id}>
                   {Bespoke ? <Bespoke test={t} cllrData={cllrData} /> : <BatteryTestPanel testId={t.id} />}
                 </section>
               );

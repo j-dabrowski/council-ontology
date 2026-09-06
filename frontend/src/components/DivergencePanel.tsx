@@ -33,7 +33,7 @@ export function DivergencePanel({ test, cllrData }: { test: ResolvedTest; cllrDa
       title={test.title_technical}
       finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
-      backTo={`sc-${test.detail_panel}`}
+      backTo={test.id}
     >
       <div className="divergence-hero">
         <span className="hero-number">{pct}</span>

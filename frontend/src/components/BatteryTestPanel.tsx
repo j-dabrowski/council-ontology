@@ -89,7 +89,7 @@ export function BatteryTestCard({ test: t, cllrData }: { test: ResolvedTest; cll
       title={t.title_technical}
       finding={<RedactedText text={t.finding} names={councillorNames} testId={t.id} field="finding" />}
       valence={t.valence}
-      backTo={t.detail_panel ? `sc-${t.detail_panel}` : undefined}
+      backTo={t.id}
     >
       <div className={`bt-headline bt-${t.valence}`}>
         <SeverityChip severity={t.severity} />

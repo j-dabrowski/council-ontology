@@ -105,7 +105,7 @@ export function SponsorshipNetworkPanel({ test, cllrData }: { test: ResolvedTest
       title={test.title_technical}
       finding={<RedactedText text={test.finding} names={councillorNames} testId={test.id} field="finding" />}
       valence={test.valence}
-      backTo={`sc-${test.detail_panel}`}
+      backTo={test.id}
     >
       {/* convergence hero */}
       <div className="planning-hero-row">
