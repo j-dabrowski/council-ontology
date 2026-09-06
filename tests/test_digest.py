@@ -20,6 +20,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.analysis.digest import (
     compose_period_digest,
+    deviates,
     meeting_inventory,
     public_inventory_projection,
     score_salience,
@@ -28,6 +29,7 @@ from src.analysis.meeting_baselines import MeetingBaselines, TestBaseline
 from src.analysis.tests import G_OBSERVATION, NEUTRAL, TestResult
 from src.models import Base, Council, Councillor, Meeting, Motion, MotionOutcome, OtherItem, Tender
 from src.storage.database import _enable_wal_and_fk
+from src.test_registry import RegistryRow
 
 
 @pytest.fixture
@@ -101,6 +103,17 @@ def _baselines(entries: dict | None = None) -> MeetingBaselines:
     )
 
 
+def _entry(digest_threshold: dict | None, test_id: str = "fixture.claim") -> RegistryRow:
+    return RegistryRow(
+        id=test_id, order=1, category="governance_culture",
+        question_technical="—", question_public="", title_technical="—", title_public="",
+        principles=[], method="", caveats=[], objection=None, response=None,
+        evidence_query="tests._fixture", evidence_snapshot=None,
+        has_deep_dive=False, public_interest=False, meeting_scope=True,
+        detail_panel="fixture", digest_threshold=digest_threshold,
+    )
+
+
 # ---------------------------------------------------------------------------
 # score_salience
 # ---------------------------------------------------------------------------
@@ -151,6 +164,142 @@ def test_score_salience_falls_back_to_n_when_stat_is_none():
     claim = _claim(test_id="a", stat=None, n=100)
     baselines = _baselines({"a": {"full_council": tb}})
     assert score_salience(claim, baselines, "full_council", _DEFAULT_POLICY) == 1.0
+
+
+# ---------------------------------------------------------------------------
+# deviates
+# ---------------------------------------------------------------------------
+
+def test_deviates_raises_on_no_digest_threshold():
+    claim = _claim(stat={"value": 1, "denominator": None, "unit": "count"})
+    with pytest.raises(ValueError):
+        deviates(claim, _baselines(), "full_council", _entry(None))
+
+
+def test_deviates_any_occurrence_fires_at_n_gte_1():
+    claim = _claim(stat={"value": 2, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "any_occurrence"})
+    result = deviates(claim, _baselines(), "full_council", entry)
+    assert result["is_exception"] is True
+    assert result["threshold_kind"] == "any_occurrence"
+
+
+def test_deviates_any_occurrence_does_not_fire_at_zero():
+    claim = _claim(stat={"value": 0, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "any_occurrence"})
+    result = deviates(claim, _baselines(), "full_council", entry)
+    assert result["is_exception"] is False
+
+
+def test_deviates_any_occurrence_why_reports_baseline_median_when_available():
+    tb = TestBaseline(n_meetings=20, values=[0.0] * 18 + [1.0, 2.0])
+    claim = _claim(test_id="a", stat={"value": 2, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "any_occurrence"}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["baseline_median"] == 0.0
+    assert "median 0" in result["why"]
+
+
+def test_deviates_percentile_fires_above_min_salience():
+    tb = TestBaseline(n_meetings=20, values=[float(v) for v in range(1, 21)])
+    claim = _claim(test_id="a", stat={"value": 100, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "percentile", "min_salience": 0.7}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is True
+    assert result["baseline_median"] == 10.5
+
+
+def test_deviates_percentile_does_not_fire_at_the_median():
+    tb = TestBaseline(n_meetings=20, values=[float(v) for v in range(1, 21)])
+    claim = _claim(test_id="a", stat={"value": 10, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "percentile", "min_salience": 0.7}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is False
+
+
+def test_deviates_percentile_cannot_fire_below_min_baseline_meetings():
+    tb = TestBaseline(n_meetings=3, values=[1.0, 2.0, 3.0])  # below default min_baseline_meetings=8
+    claim = _claim(test_id="a", stat={"value": 100, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "percentile", "min_salience": 0.7}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is False
+    assert "thin baseline" in result["why"]
+
+
+def test_deviates_percentile_cannot_fire_with_no_baseline_at_all():
+    claim = _claim(test_id="a", stat={"value": 100, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "percentile", "min_salience": 0.7}, test_id="a")
+    result = deviates(claim, _baselines(), "full_council", entry)
+    assert result["is_exception"] is False
+    assert result["baseline_median"] is None
+
+
+def test_deviates_ratio_fires_at_or_above_the_multiple():
+    tb = TestBaseline(n_meetings=20, values=[2.0] * 20)
+    claim = _claim(test_id="a", stat={"value": 4, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "ratio", "vs": "median", "min": 2.0}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is True
+
+
+def test_deviates_ratio_does_not_fire_below_the_multiple():
+    tb = TestBaseline(n_meetings=20, values=[2.0] * 20)
+    claim = _claim(test_id="a", stat={"value": 3, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "ratio", "vs": "median", "min": 2.0}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is False
+
+
+def test_deviates_ratio_cannot_fire_below_min_baseline_meetings():
+    tb = TestBaseline(n_meetings=3, values=[2.0, 2.0, 2.0])
+    claim = _claim(test_id="a", stat={"value": 100, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "ratio", "vs": "median", "min": 2.0}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is False
+    assert "thin baseline" in result["why"]
+
+
+def test_deviates_ratio_handles_zero_median():
+    tb = TestBaseline(n_meetings=20, values=[0.0] * 20)
+    claim = _claim(test_id="a", stat={"value": 1, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "ratio", "vs": "median", "min": 2.0}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is True
+
+
+def test_deviates_absolute_fires_at_or_above_min():
+    claim = _claim(stat={"value": 3, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "absolute", "min": 3})
+    result = deviates(claim, _baselines(), "full_council", entry)
+    assert result["is_exception"] is True
+
+
+def test_deviates_absolute_does_not_fire_below_min():
+    claim = _claim(stat={"value": 2, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "absolute", "min": 3})
+    result = deviates(claim, _baselines(), "full_council", entry)
+    assert result["is_exception"] is False
+
+
+def test_deviates_absolute_unaffected_by_thin_baseline():
+    tb = TestBaseline(n_meetings=1, values=[0.0])
+    claim = _claim(test_id="a", stat={"value": 5, "denominator": None, "unit": "count"})
+    entry = _entry({"kind": "absolute", "min": 3}, test_id="a")
+    result = deviates(claim, _baselines({"a": {"full_council": tb}}), "full_council", entry)
+    assert result["is_exception"] is True
+
+
+def test_deviates_no_comparable_statistic_is_not_an_exception():
+    claim = _claim(stat=None, n=None)
+    for kind, threshold in (
+        ("any_occurrence", {"kind": "any_occurrence"}),
+        ("percentile", {"kind": "percentile", "min_salience": 0.7}),
+        ("ratio", {"kind": "ratio", "vs": "median", "min": 2.0}),
+        ("absolute", {"kind": "absolute", "min": 3}),
+    ):
+        entry = _entry(threshold)
+        result = deviates(claim, _baselines(), "full_council", entry)
+        assert result["is_exception"] is False, kind
 
 
 # ---------------------------------------------------------------------------

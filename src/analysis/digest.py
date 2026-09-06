@@ -28,6 +28,7 @@ Three surfaces:
 
 from __future__ import annotations
 
+import statistics
 from dataclasses import asdict
 from datetime import date, timedelta
 
@@ -38,6 +39,7 @@ from src.analysis.meeting_baselines import MeetingBaselines, body_class_of, load
 from src.analysis.tests import TestResult, _is_nil_placeholder, run_meeting_digest
 from src.invariant_gate import derive_claim_tiers, project_to_institutional
 from src.models import Councillor, Meeting, Motion, OtherItem
+from src.test_registry import RegistryRow
 
 VALID_INTERVALS = ("meeting", "week", "fortnight", "month")
 
@@ -76,6 +78,90 @@ def score_salience(
     else:
         novelty = _two_sided_percentile(value, tb.values)
     return max(novelty, claim.digest_floor)
+
+
+def _fmt_stat(value: float | int | None) -> str:
+    if value is None:
+        return "n/a"
+    return str(int(value)) if float(value).is_integer() else f"{value:.2f}"
+
+
+def deviates(
+    claim: TestResult,
+    baselines: MeetingBaselines,
+    body_class: str,
+    entry: RegistryRow,
+    min_baseline_meetings: int = 8,
+) -> dict:
+    """Is this meeting's claim on `entry` an *exception* worth surfacing on
+    /watch (docs/frontend/WATCH_FEED_PLAN.md B.1/B.2/C.1) — a yes/no question
+    per test per meeting, against `entry.digest_threshold`. A separate scoring
+    path from `score_salience()`, which ranks candidates for the period
+    digest — a different consumer (B.1) — kept unchanged; this one reuses
+    only the same baseline distributions and `_two_sided_percentile`.
+
+    Thin-baseline behaviour matches `score_salience()`: below
+    `min_baseline_meetings` prior meetings of this body_class, `percentile`
+    and `ratio` cannot fire — both need a real comparison population.
+    `any_occurrence` and `absolute` need no baseline and are unaffected.
+    """
+    threshold = entry.digest_threshold
+    if threshold is None:
+        raise ValueError(f"{entry.id} has no digest_threshold — not a meeting-scope test")
+    kind = threshold["kind"]
+
+    value = claim.stat["value"] if claim.stat is not None else claim.n
+    tb = baselines.baselines.get(claim.test_id, {}).get(body_class)
+    thin = tb is None or tb.n_meetings < min_baseline_meetings
+    baseline_median = round(statistics.median(tb.values), 4) if tb and tb.values else None
+
+    if kind == "any_occurrence":
+        is_exception = value is not None and value >= 1
+        why = (
+            f"value {_fmt_stat(value)} (body-class median {_fmt_stat(baseline_median)})"
+            if baseline_median is not None else f"value {_fmt_stat(value)}"
+        )
+    elif kind == "percentile":
+        min_salience = threshold["min_salience"]
+        if value is None or thin:
+            is_exception = False
+            why = "thin baseline" if thin else "no comparable statistic"
+        else:
+            novelty = _two_sided_percentile(value, tb.values)
+            is_exception = novelty >= min_salience
+            why = f"novelty {novelty:.2f} vs {min_salience:.2f} threshold"
+    elif kind == "ratio":
+        min_ratio = threshold["min"]
+        if value is None or thin or baseline_median is None:
+            is_exception = False
+            why = "thin baseline" if thin else "no comparable statistic"
+        elif baseline_median == 0:
+            is_exception = value > 0
+            why = f"value {_fmt_stat(value)} vs body-class median 0"
+        else:
+            ratio = value / baseline_median
+            is_exception = ratio >= min_ratio
+            why = (
+                f"value {_fmt_stat(value)} is {ratio:.1f}x the body-class "
+                f"median {_fmt_stat(baseline_median)} (threshold {min_ratio:g}x)"
+            )
+    elif kind == "absolute":
+        min_value = threshold["min"]
+        if value is None:
+            is_exception = False
+            why = "no comparable statistic"
+        else:
+            is_exception = value >= min_value
+            why = f"value {_fmt_stat(value)} vs threshold {min_value:g}"
+    else:
+        raise ValueError(f"{entry.id}: unknown digest_threshold kind {kind!r}")
+
+    return {
+        "is_exception": is_exception,
+        "why": why,
+        "threshold_kind": kind,
+        "baseline_median": baseline_median,
+    }
 
 
 def meeting_inventory(session: Session, council_id: int, meeting_id: int) -> dict:
