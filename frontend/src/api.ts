@@ -236,6 +236,7 @@ export interface TenderData {
 }
 
 export interface DoseApp {
+  entity_id: number;
   reference: string | null;
   description: string | null;
   address: string | null;
@@ -804,6 +805,18 @@ export interface OfficerRatificationEvidence {
   pairs: OfficerRatificationPair[];
 }
 
+// docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6 — deliberately carries only
+// EvidenceEntry (Part C), not dose.json's business fields (reference,
+// address, description, outcome). Joined to dose.json by entity_id.
+export interface ObjectionResponsivenessBucket {
+  label: string;
+  applications: EvidenceEntry[];
+}
+
+export interface ObjectionResponsivenessEvidence {
+  buckets: ObjectionResponsivenessBucket[];
+}
+
 export interface MethodData {
   council: string;
   generated_at: string;
@@ -863,4 +876,6 @@ export const api = {
   // above (never in SNAPSHOT_TIER). Not wired into any panel yet (Step 5).
   evidenceOfficerRatification: () =>
     getSnapshot<OfficerRatificationEvidence>("evidence/governance.officer_ratification"),
+  evidenceObjectionResponsiveness: () =>
+    getSnapshot<ObjectionResponsivenessEvidence>("evidence/planning.objection_responsiveness"),
 };

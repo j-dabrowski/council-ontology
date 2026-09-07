@@ -14,8 +14,22 @@ import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from src.analysis.evidence import evidence_for_officer_ratification, resolve_evidence
-from src.models import Base, Council, ExtractionEvidence, Meeting, Motion, MotionOutcome
+from src.analysis.evidence import (
+    evidence_for_objection_responsiveness,
+    evidence_for_officer_ratification,
+    resolve_evidence,
+)
+from src.models import (
+    ApplicationStatus,
+    Base,
+    CommunitySubmission,
+    Council,
+    ExtractionEvidence,
+    Meeting,
+    Motion,
+    MotionOutcome,
+    PlanningApplication,
+)
 from src.storage.database import _enable_wal_and_fk
 
 
@@ -289,3 +303,63 @@ def test_pair_with_no_evidence_on_either_side_still_reports_the_pair(session):
     assert pair["council_outcome"] == "carried"
     assert pair["agenda_motion"]["tier"] == "no_evidence"
     assert pair["minutes_motion"]["tier"] == "no_evidence"
+
+
+# ---------------------------------------------------------------------------
+# resolve_evidence(): _MEETING_ID_VIA (an entity table with no direct
+# meeting_id column — planning_applications links via motion_id)
+# ---------------------------------------------------------------------------
+
+def _planning_app(session, motion_id, status=ApplicationStatus.APPROVED) -> int:
+    pa = PlanningApplication(motion_id=motion_id, status=status)
+    session.add(pa)
+    session.flush()
+    return pa.id
+
+
+def test_resolve_evidence_joins_through_motion_id_for_planning_applications(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2024, 1, 1),
+                           minutes_text="The application at Lot 1 was approved.")
+    motion_id = _motion(session, meeting_id)
+    app_id = _planning_app(session, motion_id)
+    _evidence(session, meeting_id, "planning_applications", app_id,
+              "The application at Lot 1 was approved.")
+
+    entries = resolve_evidence(session, [("planning_applications", app_id, "application")], council_id)
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry["meeting_id"] == meeting_id
+    assert entry["meeting_date"] == "2024-01-01"
+    assert entry["quotes"][0]["tier"] == "exact"
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_objection_responsiveness()
+# ---------------------------------------------------------------------------
+
+def test_objection_responsiveness_buckets_and_caps_by_objector_count(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2024, 1, 1), minutes_text="text")
+
+    # Two "5+" applications so the cap can be exercised with cap=1.
+    for n_obj in (7, 6):
+        motion_id = _motion(session, meeting_id, title=f"App with {n_obj} objectors")
+        app_id = _planning_app(session, motion_id, status=ApplicationStatus.REFUSED)
+        for i in range(n_obj):
+            session.add(CommunitySubmission(application_id=app_id, position="object"))
+        session.flush()
+
+    # One "0" application, no evidence at all.
+    motion_id0 = _motion(session, meeting_id, title="Uncontested app")
+    _planning_app(session, motion_id0, status=ApplicationStatus.APPROVED)
+
+    result = evidence_for_objection_responsiveness(session, council_id, cap=1)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    assert len(by_label["5+"]["applications"]) == 1  # capped from 2 down to 1
+    assert by_label["5+"]["applications"][0]["entity_table"] == "planning_applications"
+    assert len(by_label["0"]["applications"]) == 1
+    assert by_label["0"]["applications"][0]["tier"] == "no_evidence"
+    assert by_label["1"]["applications"] == []
+    assert by_label["2-4"]["applications"] == []

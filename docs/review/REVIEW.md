@@ -188,3 +188,16 @@ already carries — and the glob does not reach it. `editor/Editor_prompt.txt`
 v0.10 adds an explicit "Read first" bullet rather than widening the glob
 itself, the same choice v0.8 made for `local/`. Reviewed in full (203
 pairs, ~638KB) — well under `watch.json`'s size-driven bound.
+
+## `evidence/` bullet generalised to the whole subdirectory (2026-09-07)
+
+Phase 2 (`docs/frontend/EVIDENCE_CHAIN_PLAN.md` Step 6) added a second
+file under `evidence/`: `planning.objection_responsiveness.json`, the
+same 30-per-bucket application list `dose.json` already exports, resolved
+to its full evidence chain. Naming each new evidence file in its own
+`Editor_prompt.txt` bullet doesn't scale as Step 6 keeps generalising —
+a forgotten bullet would mean a real file silently sitting outside
+Editor's scope, exactly the gap the v0.10 bullet exists to close.
+`editor/Editor_prompt.txt` v0.11 widens the rule to the whole `evidence/`
+subdirectory once, covering both files today and any test's evidence file
+added later without a further prompt edit.

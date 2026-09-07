@@ -9,9 +9,11 @@ signal (A.2) and why tiers are computed at request time by reusing
 src/validation/core.py's normalisers, never a new matcher (B.2).
 
 `resolve_evidence()` is entity_table-agnostic provided the table has a
-direct `meeting_id` column — true for 12 of the 13 evidence-bearing entity
-tables (`planning_applications` links via `motion_id` instead, and is out
-of scope until a Phase 2 caller resolves that itself).
+direct `meeting_id` column, or is listed in `_MEETING_ID_VIA` for the
+tables that don't (`planning_applications` links via `motion_id` instead —
+extend that map, not this docstring's exception list, as more such tables
+are generalised, per B.1: this file is the only place such a join is
+written).
 """
 
 from __future__ import annotations
@@ -31,6 +33,12 @@ _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # (entity_table, entity_id, role)
 EntityRef = tuple[str, int, str]
+
+# entity_table -> (fk_column_on_entity_table, table_that_has_meeting_id),
+# for the entity tables without a direct meeting_id column.
+_MEETING_ID_VIA: dict[str, tuple[str, str]] = {
+    "planning_applications": ("motion_id", "motions"),
+}
 
 
 @dataclass
@@ -156,17 +164,24 @@ def resolve_evidence(
     meeting_id_by_ref: dict[tuple[str, int], int | None] = {}
     for entity_table, ids in by_table.items():
         table = Base.metadata.tables[entity_table]
-        if "meeting_id" not in table.c:
+        if "meeting_id" in table.c:
+            rows = session.execute(
+                select(table.c.id, table.c.meeting_id).where(table.c.id.in_(ids))
+            ).all()
+        elif entity_table in _MEETING_ID_VIA:
+            fk_col, via_table_name = _MEETING_ID_VIA[entity_table]
+            via_table = Base.metadata.tables[via_table_name]
+            rows = session.execute(
+                select(table.c.id, via_table.c.meeting_id)
+                .select_from(table.join(via_table, table.c[fk_col] == via_table.c.id))
+                .where(table.c.id.in_(ids))
+            ).all()
+        else:
             raise NotImplementedError(
                 f"resolve_evidence: entity table {entity_table!r} has no direct "
-                "meeting_id column (e.g. planning_applications links via "
-                "motion_id instead) — not needed by governance.officer_"
-                "ratification, deferred to Phase 2 "
-                "(docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6)."
+                "meeting_id column and isn't in _MEETING_ID_VIA — add an entry "
+                "there (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6)."
             )
-        rows = session.execute(
-            select(table.c.id, table.c.meeting_id).where(table.c.id.in_(ids))
-        ).all()
         for entity_id, meeting_id in rows:
             meeting_id_by_ref[(entity_table, entity_id)] = meeting_id
 
@@ -295,3 +310,73 @@ def evidence_for_officer_ratification(
         })
 
     return {"pairs": pair_entries}
+
+
+def evidence_for_objection_responsiveness(session: Session, council_id: int, cap: int = 30) -> dict:
+    """Evidence chain for planning.objection_responsiveness.
+
+    Selects the same population `src/cli.py`'s `cmd_draft` already exports
+    onto `dose.json` — decided (approved/refused) planning applications,
+    bucketed by objector count, capped to `cap` per bucket, highest-
+    objector-count first — and resolves each to its full evidence chain.
+
+    Deliberately carries only `entity_table`/`entity_id`/etc. (Part C), not
+    `dose.json`'s business fields (reference, address, description,
+    outcome) — the frontend joins the two by `entity_id` rather than this
+    file duplicating them.
+    """
+    from sqlalchemy import func
+
+    from src.models import ApplicationStatus, CommunitySubmission, Meeting, Motion, PlanningApplication
+
+    rows = (
+        session.query(
+            PlanningApplication.id,
+            func.count(CommunitySubmission.id).label("n_obj"),
+        )
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .outerjoin(
+            CommunitySubmission,
+            (CommunitySubmission.application_id == PlanningApplication.id)
+            & (func.lower(CommunitySubmission.position) == "object"),
+        )
+        .filter(
+            Meeting.council_id == council_id,
+            PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]),
+        )
+        .group_by(PlanningApplication.id)
+        .order_by(func.count(CommunitySubmission.id).desc())
+        .all()
+    )
+
+    def _bucket(n: int) -> str:
+        if n == 0:
+            return "0"
+        if n == 1:
+            return "1"
+        if n <= 4:
+            return "2-4"
+        return "5+"
+
+    order = ["0", "1", "2-4", "5+"]
+    ids_by_bucket: dict[str, list[int]] = {k: [] for k in order}
+    for app_id, n_obj in rows:
+        b = _bucket(int(n_obj or 0))
+        if len(ids_by_bucket[b]) < cap:
+            ids_by_bucket[b].append(app_id)
+
+    refs: list[EntityRef] = [
+        ("planning_applications", app_id, "application")
+        for ids in ids_by_bucket.values()
+        for app_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "applications": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in order
+        ]
+    }

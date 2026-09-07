@@ -2226,7 +2226,13 @@ def _generate_snapshots(
             _dose_quote.setdefault(pid, qt)
     for bk, apps in _apps_by_bucket.items():
         for app in apps:
-            app["quote"] = _dose_quote.get(app.pop("id"))
+            eid = app.pop("id")
+            # Kept (not discarded like the old join threw away) so the
+            # frontend can join this app to its full evidence chain by id
+            # (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6) — additive,
+            # doesn't change any existing field.
+            app["entity_id"] = eid
+            app["quote"] = _dose_quote.get(eid)
     _write("dose", {
         "total_decided": dose.total_decided,
         "max_objections": dose.max_objections,
@@ -2240,6 +2246,26 @@ def _generate_snapshots(
             for b in dose.buckets
         ],
     })
+
+    # Evidence chain for planning.objection_responsiveness (Phase 2,
+    # docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6) — every quote behind the
+    # same capped per-bucket application list dose.json exports above,
+    # joined to it by entity_id in the frontend rather than duplicated here.
+    # (output_dir/"evidence" is also created in cmd_draft below, after this
+    # function returns, for governance.officer_ratification's own export —
+    # exist_ok=True makes the order harmless either way.)
+    from src.analysis.evidence import evidence_for_objection_responsiveness
+    evidence_dir = output_dir / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    objection_responsiveness_evidence = evidence_for_objection_responsiveness(session, council_id)
+    (evidence_dir / "planning.objection_responsiveness.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": objection_responsiveness_evidence,
+    }, indent=2))
+    written.append("evidence/planning.objection_responsiveness")
+    _n_dose_ev = sum(len(b["applications"]) for b in objection_responsiveness_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/planning.objection_responsiveness.json ({_n_dose_ev} application(s))"
+    )
 
     # transparency: share of council business decided behind closed doors over time
     trans = transparency_by_year(session, council_id)

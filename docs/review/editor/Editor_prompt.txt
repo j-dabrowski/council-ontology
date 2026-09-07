@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.10
+# Council Editor — Defamation-Review Mode v0.11
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -75,21 +75,27 @@ as thoroughly as before.**
   That scripted gate is what covers meetings 51+ — the same division of
   labour as the S7 boundary below, applied to a feed too large for a human
   pass to read in full.
-- **`evidence/governance.officer_ratification.json` is IN scope, in full**
-  (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 3). It lives in an `evidence/`
-  subdirectory, outside the root-level `*.json` glob above — read it
-  explicitly, the same reason the `local/` bullets above exist. One entry
-  per side (agenda motion / minutes motion) of every `officer_divergence()`
-  pair, each carrying every verbatim minute quote behind that motion — the
-  same exposure as `divergence.json`'s own `motion_text`, just exhaustive
-  rather than one quote per exception, so it names councillors wherever a
-  motion's quote does. At 203 pairs / ~638KB it is far smaller than
-  `watch.json`'s threshold for bounding above — review it in full, not a
-  sample. A quote's `tier` (exact/normalised/stripped/paraphrase) is a
-  statement about *matching*, not about the motion's content — what you
-  check here is the same question as everywhere else: does anything a
-  quote says, verbatim or not, cross the defamation line for the individual
-  it names.
+- **Every file under `evidence/` is IN scope, in full** (docs/frontend/
+  EVIDENCE_CHAIN_PLAN.md Steps 3 and 6). The `evidence/` subdirectory lives
+  outside the root-level `*.json` glob above — read every file in it
+  explicitly, the same reason the `local/` bullets above exist, and the
+  same for a test's evidence file added after this bullet was last edited:
+  this rule is written to cover the whole directory, not to be re-added
+  per test. Each file carries every verbatim minute quote behind a
+  capped, per-test entity list (governance's `officer_ratification`: both
+  sides of every `officer_divergence()` pair, 203 of them; planning's
+  `objection_responsiveness`: the same 30-per-bucket application list
+  already in `dose.json`, resolved to its full chain) — the same exposure
+  as the business snapshot's own quote/motion_text fields, just exhaustive
+  rather than one quote per row, so a file here names councillors wherever
+  a quote does. Each is far smaller than `watch.json`'s threshold for
+  bounding above (`officer_ratification`: 203 pairs / ~638KB) — review each
+  in full, not a sample, unless a future addition's own size genuinely
+  calls for the same bounding `watch.json` needed. A quote's `tier`
+  (exact/normalised/stripped/paraphrase) is a statement about *matching*,
+  not about the entity's content — what you check here is the same
+  question as everywhere else: does anything a quote says, verbatim or
+  not, cross the defamation line for the individual it names.
 - The frontend components that render it: `frontend/src/components/*.tsx` —
   a defamation risk can live in the JSON, in the prose wrapped around it, or
   in how prominently a component chooses to render an otherwise-fine number.
@@ -451,6 +457,12 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 
 ## Changelog
 
+- v0.11 (2026-09-07) — Widened the v0.10 bullet from one named file to the
+  whole `evidence/` subdirectory (docs/frontend/EVIDENCE_CHAIN_PLAN.md
+  Step 6, Phase 2): `evidence/planning.objection_responsiveness.json` is
+  the second file there, and naming files one at a time doesn't scale as
+  Step 6 generalises to more tests — a new evidence file added without a
+  matching prompt edit would otherwise silently sit outside this glob.
 - v0.10 (2026-09-07) — `evidence/governance.officer_ratification.json`
   enters scope (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 3): the first
   file this prompt reads from outside the draft root — the root-level

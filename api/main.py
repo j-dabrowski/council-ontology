@@ -307,12 +307,17 @@ def planning(
 
 
 _EVIDENCE_BUILDERS = {
-    # evidence_query (config/test_registry.json) -> resolver. One entry
-    # until Step 6 generalises (docs/frontend/EVIDENCE_CHAIN_PLAN.md).
+    # evidence_query (config/test_registry.json) -> resolver
+    # (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6).
     "officer_divergence": "evidence_for_officer_ratification",
+    "objection_dose_response": "evidence_for_objection_responsiveness",
 }
 _EVIDENCE_SUPPORTED_FILTERS: dict[str, set[str]] = {
     # evidence_query -> filters its underlying query actually supports.
+    # Anything absent here supports none (objection_dose_response's
+    # resolver takes no filters at all yet) — checked below before calling
+    # the builder, so a filter name never reaches a builder that can't
+    # accept it as a kwarg.
     "officer_divergence": {"year"},
 }
 
@@ -371,7 +376,11 @@ def evidence(
     session = get_session()
     try:
         council_id = _get_council_id(session)
-        return builder(session, council_id, year=year)
+        # Only pass a filter the builder actually declared support for —
+        # not every resolver takes a `year` kwarg (objection_dose_response's
+        # doesn't take one at all yet).
+        kwargs = {"year": year} if "year" in supported else {}
+        return builder(session, council_id, **kwargs)
     finally:
         session.close()
 

@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, LabelList,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ObjectionDoseBucket, DoseApp } from "../api";
+import { api, ObjectionDoseBucket, DoseApp, type EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -36,7 +36,7 @@ const CustomTooltip = ({ active, payload }: {
   );
 };
 
-function AppRow({ app }: { app: DoseApp }) {
+function AppRow({ app, evidence }: { app: DoseApp; evidence?: EvidenceEntry }) {
   return (
     <div className="dose-app">
       <div className="dose-app-head">
@@ -48,13 +48,22 @@ function AppRow({ app }: { app: DoseApp }) {
       </div>
       {app.address && <p className="dose-app-addr">{app.address}</p>}
       {app.description && <p className="dose-app-desc">{app.description}</p>}
-      <SourceQuote quote={app.quote ?? null} />
+      {/* Full evidence chain (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6)
+          when its snapshot loaded; the legacy single-quote join otherwise —
+          per-row, not just the panel-wide fallback DivergencePanel uses,
+          since dose.json already lists every app whether evidence loaded
+          for it or not. */}
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={app.quote ?? null} />}
     </div>
   );
 }
 
 export function ObjectionDosePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.dose());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file (full-tier, so not every environment has it) leaves every AppRow
+  // on its legacy single-quote join rather than blanking the panel.
+  const { data: evidence } = useData(() => api.evidenceObjectionResponsiveness());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
@@ -75,6 +84,14 @@ export function ObjectionDosePanel({ test }: { test: ResolvedTest }) {
   }
 
   const selBucket = selected != null ? data.buckets.find((b) => b.label === selected) : null;
+
+  // entity_id is unique across buckets, so one flat map covers all of them.
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const b of evidence.buckets) {
+      for (const e of b.applications) evidenceById.set(e.entity_id, e);
+    }
+  }
 
   return (
     <>
@@ -139,7 +156,9 @@ export function ObjectionDosePanel({ test }: { test: ResolvedTest }) {
         >
           {selBucket.apps.length === 0
             ? <p className="chart-note">No application details available.</p>
-            : selBucket.apps.map((app, i) => <AppRow key={i} app={app} />)
+            : selBucket.apps.map((app, i) => (
+                <AppRow key={i} app={app} evidence={evidenceById.get(app.entity_id)} />
+              ))
           }
         </DrillDown>
       )}
