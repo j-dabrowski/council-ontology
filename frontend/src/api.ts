@@ -760,6 +760,49 @@ export type MethodExtractionBatch =
     }
   | MethodSourcedValue<null>;
 
+// The evidence chain (docs/frontend/EVIDENCE_CHAIN_PLAN.md Part C):
+// resolve_evidence()'s full output — every quote behind one entity, each
+// carrying a match tier computed at request time (B.2), never char_offset.
+export type EvidenceTier = "exact" | "normalised" | "stripped" | "paraphrase";
+
+export interface EvidenceQuote {
+  text: string;
+  tier: EvidenceTier;
+  char_offset: number | null;
+  resolved_offset: number | null;
+  resolved_against: "pdf" | "minutes_text" | null;
+}
+
+export interface EvidenceDocument {
+  filename: string | null;
+  url: string | null;
+  page: number | null;
+}
+
+export interface EvidenceEntry {
+  entity_table: string;
+  entity_id: number;
+  role: string;
+  meeting_id: number | null;
+  meeting_date: string | null;
+  document: EvidenceDocument | null;
+  quotes: EvidenceQuote[];
+  tier?: "no_evidence"; // present only when quotes is empty (B.5)
+}
+
+export interface OfficerRatificationPair {
+  meeting_date: string | null;
+  item_number: string | null;
+  title: string;
+  diverged: boolean;
+  agenda_motion: EvidenceEntry | null;
+  minutes_motion: EvidenceEntry | null;
+}
+
+export interface OfficerRatificationEvidence {
+  pairs: OfficerRatificationPair[];
+}
+
 export interface MethodData {
   council: string;
   generated_at: string;
@@ -815,4 +858,8 @@ export const api = {
   // record. Not claim-derived, defaults to full tier like most snapshots
   // (src/cli.py SNAPSHOT_TIER) until a human decision promotes it to public.
   method:       () => getSnapshot<MethodData>("method"),
+  // docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 3 — full tier like `method`
+  // above (never in SNAPSHOT_TIER). Not wired into any panel yet (Step 5).
+  evidenceOfficerRatification: () =>
+    getSnapshot<OfficerRatificationEvidence>("evidence/governance.officer_ratification"),
 };

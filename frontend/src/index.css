@@ -1449,6 +1449,26 @@ a:hover { text-decoration: underline; }
   background: var(--deep); border-radius: 0 6px 6px 0;
   font-size: 0.84rem; color: var(--text-lo); line-height: 1.55;
 }
+.src-detail { display: flex; flex-direction: column; gap: 4px; }
+/* Deliberately NOT .src-quote's solid-accent-bar "receipt" look (dashed
+   all-round border, no quote marks, --sunken not --deep) — a paraphrase
+   must never be styled to look like a verbatim quote (EVIDENCE_CHAIN_PLAN.md
+   B.2/Step 4). */
+.src-paraphrase {
+  margin: 8px 0 2px; padding: 8px 12px; border: 1px dashed var(--border);
+  background: var(--sunken); border-radius: 6px;
+  font-size: 0.84rem; color: var(--text-lo); line-height: 1.55;
+}
+.src-paraphrase-text { margin: 4px 0 0; font-style: italic; }
+.src-tier-flag {
+  display: inline-block; font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.03em; padding: 1px 7px;
+  border-radius: 999px; color: var(--neu-t); background: var(--neu-bg);
+  border: 1px solid var(--neu-bd);
+}
+.src-tier-flag-inline { margin-left: 8px; vertical-align: middle; text-transform: none; }
+.src-doc { margin: 2px 0 0; font-size: 0.74rem; color: var(--text-dim); }
+.src-doc a { color: var(--link); }
 
 /* ── reveal (named-individual claim gated behind a click) ──────────────── */
 .reveal-body { display: block; margin-top: 4px; }
