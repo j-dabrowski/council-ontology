@@ -1,6 +1,6 @@
 # /method — replacing the Evidence page with the extraction-quality record
 
-Status: **plan only, nothing built.** Written 2026-09-07.
+Status: **built** (Steps 1–7, 2026-09-07). Written 2026-09-07.
 Fifth in the sequence, after `TEST_REGISTRY_PLAN.md`, `PANEL_FRAMING_PLAN.md`,
 `SURFACE_PROJECTION_PLAN.md` and `WATCH_FEED_PLAN.md` (all built).
 Audience: the person handing Part D's steps, one at a time, to a fresh model

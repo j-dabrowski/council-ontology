@@ -426,6 +426,22 @@ the whole-batch `SNAPSHOT_TIER`/`derive_claim_tier` mechanism above:
   `transparency.confidential_topics`, all a genuine leak (an item description
   naming a councillor directly). `watch.json` ships 1164 of 1169.
 
+**`method.json` — the extraction-quality record behind `/method`
+(`docs/frontend/METHOD_PAGE_PLAN.md`, built 2026-09-07).** Also a real
+snapshot — `_generate_snapshots()` writes it via `build_method_record()`
+(`src/analysis/method.py`), joining `manifest.snapshots`/`file_hashes` the
+same way `watch.json` does. Unlike `watch`, nothing in the plan promotes it
+to `"public"` in `SNAPSHOT_TIER`, so it defaults to `"full"` like most
+snapshots and currently ships to `data/published_full/` on publish, not
+`frontend/public/data/`. It's also not claim-derived — no `TestResult`, no
+`unit_of_analysis`, no `named_entities` — so it's deliberately left out of
+`CLAIM_DERIVED_SNAPSHOTS`: the S7 gate has nothing to check on it. Every
+figure on `/method` instead traces to one of five files under `data/`
+(census, inventories, sample validation, full-corpus validation, extraction
+errors) or the live database, each carrying its own `generated_at` next to
+it — a missing or unparseable source renders as an explicit gap
+(`{"value": null, "reason": "source_missing"}`), never a zero.
+
 **`council publish <council> --from-draft <path>`** is the actual gate.
 `--from-draft` is always required — there is no code path that publishes
 without it. It **copies the draft's JSON verbatim** into

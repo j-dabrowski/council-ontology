@@ -443,6 +443,26 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
      — still a real, never-skipped checkpoint (`CONDUCTOR.md`'s one rule: the
      loop never calls `council publish` itself), just far lighter per cycle.
 
+  **The staleness this section's absence has already produced, measured
+  2026-09-07 (`docs/frontend/METHOD_PAGE_PLAN.md` B.1, surfaced on
+  `/method`).** Because nothing above is built yet, this corpus's five audit
+  files — `census.json`, `inventories/summary.json`,
+  `sample_validation/report.txt`, `validation/summary.json`,
+  `extraction_errors.json` — were each generated once, by hand, and have
+  aged independently since: 14, 14, 2, 10, and 11 weeks old respectively as
+  of that date, while `council.db` itself has kept moving (a dedup pass as
+  recently as 2026-09-04). The clearest symptom: the census predates 48
+  documents the scraper picked up afterward across 2022–2026, so `/method`'s
+  coverage matrix shows the database exceeding the census for those years —
+  correct, not a bug, but exactly the kind of drift a scheduled cycle would
+  close automatically. `/method` was built to **surface** this spread (every
+  figure dated next to its source, the gaps drawn rather than smoothed), not
+  to hide it or fix it — deciding whether to re-run `council census` or
+  `council validate` to freshen these numbers is a pipeline call, made here,
+  not a frontend change. Nothing currently forces that decision; it stays
+  open until this section's scheduled cycle exists, or someone runs those
+  commands by hand.
+
   **Not being built now** — this is a design sketch for where the current
   manual, single-council pipeline would need to evolve, written down so it
   doesn't have to be re-derived later. It's also downstream of a real

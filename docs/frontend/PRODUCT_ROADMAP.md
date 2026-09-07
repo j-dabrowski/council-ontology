@@ -180,6 +180,36 @@ avoids building the wrong shape twice.
 
 ---
 
+### F4 — What the old Evidence page promised
+
+`EvidencePage.tsx` (deleted 2026-09-07, `docs/frontend/METHOD_PAGE_PLAN.md`
+Step 6 — `/evidence` now redirects to `/method`) had a "Planned for this
+section" grid naming four surfaces. None of the five files under `data/`
+support any of them (`METHOD_PAGE_PLAN.md` Part C), so `/method` replaces
+the page's promises with what those files actually say rather than
+building toward the old promises. They stay real roadmap items:
+
+- **Source document browser** — navigate the full corpus of meeting
+  minutes by date, agenda item, or councillor, with quotes in context.
+  Needs a served copy of the raw PDFs/text, which nothing publishes today.
+- **Raw data export** — download structured datasets (votes, tenders,
+  declarations, motions) for independent analysis. Needs a decision on
+  what's safe to export wholesale vs. the per-field redaction F3 is
+  already weighing.
+- **Methodology notes** — detailed write-ups for each test: what was
+  measured, how extraction was validated, known limitations. **`/method`
+  now covers this one** — the extraction-quality half of it (coverage,
+  validation metrics, the pipeline, why nulls are reported); a per-test
+  methodology note (what each governance test measures and why) is still
+  open, and is closer to the registry's unfilled `question_public`/`method`
+  fields (see "Test registry" below) than to anything `/method` builds.
+- **Audit trail** — full provenance for every data point: source document,
+  extraction run, any manual corrections. Partially covered piecemeal
+  today (`/watch`'s per-meeting provenance footer, `/method`'s last-batch
+  record) but no unified per-claim trail exists yet.
+
+---
+
 ### Test registry — deliberately open (Phase 1 built, 2026-09-04)
 
 `config/test_registry.json` (`docs/frontend/TEST_REGISTRY_PLAN.md`) replaced
