@@ -795,6 +795,7 @@ export interface OfficerRatificationPair {
   item_number: string | null;
   title: string;
   diverged: boolean;
+  council_outcome: string | null;
   agenda_motion: EvidenceEntry | null;
   minutes_motion: EvidenceEntry | null;
 }

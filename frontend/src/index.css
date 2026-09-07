@@ -1039,6 +1039,7 @@ a:hover { text-decoration: underline; }
 }
 
 .badge-red { background: var(--br-bg); color: var(--br-t); }
+.badge-neutral { background: var(--neu-bg); color: var(--neu-t); }
 
 /* ── Contestation chart extras ───────────────────────────────────────────── */
 

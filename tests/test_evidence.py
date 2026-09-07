@@ -260,6 +260,7 @@ def test_both_sides_of_a_diverged_pair_are_resolved(session):
     assert len(result["pairs"]) == 1
     pair = result["pairs"][0]
     assert pair["diverged"] is True
+    assert pair["council_outcome"] == "lost"
     assert pair["agenda_motion"]["entity_id"] == agenda_motion_id
     assert pair["agenda_motion"]["quotes"][0]["tier"] == "exact"
     assert pair["minutes_motion"]["entity_id"] == minutes_motion_id
@@ -285,5 +286,6 @@ def test_pair_with_no_evidence_on_either_side_still_reports_the_pair(session):
     result = evidence_for_officer_ratification(session, council_id)
     pair = result["pairs"][0]
     assert pair["diverged"] is False
+    assert pair["council_outcome"] == "carried"
     assert pair["agenda_motion"]["tier"] == "no_evidence"
     assert pair["minutes_motion"]["tier"] == "no_evidence"

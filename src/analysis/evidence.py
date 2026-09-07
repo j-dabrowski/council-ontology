@@ -289,6 +289,7 @@ def evidence_for_officer_ratification(
             "item_number": pair.item_number,
             "title": pair.title,
             "diverged": pair.diverged,
+            "council_outcome": pair.council_outcome,
             "agenda_motion": agenda_entry,
             "minutes_motion": minutes_entry,
         })
