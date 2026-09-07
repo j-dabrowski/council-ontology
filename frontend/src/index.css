@@ -1781,3 +1781,73 @@ a:hover { text-decoration: underline; }
   color: var(--link);
   white-space: nowrap;
 }
+
+/* ── /method page ─────────────────────────────────────────────────────────── */
+
+.method-page {
+  max-width: 820px;
+  margin: 32px auto 0;
+}
+
+.method-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin: 10px 0 4px;
+}
+
+.method-table th {
+  text-align: left;
+  padding: 6px 10px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  font-weight: 500;
+}
+
+.method-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border-muted);
+  color: var(--text-lo);
+  vertical-align: top;
+}
+
+.method-table tr:last-child td { border-bottom: none; }
+
+.method-table code {
+  font-size: 0.82em;
+  color: var(--text-muted);
+}
+
+.method-freshness-table td:last-child {
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+
+.method-year-cell {
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+/* Informational, never alarm-coloured — a year where the database exceeds
+   the census is the scraper running again after the census did, not an
+   error (docs/frontend/METHOD_PAGE_PLAN.md B.2). */
+.method-delta {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--link);
+  background: var(--link-bg);
+  border: 1px solid var(--link-bd);
+}
+
+.method-num-cell {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.method-table-compact {
+  max-width: 420px;
+}

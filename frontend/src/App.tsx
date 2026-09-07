@@ -6,7 +6,7 @@ import { SiteNav } from "./components/SiteNav";
 import { OverviewPage } from "./pages/OverviewPage";
 import { AnalysisPage } from "./pages/AnalysisPage";
 import { WatchPage } from "./pages/WatchPage";
-import { EvidencePage } from "./pages/EvidencePage";
+import { MethodPage } from "./pages/MethodPage";
 import { MapPage } from "./pages/MapPage";
 import { AboutPage } from "./pages/AboutPage";
 import { ContactPage } from "./pages/ContactPage";
@@ -28,7 +28,8 @@ export default function App() {
             <Route path="/analysis" element={<AnalysisPage />} />
             <Route path="/watch" element={<WatchPage />} />
             <Route path="/digest" element={<Navigate to="/watch" replace />} />
-            <Route path="/evidence" element={<EvidencePage />} />
+            <Route path="/method" element={<MethodPage />} />
+            <Route path="/evidence" element={<Navigate to="/method" replace />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />

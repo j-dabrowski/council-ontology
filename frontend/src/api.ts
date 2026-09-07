@@ -674,6 +674,45 @@ export interface WatchData {
   meetings: WatchMeeting[];
 }
 
+// The extraction-quality record behind `/method`
+// (docs/frontend/METHOD_PAGE_PLAN.md, B.6) — every metric is an object
+// carrying its own source file and that file's generated_at, never a bare
+// number, so a stale figure is stale on its face. A missing or unparseable
+// source is `{value: null, reason: "source_missing", ...}` rather than a
+// zero. Only `coverage` (§1, Step 3) is typed in full below; `validation`
+// and `extraction_batch` stay loosely typed — only their `.generated_at` is
+// read yet, for the source-freshness list — until the steps that render
+// their own numbers give them full interfaces.
+export interface MethodSourcedValue<T> {
+  value: T | null;
+  source: string;
+  generated_at: string | null;
+  n: number | null;
+  reason?: string;
+}
+
+export interface MethodYearRow {
+  year: number;
+  censused: number | null;
+  documents_in_db: number;
+  minutes_in_db: number;
+}
+
+export interface MethodData {
+  council: string;
+  generated_at: string;
+  coverage: {
+    census_total: MethodSourcedValue<number>;
+    by_year: MethodYearRow[];
+    type_mix: MethodSourcedValue<Record<string, number>>;
+    document_flags: MethodSourcedValue<Record<string, number>>;
+  };
+  validation: { full_corpus_split: { generated_at: string | null };
+                sample_split: { generated_at: string | null };
+                [key: string]: unknown };
+  extraction_batch: { generated_at: string | null; [key: string]: unknown };
+}
+
 export const api = {
   scorecard:  () => getSnapshot<ScorecardData>("scorecard"),
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
@@ -700,4 +739,8 @@ export const api = {
   // and Publish mode via the normal getSnapshot() path, unlike the old
   // local-review-only digest it replaces.
   watch:        () => getSnapshot<WatchData>("watch"),
+  // Published (docs/frontend/METHOD_PAGE_PLAN.md B.6) — the extraction-quality
+  // record. Not claim-derived, defaults to full tier like most snapshots
+  // (src/cli.py SNAPSHOT_TIER) until a human decision promotes it to public.
+  method:       () => getSnapshot<MethodData>("method"),
 };
