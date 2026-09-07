@@ -4,8 +4,9 @@ import { useData } from "../hooks/useData";
 import {
   api, MethodData, MethodSourcedValue, MethodYearRow, MethodMetric,
   MethodValidationSplit, MethodInventoryAgreementFlag, MethodSamplePerFileRow,
-  MethodExtractionBatch,
+  MethodExtractionBatch, ScorecardData,
 } from "../api";
+import { scorecardHref } from "../registry/anchors";
 
 // README.md "Multi-level extraction pipeline" table, transcribed verbatim
 // (README.md lines 823-836) rather than retyped from the plan's own
@@ -377,6 +378,45 @@ function ExtractionBatchCard({ batch }: { batch: MethodExtractionBatch }) {
   );
 }
 
+// §4: not asserted, demonstrated — cites the current battery's own counts
+// from scorecard.json (data.summary) rather than typing "2" and "10" as
+// prose, so this paragraph can't drift from what the scorecard actually
+// ships. Links straight to each not-computable row via scorecardHref(),
+// the same deep-link mechanism ScorecardPanel's own rows already answer to.
+function NullsStatement() {
+  const { data, loading, error } = useData<ScorecardData>(() => api.scorecard());
+  if (loading) return <LoadingCard />;
+  if (error || !data) return <ErrorCard msg={error} />;
+
+  const notComputable = data.tests.filter((t) => !t.data_ok);
+
+  return (
+    <>
+      <p>
+        A system that only reports findings is a system that manufactures them: if a test
+        can't run against this corpus, the honest response is to say so, not to quietly
+        drop the row. The standard battery currently ships{" "}
+        <strong>{data.summary.n_not_computable}</strong> not-computable result
+        {data.summary.n_not_computable === 1 ? "" : "s"} alongside{" "}
+        <strong>{data.summary.n_supportive}</strong> supportive one
+        {data.summary.n_supportive === 1 ? "" : "s"} — the nulls are on the record next to
+        the good news, not filtered out ahead of it.
+      </p>
+      {notComputable.length > 0 && (
+        <p className="chart-note">
+          Not computable on this corpus:{" "}
+          {notComputable.map((t, i) => (
+            <span key={t.test_id}>
+              {i > 0 && ", "}
+              <a href={scorecardHref(t.test_id)}>{t.title}</a>
+            </span>
+          ))}.
+        </p>
+      )}
+    </>
+  );
+}
+
 export function MethodPage() {
   const { data, loading, error } = useData<MethodData>(() => api.method());
 
@@ -469,6 +509,11 @@ export function MethodPage() {
           />
           <h4 className="method-split-label">Last extraction batch</h4>
           <ExtractionBatchCard batch={data.extraction_batch} />
+        </div>
+
+        <div className="static-section">
+          <h3 className="static-h2">Why nulls are reported</h3>
+          <NullsStatement />
         </div>
       </main>
       <footer className="site-footer">
