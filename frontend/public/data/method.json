@@ -1,0 +1,165 @@
+{
+  "published_at": "2026-09-07T08:11:30.838614+00:00",
+  "data": {
+    "council": "cambridge",
+    "generated_at": "2026-09-07T08:11:30.838614+00:00",
+    "coverage": {
+      "census_total": {
+        "value": null,
+        "source": "data/census.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "by_year": [],
+      "type_mix": {
+        "value": null,
+        "source": "data/inventories/summary.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "document_flags": {
+        "value": null,
+        "source": "data/census.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      }
+    },
+    "validation": {
+      "metrics": {
+        "quote_completeness": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A low completeness means entities were extracted with no supporting quote at all \u2014 the record exists in the database but nothing in the source document backs it. That is a missing-evidence failure, not a wrong-evidence one.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "paraphrase_rate": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A high paraphrase rate means the quotes attached to entities are not verbatim from the source document \u2014 the extraction may be rewording or inventing text rather than citing it.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "coverage_ratio": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "Low coverage means most of the document's text was never touched by any extracted quote \u2014 content could be missing from the extraction even where every individual quote checks out.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "inventory_agreement": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A flagged ratio (far below or above 1.0) means the LLM extraction found a very different number of entities than the cheaper Level 1 inventory pass counted for the same document \u2014 either pass could be wrong, but the two should track each other.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/sample_validation/report.txt",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "keyword_gap_rate": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A high gap rate means the source text contains motion, planning or declaration language that never made it into any extracted quote \u2014 a sign of entities missed entirely, not just a citation problem.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        }
+      },
+      "full_corpus_split": {
+        "value": null,
+        "source": "data/validation/summary.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "sample_split": {
+        "value": null,
+        "source": "data/sample_validation/summary.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "sample_per_file": {
+        "value": null,
+        "source": "data/sample_validation/report.txt",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "schema_flags": {
+        "value": null,
+        "source": "data/validation/summary.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      }
+    },
+    "extraction_batch": {
+      "value": null,
+      "source": "data/extraction_errors.json",
+      "generated_at": null,
+      "n": null,
+      "reason": "source_missing"
+    }
+  }
+}

@@ -2793,6 +2793,22 @@ def _generate_snapshots(
         }
     _write("councillors", {"by_name": _cllr_profiles})
 
+    # method.json (docs/frontend/METHOD_PAGE_PLAN.md Step 2) — the
+    # extraction-quality record: every figure sourced from a file in data/
+    # plus the live per-year database columns, never a bare number. Not
+    # claim-derived — carries no TestResult, no unit_of_analysis, no
+    # named_entities — so it is deliberately not added to
+    # CLAIM_DERIVED_SNAPSHOTS above; S7 has nothing to check on it, by
+    # design (B.6).
+    from src.analysis.method import build_method_record
+    from src.models import Council as _CouncilM
+    _council_row = session.get(_CouncilM, council_id)
+    _write("method", build_method_record(
+        session, council_id,
+        _council_row.short_name if _council_row else str(council_id),
+        generated_at,
+    ))
+
     return written, battery
 
 
