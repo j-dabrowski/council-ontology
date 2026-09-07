@@ -115,6 +115,27 @@ aggregates (one date, few actors), so actually publishing any of this still
 needs its own look at S7/S9/defamation exposure before it goes anywhere near
 automation — not scheduled yet.
 
+**2026-09-07 — superseded by `/watch` (`docs/frontend/WATCH_FEED_PLAN.md`,
+built).** The "select 2–4 notable items" step above was always meant to be an
+LLM interestingness-ranking prompt (see "Key design challenge" above) — the
+digest's actual fix instead ships a **deterministic per-test threshold**,
+authored once per test in `config/test_registry.json`'s `digest_threshold`
+(`TEST_REGISTRY_PLAN.md`), reusing the exception-scoring machinery
+(`score_salience()`/baselines) this section's 2026-08-26/27 entries already
+built. On the evidence this is the better call, not just the cheaper one: no
+per-meeting LLM call, auditable (a reader can see which threshold fired and
+by how much), comparable across councils by construction, and it needed no
+new judgment about "interestingness" — the registry rows already carry the
+per-test knowledge that decides it. It also resolves the standing caveat
+directly above: `/watch` is a **published** feed (`WATCH_FEED_PLAN.md` B.3),
+not a local review artifact — every meeting's claims pass the S7 invariant
+gate and a per-claim public/full tier filter before shipping, which is the
+"own look at S7/S9/defamation exposure" this section flagged as a
+prerequisite. `local/digest.json` keeps computing exactly as before —
+`/watch` doesn't remove it, it's just no longer the surface a reader ever
+sees — while this F2 section's pipeline sketch (steps 1–4 above, plus the
+monetisation split below) is superseded, not built.
+
 **Monetisation alignment:**
 - Latest month's digest: free (drives return visits and sharing)
 - Historical digests beyond 6 months: paywalled or email-gated

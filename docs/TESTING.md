@@ -383,8 +383,48 @@ carry real single-meeting claims (including named individuals) without
 routing them through S7/S8/S9, per the standing caveat in
 `docs/frontend/PRODUCT_ROADMAP.md` F2 that single-meeting claims need their
 own look at that before anything like this could ever be published.
-`tests/test_publish_gate.py::test_digest_is_excluded_from_manifest_and_glob`
-enforces the invariant rather than just documenting it.
+`local/period_digest.json` (`compose_period_digest()`'s salience-ranked pool)
+stays local for the same reason, alongside `digest.json`.
+`tests/test_publish_gate.py::test_digest_and_period_digest_stay_excluded_watch_is_a_real_snapshot`
+enforces the invariant rather than just documenting it — and, since
+`WATCH_FEED_PLAN.md` Step 5, asserts the other direction in the same test:
+`watch.json` (below) is expected **in** the manifest, not excluded from it.
+
+**`/watch` — a published, per-claim-filtered exception report
+(`docs/frontend/WATCH_FEED_PLAN.md`, built 2026-09-07).** Unlike the digest
+above, `watch.json` is a real snapshot: `cmd_draft` writes it to the draft
+root itself (not `local/`), and it joins `manifest.snapshots`/`file_hashes`
+so `council publish` copies it to `frontend/public/data/` like any other
+file. That widens what ships — every meeting's exceptions, corpus-wide, not
+just the newest one — so it earns a filter of its own rather than reusing
+the whole-batch `SNAPSHOT_TIER`/`derive_claim_tier` mechanism above:
+
+- **Per-claim, not per-snapshot.** `derive_claim_tier()` is whole-batch — one
+  `individual`/`individual_implicating` claim drops the *entire* snapshot to
+  `"full"`, which is right for `scorecard` (one corpus-wide claim per test)
+  but wrong here: a single withheld exception among 1169 must not sink the
+  other 1168's worth of public content. `project_watch_feed_to_public()`
+  (`src/analysis/meeting_baselines.py`) instead calls `derive_claim_tiers()`
+  per claim, keeps only the `"public"` ones, and `watch` is listed in
+  `src/cli.py`'s `SNAPSHOT_TIER` as a static `"public"` entry — not in
+  `CLAIM_DERIVED_SNAPSHOTS` alongside `scorecard` — because by the time
+  `cmd_draft` tags it, the filtering has already happened.
+- **A dropped claim is recorded, not silently absent.** Each meeting row
+  carries `exceptions_withheld: N` — the count of that meeting's exceptions
+  that didn't clear the filter. A reader who sees `0` knows nothing was held
+  back; a reader who sees `2` knows the meeting had more going on than the
+  row shows, rather than reading a quieter meeting than it actually was.
+- **Re-verified independently of the tier check that selected it.** After
+  filtering, `project_watch_feed_to_public()` reconstructs a minimal claim
+  per surviving exception from exactly the text about to ship and re-runs
+  `run_invariant_gate` over all of them — a check that can only fail from a
+  bug in this function's own filtering, not from the per-claim tier decision
+  it's re-checking. `cmd_draft` fails the draft (before `manifest.json`
+  exists) if this second pass finds anything.
+- **The measured split** (506 minutes meetings, 1169 exception-claims):
+  **5 claims across 5 meetings** withheld as full-tier — all
+  `transparency.confidential_topics`, all a genuine leak (an item description
+  naming a councillor directly). `watch.json` ships 1164 of 1169.
 
 **`council publish <council> --from-draft <path>`** is the actual gate.
 `--from-draft` is always required — there is no code path that publishes

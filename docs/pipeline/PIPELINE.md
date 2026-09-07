@@ -1218,6 +1218,46 @@ council validate cambridge                                     # score all resul
 - `data/extraction_errors.json`: structured error log grouped by error class.
 - `data/batch_jobs/{batch_id}.json`: batch job metadata and chunk mapping.
 
+### Provenance: what's in the schema vs. what's only in these files (2026-09-07)
+
+`docs/frontend/WATCH_FEED_PLAN.md` Step 3 needed to answer "which document
+produced this row, from which run, validated how" for the `/watch` feed's
+per-meeting footer, and found the honest answer is split: `meetings.
+minutes_pdf_path`/`minutes_pdf_url` and `meetings.extracted_at` are in the
+DB, but **run id, model, and validation status/coverage are not** — they
+only exist in `data/batch_jobs/{batch_id}.json` (above) and `data/
+validation/{filename}.json` (Level 4). `src/provenance.py`'s
+`meeting_provenance()` is the join: `meetings.minutes_pdf_path` → the
+matching `data/validation/<hash>.json` (carries the file's own `meeting_id`)
+→ every `data/batch_jobs/*.json` whose `id_map` references that PDF path,
+picking the most-recent-by-`submitted_at` as `run_id` and counting the rest
+(`run_id_count`, for a "+N earlier" display when a document was resubmitted
+in a separate later batch).
+
+**Measured over the real corpus (506 minutes meetings):** `run_id`/`model`/
+`extracted_at` are present for 376/506 — the other 130 were extracted by
+some earlier, non-batch path and carry a null `extracted_at`, which is what
+makes them absent from `batch_jobs/` too (not a join failure). `validation_
+status`/`coverage_ratio` are 506/506 (213 PASS, 163 REVIEW, 130 FAIL) — full
+coverage, since every document gets a Level 4 validation report regardless
+of extraction path. One model corpus-wide: `claude-haiku-4-5-20251001`.
+**31/506 meetings' documents were resubmitted in a separate, later batch
+job** and need the "most recent wins" rule — not the 320 an earlier estimate
+in `WATCH_FEED_PLAN.md` A.5 stated; that 320 turned out to be documents
+needing more than one *chunk* within a single batch submission, a different
+measure from a document being resubmitted in a distinct later batch job.
+
+**Recommendation (not built — a pipeline change, out of this plan's scope):**
+persisting run id/model/validation status into the schema would trade this
+per-request file join for a write at extraction time — no per-request disk
+scan, and no ambiguity for the 31 resubmitted documents (a column update at
+extraction time just wins, rather than needing "most recent by
+`submitted_at`" logic every time). Against: `batch_jobs/`/`validation/` are
+already the durable audit trail for exactly this data, and a schema copy can
+drift from the files if a batch is ever re-run without a matching migration.
+Worth it once a second consumer needs the same join — today there's one
+(`/watch`).
+
 ---
 
 ## Level 6: Audit (no cost, human time only)

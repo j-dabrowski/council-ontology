@@ -160,3 +160,16 @@ See `docs/TESTING.md` "Draft & publish workflow" for the deterministic
 stages either side of this one, and `docs/strategy/PRIVATE_ASSESSMENT.md`
 (gitignored) for why this stage exists at all — the defamation-exposure
 analysis this whole subsystem operationalises.
+
+## `watch.json` widened Editor's scope (2026-09-07)
+
+`docs/frontend/WATCH_FEED_PLAN.md` (built) moved a boundary that used to keep
+every single-meeting claim off Editor's desk entirely: `/watch` is now a
+published, corpus-wide exception feed, and its snapshot enters this stage's
+`*.json` review scope like any other. `editor/Editor_prompt.txt` v0.9 covers
+the how — bounded to the feed's newest 50 meetings (it's ~1.2MB against
+~2.9MB for every other snapshot combined), with the remaining meetings
+covered by a scripted per-claim tier filter and re-verification
+(`project_watch_feed_to_public()`) that already ran over the whole corpus
+before this stage ever sees the draft. See that file's scope note for the
+full rationale rather than duplicating it here.

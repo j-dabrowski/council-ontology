@@ -1,15 +1,27 @@
 # From a 14-card digest to an exception report and a /watch feed
 
-Status: **plan only, nothing built.** Written 2026-09-06.
+Status: **built** (Steps 1–8, 2026-09-07). Written 2026-09-06.
 Fourth in the sequence, after `TEST_REGISTRY_PLAN.md`, `PANEL_FRAMING_PLAN.md`
 and `SURFACE_PROJECTION_PLAN.md` (all built).
 Audience: the person handing Part D's steps, one at a time, to a fresh model
-instance. Parts A–C are the context every step assumes.
+instance. Parts A–C are the context every step assumes — kept as the record
+of the pre-`/watch` state, not updated to describe the current one; see the
+measurements below and each step's own commit for what actually shipped.
 
 This plan spans the pipeline, the publish gate and three frontend surfaces —
 more than the previous three. `/watch` publishes (B.3, settled 2026-09-06), so
 Step 5 moves a boundary that until now has kept every single-meeting claim off
 the live site. Read B.3 before Step 4.
+
+**The public/full split Step 5 measured** (the number that decides how much
+of the feed a reader actually sees): over the real corpus — 506 minutes
+meetings, 1169 exception-claims total — only **5 claims across 5 meetings**
+were withheld as full-tier, all `transparency.confidential_topics`, all
+genuine leaks (an item description naming a councillor directly). The
+published `watch.json` carries **1164 of 1169** exceptions; every row that
+drops one records the count in `exceptions_withheld` rather than silently
+looking quieter than the meeting actually was (B.3). Not a large share — the
+feed ships as designed, not as a reduced one.
 
 ---
 
@@ -518,9 +530,17 @@ Acceptance: build + lint; the strip's numbers match the feed's top row exactly.
 
 Persisting run id / model / validation status into the schema (B.5 — Step 3
 recommends, does not build) · building an institutional reduction for any claim
-that currently has none (`INSTITUTIONAL_PROJECTIONS` is empty; a `full`-tier
-claim is withheld, not reduced) · S9 reply packets for a meeting claim that
-names someone · deleting `digest_floor` from the 8
+that currently has none. **Correction, 2026-09-07:** the parenthetical this
+line originally carried here — "`INSTITUTIONAL_PROJECTIONS` is empty; a
+`full`-tier claim is withheld, not reduced" — was wrong when this plan was
+written: `INSTITUTIONAL_PROJECTIONS` (`src/invariant_gate.py`) already had
+three registered reducers (`conflict.recusal_management`,
+`governance.attendance`, `procurement.decider_supplier_conflict`), built
+earlier in the S7/tier-derivation redesign and confirmed live on the real
+corpus by Step 8 — a claim on one of those three degrades to its name-free
+form instead of being withheld. What's still genuinely not in this plan is
+building a *new* reduction for a test that has none today · S9 reply packets
+for a meeting claim that names someone · deleting `digest_floor` from the 8
 generators (B.2) · the LLM-ranked digest F2 described (A.3) · changing how
 novelty is computed (B.1) · any change to what the 14 generators measure —
 including `conflict.recusal_management`'s declaration-vs-stay-and-vote question

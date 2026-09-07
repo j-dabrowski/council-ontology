@@ -199,6 +199,20 @@ Read the acceptance criterion as: **the scorecard's structure, order, grouping
 and copy come entirely from the registry; the numbers are joined in from the
 snapshot and are not touched.**
 
+**2026-09-07 addition (`WATCH_FEED_PLAN.md` Step 1, built):** `config/
+test_registry.json` gains `digest_threshold` — the per-test rule that decides
+whether a meeting-scope claim counts as an exception on `/watch`, one of four
+kinds (`any_occurrence` / `percentile` / `ratio` / `absolute`). Non-null
+exactly on the 14 rows where `meeting_scope` is true, `null` on the other 15
+— the field list above is otherwise unchanged. `digest_threshold` replaces
+the two mechanisms that stood in for it before this registry field existed:
+the per-generator `digest_floor=` kwarg (eight generators, `src/analysis/
+tests.py`) and the single global `min_salience` in `config/digest_policy.json`.
+Both are now unread by the exception rule (they still back `score_salience()`'s
+ranking for `compose_period_digest()`, a separate consumer —
+`WATCH_FEED_PLAN.md` B.1/B.2) and awaiting the cleanup pass that strips them
+once nothing reads them at all.
+
 ### B.3 DECISION 1 — the registry owns the list of tests. `_BATTERY` is deleted.
 
 `_BATTERY` (which 29 tests run, in what order) and `_MEETING_BATTERY` (which 14

@@ -186,6 +186,31 @@ the per-person bars). This lands on the existing `public`/`full` snapshot
 tier mechanism in `src/cli.py` — same rail, but the tag becomes derived
 from claim fields instead of hand-assigned per snapshot file.
 
+**2026-09-07 — the first published surface built on the *per-claim* form of
+this rule, not the whole-batch one (`docs/frontend/WATCH_FEED_PLAN.md`
+B.3/Step 5, built).** `scorecard`'s existing `derive_claim_tier()` tags one
+tier for an entire snapshot — right when a snapshot is one claim per test,
+wrong for `/watch`, where a snapshot is 506 meetings' worth of claims and one
+`individual`/`individual_implicating` exception must not drop the other
+505 meetings to `"full"` with it. `project_watch_feed_to_public()`
+(`src/analysis/meeting_baselines.py`) instead calls the per-claim
+`derive_claim_tiers()`, keeps only the claims that resolve `"public"`, and
+records what it drops per meeting (`exceptions_withheld`). "Resolves public"
+is not the same as "carries no reduction": `INSTITUTIONAL_PROJECTIONS`
+(`src/invariant_gate.py`) already has three registered reducers —
+`conflict.recusal_management`, `governance.attendance`,
+`procurement.decider_supplier_conflict` — built earlier in the S7/tier work,
+before this plan existed, and confirmed live on the real corpus (e.g.
+meeting 112's `governance.attendance` claim genuinely names a councillor,
+resolves `individual`, tiers `public`, and ships as "1 councillor(s) had at
+least one unexplained absence this meeting"). A claim on one of those three
+test_ids degrades to its name-free form instead of being withheld; only a
+`full`-tier claim with **no** registered reduction is dropped outright and
+counted in `exceptions_withheld` — which is exactly what happened to the 5
+withheld claims measured over the real corpus (506 meetings, 1169
+exception-claims): all `transparency.confidential_topics`, a test_id with no
+registered reducer.
+
 ---
 
 ## 5. Audiences
