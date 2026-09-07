@@ -679,9 +679,7 @@ export interface WatchData {
 // carrying its own source file and that file's generated_at, never a bare
 // number, so a stale figure is stale on its face. A missing or unparseable
 // source is `{value: null, reason: "source_missing", ...}` rather than a
-// zero. `extraction_batch` stays loosely typed — only its `.generated_at`
-// is read yet, for the source-freshness list — until the step that renders
-// its own numbers gives it a full interface.
+// zero.
 export interface MethodSourcedValue<T> {
   value: T | null;
   source: string;
@@ -737,6 +735,31 @@ export interface MethodSamplePerFileRow {
   status: "PASS" | "REVIEW" | "FAIL";
 }
 
+// One error instance from extraction_errors.json — carries the full raw LLM
+// response and Pydantic message, neither of which this page renders (B.4:
+// framed as one batch with error *classes*, never a per-document dump).
+// Typed for completeness/future use; MethodPage only reads `.length`.
+export interface MethodExtractionError {
+  filename: string;
+  error_class: string;
+  error_type: string;
+  error_message: string;
+  raw_llm_response?: string;
+}
+
+// docs/frontend/METHOD_PAGE_PLAN.md B.4: "labelled as one batch, or left
+// off" — 341 attempted against however many documents are in the database
+// now, never rendered as a corpus-wide rate. Present/missing is a union for
+// the same reason as MethodValidationSplit above (src/analysis/method.py's
+// `_build_extraction_batch()`: no `value` key when the batch record exists).
+export type MethodExtractionBatch =
+  | {
+      batch_id: string; attempted: number; succeeded: number; failed: number;
+      errors_by_class: Record<string, MethodExtractionError[]>;
+      note: string; source: string; generated_at: string | null; n: number | null;
+    }
+  | MethodSourcedValue<null>;
+
 export interface MethodData {
   council: string;
   generated_at: string;
@@ -759,7 +782,7 @@ export interface MethodData {
     sample_per_file: MethodSourcedValue<MethodSamplePerFileRow[]>;
     schema_flags: MethodSourcedValue<number> & { flagged_files?: string[] };
   };
-  extraction_batch: { generated_at: string | null; [key: string]: unknown };
+  extraction_batch: MethodExtractionBatch;
 }
 
 export const api = {

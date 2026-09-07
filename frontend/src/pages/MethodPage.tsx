@@ -4,7 +4,36 @@ import { useData } from "../hooks/useData";
 import {
   api, MethodData, MethodSourcedValue, MethodYearRow, MethodMetric,
   MethodValidationSplit, MethodInventoryAgreementFlag, MethodSamplePerFileRow,
+  MethodExtractionBatch,
 } from "../api";
+
+// README.md "Multi-level extraction pipeline" table, transcribed verbatim
+// (README.md lines 823-836) rather than retyped from the plan's own
+// paraphrase — checked directly against the file, not the plan's summary of
+// it. Level 6 (Audit) is excluded: METHOD_PAGE_PLAN.md's run-order sequence
+// (B.5) names only these seven stages, and its own "Deliberately not in
+// this plan" section lists the Level 6 human audit explicitly. In RUN
+// order (extract before validate), not the README's plan-order numbering —
+// see the caption below the diagram.
+interface PipelineStage {
+  name: string;
+  levelLabel: string;
+  cost: string;
+}
+const PIPELINE_STAGES: PipelineStage[] = [
+  { name: "Census", levelLabel: "Level 0", cost: "Free" },
+  { name: "Inventory", levelLabel: "Level 1", cost: "$4.83 actual" },
+  { name: "Typology (schema)", levelLabel: "Level 2", cost: "Free" },
+  { name: "Sample selection + extraction", levelLabel: "Levels 3a/3b", cost: "Free + ~$0.50" },
+  { name: "Validate sample", levelLabel: "Level 3c", cost: "Free" },
+  { name: "Extract (full corpus)", levelLabel: "Level 5", cost: "~$70 actual" },
+  { name: "Validate (full corpus)", levelLabel: "Level 4", cost: "Free" },
+];
+// git log -L 827,835:README.md — the table's own last edit, not this
+// session's date. README.md carries no generated_at the way the data/
+// files do, so a git-history date stands in, cited as such rather than
+// invented or left unstated.
+const PIPELINE_TABLE_DATE = "2026-07-19";
 
 const METRIC_ORDER = [
   "quote_completeness", "paraphrase_rate", "coverage_ratio",
@@ -280,6 +309,74 @@ function PerFileTable({ v }: { v: MethodSourcedValue<MethodSamplePerFileRow[]> }
   );
 }
 
+// B.5: run order (extract before validate), not the README's plan-order
+// numbering — Level 4 (validate) is numbered before Level 5 (extract), but
+// extraction finished first. `extractedAt`/`validatedAt` are the real dates
+// this ran, read off method.json rather than retyped, so the caption below
+// doesn't go stale independently of the record it's explaining.
+function PipelineDiagram({ extractedAt, validatedAt }: { extractedAt: string | null; validatedAt: string | null }) {
+  return (
+    <>
+      <p className="chart-note">
+        Cost and status: README.md's "Multi-level extraction pipeline" table, last
+        updated {formatDate(PIPELINE_TABLE_DATE)} (git history) — a hand-maintained
+        doc, not a generated snapshot, so a commit date stands in for the generated_at
+        the data/ files carry.
+      </p>
+      <div className="pipeline-diagram">
+        {PIPELINE_STAGES.map((stage, i) => (
+          <div className="pipeline-stage-wrap" key={stage.name}>
+            <div className="pipeline-stage">
+              <span className="pipeline-stage-level">{stage.levelLabel}</span>
+              <span className="pipeline-stage-name">{stage.name}</span>
+              <span className="pipeline-stage-cost">{stage.cost}</span>
+              <span className="pipeline-stage-status">
+                Done{stage.name === "Extract (full corpus)" && extractedAt &&
+                  ` — 580 docs, ${formatDate(extractedAt)}`}
+              </span>
+            </div>
+            {i < PIPELINE_STAGES.length - 1 && <div className="pipeline-arrow" aria-hidden="true">↓</div>}
+          </div>
+        ))}
+      </div>
+      <p className="chart-note">
+        The README's level numbers are plan order, not run order: full-corpus
+        validation is planned as Level 4, before Level 5's extraction — but
+        extraction actually completed {formatDate(extractedAt)}, and full-corpus
+        validation ran afterward, on {formatDate(validatedAt)}. This diagram follows
+        what happened; the README's level numbers are kept as a record of how the
+        pipeline was designed, not renumbered to match.
+      </p>
+    </>
+  );
+}
+
+// B.4: framed as one batch, with error classes — never as a corpus-wide
+// rate (341 attempted is not 341 of the corpus's current document count).
+function ExtractionBatchCard({ batch }: { batch: MethodExtractionBatch }) {
+  if (!("batch_id" in batch)) {
+    return <p className="chart-note">Last extraction batch: not available — {batch.reason ?? "no data"}.</p>;
+  }
+  const classes = Object.entries(batch.errors_by_class).sort((a, b) => b[1].length - a[1].length);
+  return (
+    <div className="method-batch">
+      <p className="chart-note">
+        The last recorded extraction batch — <code>{batch.batch_id}</code>,{" "}
+        {formatDate(batch.generated_at)}: <strong>{batch.succeeded} of {batch.attempted}</strong>{" "}
+        succeeded, {batch.failed} schema-validation failure{batch.failed === 1 ? "" : "s"}.
+      </p>
+      {classes.length > 0 && (
+        <ul className="method-error-classes">
+          {classes.map(([cls, errs]) => (
+            <li key={cls}><code>{cls}</code> ({errs.length})</li>
+          ))}
+        </ul>
+      )}
+      <p className="chart-note">{batch.note} · <code>{batch.source}</code></p>
+    </div>
+  );
+}
+
 export function MethodPage() {
   const { data, loading, error } = useData<MethodData>(() => api.method());
 
@@ -310,6 +407,18 @@ export function MethodPage() {
             This corpus's outer boundary is what has been downloaded — no file records
             what the council published but the scraper never fetched.
           </p>
+        </div>
+
+        <div className="static-section">
+          <h3 className="static-h2">Meeting type mix</h3>
+          <SourceCaption v={data.coverage.type_mix} />
+          {data.coverage.type_mix.value && <TallyTable tally={data.coverage.type_mix.value} />}
+        </div>
+
+        <div className="static-section">
+          <h3 className="static-h2">Document flags</h3>
+          <SourceCaption v={data.coverage.document_flags} />
+          {data.coverage.document_flags.value && <TallyTable tally={data.coverage.document_flags.value} />}
         </div>
 
         <div className="static-section">
@@ -353,15 +462,13 @@ export function MethodPage() {
         </div>
 
         <div className="static-section">
-          <h3 className="static-h2">Meeting type mix</h3>
-          <SourceCaption v={data.coverage.type_mix} />
-          {data.coverage.type_mix.value && <TallyTable tally={data.coverage.type_mix.value} />}
-        </div>
-
-        <div className="static-section">
-          <h3 className="static-h2">Document flags</h3>
-          <SourceCaption v={data.coverage.document_flags} />
-          {data.coverage.document_flags.value && <TallyTable tally={data.coverage.document_flags.value} />}
+          <h3 className="static-h2">Pipeline</h3>
+          <PipelineDiagram
+            extractedAt={data.extraction_batch.generated_at}
+            validatedAt={data.validation.full_corpus_split.generated_at}
+          />
+          <h4 className="method-split-label">Last extraction batch</h4>
+          <ExtractionBatchCard batch={data.extraction_batch} />
         </div>
       </main>
       <footer className="site-footer">

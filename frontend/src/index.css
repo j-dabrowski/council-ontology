@@ -1789,7 +1789,16 @@ a:hover { text-decoration: underline; }
   margin: 32px auto 0;
 }
 
+/* display:block lets a wide table scroll horizontally within its own box
+   rather than blowing out the page body — same problem .comover-table-wrap
+   solves elsewhere, applied here without a wrapper div since every
+   .method-table call site would otherwise need one. Found via the narrow-
+   width check Step 5's acceptance calls for; every .method-table on the
+   page had this, not just the new pipeline diagram. */
 .method-table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.85rem;
@@ -1927,4 +1936,87 @@ a:hover { text-decoration: underline; }
   margin: 10px 0 0;
   padding-top: 8px;
   border-top: 1px solid var(--border-muted);
+}
+
+/* ── /method pipeline diagram (Step 5) ────────────────────────────────────── */
+/* A vertical stepper by design, not a wide horizontal flow — guarantees no
+   horizontal scroll at any viewport width without a separate narrow-screen
+   layout to maintain. */
+
+.pipeline-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  max-width: 520px;
+  margin: 10px 0;
+}
+
+.pipeline-stage-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.pipeline-stage {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 14px;
+}
+
+.pipeline-stage-level {
+  flex: none;
+  width: 78px;
+  font-size: 0.68rem;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.pipeline-stage-name {
+  font-size: 0.87rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  flex: 1 1 170px;
+}
+
+.pipeline-stage-cost {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.pipeline-stage-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ok-t);
+  margin-left: auto;
+}
+
+.pipeline-arrow {
+  align-self: center;
+  color: var(--text-faint);
+  font-size: 0.95rem;
+  line-height: 1;
+  padding: 2px 0;
+}
+
+.method-batch {
+  margin: 10px 0;
+}
+
+.method-error-classes {
+  margin: 6px 0 10px;
+  padding-left: 1.3em;
+  font-size: 0.82rem;
+  color: var(--text-lo);
+  line-height: 1.6;
+}
+
+.method-error-classes code {
+  font-size: 0.85em;
+  color: var(--text-muted);
+  word-break: break-word;
 }
