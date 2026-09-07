@@ -1,0 +1,15 @@
+{
+  "generated_at": "2020-01-04T00:00:00+00:00",
+  "council": "fixture",
+  "total_validated": 2,
+  "errors": 0,
+  "pass": 1,
+  "review": 1,
+  "fail": 0,
+  "avg_quote_completeness": 0.85,
+  "avg_paraphrase_rate": 0.04,
+  "avg_coverage_ratio": 0.2,
+  "avg_keyword_gap_rate": 0.12,
+  "schema_flags_count": 1,
+  "schema_flagged_files": ["a.pdf"]
+}

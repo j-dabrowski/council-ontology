@@ -1,0 +1,9 @@
+{
+  "generated_at": "2020-01-05T00:00:00+00:00",
+  "council": "fixture",
+  "batch_id": "msgbatch_fixture01",
+  "attempted": 2,
+  "succeeded": 2,
+  "failed": 0,
+  "errors_by_class": {}
+}

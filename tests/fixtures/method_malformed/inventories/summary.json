@@ -1,0 +1,9 @@
+{
+  "generated_at": "2020-01-02T00:00:00+00:00",
+  "total_inventoried": 2,
+  "total_ok": 2,
+  "total_errors": 0,
+  "meeting_type_distribution": {"Ordinary Council Meeting": 2},
+  "average_counts": {"motions": 5.0},
+  "flagged_documents": []
+}

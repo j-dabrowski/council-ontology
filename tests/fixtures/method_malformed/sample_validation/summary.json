@@ -1,0 +1,12 @@
+{
+  "n": 2,
+  "avg_completeness": 0.9,
+  "avg_paraphrase": 0.05,
+  "avg_coverage": 0.3,
+  "avg_keyword_gap": 0.1,
+  "passes": 2,
+  "reviews": 0,
+  "fails": 0,
+  "issues": [],
+  "converged": true
+}
