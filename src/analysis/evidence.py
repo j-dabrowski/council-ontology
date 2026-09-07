@@ -249,11 +249,18 @@ def resolve_evidence(
     return entries
 
 
-def evidence_for_officer_ratification(session: Session, council_id: int) -> dict:
+def evidence_for_officer_ratification(
+    session: Session, council_id: int, year: int | None = None
+) -> dict:
     """Evidence chain for governance.officer_ratification: both sides — the
     agenda motion and the matched minutes motion — of every
-    officer_divergence() pair, grouped by pair (Part C)."""
-    pairs = officer_divergence(session, council_id, None, None)
+    officer_divergence() pair, grouped by pair (Part C).
+
+    `year`, when given, narrows to that one year (officer_divergence()'s
+    own from_year/to_year, both set to it) — the only filter this test's
+    underlying query supports (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 2).
+    """
+    pairs = officer_divergence(session, council_id, from_year=year, to_year=year)
 
     refs: list[EntityRef] = []
     for pair in pairs:

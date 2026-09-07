@@ -4,6 +4,13 @@ FastAPI backend for the Council Ontology frontend.
 Exposes the analysis query functions as JSON REST endpoints.
 Run with:
     uvicorn api.main:app --reload --port 8000
+
+`/api/evidence/{test_id}` (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 2) is
+not reachable from the published site — no Cloud Run deploy exists for this
+API (EVIDENCE_CHAIN_PLAN.md A.4). The frontend reads the exported
+`evidence/<test_id>.json` snapshot instead (Step 3); this endpoint is for
+local development and the day the API does deploy. Do not wire the
+frontend to it.
 """
 
 from __future__ import annotations
@@ -295,6 +302,76 @@ def planning(
             "top_sites": [{"address": addr, "count": n} for addr, n in o.top_sites],
             "top_applicants": [{"name": name, "count": n} for name, n in o.top_applicants],
         }
+    finally:
+        session.close()
+
+
+_EVIDENCE_BUILDERS = {
+    # evidence_query (config/test_registry.json) -> resolver. One entry
+    # until Step 6 generalises (docs/frontend/EVIDENCE_CHAIN_PLAN.md).
+    "officer_divergence": "evidence_for_officer_ratification",
+}
+_EVIDENCE_SUPPORTED_FILTERS: dict[str, set[str]] = {
+    # evidence_query -> filters its underlying query actually supports.
+    "officer_divergence": {"year"},
+}
+
+
+@app.get("/api/evidence/{test_id}")
+def evidence(
+    test_id: str,
+    year: int | None = Query(default=None),
+    councillor: str | None = Query(default=None),
+    contractor: str | None = Query(default=None),
+) -> dict:
+    """Evidence chain for one test: every entity behind its figure, each
+    quote classified into the four match tiers of docs/frontend/
+    EVIDENCE_CHAIN_PLAN.md B.2 (exact/normalised/stripped/paraphrase),
+    computed at request time — never from `char_offset`.
+    """
+    from src.analysis import evidence as evidence_module
+    from src.test_registry import load_test_registry
+
+    registry = {row.id: row for row in load_test_registry()}
+    row = registry.get(test_id)
+    if row is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown test_id {test_id!r}. See config/test_registry.json for valid ids.",
+        )
+
+    builder_name = _EVIDENCE_BUILDERS.get(row.evidence_query)
+    if builder_name is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"{test_id!r} has no evidence resolver yet "
+                f"(evidence_query={row.evidence_query!r} isn't wired up — "
+                "Phase 2, docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6)."
+            ),
+        )
+    builder = getattr(evidence_module, builder_name)
+
+    supported = _EVIDENCE_SUPPORTED_FILTERS.get(row.evidence_query, set())
+    requested = {
+        name for name, value in
+        (("year", year), ("councillor", councillor), ("contractor", contractor))
+        if value is not None
+    }
+    unsupported = requested - supported
+    if unsupported:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"{test_id!r} supports only these filters: {sorted(supported) or 'none'}. "
+                f"Got unsupported: {sorted(unsupported)}."
+            ),
+        )
+
+    session = get_session()
+    try:
+        council_id = _get_council_id(session)
+        return builder(session, council_id, year=year)
     finally:
         session.close()
 
