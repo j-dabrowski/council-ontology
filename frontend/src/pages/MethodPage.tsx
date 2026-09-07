@@ -1,7 +1,28 @@
 import { CouncilHeader } from "../components/CouncilHeader";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { useData } from "../hooks/useData";
-import { api, MethodData, MethodSourcedValue, MethodYearRow } from "../api";
+import {
+  api, MethodData, MethodSourcedValue, MethodYearRow, MethodMetric,
+  MethodValidationSplit, MethodInventoryAgreementFlag, MethodSamplePerFileRow,
+} from "../api";
+
+const METRIC_ORDER = [
+  "quote_completeness", "paraphrase_rate", "coverage_ratio",
+  "inventory_agreement", "keyword_gap_rate",
+] as const;
+
+const METRIC_LABELS: Record<(typeof METRIC_ORDER)[number], string> = {
+  quote_completeness: "Quote completeness",
+  paraphrase_rate: "Paraphrase rate",
+  coverage_ratio: "Coverage ratio",
+  inventory_agreement: "Inventory agreement",
+  keyword_gap_rate: "Keyword gap rate",
+};
+
+function formatPct(value: number | null): string {
+  if (value == null) return "not available";
+  return `${(value * 100).toFixed(1)}%`;
+}
 
 // docs/frontend/METHOD_PAGE_PLAN.md — the extraction-quality record. Every
 // figure here reads straight off method.json; nothing is written as a
@@ -131,6 +152,134 @@ function TallyTable({ tally }: { tally: Record<string, number> }) {
   );
 }
 
+// B.3: both splits shown side by side, full corpus first — never averaged,
+// never leading with the flattering sample. PASS/REVIEW/FAIL reuse the
+// site's existing valence tally tile (ScorecardPanel's .sc-summary), so
+// FAIL gets the same red the rest of the site uses for a critical finding —
+// legible, not softened, not a new colour invented for this page.
+function SplitTiles({ label, split }: { label: string; split: MethodValidationSplit }) {
+  if (!("pass" in split)) {
+    return <p className="chart-note">{label}: not available — {split.reason ?? "no data"} (<code>{split.source}</code>).</p>;
+  }
+  return (
+    <div className="method-split">
+      <p className="chart-note">
+        {label} · n={split.n} · as of {formatDate(split.generated_at)} · <code>{split.source}</code>
+      </p>
+      <div className="sc-summary method-split-summary">
+        <div className="sc-summary-item sc-supportive">
+          <span className="sc-summary-num">{split.pass}</span>
+          <span className="sc-summary-label">PASS</span>
+        </div>
+        <div className="sc-summary-item sc-neutral">
+          <span className="sc-summary-num">{split.review}</span>
+          <span className="sc-summary-label">REVIEW</span>
+        </div>
+        <div className="sc-summary-item sc-critical">
+          <span className="sc-summary-num">{split.fail}</span>
+          <span className="sc-summary-label">FAIL</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MetricValue({ label, v }: { label: string; v: MethodSourcedValue<number> }) {
+  return (
+    <div className="method-metric-value">
+      <span className="method-metric-value-label">{label}</span>
+      <span className="method-metric-value-num">
+        {v.value != null ? formatPct(v.value) : `not available (${v.reason ?? "no data"})`}
+      </span>
+    </div>
+  );
+}
+
+// Inventory agreement has no aggregate in either summary file (B.6) — the
+// real content on this page for that metric is the sample's per-entity-type
+// flag list instead of a single value.
+function FlaggedEntityTypes({ flags }: { flags: Record<string, MethodInventoryAgreementFlag> }) {
+  const rows = Object.entries(flags).sort((a, b) => b[1].flagged_count - a[1].flagged_count);
+  return (
+    <p className="chart-note">
+      Flagged in the 18-document sample:{" "}
+      {rows.map(([key, flag], i) => (
+        <span key={key}>
+          {i > 0 && ", "}{key.replace(/_count$/, "").replace(/_/g, " ")} ({flag.flagged_count})
+        </span>
+      ))}.
+    </p>
+  );
+}
+
+function MetricCard({ label, metric }: { label: string; metric: MethodMetric }) {
+  return (
+    <div className="method-metric">
+      <h4 className="method-metric-label">{label}</h4>
+      {metric.definition && <p className="method-metric-def">{metric.definition}</p>}
+      {metric.target && <p className="chart-note">{metric.target}</p>}
+      <div className="method-metric-values">
+        <MetricValue label={`Full corpus (n=${metric.full_corpus.n ?? "—"})`} v={metric.full_corpus} />
+        <MetricValue label={`Sample (n=${metric.sample.n ?? "—"})`} v={metric.sample} />
+      </div>
+      {metric.sample.flagged_entity_types && (
+        <FlaggedEntityTypes flags={metric.sample.flagged_entity_types} />
+      )}
+      <p className="method-metric-consequence">{metric.means_if_failed}</p>
+    </div>
+  );
+}
+
+function SchemaFlags({ v }: { v: MethodSourcedValue<number> & { flagged_files?: string[] } }) {
+  if (v.value == null) {
+    return <p className="chart-note">Schema flags: not available — {v.reason ?? "no data"}.</p>;
+  }
+  return (
+    <p className="chart-note">
+      <strong>{v.value}</strong> schema-validation flag{v.value === 1 ? "" : "s"}
+      {v.n != null && ` across ${v.n} validated documents`} · as of {formatDate(v.generated_at)} ·{" "}
+      <code>{v.source}</code>
+      {v.flagged_files && ` (${v.flagged_files.length} file${v.flagged_files.length === 1 ? "" : "s"} flagged)`}.
+    </p>
+  );
+}
+
+function statusChipClass(status: MethodSamplePerFileRow["status"]): string {
+  if (status === "PASS") return "valence-chip valence-supportive";
+  if (status === "REVIEW") return "valence-chip valence-neutral";
+  return "valence-chip valence-critical";
+}
+
+function PerFileTable({ v }: { v: MethodSourcedValue<MethodSamplePerFileRow[]> }) {
+  if (!v.value) {
+    return <p className="chart-note">Per-file results not available — {v.reason ?? "no data"}.</p>;
+  }
+  return (
+    <>
+      <p className="chart-note">As of {formatDate(v.generated_at)} · <code>{v.source}</code>{v.n != null && ` · n=${v.n}`}</p>
+      <table className="method-table">
+        <thead>
+          <tr>
+            <th>File</th><th>Date</th><th>Paraphrase</th><th>Coverage</th><th>Keyword gap</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {v.value.map((row) => (
+            <tr key={row.filename}>
+              <td><code>{row.filename}</code></td>
+              <td className="date-cell">{row.meeting_date}</td>
+              <td className="method-num-cell">{row.paraphrase_pct}%</td>
+              <td className="method-num-cell">{row.coverage_pct}%</td>
+              <td className="method-num-cell">{row.keyword_gap_pct}%</td>
+              <td><span className={statusChipClass(row.status)}>{row.status}</span></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </>
+  );
+}
+
 export function MethodPage() {
   const { data, loading, error } = useData<MethodData>(() => api.method());
 
@@ -161,6 +310,46 @@ export function MethodPage() {
             This corpus's outer boundary is what has been downloaded — no file records
             what the council published but the scraper never fetched.
           </p>
+        </div>
+
+        <div className="static-section">
+          <h3 className="static-h2">Validation</h3>
+          <p>
+            Every extracted document is scored against five metrics, each compared to
+            a target from the sample validation report's own METRICS block. The result
+            is one of three statuses, applied by <code>determine_status()</code> in{" "}
+            <code>src/validation/core.py</code>: <strong>FAIL</strong> if an entity carries
+            zero source quotes, or completeness is under 50%, or paraphrase is 80% or
+            higher with coverage under 2%; <strong>REVIEW</strong> if coverage is under
+            3%, paraphrase is 50% or higher, keyword gap is 40% or higher, or
+            completeness is under 80%; <strong>PASS</strong> otherwise. Agendas are
+            exempt from the coverage-based FAIL and REVIEW triggers — their
+            recommendation text naturally covers less of the document than full
+            minutes do.
+          </p>
+
+          <SplitTiles label="Full corpus" split={data.validation.full_corpus_split} />
+          <SplitTiles label="Stratified sample" split={data.validation.sample_split} />
+
+          <p className="chart-note">
+            These two splits are not averaged together, and are not the same
+            measurement: the full corpus covers all {data.validation.full_corpus_split.n ?? "—"}{" "}
+            validated documents, agendas included; the sample covers{" "}
+            {data.validation.sample_split.n ?? "—"} stratified documents, validated
+            separately on a different date (see the source freshness table above). A
+            FAIL is dominated by missing quotes — zero quotes, or fewer than half the
+            entities carrying one — not by wrong ones: the corpus-wide paraphrase rate
+            is {formatPct(data.validation.metrics.paraphrase_rate.full_corpus.value)}.
+          </p>
+
+          {METRIC_ORDER.map((key) => (
+            <MetricCard key={key} label={METRIC_LABELS[key]} metric={data.validation.metrics[key]} />
+          ))}
+
+          <SchemaFlags v={data.validation.schema_flags} />
+
+          <h4 className="method-split-label">Sample per-file results</h4>
+          <PerFileTable v={data.validation.sample_per_file} />
         </div>
 
         <div className="static-section">

@@ -679,10 +679,9 @@ export interface WatchData {
 // carrying its own source file and that file's generated_at, never a bare
 // number, so a stale figure is stale on its face. A missing or unparseable
 // source is `{value: null, reason: "source_missing", ...}` rather than a
-// zero. Only `coverage` (§1, Step 3) is typed in full below; `validation`
-// and `extraction_batch` stay loosely typed — only their `.generated_at` is
-// read yet, for the source-freshness list — until the steps that render
-// their own numbers give them full interfaces.
+// zero. `extraction_batch` stays loosely typed — only its `.generated_at`
+// is read yet, for the source-freshness list — until the step that renders
+// its own numbers gives it a full interface.
 export interface MethodSourcedValue<T> {
   value: T | null;
   source: string;
@@ -698,6 +697,46 @@ export interface MethodYearRow {
   minutes_in_db: number;
 }
 
+// Inventory agreement (docs/frontend/METHOD_PAGE_PLAN.md B.6) has no
+// aggregate in either summary file — only a per-entity-type, per-document
+// flag list in report.txt's sample-side detail. `reason` is
+// "no_aggregate_in_source" here, distinct from "source_missing" (the file
+// exists and is valid; it just doesn't compute this aggregate).
+export interface MethodInventoryAgreementFlag {
+  flagged_count: number;
+  docs: { filename: string; l1: string; extracted: string; ratio: string }[];
+}
+
+export interface MethodMetric {
+  definition: string | null;
+  target: string | null;
+  means_if_failed: string;
+  full_corpus: MethodSourcedValue<number>;
+  sample: MethodSourcedValue<number> & {
+    flagged_entity_types?: Record<string, MethodInventoryAgreementFlag>;
+  };
+}
+
+// Present: {pass, review, fail, errors, source, generated_at, n} (full
+// corpus) or {pass, review, fail, converged, source, generated_at, n}
+// (sample) — no `value` key at all. Missing/malformed source: `value: null`
+// plus `reason`, per MethodSourcedValue. Two genuinely different shapes for
+// the same field, both real (src/analysis/method.py), so this type is a
+// union rather than forcing one shape to fit the other.
+export type MethodValidationSplit =
+  | { pass: number; review: number; fail: number; errors?: number; converged?: boolean;
+      source: string; generated_at: string | null; n: number | null }
+  | MethodSourcedValue<null>;
+
+export interface MethodSamplePerFileRow {
+  filename: string;
+  meeting_date: string;
+  paraphrase_pct: number;
+  coverage_pct: number;
+  keyword_gap_pct: number;
+  status: "PASS" | "REVIEW" | "FAIL";
+}
+
 export interface MethodData {
   council: string;
   generated_at: string;
@@ -707,9 +746,19 @@ export interface MethodData {
     type_mix: MethodSourcedValue<Record<string, number>>;
     document_flags: MethodSourcedValue<Record<string, number>>;
   };
-  validation: { full_corpus_split: { generated_at: string | null };
-                sample_split: { generated_at: string | null };
-                [key: string]: unknown };
+  validation: {
+    metrics: {
+      quote_completeness: MethodMetric;
+      paraphrase_rate: MethodMetric;
+      coverage_ratio: MethodMetric;
+      inventory_agreement: MethodMetric;
+      keyword_gap_rate: MethodMetric;
+    };
+    full_corpus_split: MethodValidationSplit;
+    sample_split: MethodValidationSplit;
+    sample_per_file: MethodSourcedValue<MethodSamplePerFileRow[]>;
+    schema_flags: MethodSourcedValue<number> & { flagged_files?: string[] };
+  };
   extraction_batch: { generated_at: string | null; [key: string]: unknown };
 }
 

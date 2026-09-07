@@ -1851,3 +1851,80 @@ a:hover { text-decoration: underline; }
 .method-table-compact {
   max-width: 420px;
 }
+
+.method-split {
+  margin: 14px 0;
+}
+
+.method-split-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 18px 0 4px;
+}
+
+/* Reuses .sc-summary's tally-tile visuals (ScorecardPanel) with 3 columns
+   instead of 4 — same PASS/REVIEW/FAIL semantics as the scorecard's
+   supportive/neutral/critical, so a FAIL count reads exactly as prominently
+   as a critical finding does everywhere else on the site. */
+.method-split-summary {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.method-metric {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  margin: 14px 0;
+}
+
+.method-metric-label {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 6px;
+}
+
+.method-metric-def {
+  font-size: 0.85rem;
+  color: var(--text-lo);
+  line-height: 1.55;
+  margin: 0 0 4px;
+}
+
+.method-metric-values {
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  margin: 10px 0;
+}
+
+.method-metric-value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.method-metric-value-label {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.method-metric-value-num {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  font-variant-numeric: tabular-nums;
+}
+
+.method-metric-consequence {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 10px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-muted);
+}
