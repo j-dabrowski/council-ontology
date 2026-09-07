@@ -3044,6 +3044,28 @@ def cmd_draft(args) -> None:
     else:
         console.print(f"  [yellow]○[/yellow] watch.json skipped — {watch_feed_skip_reason}")
 
+    # Evidence chain for governance.officer_ratification (docs/frontend/
+    # EVIDENCE_CHAIN_PLAN.md Step 3): every quote behind both sides of every
+    # officer_divergence() pair, verbatim and classified into a match tier.
+    # It names councillors wherever a motion's quote does — the same
+    # exposure as divergence.json's own motion_text, just exhaustive rather
+    # than one quote per exception — so it goes through the same
+    # draft/review/publish gate as everything else. It lives outside the
+    # root-level *.json glob, so Editor_prompt.txt's "Read first" carries an
+    # explicit bullet for it (v0.10) rather than relying on the glob.
+    from src.analysis.evidence import evidence_for_officer_ratification
+    evidence_dir = output_dir / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    officer_ratification_evidence = evidence_for_officer_ratification(session, council_id)
+    (evidence_dir / "governance.officer_ratification.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": officer_ratification_evidence,
+    }, indent=2))
+    written.append("evidence/governance.officer_ratification")
+    console.print(
+        f"  [green]✓[/green] evidence/governance.officer_ratification.json "
+        f"({len(officer_ratification_evidence['pairs'])} pair(s))"
+    )
+
     file_hashes = {
         name: hashlib.sha256((output_dir / f"{name}.json").read_bytes()).hexdigest()
         for name in written
@@ -3420,14 +3442,18 @@ def cmd_publish(args) -> None:
     public_dir = Path("frontend/public/data")
     public_dir.mkdir(parents=True, exist_ok=True)
     for name in public_names:
-        shutil.copyfile(draft_dir / f"{name}.json", public_dir / f"{name}.json")
+        dest = public_dir / f"{name}.json"
+        dest.parent.mkdir(parents=True, exist_ok=True)  # name may nest (e.g. "evidence/<test_id>")
+        shutil.copyfile(draft_dir / f"{name}.json", dest)
 
     full_dir = None
     if full_names:
         full_dir = Path("data/published_full") / key / manifest.run_id
         full_dir.mkdir(parents=True, exist_ok=True)
         for name in full_names:
-            shutil.copyfile(draft_dir / f"{name}.json", full_dir / f"{name}.json")
+            dest = full_dir / f"{name}.json"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(draft_dir / f"{name}.json", dest)
 
     published_at = datetime.now(timezone.utc).isoformat()
     (public_dir / "manifest.json").write_text(_json.dumps({

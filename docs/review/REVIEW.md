@@ -173,3 +173,18 @@ covered by a scripted per-claim tier filter and re-verification
 (`project_watch_feed_to_public()`) that already ran over the whole corpus
 before this stage ever sees the draft. See that file's scope note for the
 full rationale rather than duplicating it here.
+
+## `evidence/governance.officer_ratification.json` widened Editor's scope (2026-09-07)
+
+`docs/frontend/EVIDENCE_CHAIN_PLAN.md` Step 3 added the first file this
+stage reads from outside the draft root: previously every snapshot lived
+flat at `data/draft/<council>/<run_id>/*.json`, the glob `editor/
+Editor_prompt.txt` reads directly, and a subdirectory needed no special
+handling because none existed. This one lives at `evidence/governance.
+officer_ratification.json` because it is exhaustive rather than one quote
+per exception — every verbatim minute quote behind both sides of all 203
+`officer_divergence()` pairs, not just the 6 departures `divergence.json`
+already carries — and the glob does not reach it. `editor/Editor_prompt.txt`
+v0.10 adds an explicit "Read first" bullet rather than widening the glob
+itself, the same choice v0.8 made for `local/`. Reviewed in full (203
+pairs, ~638KB) — well under `watch.json`'s size-driven bound.

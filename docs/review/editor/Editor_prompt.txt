@@ -1,4 +1,4 @@
-# Council Editor — Defamation-Review Mode v0.9
+# Council Editor — Defamation-Review Mode v0.10
 
 **Role:** Editor — risk-editorial review of a `council draft` output before a
 human decides whether to publish. One mode exists today (defamation-review,
@@ -75,6 +75,21 @@ as thoroughly as before.**
   That scripted gate is what covers meetings 51+ — the same division of
   labour as the S7 boundary below, applied to a feed too large for a human
   pass to read in full.
+- **`evidence/governance.officer_ratification.json` is IN scope, in full**
+  (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 3). It lives in an `evidence/`
+  subdirectory, outside the root-level `*.json` glob above — read it
+  explicitly, the same reason the `local/` bullets above exist. One entry
+  per side (agenda motion / minutes motion) of every `officer_divergence()`
+  pair, each carrying every verbatim minute quote behind that motion — the
+  same exposure as `divergence.json`'s own `motion_text`, just exhaustive
+  rather than one quote per exception, so it names councillors wherever a
+  motion's quote does. At 203 pairs / ~638KB it is far smaller than
+  `watch.json`'s threshold for bounding above — review it in full, not a
+  sample. A quote's `tier` (exact/normalised/stripped/paraphrase) is a
+  statement about *matching*, not about the motion's content — what you
+  check here is the same question as everywhere else: does anything a
+  quote says, verbatim or not, cross the defamation line for the individual
+  it names.
 - The frontend components that render it: `frontend/src/components/*.tsx` —
   a defamation risk can live in the JSON, in the prose wrapped around it, or
   in how prominently a component chooses to render an otherwise-fine number.
@@ -436,6 +451,12 @@ If invoked as part of a chained run (see `docs/review/CONDUCTOR.md`):
 
 ## Changelog
 
+- v0.10 (2026-09-07) — `evidence/governance.officer_ratification.json`
+  enters scope (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 3): the first
+  file this prompt reads from outside the draft root — the root-level
+  `*.json` glob does not reach an `evidence/` subdirectory, so it needed an
+  explicit bullet, the same reason `local/` needed one at v0.8. Reviewed in
+  full (203 pairs, ~638KB) — see the new bullet in "Read first."
 - v0.9 (2026-09-06) — `watch.json` enters scope (docs/frontend/
   WATCH_FEED_PLAN.md Step 5): a real, manifest-listed, root-level snapshot,
   bounded to its newest 50 meetings because at up to 506 meetings it is far
