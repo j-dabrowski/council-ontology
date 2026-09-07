@@ -380,3 +380,77 @@ def evidence_for_objection_responsiveness(session: Session, council_id: int, cap
             for label in order
         ]
     }
+
+
+def evidence_for_transparency(session: Session, council_id: int, cap: int = 30) -> dict:
+    """Evidence chain for transparency.confidential_share.
+
+    Selects the same population `src/cli.py`'s `cmd_draft` already exports
+    onto `transparency.json`'s per-year items lists: confidential tenders,
+    other_items, delegated_decisions and budget_items, capped to `cap` per
+    table per year (each UNION ALL branch's own `ROW_NUMBER()` restarts at
+    1 — the cap is not combined across tables, matching the existing
+    query's real behaviour whether or not its own comment says so), newest
+    first within a year — and resolves each to its full evidence chain.
+    Same query cli.py's own `_CONF_ITEMS_SQL` runs, kept identical here
+    rather than re-derived in the ORM, since it's a four-way UNION with a
+    window function per branch.
+
+    Deliberately carries only `entity_table`/`entity_id`/etc. (Part C), not
+    `transparency.json`'s business fields (description, amount, date) —
+    the frontend joins the two by (entity_table, entity_id).
+    """
+    from sqlalchemy import text
+
+    sql = text("""
+        SELECT year, entity_table, entity_id
+        FROM (
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER) year,
+                   'tenders' entity_table, t.id entity_id, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM tenders t JOIN meetings m ON t.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND t.is_confidential = 1
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'other_items', o.id, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM other_items o JOIN meetings m ON o.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND o.is_confidential = 1
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'delegated_decisions', dd.id, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM delegated_decisions dd JOIN meetings m ON dd.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND dd.is_confidential = 1
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'budget_items', b.id, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM budget_items b JOIN meetings m ON b.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes' AND b.is_confidential = 1
+        ) WHERE rn <= :cap
+        ORDER BY year, meeting_date DESC
+    """)
+    rows = session.execute(sql, {"cid": council_id, "cap": cap}).fetchall()
+
+    refs_by_year: dict[int, list[EntityRef]] = {}
+    for year, entity_table, entity_id in rows:
+        refs_by_year.setdefault(year, []).append((entity_table, entity_id, "confidential_item"))
+
+    all_refs: list[EntityRef] = [ref for refs in refs_by_year.values() for ref in refs]
+    entries = resolve_evidence(session, all_refs, council_id)
+    entries_by_ref = {(e["entity_table"], e["entity_id"]): e for e in entries}
+
+    return {
+        "years": [
+            {
+                "year": year,
+                "items": [entries_by_ref[(t, i)] for (t, i, _role) in refs_by_year[year]],
+            }
+            for year in sorted(refs_by_year)
+        ]
+    }

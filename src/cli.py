@@ -2336,6 +2336,10 @@ def _generate_snapshots(
             "amount": round(amount) if amount else None,
             "date": mdate if isinstance(mdate, str) else mdate.isoformat() if mdate else None,
             "quote": _conf_quote.get((table_name, eid)),
+            # Additive (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6) — lets
+            # the frontend join this item to its full evidence chain.
+            "entity_table": table_name,
+            "entity_id": eid,
         })
     for yr, items in _items_by_year.items():
         _year_item_counts[yr] = len(items)
@@ -2356,6 +2360,24 @@ def _generate_snapshots(
             for y in trans.years
         ],
     })
+
+    # Evidence chain for transparency.confidential_share (Phase 2,
+    # docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6) — every quote behind the
+    # same per-year, per-table capped confidential-item list transparency.json
+    # exports above, joined to it by (entity_table, entity_id) in the
+    # frontend rather than duplicated here.
+    from src.analysis.evidence import evidence_for_transparency
+    transparency_evidence = evidence_for_transparency(session, council_id)
+    evidence_dir = output_dir / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    (evidence_dir / "transparency.confidential_share.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": transparency_evidence,
+    }, indent=2))
+    written.append("evidence/transparency.confidential_share")
+    _n_conf_ev = sum(len(y["items"]) for y in transparency_evidence["years"])
+    console.print(
+        f"  [green]✓[/green] evidence/transparency.confidential_share.json ({_n_conf_ev} item(s))"
+    )
 
     # tenure: career councillors vs one-term blow-ins
     tenure = councillor_tenure(session, council_id)

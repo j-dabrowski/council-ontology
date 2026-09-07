@@ -17,11 +17,13 @@ from sqlalchemy.orm import sessionmaker
 from src.analysis.evidence import (
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
+    evidence_for_transparency,
     resolve_evidence,
 )
 from src.models import (
     ApplicationStatus,
     Base,
+    BudgetItem,
     CommunitySubmission,
     Council,
     ExtractionEvidence,
@@ -29,6 +31,7 @@ from src.models import (
     Motion,
     MotionOutcome,
     PlanningApplication,
+    Tender,
 )
 from src.storage.database import _enable_wal_and_fk
 
@@ -363,3 +366,63 @@ def test_objection_responsiveness_buckets_and_caps_by_objector_count(session):
     assert by_label["0"]["applications"][0]["tier"] == "no_evidence"
     assert by_label["1"]["applications"] == []
     assert by_label["2-4"]["applications"] == []
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_transparency()
+# ---------------------------------------------------------------------------
+
+def test_transparency_groups_confidential_items_by_year_across_tables(session):
+    council_id = _council(session)
+    m2022 = _meeting(session, council_id, date(2022, 6, 1),
+                      minutes_text="Road works contract awarded confidentially.")
+    m2023 = _meeting(session, council_id, date(2023, 6, 1), minutes_text="text")
+
+    tender = Tender(meeting_id=m2022, description="Road works contract", is_confidential=True)
+    session.add(tender)
+    session.flush()
+    tender_id = tender.id
+    _evidence(session, m2022, "tenders", tender_id, "Road works contract awarded confidentially.")
+
+    budget = BudgetItem(meeting_id=m2023, description="Reserve transfer", is_confidential=True)
+    session.add(budget)
+    session.flush()
+    # No ExtractionEvidence row for this one — must still appear, no_evidence.
+
+    # A non-confidential tender must never appear.
+    session.add(Tender(meeting_id=m2022, description="Public tender", is_confidential=False))
+    session.flush()
+
+    result = evidence_for_transparency(session, council_id)
+    by_year = {y["year"]: y for y in result["years"]}
+
+    assert set(by_year) == {2022, 2023}
+    assert len(by_year[2022]["items"]) == 1
+    item_2022 = by_year[2022]["items"][0]
+    assert item_2022["entity_table"] == "tenders"
+    assert item_2022["entity_id"] == tender_id
+    assert item_2022["quotes"][0]["tier"] == "exact"
+
+    assert len(by_year[2023]["items"]) == 1
+    assert by_year[2023]["items"][0]["entity_table"] == "budget_items"
+    assert by_year[2023]["items"][0]["tier"] == "no_evidence"
+
+
+def test_transparency_caps_per_table_per_year_not_combined(session):
+    """The cap is per (year, table) — each UNION ALL branch's own
+    ROW_NUMBER() restarts at 1, so 3 confidential tenders + 3 confidential
+    budget items in the same year, capped at 2, yields 2 + 2 = 4, not 2."""
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 6, 1), minutes_text="text")
+    for i in range(3):
+        session.add(Tender(meeting_id=meeting_id, description=f"Tender {i}", is_confidential=True))
+    for i in range(3):
+        session.add(BudgetItem(meeting_id=meeting_id, description=f"Budget {i}", is_confidential=True))
+    session.flush()
+
+    result = evidence_for_transparency(session, council_id, cap=2)
+    by_year = {y["year"]: y for y in result["years"]}
+    tables_seen = [item["entity_table"] for item in by_year[2022]["items"]]
+    assert len(by_year[2022]["items"]) == 4
+    assert tables_seen.count("tenders") == 2
+    assert tables_seen.count("budget_items") == 2

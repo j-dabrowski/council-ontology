@@ -267,6 +267,8 @@ export interface ConfidentialItem {
   amount: number | null;
   date: string | null;
   quote: string | null;
+  entity_table: string;   // "tenders" | "other_items" | "delegated_decisions" | "budget_items"
+  entity_id: number;
 }
 
 export interface TransparencyYear {
@@ -817,6 +819,18 @@ export interface ObjectionResponsivenessEvidence {
   buckets: ObjectionResponsivenessBucket[];
 }
 
+// Deliberately carries only EvidenceEntry (Part C), not transparency.json's
+// business fields (description, amount, date). Joined to it by
+// (entity_table, entity_id).
+export interface TransparencyEvidenceYear {
+  year: number;
+  items: EvidenceEntry[];
+}
+
+export interface TransparencyEvidence {
+  years: TransparencyEvidenceYear[];
+}
+
 export interface MethodData {
   council: string;
   generated_at: string;
@@ -878,4 +892,6 @@ export const api = {
     getSnapshot<OfficerRatificationEvidence>("evidence/governance.officer_ratification"),
   evidenceObjectionResponsiveness: () =>
     getSnapshot<ObjectionResponsivenessEvidence>("evidence/planning.objection_responsiveness"),
+  evidenceTransparency: () =>
+    getSnapshot<TransparencyEvidence>("evidence/transparency.confidential_share"),
 };

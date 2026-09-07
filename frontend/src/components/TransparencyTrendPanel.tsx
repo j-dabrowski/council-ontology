@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid, ReferenceArea, ReferenceLine,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, TransparencyYear, ConfidentialItem } from "../api";
+import { api, TransparencyYear, ConfidentialItem, type EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -35,7 +35,7 @@ const CustomTooltip = ({ active, payload, label }: {
   );
 };
 
-function ConfItemRow({ item }: { item: ConfidentialItem }) {
+function ConfItemRow({ item, evidence }: { item: ConfidentialItem; evidence?: EvidenceEntry }) {
   return (
     <div className="conf-item">
       <div className="conf-item-head">
@@ -48,13 +48,22 @@ function ConfItemRow({ item }: { item: ConfidentialItem }) {
       {item.description && (
         <p className="conf-desc">{item.description}</p>
       )}
-      <SourceQuote quote={item.quote ?? null} />
+      {/* Full evidence chain (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6)
+          when its snapshot loaded; the legacy single-quote join otherwise —
+          per-row, since transparency.json already lists every item whether
+          evidence loaded for it or not. */}
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={item.quote ?? null} />}
     </div>
   );
 }
 
 export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.transparency());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file (full-tier, so not every environment has it) leaves every
+  // ConfItemRow on its legacy single-quote join rather than blanking the
+  // panel.
+  const { data: evidence } = useData(() => api.evidenceTransparency());
   const [selected, setSelected] = useState<number | null>(null);
 
   if (loading) return <LoadingCard />;
@@ -72,6 +81,14 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
   }
 
   const selYear = selected != null ? data.years.find((y) => y.year === selected) : null;
+
+  // (entity_table, entity_id) is unique across years, so one flat map covers all of them.
+  const evidenceByRef = new Map<string, EvidenceEntry>();
+  if (evidence) {
+    for (const y of evidence.years) {
+      for (const e of y.items) evidenceByRef.set(`${e.entity_table}:${e.entity_id}`, e);
+    }
+  }
 
   return (
     <>
@@ -139,7 +156,10 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
         >
           {selYear.items.length === 0
             ? <p className="chart-note">No item details available for this year.</p>
-            : selYear.items.map((item, i) => <ConfItemRow key={i} item={item} />)
+            : selYear.items.map((item, i) => (
+                <ConfItemRow key={i} item={item}
+                  evidence={evidenceByRef.get(`${item.entity_table}:${item.entity_id}`)} />
+              ))
           }
         </DrillDown>
       )}
