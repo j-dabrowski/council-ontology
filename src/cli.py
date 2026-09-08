@@ -2822,6 +2822,21 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/governance.unanimity_trend.json ({_n_ut_ev} motion(s))"
     )
 
+    # Evidence chain for transparency.confidential_tender_size (Phase 2,
+    # tests.<generator> group) — Confidential vs Open tenders by amount.
+    from src.analysis.evidence import evidence_for_confidential_tender_size
+    conf_tender_size_evidence = evidence_for_confidential_tender_size(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "transparency.confidential_tender_size.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": conf_tender_size_evidence,
+    }, indent=2))
+    written.append("evidence/transparency.confidential_tender_size")
+    _n_cts_ev = sum(len(b["entries"]) for b in conf_tender_size_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/transparency.confidential_tender_size.json ({_n_cts_ev} tender(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

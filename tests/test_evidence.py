@@ -17,6 +17,7 @@ from sqlalchemy.orm import sessionmaker
 from src.analysis.evidence import (
     evidence_for_big_dollar_leniency,
     evidence_for_chair_capture,
+    evidence_for_confidential_tender_size,
     evidence_for_eoy_spending,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
@@ -791,3 +792,51 @@ def test_unanimity_trend_caps_contested_motions_per_year(session):
     result = evidence_for_unanimity_trend(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["2022"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_confidential_tender_size()
+# ---------------------------------------------------------------------------
+
+def test_confidential_tender_size_splits_by_flag_not_missingness(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1),
+                           minutes_text="Confidential tender awarded, value $500,000.")
+
+    conf = Tender(meeting_id=meeting_id, amount=500_000, is_confidential=True,
+                  description="Confidential tender")
+    session.add(conf)
+    session.flush()
+    _evidence(session, meeting_id, "tenders", conf.id,
+              "Confidential tender awarded, value $500,000.")
+
+    opn = Tender(meeting_id=meeting_id, amount=100_000, is_confidential=False,
+                 description="Open tender")
+    session.add(opn)
+
+    # A confidential tender with NO amount must be excluded entirely — the
+    # test's own docstring calls out amount-missingness as a trap to avoid,
+    # never a bucket to sort into.
+    session.add(Tender(meeting_id=meeting_id, amount=None, is_confidential=True,
+                        description="No amount recorded"))
+    session.flush()
+
+    result = evidence_for_confidential_tender_size(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    assert {e["entity_id"] for e in by_label["Confidential"]["entries"]} == {conf.id}
+    assert {e["entity_id"] for e in by_label["Open"]["entries"]} == {opn.id}
+    conf_entry = by_label["Confidential"]["entries"][0]
+    assert conf_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_confidential_tender_size_caps_per_bucket(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    for i in range(3):
+        session.add(Tender(meeting_id=meeting_id, amount=10_000 + i, is_confidential=True))
+    session.flush()
+
+    result = evidence_for_confidential_tender_size(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["Confidential"]["entries"]) == 2

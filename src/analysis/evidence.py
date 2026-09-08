@@ -897,3 +897,58 @@ def evidence_for_unanimity_trend(
             for year in plotted_years
         ]
     }
+
+
+def evidence_for_confidential_tender_size(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for transparency.confidential_tender_size.
+
+    Same population as tests._t_confidential_tender_size's own chart:
+    tenders on minutes meetings with a positive amount, split into
+    "Confidential" and "Open" buckets by the is_confidential flag (never
+    by award-field missingness — the aggregate test's own docstring calls
+    that out as a trap it deliberately avoids). Capped to `cap` per
+    bucket, newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import Meeting, Tender
+
+    rows = (
+        session.query(Tender.id, Tender.is_confidential, Meeting.meeting_date)
+        .join(Meeting, Tender.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Tender.amount.isnot(None),
+            Tender.amount > 0,
+        )
+        .all()
+    )
+
+    labels = ["Confidential", "Open"]
+    grouped: dict[str, list[tuple[int, object]]] = {label: [] for label in labels}
+    for tender_id, is_confidential, meeting_date in rows:
+        grouped["Confidential" if is_confidential else "Open"].append((tender_id, meeting_date))
+
+    ids_by_bucket: dict[str, list[int]] = {}
+    for label, items in grouped.items():
+        newest_first = sorted(items, key=lambda t: t[1], reverse=True)
+        ids_by_bucket[label] = [tender_id for tender_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("tenders", tender_id, "tender")
+        for ids in ids_by_bucket.values()
+        for tender_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in labels
+        ]
+    }
