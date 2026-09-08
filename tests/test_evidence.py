@@ -18,6 +18,7 @@ from src.analysis.evidence import (
     evidence_for_big_dollar_leniency,
     evidence_for_chair_capture,
     evidence_for_confidential_tender_size,
+    evidence_for_confidential_topics,
     evidence_for_eoy_spending,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
@@ -35,10 +36,12 @@ from src.models import (
     Council,
     Councillor,
     CouncillorTerm,
+    DelegatedDecision,
     ExtractionEvidence,
     Meeting,
     Motion,
     MotionOutcome,
+    OtherItem,
     PlanningApplication,
     Tender,
 )
@@ -840,3 +843,87 @@ def test_confidential_tender_size_caps_per_bucket(session):
     result = evidence_for_confidential_tender_size(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["Confidential"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_confidential_topics()
+# ---------------------------------------------------------------------------
+
+def test_confidential_topics_matches_multiple_themes_and_excludes_open_items(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1),
+                           minutes_text="Confidential tender for legal advice awarded.")
+
+    multi = Tender(meeting_id=meeting_id, is_confidential=True,
+                    description="Confidential tender for legal advice")
+    session.add(multi)
+    session.flush()
+    _evidence(session, meeting_id, "tenders", multi.id,
+              "Confidential tender for legal advice awarded.")
+
+    # Open item matching "Tender/procurement" — must never appear anywhere.
+    open_tender = Tender(meeting_id=meeting_id, is_confidential=False,
+                          description="Open tender for road works")
+    session.add(open_tender)
+    session.flush()
+
+    result = evidence_for_confidential_topics(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    # "Confidential tender for legal advice" matches Commercial-in-conf
+    # ("confidential"), Tender/procurement ("tender") and Legal/litigation
+    # ("legal") — appears in all three, not just one.
+    for label in ("Commercial-in-conf", "Tender/procurement", "Legal/litigation"):
+        ids = {e["entity_id"] for e in by_label[label]["entries"]}
+        assert multi.id in ids, f"{label} missing multi.id"
+
+    all_ids = {e["entity_id"] for b in result["buckets"] for e in b["entries"]}
+    assert open_tender.id not in all_ids
+
+
+def test_confidential_topics_excludes_nil_placeholder_heading(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    session.add(Tender(meeting_id=meeting_id, is_confidential=True,
+                        description="Confidential Reports - Nil"))
+    session.flush()
+
+    result = evidence_for_confidential_topics(session, council_id)
+    all_ids = {e["entity_id"] for b in result["buckets"] for e in b["entries"]}
+    assert all_ids == set()
+
+
+def test_confidential_topics_spans_three_tables(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+
+    other = OtherItem(meeting_id=meeting_id, is_confidential=True,
+                       item_type="Report", description="Staff recruitment matter")
+    session.add(other)
+    dd = DelegatedDecision(meeting_id=meeting_id, is_confidential=True,
+                            description="Land acquisition settlement")
+    session.add(dd)
+    session.flush()
+
+    result = evidence_for_confidential_topics(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    other_ids = {e["entity_id"] for e in by_label["Personnel/HR"]["entries"]
+                 if e["entity_table"] == "other_items"}
+    assert other.id in other_ids
+    dd_ids = {e["entity_id"] for e in by_label["Land/property deal"]["entries"]
+              if e["entity_table"] == "delegated_decisions"}
+    assert dd.id in dd_ids
+
+
+def test_confidential_topics_caps_per_theme(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    for i in range(3):
+        session.add(Tender(meeting_id=meeting_id, is_confidential=True,
+                            description=f"Confidential tender {i}"))
+    session.flush()
+
+    result = evidence_for_confidential_topics(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["Commercial-in-conf"]["entries"]) == 2

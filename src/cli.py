@@ -2837,6 +2837,22 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/transparency.confidential_tender_size.json ({_n_cts_ev} tender(s))"
     )
 
+    # Evidence chain for transparency.confidential_topics (Phase 2, tests.
+    # <generator> group) — six theme buckets, spans tenders/other_items/
+    # delegated_decisions; an item can appear in more than one bucket.
+    from src.analysis.evidence import evidence_for_confidential_topics
+    conf_topics_evidence = evidence_for_confidential_topics(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "transparency.confidential_topics.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": conf_topics_evidence,
+    }, indent=2))
+    written.append("evidence/transparency.confidential_topics")
+    _n_ct_ev = sum(len(b["entries"]) for b in conf_topics_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/transparency.confidential_topics.json ({_n_ct_ev} item(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

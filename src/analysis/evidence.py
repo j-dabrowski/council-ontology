@@ -18,6 +18,7 @@ written).
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -950,5 +951,90 @@ def evidence_for_confidential_tender_size(
         "buckets": [
             {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
             for label in labels
+        ]
+    }
+
+
+# Same six theme regexes as tests._t_confidential_topics (tests.py), kept
+# identical so a bucket here always matches its chart bar.
+_CONFIDENTIAL_TOPIC_THEMES = [
+    ("Commercial-in-conf", r"commercial|in-confidence|negotiation|proposal|confidential"),
+    ("Tender/procurement", r"tender|rft|contract|procure|quotation|supplier|panel"),
+    ("Personnel/HR",
+     r"\bceo\b|chief executive|staff|employee|personnel|recruit|remuneration|salary|human resource"),
+    ("Legal/litigation", r"legal|litigation|court|claim|settlement|solicitor|counsel|dispute"),
+    ("Land/property deal",
+     r"lease|land|acquisition|dispose|disposal|purchase of|sale of|easement|freehold|valuation"),
+    ("Named development",
+     r"development|structure plan|precinct|activity centre|rezoning|subdivision|building height"),
+]
+
+# Same "Confidential Reports - Nil" placeholder-heading exclusion as
+# tests.py's _is_nil_placeholder — these rows are an extraction artefact
+# (a standing agenda-section header), not a real decided item.
+_NIL_PLACEHOLDER_RE = re.compile(r"^confidential reports?(\s+section)?\s*-\s*nil\b", re.IGNORECASE)
+
+
+def evidence_for_confidential_topics(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for transparency.confidential_topics.
+
+    Same population and theme regexes as tests._t_confidential_topics's
+    own chart: descriptions across tenders/other_items/delegated_decisions
+    on minutes meetings, excluding the nil-placeholder heading. An item
+    can match more than one theme — the aggregate test's own regexes
+    aren't mutually exclusive — so an entity can legitimately appear in
+    more than one bucket here too, not a bug. Exports the *confidential*
+    items matching each theme (the chart's bar is %-confidential within
+    the theme, driven by these, not by the open items also in it), capped
+    to `cap` per theme, newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import DelegatedDecision, Meeting, OtherItem, Tender
+
+    rows: list[tuple[str, int, str, bool, object]] = []
+    for model, table_name in (
+        (Tender, "tenders"), (OtherItem, "other_items"), (DelegatedDecision, "delegated_decisions"),
+    ):
+        query_rows = (
+            session.query(model.id, model.description, model.is_confidential, Meeting.meeting_date)
+            .join(Meeting, model.meeting_id == Meeting.id)
+            .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+            .all()
+        )
+        for row_id, desc, is_confidential, meeting_date in query_rows:
+            if desc and _NIL_PLACEHOLDER_RE.match(desc.strip()):
+                continue
+            rows.append((table_name, row_id, (desc or "").lower(), bool(is_confidential), meeting_date))
+
+    ids_by_theme: dict[str, list[tuple[str, int]]] = {}
+    for name, pattern in _CONFIDENTIAL_TOPIC_THEMES:
+        rx = re.compile(pattern)
+        matching_confidential = [
+            (table_name, row_id, meeting_date)
+            for table_name, row_id, desc_lower, is_confidential, meeting_date in rows
+            if is_confidential and rx.search(desc_lower)
+        ]
+        newest_first = sorted(matching_confidential, key=lambda t: t[2], reverse=True)
+        ids_by_theme[name] = [(table_name, row_id) for table_name, row_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        (table_name, row_id, "confidential_topic_item")
+        for pairs in ids_by_theme.values()
+        for table_name, row_id in pairs
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_ref = {(e["entity_table"], e["entity_id"]): e for e in entries}
+
+    return {
+        "buckets": [
+            {
+                "label": name,
+                "entries": [entries_by_ref[(t, i)] for t, i in ids_by_theme[name]],
+            }
+            for name, _pattern in _CONFIDENTIAL_TOPIC_THEMES
         ]
     }
