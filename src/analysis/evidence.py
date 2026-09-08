@@ -1179,3 +1179,79 @@ def evidence_for_deputation_dissent(
             for label in labels
         ]
     }
+
+
+def evidence_for_freshman_effect(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.freshman_effect.
+
+    Same population as tests._t_freshman's own chart: votes on carried
+    motions (minutes), bucketed "First 12 months" / "Later service" by
+    days since that councillor's own first recorded vote. A vote has no
+    quote of its own (deliberately out of scope — a vote is never
+    independently extracted; its receipt is always the parent motion's
+    own text, the same design PowerPanel already uses), so this resolves
+    the motion behind each AGAINST vote — the dissent the chart is
+    actually about, not the much larger population of FOR votes that also
+    count toward the chart's denominator.
+
+    Deduplicated within a bucket: a motion two different freshmen
+    dissented on appears once in "First 12 months", not twice. A motion
+    CAN legitimately appear in both buckets, though — one that drew
+    dissent from both a first-year and a veteran councillor genuinely
+    belongs in both, not a duplicate. Capped to `cap` per bucket, newest
+    first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import Meeting, Motion, MotionOutcome, Vote, VoteChoice
+
+    rows = (
+        session.query(Vote.councillor_id, Vote.choice, Motion.id, Meeting.meeting_date)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.outcome == MotionOutcome.CARRIED,
+        )
+        .all()
+    )
+
+    first_seen: dict[int, object] = {}
+    for cid, _choice, _motion_id, meeting_date in rows:
+        if meeting_date and (cid not in first_seen or meeting_date < first_seen[cid]):
+            first_seen[cid] = meeting_date
+
+    labels = ["First 12 months", "Later service"]
+    grouped: dict[str, dict[int, object]] = {label: {} for label in labels}
+    for cid, choice, motion_id, meeting_date in rows:
+        if choice != VoteChoice.AGAINST:
+            continue
+        days = (meeting_date - first_seen[cid]).days if (meeting_date and cid in first_seen) else 9999
+        label = "First 12 months" if days <= 365 else "Later service"
+        existing = grouped[label].get(motion_id)
+        if existing is None or (meeting_date and meeting_date > existing):
+            grouped[label][motion_id] = meeting_date
+
+    ids_by_bucket: dict[str, list[int]] = {}
+    for label, motions in grouped.items():
+        newest_first = sorted(motions.items(), key=lambda kv: kv[1], reverse=True)
+        ids_by_bucket[label] = [motion_id for motion_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("motions", motion_id, "dissenting_vote_motion")
+        for ids in ids_by_bucket.values()
+        for motion_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in labels
+        ]
+    }

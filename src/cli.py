@@ -2884,6 +2884,22 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/engagement.deputation_dissent.json ({_n_dd_ev} motion(s))"
     )
 
+    # Evidence chain for governance.freshman_effect (Phase 2, tests.
+    # <generator> group) — the first of three votes-based tests. Votes have
+    # no quote of their own; each AGAINST vote resolves to its motion.
+    from src.analysis.evidence import evidence_for_freshman_effect
+    freshman_effect_evidence = evidence_for_freshman_effect(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "governance.freshman_effect.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": freshman_effect_evidence,
+    }, indent=2))
+    written.append("evidence/governance.freshman_effect")
+    _n_fe_ev = sum(len(b["entries"]) for b in freshman_effect_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/governance.freshman_effect.json ({_n_fe_ev} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

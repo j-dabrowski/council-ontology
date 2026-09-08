@@ -21,6 +21,7 @@ from src.analysis.evidence import (
     evidence_for_confidential_topics,
     evidence_for_deputation_dissent,
     evidence_for_eoy_spending,
+    evidence_for_freshman_effect,
     evidence_for_incumbency,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
@@ -47,6 +48,8 @@ from src.models import (
     OtherItem,
     PlanningApplication,
     Tender,
+    Vote,
+    VoteChoice,
 )
 from src.storage.database import _enable_wal_and_fk
 
@@ -1065,3 +1068,96 @@ def test_deputation_dissent_caps_per_bucket(session):
     result = evidence_for_deputation_dissent(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["Without"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_freshman_effect() — votes have no quote of their own; the
+# receipt is always the parent motion (same design PowerPanel already uses).
+# ---------------------------------------------------------------------------
+
+def _councillor(session, given, family) -> int:
+    p = Councillor(given_name=given, family_name=family, slug=f"{given}-{family}".lower())
+    session.add(p)
+    session.flush()
+    return p.id
+
+
+def test_freshman_effect_allows_the_same_motion_in_both_buckets(session):
+    council_id = _council(session)
+    freshman_id = _councillor(session, "New", "Member")
+    veteran_id = _councillor(session, "Old", "Hand")
+
+    # New Member's first-ever vote is this one -> days=0 -> "First 12 months".
+    meeting_shared = _meeting(session, council_id, date(2020, 1, 1),
+                               minutes_text="MOVED the budget be adopted. CARRIED (3/2).")
+    motion_shared = _motion(session, meeting_shared, title="Budget motion",
+                             outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_shared, councillor_id=freshman_id, choice=VoteChoice.AGAINST))
+    _evidence(session, meeting_shared, "motions", motion_shared, "MOVED the budget be adopted.")
+
+    # Old Hand's first vote was a decade earlier (FOR, on an unrelated
+    # motion) — this AGAINST vote is >365 days later -> "Later service".
+    meeting_old_first = _meeting(session, council_id, date(2010, 1, 1), minutes_text="text")
+    old_first_motion = _motion(session, meeting_old_first, title="Old first motion",
+                                item_number="99", outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=old_first_motion, councillor_id=veteran_id, choice=VoteChoice.FOR))
+    session.add(Vote(motion_id=motion_shared, councillor_id=veteran_id, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    result = evidence_for_freshman_effect(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    early_ids = {e["entity_id"] for e in by_label["First 12 months"]["entries"]}
+    late_ids = {e["entity_id"] for e in by_label["Later service"]["entries"]}
+    # Dissented on by both a freshman and a veteran -> genuinely in both.
+    assert motion_shared in early_ids
+    assert motion_shared in late_ids
+    # Only a FOR vote was ever cast on this one -> never appears anywhere.
+    assert old_first_motion not in early_ids | late_ids
+
+    early_entry = next(e for e in by_label["First 12 months"]["entries"] if e["entity_id"] == motion_shared)
+    assert early_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_freshman_effect_dedupes_same_motion_within_one_bucket(session):
+    council_id = _council(session)
+    cllr_a = _councillor(session, "A", "Freshman")
+    cllr_b = _councillor(session, "B", "Freshman")
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_a, choice=VoteChoice.AGAINST))
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_b, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    result = evidence_for_freshman_effect(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    early_ids = [e["entity_id"] for e in by_label["First 12 months"]["entries"]]
+    assert early_ids.count(motion_id) == 1
+
+
+def test_freshman_effect_ignores_for_votes(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "New", "Member")
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    result = evidence_for_freshman_effect(session, council_id)
+    all_ids = {e["entity_id"] for b in result["buckets"] for e in b["entries"]}
+    assert all_ids == set()
+
+
+def test_freshman_effect_caps_per_bucket(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "New", "Member")
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    for i in range(3):
+        motion_id = _motion(session, meeting_id, title=f"Motion {i}", item_number=str(i),
+                             outcome=MotionOutcome.CARRIED)
+        session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    result = evidence_for_freshman_effect(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["First 12 months"]["entries"]) == 2
