@@ -757,3 +757,76 @@ def evidence_for_big_dollar_leniency(
             for label in labels
         ]
     }
+
+
+def evidence_for_repeat_applicant(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for planning.repeat_applicant.
+
+    Same population and frequency-bucket split as tests._t_repeat_
+    applicant's own chart: decided (approved/refused) planning applications
+    with a named applicant, grouped by normalised (stripped, lower-cased)
+    applicant name into 1 / 2-3 / 4-6 / 7+ buckets by that name's total
+    count across the whole corpus. Capped to `cap` applications per bucket,
+    newest first — not per applicant, since the aggregate test doesn't
+    care which applicant an example comes from, only the frequency band.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import ApplicationStatus, Meeting, Motion, PlanningApplication
+
+    rows = (
+        session.query(PlanningApplication.id, PlanningApplication.applicant_name, Meeting.meeting_date)
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            PlanningApplication.applicant_name.isnot(None),
+            PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]),
+        )
+        .all()
+    )
+
+    freq: dict[str, list[tuple[int, object]]] = {}
+    for app_id, name, meeting_date in rows:
+        nm = (name or "").strip().lower()
+        if not nm:
+            continue
+        freq.setdefault(nm, []).append((app_id, meeting_date))
+
+    labels = ["1 app", "2–3", "4–6", "7+"]
+
+    def _bucket_for_count(c: int) -> str:
+        if c == 1:
+            return "1 app"
+        if c <= 3:
+            return "2–3"
+        if c <= 6:
+            return "4–6"
+        return "7+"
+
+    grouped: dict[str, list[tuple[int, object]]] = {label: [] for label in labels}
+    for items in freq.values():
+        grouped[_bucket_for_count(len(items))].extend(items)
+
+    ids_by_bucket: dict[str, list[int]] = {}
+    for label, items in grouped.items():
+        newest_first = sorted(items, key=lambda t: t[1], reverse=True)
+        ids_by_bucket[label] = [app_id for app_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("planning_applications", app_id, "application")
+        for ids in ids_by_bucket.values()
+        for app_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in labels
+        ]
+    }

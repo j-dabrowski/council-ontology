@@ -2791,6 +2791,21 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/planning.big_dollar_leniency.json ({_n_bd_ev} application(s))"
     )
 
+    # Evidence chain for planning.repeat_applicant (Phase 2,
+    # tests.<generator> group) — frequency buckets by applicant name.
+    from src.analysis.evidence import evidence_for_repeat_applicant
+    repeat_applicant_evidence = evidence_for_repeat_applicant(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "planning.repeat_applicant.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": repeat_applicant_evidence,
+    }, indent=2))
+    written.append("evidence/planning.repeat_applicant")
+    _n_ra_ev = sum(len(b["entries"]) for b in repeat_applicant_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/planning.repeat_applicant.json ({_n_ra_ev} application(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

@@ -20,6 +20,7 @@ from src.analysis.evidence import (
     evidence_for_eoy_spending,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
+    evidence_for_repeat_applicant,
     evidence_for_threshold_gaming,
     evidence_for_transparency,
     resolve_evidence,
@@ -686,3 +687,51 @@ def test_big_dollar_leniency_below_n20_floor_returns_empty_buckets(session):
 
     result = evidence_for_big_dollar_leniency(session, council_id)
     assert all(len(b["entries"]) == 0 for b in result["buckets"])
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_repeat_applicant()
+# ---------------------------------------------------------------------------
+
+def _applicant_apps(session, meeting_id, name, n, status=ApplicationStatus.APPROVED, start_item=1):
+    ids = []
+    for i in range(n):
+        motion_id = _motion(session, meeting_id, title=f"{name} app {i}", item_number=str(start_item + i))
+        app_id = _planning_app(session, motion_id, status=status)
+        session.query(PlanningApplication).filter_by(id=app_id).update({"applicant_name": name})
+        ids.append(app_id)
+    session.flush()
+    return ids
+
+
+def test_repeat_applicant_buckets_by_normalised_name_frequency(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+
+    # "Alice Smith" once, but with different case/whitespace — must count as
+    # the same applicant (normalised: strip + lowercase).
+    one = _applicant_apps(session, meeting_id, "Alice Smith", 1)
+    two_three = _applicant_apps(session, meeting_id, "  BOB jones ", 3, start_item=10)
+    four_six = _applicant_apps(session, meeting_id, "carol white", 5, start_item=20)
+    seven_plus = _applicant_apps(session, meeting_id, "Dave Black", 8, start_item=30)
+
+    result = evidence_for_repeat_applicant(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    assert {e["entity_id"] for e in by_label["1 app"]["entries"]} == set(one)
+    assert {e["entity_id"] for e in by_label["2–3"]["entries"]} == set(two_three)
+    assert {e["entity_id"] for e in by_label["4–6"]["entries"]} == set(four_six)
+    assert {e["entity_id"] for e in by_label["7+"]["entries"]} == set(seven_plus)
+
+
+def test_repeat_applicant_caps_per_bucket(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    # Two different one-shot applicants — both land in "1 app", exercising
+    # the cap across applicants within the same bucket, not within one name.
+    _applicant_apps(session, meeting_id, "Applicant A", 1, start_item=1)
+    _applicant_apps(session, meeting_id, "Applicant B", 1, start_item=2)
+
+    result = evidence_for_repeat_applicant(session, council_id, cap=1)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["1 app"]["entries"]) == 1
