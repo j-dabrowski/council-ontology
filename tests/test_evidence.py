@@ -19,6 +19,7 @@ from src.analysis.evidence import (
     evidence_for_chair_capture,
     evidence_for_confidential_tender_size,
     evidence_for_confidential_topics,
+    evidence_for_deputation_dissent,
     evidence_for_eoy_spending,
     evidence_for_incumbency,
     evidence_for_objection_responsiveness,
@@ -38,6 +39,7 @@ from src.models import (
     Councillor,
     CouncillorTerm,
     DelegatedDecision,
+    Deputation,
     ExtractionEvidence,
     Meeting,
     Motion,
@@ -1004,3 +1006,62 @@ def test_incumbency_caps_tenders_per_firm(session):
     result = evidence_for_incumbency(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["Acmeco"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_deputation_dissent() — both buckets show the same entity type
+# (contested motions), split by whether the motion's meeting had a
+# deputation at all, per the agreed design (avoids putting deputations on
+# one side and motions on the other for the same statistic).
+# ---------------------------------------------------------------------------
+
+def test_deputation_dissent_splits_contested_motions_by_meeting_deputation(session):
+    council_id = _council(session)
+    meeting_with = _meeting(session, council_id, date(2022, 1, 1),
+                             minutes_text="MOVED the levy be adopted. CARRIED (3/2).")
+    meeting_without = _meeting(session, council_id, date(2021, 1, 1), minutes_text="text")
+
+    session.add(Deputation(meeting_id=meeting_with, presenter_name="A Resident", topic="Traffic"))
+    session.flush()
+
+    contested_with = _motion(session, meeting_with, title="Levy motion", outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=contested_with).update({"votes_against": 2})
+    _evidence(session, meeting_with, "motions", contested_with,
+              "MOVED the levy be adopted.")
+
+    contested_without = _motion(session, meeting_without, title="Other motion",
+                                 outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=contested_without).update({"votes_against": 1})
+
+    # An uncontested carried motion in the deputation meeting — must be
+    # excluded from both buckets entirely, not just the "without" one.
+    uncontested = _motion(session, meeting_with, title="Uncontested", item_number="2",
+                           outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=uncontested).update({"votes_against": 0})
+    session.flush()
+
+    result = evidence_for_deputation_dissent(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    with_ids = {e["entity_id"] for e in by_label["With a deputation"]["entries"]}
+    without_ids = {e["entity_id"] for e in by_label["Without"]["entries"]}
+    assert with_ids == {contested_with}
+    assert without_ids == {contested_without}
+    assert uncontested not in with_ids | without_ids
+
+    with_entry = by_label["With a deputation"]["entries"][0]
+    assert with_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_deputation_dissent_caps_per_bucket(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    for i in range(3):
+        motion_id = _motion(session, meeting_id, title=f"Motion {i}", item_number=str(i),
+                             outcome=MotionOutcome.CARRIED)
+        session.query(Motion).filter_by(id=motion_id).update({"votes_against": 1})
+    session.flush()
+
+    result = evidence_for_deputation_dissent(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["Without"]["entries"]) == 2

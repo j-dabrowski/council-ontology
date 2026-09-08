@@ -2868,6 +2868,22 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/procurement.incumbency.json ({_n_inc_ev} tender(s))"
     )
 
+    # Evidence chain for engagement.deputation_dissent (Phase 2, tests.
+    # <generator> group) — contested motions on both sides, split by
+    # whether the motion's meeting had a deputation at all.
+    from src.analysis.evidence import evidence_for_deputation_dissent
+    deputation_dissent_evidence = evidence_for_deputation_dissent(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "engagement.deputation_dissent.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": deputation_dissent_evidence,
+    }, indent=2))
+    written.append("evidence/engagement.deputation_dissent")
+    _n_dd_ev = sum(len(b["entries"]) for b in deputation_dissent_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/engagement.deputation_dissent.json ({_n_dd_ev} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

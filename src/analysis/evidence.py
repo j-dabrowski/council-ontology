@@ -1108,3 +1108,74 @@ def evidence_for_incumbency(
             for label, ids in ids_by_bucket.items()
         ]
     }
+
+
+def evidence_for_deputation_dissent(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for engagement.deputation_dissent.
+
+    Same population as tests._t_deputation_dissent's own chart: carried
+    motions on minutes meetings, split into "With a deputation" / "Without"
+    by whether that motion's *meeting* had at least one deputation — not
+    whether the deputation relates to that motion at all. The aggregate
+    test is a whole-meeting classifier (its own verdict already concedes
+    the comparison is confounded by busy meetings having more of both),
+    so both buckets export the *contested* motions (votes_against > 0)
+    driving the %-contested figure — the same entity type on both sides,
+    rather than deputations on one side and motions on the other, which
+    would be two different kinds of evidence for the same statistic and
+    could read as more directly linked than the test actually claims.
+    Capped to `cap` per bucket, newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import Deputation, Meeting, Motion, MotionOutcome
+
+    dep_meetings = {
+        mid for (mid,) in
+        session.query(Deputation.meeting_id)
+        .join(Meeting, Deputation.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id)
+        .distinct()
+        .all()
+    }
+
+    rows = (
+        session.query(Motion.id, Motion.meeting_id, Meeting.meeting_date)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.outcome == MotionOutcome.CARRIED,
+            Motion.votes_against > 0,
+        )
+        .all()
+    )
+
+    labels = ["With a deputation", "Without"]
+    grouped: dict[str, list[tuple[int, object]]] = {label: [] for label in labels}
+    for motion_id, meeting_id, meeting_date in rows:
+        label = "With a deputation" if meeting_id in dep_meetings else "Without"
+        grouped[label].append((motion_id, meeting_date))
+
+    ids_by_bucket: dict[str, list[int]] = {}
+    for label, items in grouped.items():
+        newest_first = sorted(items, key=lambda t: t[1], reverse=True)
+        ids_by_bucket[label] = [motion_id for motion_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("motions", motion_id, "contested_motion")
+        for ids in ids_by_bucket.values()
+        for motion_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in labels
+        ]
+    }
