@@ -454,3 +454,84 @@ def evidence_for_transparency(session: Session, council_id: int, cap: int = 30) 
             for year in sorted(refs_by_year)
         ]
     }
+
+
+def evidence_for_chair_capture(session: Session, council_id: int, cap: int = 30) -> dict:
+    """Evidence chain for governance.chair_capture.
+
+    Selects the same population `src/cli.py`'s `cmd_draft` already exports
+    onto `mayoral.json`'s per-mayor motion lists: carried motions that drew
+    at least one AGAINST vote, moved by someone who held the 'Mayor' role
+    at the time, capped to `cap` per mayor, newest first — and resolves
+    each to its full evidence chain.
+
+    Deliberately carries only `entity_table`/`entity_id`/etc. (Part C), not
+    `mayoral.json`'s business fields (title, date, votes_for/against) —
+    the frontend joins the two by `entity_id`. A mayor with zero qualifying
+    motions is absent from `mayors` entirely (this file is entity-driven,
+    unlike `mayoral.json`'s own per-mayor list, which enumerates every
+    mayor from its own aggregate query) — harmless, since the frontend
+    joins by entity_id across all mayors, never by mayor name.
+    """
+    from datetime import date as _date
+
+    from src.models import Councillor, CouncillorTerm, Meeting, Motion, MotionOutcome
+
+    mayor_terms = (
+        session.query(
+            CouncillorTerm.councillor_id,
+            CouncillorTerm.term_start,
+            CouncillorTerm.term_end,
+            Councillor.given_name,
+            Councillor.family_name,
+        )
+        .join(Councillor, CouncillorTerm.councillor_id == Councillor.id)
+        .filter(CouncillorTerm.role == "Mayor")
+        .all()
+    )
+    mayor_name = {mc: f"{gn or ''} {fn or ''}".strip() for mc, _ts, _te, gn, fn in mayor_terms}
+
+    def _was_mayor(cid: int, d: _date) -> bool:
+        return any(
+            mc == cid and (ts is None or ts <= d) and (te is None or d <= te)
+            for mc, ts, te, *_ in mayor_terms
+        )
+
+    contested_rows = (
+        session.query(Motion.id, Motion.moved_by_id, Meeting.meeting_date)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Motion.moved_by_id.in_(list(mayor_name.keys())),
+            Motion.outcome == MotionOutcome.CARRIED,
+            Motion.votes_against > 0,
+            Meeting.meeting_date.isnot(None),
+        )
+        .order_by(Meeting.meeting_date.desc())
+        .all()
+    )
+
+    ids_by_mayor: dict[str, list[int]] = {}
+    for motion_id, mover_id, meeting_date in contested_rows:
+        md = meeting_date if isinstance(meeting_date, _date) else _date.fromisoformat(str(meeting_date))
+        if not _was_mayor(mover_id, md):
+            continue
+        name = mayor_name[mover_id]
+        ids = ids_by_mayor.setdefault(name, [])
+        if len(ids) < cap:
+            ids.append(motion_id)
+
+    refs: list[EntityRef] = [
+        ("motions", motion_id, "mayoral_motion")
+        for ids in ids_by_mayor.values()
+        for motion_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "mayors": [
+            {"name": name, "motions": [entries_by_id[i] for i in ids]}
+            for name, ids in ids_by_mayor.items()
+        ]
+    }

@@ -312,6 +312,7 @@ _EVIDENCE_BUILDERS = {
     "officer_divergence": "evidence_for_officer_ratification",
     "objection_dose_response": "evidence_for_objection_responsiveness",
     "transparency_by_year": "evidence_for_transparency",
+    "mayoral_agenda_setting": "evidence_for_chair_capture",
 }
 _EVIDENCE_SUPPORTED_FILTERS: dict[str, set[str]] = {
     # evidence_query -> filters its underlying query actually supports.

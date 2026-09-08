@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, LabelList, ReferenceLine,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, MayorContest, MayoralMotion } from "../api";
+import { api, MayorContest, MayoralMotion, type EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
@@ -26,7 +26,7 @@ const MayorTooltip = ({ active, payload }: {
   );
 };
 
-function MotionRow({ m }: { m: MayoralMotion }) {
+function MotionRow({ m, evidence }: { m: MayoralMotion; evidence?: EvidenceEntry }) {
   return (
     <div className="mayor-motion">
       <div className="mayor-motion-head">
@@ -36,13 +36,20 @@ function MotionRow({ m }: { m: MayoralMotion }) {
         </span>
       </div>
       {m.title && <p className="mayor-motion-title">{m.title}</p>}
-      <SourceQuote quote={m.quote ?? null} />
+      {/* Full evidence chain (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6)
+          when its snapshot loaded; the legacy single-quote join otherwise. */}
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={m.quote ?? null} />}
     </div>
   );
 }
 
 export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.mayoral());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file (full-tier, so not every environment has it) leaves every
+  // MotionRow on its legacy single-quote join rather than blanking the
+  // panel.
+  const { data: evidence } = useData(() => api.evidenceChairCapture());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
@@ -65,6 +72,14 @@ export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
   const selMayor = selected != null
     ? data.per_mayor.find((m) => m.name === selected)
     : null;
+
+  // entity_id is unique across mayors, so one flat map covers all of them.
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const mayor of evidence.mayors) {
+      for (const e of mayor.motions) evidenceById.set(e.entity_id, e);
+    }
+  }
 
   return (
     <>
@@ -130,7 +145,9 @@ export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
         >
           {selMayor.motions.length === 0
             ? <p className="chart-note">No motion details available.</p>
-            : selMayor.motions.map((m, i) => <MotionRow key={i} m={m} />)
+            : selMayor.motions.map((m, i) => (
+                <MotionRow key={i} m={m} evidence={evidenceById.get(m.entity_id)} />
+              ))
           }
         </DrillDown>
       )}

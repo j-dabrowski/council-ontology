@@ -310,6 +310,7 @@ export interface MayoralMotion {
   votes_for: number | null;
   votes_against: number | null;
   quote: string | null;
+  entity_id: number;
 }
 
 export interface MayorContest {
@@ -831,6 +832,18 @@ export interface TransparencyEvidence {
   years: TransparencyEvidenceYear[];
 }
 
+// Deliberately carries only EvidenceEntry (Part C), not mayoral.json's
+// business fields (title, date, votes_for/against). Joined to it by
+// entity_id — a mayor with zero qualifying motions is simply absent here.
+export interface ChairCaptureMayor {
+  name: string;
+  motions: EvidenceEntry[];
+}
+
+export interface ChairCaptureEvidence {
+  mayors: ChairCaptureMayor[];
+}
+
 export interface MethodData {
   council: string;
   generated_at: string;
@@ -894,4 +907,6 @@ export const api = {
     getSnapshot<ObjectionResponsivenessEvidence>("evidence/planning.objection_responsiveness"),
   evidenceTransparency: () =>
     getSnapshot<TransparencyEvidence>("evidence/transparency.confidential_share"),
+  evidenceChairCapture: () =>
+    getSnapshot<ChairCaptureEvidence>("evidence/governance.chair_capture"),
 };

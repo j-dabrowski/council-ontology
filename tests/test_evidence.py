@@ -15,6 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.analysis.evidence import (
+    evidence_for_chair_capture,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
     evidence_for_transparency,
@@ -26,6 +27,8 @@ from src.models import (
     BudgetItem,
     CommunitySubmission,
     Council,
+    Councillor,
+    CouncillorTerm,
     ExtractionEvidence,
     Meeting,
     Motion,
@@ -426,3 +429,79 @@ def test_transparency_caps_per_table_per_year_not_combined(session):
     assert len(by_year[2022]["items"]) == 4
     assert tables_seen.count("tenders") == 2
     assert tables_seen.count("budget_items") == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_chair_capture()
+# ---------------------------------------------------------------------------
+
+def _mayor(session, council_id, given, family, term_start=None, term_end=None) -> int:
+    c = Councillor(given_name=given, family_name=family, slug=f"{given}-{family}".lower())
+    session.add(c)
+    session.flush()
+    session.add(CouncillorTerm(
+        councillor_id=c.id, council_id=council_id, role="Mayor",
+        term_start=term_start, term_end=term_end,
+    ))
+    session.flush()
+    return c.id
+
+
+def test_chair_capture_caps_per_mayor_and_excludes_non_mayor_movers(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2024, 1, 1),
+                           minutes_text="MOVED that the budget be adopted. CARRIED (3/1).")
+    mayor_id = _mayor(session, council_id, "Jane", "Shannon",
+                       term_start=date(2020, 1, 1), term_end=None)
+    backbench = Councillor(given_name="Back", family_name="Bencher", slug="back-bencher")
+    session.add(backbench)
+    session.flush()
+    backbench_id = backbench.id  # no CouncillorTerm at all — never a mayor
+
+    mayor_motion_id = _motion(
+        session, meeting_id, title="Budget motion", item_number="1",
+        outcome=MotionOutcome.CARRIED,
+    )
+    session.query(Motion).filter_by(id=mayor_motion_id).update({
+        "moved_by_id": mayor_id, "votes_against": 1,
+    })
+    other_motion_id = _motion(
+        session, meeting_id, title="Backbench motion", item_number="2",
+        outcome=MotionOutcome.CARRIED,
+    )
+    session.query(Motion).filter_by(id=other_motion_id).update({
+        "moved_by_id": backbench_id, "votes_against": 1,
+    })
+    session.flush()
+    _evidence(session, meeting_id, "motions", mayor_motion_id,
+              "MOVED that the budget be adopted.")
+
+    result = evidence_for_chair_capture(session, council_id)
+    assert len(result["mayors"]) == 1
+    m = result["mayors"][0]
+    assert m["name"] == "Jane Shannon"
+    assert len(m["motions"]) == 1  # the backbench-moved motion never enters any mayor's list
+    assert m["motions"][0]["entity_id"] == mayor_motion_id
+    assert m["motions"][0]["quotes"][0]["tier"] == "exact"
+
+
+def test_chair_capture_excludes_motions_moved_before_the_term_started(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2010, 1, 1), minutes_text="text")
+    mayor_id = _mayor(session, council_id, "Old", "Mayor",
+                       term_start=date(2020, 1, 1), term_end=None)  # term starts after this meeting
+
+    motion_id = _motion(session, meeting_id, title="Pre-term motion", outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_id).update({
+        "moved_by_id": mayor_id, "votes_against": 1,
+    })
+    session.flush()
+
+    result = evidence_for_chair_capture(session, council_id)
+    # A mayor with zero qualifying motions doesn't appear at all — unlike
+    # mayoral.json's own per_mayor list (which enumerates every mayor via
+    # its own aggregate query and defaults an absent drill-down to []),
+    # this file is entity-driven: nothing to resolve means no entry. The
+    # frontend joins by entity_id across all mayors, not by mayor name, so
+    # this doesn't affect anything the panel actually looks up.
+    assert result["mayors"] == []

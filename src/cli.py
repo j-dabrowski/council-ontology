@@ -2462,10 +2462,14 @@ def _generate_snapshots(
             _EE3.quote_text.isnot(None),
         ):
             _mayoral_quote.setdefault(mid, qt)
-    # attach quotes and strip internal id
+    # attach quotes (kept the internal id as entity_id, not stripped — lets
+    # the frontend join to the full evidence chain, docs/frontend/
+    # EVIDENCE_CHAIN_PLAN.md Step 6; additive, no existing field changed)
     for name, motions in _motions_by_mayor.items():
         for m in motions:
-            m["quote"] = _mayoral_quote.get(m.pop("id"))
+            eid = m.pop("id")
+            m["entity_id"] = eid
+            m["quote"] = _mayoral_quote.get(eid)
     _write("mayoral", {
         "mayor_moved": mayoral.mayor_moved,
         "mayor_carried_pct": mayoral.mayor_carried_pct,
@@ -2484,6 +2488,23 @@ def _generate_snapshots(
             for p in mayoral.per_mayor
         ],
     })
+
+    # Evidence chain for governance.chair_capture (Phase 2, docs/frontend/
+    # EVIDENCE_CHAIN_PLAN.md Step 6) — every quote behind the same
+    # per-mayor capped contested-motion list mayoral.json exports above,
+    # joined to it by entity_id in the frontend rather than duplicated here.
+    from src.analysis.evidence import evidence_for_chair_capture
+    chair_capture_evidence = evidence_for_chair_capture(session, council_id)
+    evidence_dir = output_dir / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    (evidence_dir / "governance.chair_capture.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": chair_capture_evidence,
+    }, indent=2))
+    written.append("evidence/governance.chair_capture")
+    _n_mayor_ev = sum(len(m["motions"]) for m in chair_capture_evidence["mayors"])
+    console.print(
+        f"  [green]✓[/green] evidence/governance.chair_capture.json ({_n_mayor_ev} motion(s))"
+    )
 
     # voting power: who wins on contested decisions, and whose dissent prevails?
     power = voting_power(session, council_id)
