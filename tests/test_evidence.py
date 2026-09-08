@@ -554,3 +554,38 @@ def test_threshold_gaming_caps_per_bin(session):
     result = evidence_for_threshold_gaming(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["200–250k"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# resolve_evidence(): shared source_cache across calls (the fix for
+# `council draft` re-parsing the same meeting's PDF once per test)
+# ---------------------------------------------------------------------------
+
+def test_shared_source_cache_parses_a_meeting_once_across_two_calls(session, monkeypatch):
+    import src.analysis.evidence as evidence_mod
+
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2024, 1, 1), minutes_text="MOVED that X. CARRIED.")
+    m1 = _motion(session, meeting_id, title="One")
+    m2 = _motion(session, meeting_id, title="Two", item_number="2")
+    _evidence(session, meeting_id, "motions", m1, "MOVED that X.")
+    _evidence(session, meeting_id, "motions", m2, "MOVED that X.")
+
+    calls = {"n": 0}
+    real_build = evidence_mod._build_meeting_source
+
+    def counting_build(meeting):
+        calls["n"] += 1
+        return real_build(meeting)
+
+    monkeypatch.setattr(evidence_mod, "_build_meeting_source", counting_build)
+
+    cache: dict = {}
+    resolve_evidence(session, [("motions", m1, "minutes_motion")], council_id, cache)
+    resolve_evidence(session, [("motions", m2, "minutes_motion")], council_id, cache)
+    assert calls["n"] == 1  # same meeting, second call reused the shared cache
+
+    calls["n"] = 0
+    resolve_evidence(session, [("motions", m1, "minutes_motion")], council_id)
+    resolve_evidence(session, [("motions", m2, "minutes_motion")], council_id)
+    assert calls["n"] == 2  # no cache passed — each call builds its own, as before

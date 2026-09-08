@@ -1901,7 +1901,8 @@ def _tier_of(name: str, battery: list | None = None) -> str:
 
 
 def _generate_snapshots(
-    session, council_id: int, output_dir: Path, generated_at: str
+    session, council_id: int, output_dir: Path, generated_at: str,
+    evidence_source_cache: dict,
 ) -> tuple[list[str], list]:
     """Run the full analysis + standard test battery and write one JSON file
     per dashboard snapshot into output_dir. Returns the list of snapshot
@@ -1912,6 +1913,13 @@ def _generate_snapshots(
     vs. a public directory) and no git/gate logic. Called by `council draft`;
     `council publish` never calls this directly (see src/publish_gate.py) —
     it only ever copies bytes a human has already reviewed.
+
+    `evidence_source_cache`: one dict, created by `cmd_draft` and passed to
+    every `evidence_for_*()` call in this function *and* to the
+    governance.officer_ratification one `cmd_draft` makes after this
+    function returns — so a meeting whose PDF several tests' entities share
+    gets parsed once for the whole draft run, not once per test
+    (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6).
     """
     import json as _json
     from dataclasses import asdict
@@ -2257,7 +2265,9 @@ def _generate_snapshots(
     from src.analysis.evidence import evidence_for_objection_responsiveness
     evidence_dir = output_dir / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
-    objection_responsiveness_evidence = evidence_for_objection_responsiveness(session, council_id)
+    objection_responsiveness_evidence = evidence_for_objection_responsiveness(
+        session, council_id, source_cache=evidence_source_cache,
+    )
     (evidence_dir / "planning.objection_responsiveness.json").write_text(_json.dumps({
         "published_at": generated_at, "data": objection_responsiveness_evidence,
     }, indent=2))
@@ -2367,7 +2377,9 @@ def _generate_snapshots(
     # exports above, joined to it by (entity_table, entity_id) in the
     # frontend rather than duplicated here.
     from src.analysis.evidence import evidence_for_transparency
-    transparency_evidence = evidence_for_transparency(session, council_id)
+    transparency_evidence = evidence_for_transparency(
+        session, council_id, source_cache=evidence_source_cache,
+    )
     evidence_dir = output_dir / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
     (evidence_dir / "transparency.confidential_share.json").write_text(_json.dumps({
@@ -2494,7 +2506,9 @@ def _generate_snapshots(
     # per-mayor capped contested-motion list mayoral.json exports above,
     # joined to it by entity_id in the frontend rather than duplicated here.
     from src.analysis.evidence import evidence_for_chair_capture
-    chair_capture_evidence = evidence_for_chair_capture(session, council_id)
+    chair_capture_evidence = evidence_for_chair_capture(
+        session, council_id, source_cache=evidence_source_cache,
+    )
     evidence_dir = output_dir / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
     (evidence_dir / "governance.chair_capture.json").write_text(_json.dumps({
@@ -2732,7 +2746,9 @@ def _generate_snapshots(
     # {"buckets": [{"label", "entries"}]} shape shared by every test in this
     # group, read by BatteryTestBody's one drill-down mechanism.
     from src.analysis.evidence import evidence_for_threshold_gaming
-    threshold_gaming_evidence = evidence_for_threshold_gaming(session, council_id)
+    threshold_gaming_evidence = evidence_for_threshold_gaming(
+        session, council_id, source_cache=evidence_source_cache,
+    )
     evidence_dir = output_dir / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
     (evidence_dir / "procurement.threshold_gaming.json").write_text(_json.dumps({
@@ -2945,7 +2961,14 @@ def cmd_draft(args) -> None:
         sys.exit(1)
     council_id = council_obj.id
 
-    written, battery = _generate_snapshots(session, council_id, output_dir, generated_at)
+    # Shared across every evidence_for_*() call this run makes (inside
+    # _generate_snapshots and the officer_ratification one below it) so a
+    # meeting several tests' entities share gets its PDF parsed once, not
+    # once per test (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6).
+    evidence_source_cache: dict = {}
+    written, battery = _generate_snapshots(
+        session, council_id, output_dir, generated_at, evidence_source_cache,
+    )
 
     # Local-review-only: a single-meeting digest for the latest minutes
     # meeting, computed (not yet written — see below) while the session is
@@ -3144,7 +3167,9 @@ def cmd_draft(args) -> None:
     from src.analysis.evidence import evidence_for_officer_ratification
     evidence_dir = output_dir / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
-    officer_ratification_evidence = evidence_for_officer_ratification(session, council_id)
+    officer_ratification_evidence = evidence_for_officer_ratification(
+        session, council_id, source_cache=evidence_source_cache,
+    )
     (evidence_dir / "governance.officer_ratification.json").write_text(_json.dumps({
         "published_at": generated_at, "data": officer_ratification_evidence,
     }, indent=2))

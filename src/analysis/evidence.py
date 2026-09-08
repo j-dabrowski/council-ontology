@@ -143,6 +143,7 @@ def resolve_evidence(
     session: Session,
     entity_refs: list[EntityRef],
     council_id: int,
+    source_cache: dict[int, _MeetingSource] | None = None,
 ) -> list[dict]:
     """Resolve Part C evidence entries for a list of (entity_table, entity_id, role).
 
@@ -151,6 +152,13 @@ def resolve_evidence(
     returned exactly as stored, never trimmed or tidied (B.6). Tiers are
     computed here, at request time, over the four-tier vocabulary of B.2 —
     never read from `char_offset` (A.2).
+
+    `source_cache`, when passed in, is read from and written to in place —
+    a meeting's PDF is only ever opened and parsed once across however many
+    `resolve_evidence()` calls share the same dict, which matters once
+    `src/cli.py`'s `cmd_draft` calls this once per test in the same run and
+    many tests' entities share meetings. Omit it (the default) for a single
+    self-contained call — a fresh, call-scoped cache, as before.
     """
     if not entity_refs:
         return []
@@ -206,7 +214,8 @@ def resolve_evidence(
         else {}
     )
 
-    source_cache: dict[int, _MeetingSource] = {}
+    if source_cache is None:
+        source_cache = {}
 
     def _source_for(meeting_id: int) -> _MeetingSource:
         if meeting_id not in source_cache:
@@ -265,7 +274,8 @@ def resolve_evidence(
 
 
 def evidence_for_officer_ratification(
-    session: Session, council_id: int, year: int | None = None
+    session: Session, council_id: int, year: int | None = None,
+    source_cache: dict[int, _MeetingSource] | None = None,
 ) -> dict:
     """Evidence chain for governance.officer_ratification: both sides — the
     agenda motion and the matched minutes motion — of every
@@ -274,6 +284,10 @@ def evidence_for_officer_ratification(
     `year`, when given, narrows to that one year (officer_divergence()'s
     own from_year/to_year, both set to it) — the only filter this test's
     underlying query supports (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 2).
+
+    `source_cache`: see resolve_evidence() — pass one shared dict across
+    every evidence_for_*() call in the same `cmd_draft` run so an overlapping
+    meeting's PDF is parsed once, not once per test.
     """
     pairs = officer_divergence(session, council_id, from_year=year, to_year=year)
 
@@ -284,7 +298,7 @@ def evidence_for_officer_ratification(
         if pair.minutes_motion_id is not None:
             refs.append(("motions", pair.minutes_motion_id, "minutes_motion"))
 
-    entries = resolve_evidence(session, refs, council_id)
+    entries = resolve_evidence(session, refs, council_id, source_cache)
     entries_by_ref: dict[tuple[str, int], dict] = {
         (e["entity_table"], e["entity_id"]): e for e in entries
     }
@@ -312,7 +326,10 @@ def evidence_for_officer_ratification(
     return {"pairs": pair_entries}
 
 
-def evidence_for_objection_responsiveness(session: Session, council_id: int, cap: int = 30) -> dict:
+def evidence_for_objection_responsiveness(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
     """Evidence chain for planning.objection_responsiveness.
 
     Selects the same population `src/cli.py`'s `cmd_draft` already exports
@@ -324,6 +341,8 @@ def evidence_for_objection_responsiveness(session: Session, council_id: int, cap
     `dose.json`'s business fields (reference, address, description,
     outcome) — the frontend joins the two by `entity_id` rather than this
     file duplicating them.
+
+    `source_cache`: see resolve_evidence().
     """
     from sqlalchemy import func
 
@@ -371,7 +390,7 @@ def evidence_for_objection_responsiveness(session: Session, council_id: int, cap
         for ids in ids_by_bucket.values()
         for app_id in ids
     ]
-    entries = resolve_evidence(session, refs, council_id)
+    entries = resolve_evidence(session, refs, council_id, source_cache)
     entries_by_id = {e["entity_id"]: e for e in entries}
 
     return {
@@ -382,7 +401,10 @@ def evidence_for_objection_responsiveness(session: Session, council_id: int, cap
     }
 
 
-def evidence_for_transparency(session: Session, council_id: int, cap: int = 30) -> dict:
+def evidence_for_transparency(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
     """Evidence chain for transparency.confidential_share.
 
     Selects the same population `src/cli.py`'s `cmd_draft` already exports
@@ -399,6 +421,8 @@ def evidence_for_transparency(session: Session, council_id: int, cap: int = 30) 
     Deliberately carries only `entity_table`/`entity_id`/etc. (Part C), not
     `transparency.json`'s business fields (description, amount, date) —
     the frontend joins the two by (entity_table, entity_id).
+
+    `source_cache`: see resolve_evidence().
     """
     from sqlalchemy import text
 
@@ -442,7 +466,7 @@ def evidence_for_transparency(session: Session, council_id: int, cap: int = 30) 
         refs_by_year.setdefault(year, []).append((entity_table, entity_id, "confidential_item"))
 
     all_refs: list[EntityRef] = [ref for refs in refs_by_year.values() for ref in refs]
-    entries = resolve_evidence(session, all_refs, council_id)
+    entries = resolve_evidence(session, all_refs, council_id, source_cache)
     entries_by_ref = {(e["entity_table"], e["entity_id"]): e for e in entries}
 
     return {
@@ -456,7 +480,10 @@ def evidence_for_transparency(session: Session, council_id: int, cap: int = 30) 
     }
 
 
-def evidence_for_chair_capture(session: Session, council_id: int, cap: int = 30) -> dict:
+def evidence_for_chair_capture(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
     """Evidence chain for governance.chair_capture.
 
     Selects the same population `src/cli.py`'s `cmd_draft` already exports
@@ -472,6 +499,8 @@ def evidence_for_chair_capture(session: Session, council_id: int, cap: int = 30)
     unlike `mayoral.json`'s own per-mayor list, which enumerates every
     mayor from its own aggregate query) — harmless, since the frontend
     joins by entity_id across all mayors, never by mayor name.
+
+    `source_cache`: see resolve_evidence().
     """
     from datetime import date as _date
 
@@ -526,7 +555,7 @@ def evidence_for_chair_capture(session: Session, council_id: int, cap: int = 30)
         for ids in ids_by_mayor.values()
         for motion_id in ids
     ]
-    entries = resolve_evidence(session, refs, council_id)
+    entries = resolve_evidence(session, refs, council_id, source_cache)
     entries_by_id = {e["entity_id"]: e for e in entries}
 
     return {
@@ -552,13 +581,18 @@ def evidence_for_chair_capture(session: Session, council_id: int, cap: int = 30)
 # their own bespoke panel and could keep their own field names.
 # ---------------------------------------------------------------------------
 
-def evidence_for_threshold_gaming(session: Session, council_id: int, cap: int = 30) -> dict:
+def evidence_for_threshold_gaming(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
     """Evidence chain for procurement.threshold_gaming.
 
     Same population and $-bin edges as tests._t_threshold_gaming's own
     histogram: tenders on minutes meetings with an amount, 2015 onward
     (the $250k-threshold era the test examines). Capped to `cap` per bin,
     newest first.
+
+    `source_cache`: see resolve_evidence().
     """
     from src.models import Meeting, Tender
 
@@ -601,7 +635,7 @@ def evidence_for_threshold_gaming(session: Session, council_id: int, cap: int = 
         for ids in ids_by_bucket.values()
         for tender_id in ids
     ]
-    entries = resolve_evidence(session, refs, council_id)
+    entries = resolve_evidence(session, refs, council_id, source_cache)
     entries_by_id = {e["entity_id"]: e for e in entries}
 
     return {
