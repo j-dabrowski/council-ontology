@@ -1506,6 +1506,8 @@ a:hover { text-decoration: underline; }
   background: var(--sunken); border: 1px dashed var(--nil-bd); border-radius: 8px; font-size: 0.95rem;
 }
 .bt-nodata-mark { color: var(--text-faint); font-size: 1.1rem; }
+.bt-evidence-row { padding: 8px 0; border-bottom: 1px solid var(--border-muted); }
+.bt-evidence-row:last-child { border-bottom: none; }
 
 /* ── Expandable exception rows (DivergencePanel) ────────────────────────── */
 .exception-row-expand {

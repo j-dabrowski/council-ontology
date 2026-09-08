@@ -844,6 +844,28 @@ export interface ChairCaptureEvidence {
   mayors: ChairCaptureMayor[];
 }
 
+// The tests.<generator> group's shared shape (docs/frontend/
+// EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
+// bespoke panel — BatteryTestBody's one generic drill-down reads this same
+// shape for every test in the group, so `label` must match the chart bar/
+// point label exactly and the field is always "entries", never a
+// test-specific name.
+export interface GenericBatteryEvidenceBucket {
+  label: string;
+  entries: EvidenceEntry[];
+}
+
+export interface GenericBatteryEvidence {
+  buckets: GenericBatteryEvidenceBucket[];
+}
+
+// Exported (unlike the internal getSnapshot()) because the caller supplies
+// the test id at call time — BatteryTestBody fetches lazily, per test,
+// on first click, rather than through a named api.evidenceX() method.
+export function evidenceForBatteryTest(testId: string): Promise<GenericBatteryEvidence> {
+  return getSnapshot<GenericBatteryEvidence>(`evidence/${testId}`);
+}
+
 export interface MethodData {
   council: string;
   generated_at: string;

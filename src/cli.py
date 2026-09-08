@@ -2725,6 +2725,25 @@ def _generate_snapshots(
         "tests": [_dc(t) for t in battery],
     })
 
+    # Evidence chain for procurement.threshold_gaming (Phase 2, docs/frontend/
+    # EVIDENCE_CHAIN_PLAN.md Step 6, tests.<generator> group) — this test has
+    # no existing snapshot or drill-down, so this builds the $-bin population
+    # from scratch rather than upgrading a prior lossy join. Generic
+    # {"buckets": [{"label", "entries"}]} shape shared by every test in this
+    # group, read by BatteryTestBody's one drill-down mechanism.
+    from src.analysis.evidence import evidence_for_threshold_gaming
+    threshold_gaming_evidence = evidence_for_threshold_gaming(session, council_id)
+    evidence_dir = output_dir / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
+    (evidence_dir / "procurement.threshold_gaming.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": threshold_gaming_evidence,
+    }, indent=2))
+    written.append("evidence/procurement.threshold_gaming")
+    _n_tg_ev = sum(len(b["entries"]) for b in threshold_gaming_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/procurement.threshold_gaming.json ({_n_tg_ev} tender(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

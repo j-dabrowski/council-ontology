@@ -1,11 +1,13 @@
+import { useState } from "react";
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell, ReferenceLine, LabelList,
 } from "recharts";
-import { TestChart, CouncillorsData } from "../api";
+import { TestChart, CouncillorsData, evidenceForBatteryTest, type GenericBatteryEvidence } from "../api";
 import { Card } from "./InterestsChart";
 import { SeverityChip } from "./SeverityChip";
 import { ObjectionResponse } from "./ObjectionResponse";
+import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { RedactedText } from "../guardrail";
 
@@ -14,7 +16,9 @@ const VALENCE_FILL: Record<string, string> = {
 };
 const HIGHLIGHT_FILL = "#fbbf24";
 
-function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
+function ChartView({ chart, valence, onLabelClick }: {
+  chart: TestChart; valence: string; onLabelClick?: (label: string) => void;
+}) {
   const base = VALENCE_FILL[valence] ?? "#60a5fa";
   const unit = chart.unit ?? "";
 
@@ -31,7 +35,16 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
             formatter={(v?: number | string | readonly (number | string)[]) => [`${v ?? 0}${unit}`, ""]}
           />
           <Line type="monotone" dataKey="y" stroke={base} strokeWidth={2.5}
-            dot={{ r: 2.5, fill: base }} activeDot={{ r: 5 }} />
+            dot={{ r: 2.5, fill: base }}
+            activeDot={onLabelClick
+              ? {
+                  r: 6, style: { cursor: "pointer" },
+                  onClick: (p: unknown) => {
+                    const x = (p as { payload?: { x?: string | number } })?.payload?.x;
+                    if (x != null) onLabelClick(String(x));
+                  },
+                } as object
+              : { r: 5 }} />
         </LineChart>
       </ResponsiveContainer>
     );
@@ -59,7 +72,11 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
             label={{ value: chart.refline?.label, position: "right", fontSize: 10, fill: "#f87171" }}
           />
         )}
-        <Bar dataKey="value" radius={[0, 3, 3, 0]}>
+        <Bar dataKey="value" radius={[0, 3, 3, 0]}
+          style={onLabelClick ? { cursor: "pointer" } : undefined}
+          onClick={onLabelClick
+            ? (d: unknown) => onLabelClick(String((d as { label: string }).label))
+            : undefined}>
           {bars.map((b, i) => (
             <Cell key={i} fill={b.highlight ? HIGHLIGHT_FILL : base} />
           ))}
@@ -82,6 +99,28 @@ function ChartView({ chart, valence }: { chart: TestChart; valence: string }) {
 export function BatteryTestBody({ test: t, cllrData }: { test: ResolvedTest; cllrData: CouncillorsData | null }) {
   const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
+  // Evidence chain drill-down (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6,
+  // tests.<generator> group): most battery tests have no evidence file yet
+  // (only threshold_gaming so far), so a click always attempts the fetch
+  // and degrades to doing nothing — never an error state — when there's
+  // nothing to show, rather than needing a registry flag to know in
+  // advance which tests this works for.
+  const [selected, setSelected] = useState<string | null>(null);
+  const [evidence, setEvidence] = useState<GenericBatteryEvidence | null>(null);
+  const [evidenceTried, setEvidenceTried] = useState(false);
+
+  function handleLabelClick(label: string) {
+    setSelected((s) => (s === label ? null : label));
+    if (!evidenceTried) {
+      setEvidenceTried(true);
+      evidenceForBatteryTest(t.id).then(setEvidence).catch(() => setEvidence(null));
+    }
+  }
+
+  const selBucket = selected != null
+    ? evidence?.buckets.find((b) => b.label === selected)
+    : null;
+
   return (
     <>
       {/* "Not computable" reflects data_ok, not chart presence — a real,
@@ -89,11 +128,27 @@ export function BatteryTestBody({ test: t, cllrData }: { test: ResolvedTest; cll
           meeting point stat has nothing to trend), and showing the "not
           computable" message for that case would misreport a real n=0/n=20
           finding as a data gap. */}
-      {t.data_ok && t.chart && <ChartView chart={t.chart} valence={t.valence} />}
+      {t.data_ok && t.chart && (
+        <ChartView chart={t.chart} valence={t.valence} onLabelClick={handleLabelClick} />
+      )}
       {!t.data_ok && (
         <div className="bt-nodata">
           <span className="bt-nodata-mark">○</span> Not computable on this corpus.
         </div>
+      )}
+
+      {selBucket && selBucket.entries.length > 0 && (
+        <DrillDown
+          title={`${selBucket.label} — source records`}
+          subtitle={`${selBucket.entries.length} shown`}
+          onClose={() => setSelected(null)}
+        >
+          {selBucket.entries.map((entry, i) => (
+            <div key={i} className="bt-evidence-row">
+              <SourceQuote entry={entry} />
+            </div>
+          ))}
+        </DrillDown>
       )}
 
       <p className="chart-note">

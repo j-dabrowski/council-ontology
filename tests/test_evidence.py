@@ -18,6 +18,7 @@ from src.analysis.evidence import (
     evidence_for_chair_capture,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
+    evidence_for_threshold_gaming,
     evidence_for_transparency,
     resolve_evidence,
 )
@@ -505,3 +506,51 @@ def test_chair_capture_excludes_motions_moved_before_the_term_started(session):
     # frontend joins by entity_id across all mayors, not by mayor name, so
     # this doesn't affect anything the panel actually looks up.
     assert result["mayors"] == []
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_threshold_gaming() — first of the tests.<generator> group:
+# no existing snapshot/drill-down to reuse, entity population built from
+# scratch, generic {"buckets": [{"label", "entries"}]} shape.
+# ---------------------------------------------------------------------------
+
+def test_threshold_gaming_buckets_by_dollar_bin_and_excludes_pre_2015(session):
+    council_id = _council(session)
+    meeting_2022 = _meeting(session, council_id, date(2022, 1, 1),
+                             minutes_text="Tender for road works awarded, amount $220,000.")
+    meeting_2010 = _meeting(session, council_id, date(2010, 1, 1), minutes_text="text")
+
+    tender_in_bin = Tender(meeting_id=meeting_2022, amount=220_000,
+                            description="Road works")
+    session.add(tender_in_bin)
+    session.flush()
+    _evidence(session, meeting_2022, "tenders", tender_in_bin.id,
+              "Tender for road works awarded, amount $220,000.")
+
+    # Same $-range but before 2015 — must be excluded entirely.
+    pre_2015 = Tender(meeting_id=meeting_2010, amount=220_000, description="Old tender")
+    session.add(pre_2015)
+    session.flush()
+
+    result = evidence_for_threshold_gaming(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    assert len(by_label["200–250k"]["entries"]) == 1
+    entry = by_label["200–250k"]["entries"][0]
+    assert entry["entity_table"] == "tenders"
+    assert entry["entity_id"] == tender_in_bin.id
+    assert entry["quotes"][0]["tier"] == "exact"
+    # No other bin picked up either tender.
+    assert all(len(b["entries"]) == 0 for label, b in by_label.items() if label != "200–250k")
+
+
+def test_threshold_gaming_caps_per_bin(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    for i in range(3):
+        session.add(Tender(meeting_id=meeting_id, amount=220_000, description=f"Tender {i}"))
+    session.flush()
+
+    result = evidence_for_threshold_gaming(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["200–250k"]["entries"]) == 2

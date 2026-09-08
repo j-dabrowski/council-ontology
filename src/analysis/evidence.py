@@ -535,3 +535,78 @@ def evidence_for_chair_capture(session: Session, council_id: int, cap: int = 30)
             for name, ids in ids_by_mayor.items()
         ]
     }
+
+
+# ---------------------------------------------------------------------------
+# tests.<generator> group (Phase 2, Step 6 continued): unlike the tests
+# above, these have no existing snapshot or drill-down to reuse or upgrade
+# — src/analysis/tests.py's generator computes its chart inline, with no
+# capped entity list anywhere. Each builder below re-derives its test's own
+# population from scratch and returns the shared shape the frontend's one
+# generic BatteryTestBody drill-down reads for all of them:
+#   {"buckets": [{"label": <matches the chart bar/point label>,
+#                 "entries": [EvidenceEntry, ...]}]}
+# "entries" (not a test-specific field name) is deliberate — one frontend
+# consumer serves every test in this group, so the shape must be identical
+# across all of them, unlike the four tests above which each already had
+# their own bespoke panel and could keep their own field names.
+# ---------------------------------------------------------------------------
+
+def evidence_for_threshold_gaming(session: Session, council_id: int, cap: int = 30) -> dict:
+    """Evidence chain for procurement.threshold_gaming.
+
+    Same population and $-bin edges as tests._t_threshold_gaming's own
+    histogram: tenders on minutes meetings with an amount, 2015 onward
+    (the $250k-threshold era the test examines). Capped to `cap` per bin,
+    newest first.
+    """
+    from src.models import Meeting, Tender
+
+    rows = (
+        session.query(Tender.id, Tender.amount, Meeting.meeting_date)
+        .join(Meeting, Tender.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Tender.amount.isnot(None),
+        )
+        .all()
+    )
+
+    # Same edges/labels as _t_threshold_gaming (tests.py) — kept identical
+    # so a bucket label here always matches the chart bar it's clicked from.
+    edges = [0, 50_000, 100_000, 150_000, 200_000, 250_000, 300_000, 350_000, 400_000]
+    labels = ["<50k", "50–100k", "100–150k", "150–200k", "200–250k",
+              "250–300k", "300–350k", "350–400k", "400k+"]
+
+    def _bin_label(amount: float) -> str:
+        idx = next((i for i, e in enumerate(edges) if amount < e), None)
+        return labels[(idx - 1) if idx else (len(labels) - 1)]
+
+    modern = [
+        (tender_id, amount, meeting_date)
+        for tender_id, amount, meeting_date in rows
+        if meeting_date and meeting_date.year >= 2015
+    ]
+    modern.sort(key=lambda r: r[2], reverse=True)  # newest first within each bin
+
+    ids_by_bucket: dict[str, list[int]] = {label: [] for label in labels}
+    for tender_id, amount, _mdate in modern:
+        ids = ids_by_bucket[_bin_label(amount)]
+        if len(ids) < cap:
+            ids.append(tender_id)
+
+    refs: list[EntityRef] = [
+        ("tenders", tender_id, "tender")
+        for ids in ids_by_bucket.values()
+        for tender_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in labels
+        ]
+    }
