@@ -16,6 +16,7 @@ from sqlalchemy.orm import sessionmaker
 
 from src.analysis.evidence import (
     evidence_for_chair_capture,
+    evidence_for_eoy_spending,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
     evidence_for_threshold_gaming,
@@ -589,3 +590,53 @@ def test_shared_source_cache_parses_a_meeting_once_across_two_calls(session, mon
     resolve_evidence(session, [("motions", m1, "minutes_motion")], council_id)
     resolve_evidence(session, [("motions", m2, "minutes_motion")], council_id)
     assert calls["n"] == 2  # no cache passed — each call builds its own, as before
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_eoy_spending()
+# ---------------------------------------------------------------------------
+
+def test_eoy_spending_buckets_by_calendar_month_across_years(session):
+    council_id = _council(session)
+    meeting_dec_2022 = _meeting(session, council_id, date(2022, 12, 15),
+                                 minutes_text="Tender for landscaping awarded, $80,000.")
+    meeting_dec_2019 = _meeting(session, council_id, date(2019, 12, 3), minutes_text="text")
+    meeting_jun = _meeting(session, council_id, date(2021, 6, 1), minutes_text="text")
+
+    t1 = Tender(meeting_id=meeting_dec_2022, amount=80_000, description="Landscaping")
+    session.add(t1)
+    session.flush()
+    _evidence(session, meeting_dec_2022, "tenders", t1.id,
+              "Tender for landscaping awarded, $80,000.")
+
+    t2 = Tender(meeting_id=meeting_dec_2019, amount=50_000, description="Other Dec tender")
+    session.add(t2)
+
+    t3 = Tender(meeting_id=meeting_jun, amount=30_000, description="June tender")
+    session.add(t3)
+
+    # Zero-amount tender must be excluded (matches tests._t_eoy_spending's `if a` check).
+    session.add(Tender(meeting_id=meeting_jun, amount=0, description="Zero-amount"))
+    session.flush()
+
+    result = evidence_for_eoy_spending(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    assert len(by_label["Dec"]["entries"]) == 2
+    assert len(by_label["Jun"]["entries"]) == 1
+    assert all(len(b["entries"]) == 0 for label, b in by_label.items() if label not in ("Dec", "Jun"))
+
+    dec_entry = next(e for e in by_label["Dec"]["entries"] if e["entity_id"] == t1.id)
+    assert dec_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_eoy_spending_caps_per_month(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 12, 1), minutes_text="text")
+    for i in range(3):
+        session.add(Tender(meeting_id=meeting_id, amount=10_000 + i, description=f"Tender {i}"))
+    session.flush()
+
+    result = evidence_for_eoy_spending(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["Dec"]["entries"]) == 2

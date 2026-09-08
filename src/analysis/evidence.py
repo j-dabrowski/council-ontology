@@ -644,3 +644,56 @@ def evidence_for_threshold_gaming(
             for label in labels
         ]
     }
+
+
+def evidence_for_eoy_spending(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for finance.eoy_spending.
+
+    Same population as tests._t_eoy_spending's own chart: tenders on
+    minutes meetings with a non-zero amount, all years combined, bucketed
+    by calendar month. Capped to `cap` per month, newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import Meeting, Tender
+
+    rows = (
+        session.query(Tender.id, Meeting.meeting_date, Tender.amount)
+        .join(Meeting, Tender.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Tender.amount.isnot(None),
+            Tender.amount != 0,
+        )
+        .all()
+    )
+
+    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+    modern = [(tender_id, meeting_date) for tender_id, meeting_date, _amount in rows if meeting_date]
+    modern.sort(key=lambda r: r[1], reverse=True)  # newest first within each month
+
+    ids_by_bucket: dict[str, list[int]] = {label: [] for label in months}
+    for tender_id, meeting_date in modern:
+        ids = ids_by_bucket[months[meeting_date.month - 1]]
+        if len(ids) < cap:
+            ids.append(tender_id)
+
+    refs: list[EntityRef] = [
+        ("tenders", tender_id, "tender")
+        for ids in ids_by_bucket.values()
+        for tender_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in months
+        ]
+    }

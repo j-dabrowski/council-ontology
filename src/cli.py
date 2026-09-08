@@ -2760,6 +2760,22 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/procurement.threshold_gaming.json ({_n_tg_ev} tender(s))"
     )
 
+    # Evidence chain for finance.eoy_spending (Phase 2, tests.<generator>
+    # group) — same shape as threshold_gaming above, bucketed by calendar
+    # month instead of $ range.
+    from src.analysis.evidence import evidence_for_eoy_spending
+    eoy_spending_evidence = evidence_for_eoy_spending(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "finance.eoy_spending.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": eoy_spending_evidence,
+    }, indent=2))
+    written.append("evidence/finance.eoy_spending")
+    _n_eoy_ev = sum(len(b["entries"]) for b in eoy_spending_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/finance.eoy_spending.json ({_n_eoy_ev} tender(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (
