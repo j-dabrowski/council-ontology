@@ -24,9 +24,20 @@ function ChartView({ chart, valence, onLabelClick }: {
 
   if (chart.kind === "line") {
     const pts = chart.points ?? [];
+    // Chart-level onClick + activeLabel, not activeDot's own onClick — the
+    // proven pattern TransparencyTrendPanel already ships (a documented
+    // recharts mechanism), not an inferred activeDot argument shape this
+    // recharts version's own types don't actually confirm carries a
+    // payload at all.
+    function handleChartClick(chartState: { activeLabel?: number | string | null }) {
+      if (!onLabelClick || chartState?.activeLabel == null) return;
+      onLabelClick(String(chartState.activeLabel));
+    }
     return (
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={pts} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}>
+        <LineChart data={pts} margin={{ top: 8, right: 24, bottom: 4, left: 0 }}
+          onClick={onLabelClick ? handleChartClick : undefined}
+          style={onLabelClick ? { cursor: "pointer" } : undefined}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="x" tick={{ fontSize: 12 }} />
           <YAxis unit={unit} tick={{ fontSize: 12 }} width={44} />
@@ -35,16 +46,7 @@ function ChartView({ chart, valence, onLabelClick }: {
             formatter={(v?: number | string | readonly (number | string)[]) => [`${v ?? 0}${unit}`, ""]}
           />
           <Line type="monotone" dataKey="y" stroke={base} strokeWidth={2.5}
-            dot={{ r: 2.5, fill: base }}
-            activeDot={onLabelClick
-              ? {
-                  r: 6, style: { cursor: "pointer" },
-                  onClick: (p: unknown) => {
-                    const x = (p as { payload?: { x?: string | number } })?.payload?.x;
-                    if (x != null) onLabelClick(String(x));
-                  },
-                } as object
-              : { r: 5 }} />
+            dot={{ r: 2.5, fill: base }} activeDot={{ r: 6 }} />
         </LineChart>
       </ResponsiveContainer>
     );

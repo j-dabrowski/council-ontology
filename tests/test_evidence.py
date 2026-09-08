@@ -23,6 +23,7 @@ from src.analysis.evidence import (
     evidence_for_repeat_applicant,
     evidence_for_threshold_gaming,
     evidence_for_transparency,
+    evidence_for_unanimity_trend,
     resolve_evidence,
 )
 from src.models import (
@@ -735,3 +736,58 @@ def test_repeat_applicant_caps_per_bucket(session):
     result = evidence_for_repeat_applicant(session, council_id, cap=1)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["1 app"]["entries"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_unanimity_trend() — first line-chart test in this group:
+# bucket label is a year string (String(p.payload.x) on the frontend), not
+# a chart bar label.
+# ---------------------------------------------------------------------------
+
+def _carried_motions_in_year(session, council_id, year, n, contested_n=0):
+    """n CARRIED motions dated within `year`; the first contested_n have
+    votes_against=1, the rest 0. Returns the contested motions' ids."""
+    meeting_id = _meeting(session, council_id, date(year, 6, 1), minutes_text="text")
+    contested_ids = []
+    for i in range(n):
+        motion_id = _motion(
+            session, meeting_id, title=f"Motion {year}-{i}", item_number=str(i),
+            outcome=MotionOutcome.CARRIED,
+        )
+        va = 1 if i < contested_n else 0
+        session.query(Motion).filter_by(id=motion_id).update({"votes_against": va})
+        if va:
+            contested_ids.append(motion_id)
+    session.flush()
+    return contested_ids
+
+
+def test_unanimity_trend_only_plots_years_with_at_least_30_carried_motions(session):
+    council_id = _council(session)
+    contested_2020 = _carried_motions_in_year(session, council_id, 2020, n=35, contested_n=3)
+    _carried_motions_in_year(session, council_id, 2010, n=10, contested_n=2)  # below the 30 floor
+
+    result = evidence_for_unanimity_trend(session, council_id)
+    labels = [b["label"] for b in result["buckets"]]
+    assert labels == ["2020"]  # 2010 excluded entirely, not even an empty bucket
+
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert {e["entity_id"] for e in by_label["2020"]["entries"]} == set(contested_2020)
+
+
+def test_unanimity_trend_plotted_year_with_no_contested_motions_gets_empty_bucket(session):
+    council_id = _council(session)
+    _carried_motions_in_year(session, council_id, 2021, n=30, contested_n=0)
+
+    result = evidence_for_unanimity_trend(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert by_label["2021"]["entries"] == []
+
+
+def test_unanimity_trend_caps_contested_motions_per_year(session):
+    council_id = _council(session)
+    _carried_motions_in_year(session, council_id, 2022, n=30, contested_n=5)
+
+    result = evidence_for_unanimity_trend(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["2022"]["entries"]) == 2

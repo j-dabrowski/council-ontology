@@ -2806,6 +2806,22 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/planning.repeat_applicant.json ({_n_ra_ev} application(s))"
     )
 
+    # Evidence chain for governance.unanimity_trend (Phase 2, tests.
+    # <generator> group) — the first line-chart test in this group; bucket
+    # labels are year strings, contested carried motions per plotted year.
+    from src.analysis.evidence import evidence_for_unanimity_trend
+    unanimity_trend_evidence = evidence_for_unanimity_trend(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "governance.unanimity_trend.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": unanimity_trend_evidence,
+    }, indent=2))
+    written.append("evidence/governance.unanimity_trend")
+    _n_ut_ev = sum(len(b["entries"]) for b in unanimity_trend_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/governance.unanimity_trend.json ({_n_ut_ev} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

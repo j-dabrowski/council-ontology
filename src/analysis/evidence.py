@@ -830,3 +830,70 @@ def evidence_for_repeat_applicant(
             for label in labels
         ]
     }
+
+
+def evidence_for_unanimity_trend(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.unanimity_trend — the first line-chart
+    test in this group, so the bucket label is a year string, matching
+    ChartView's line-point click (`String(p.payload.x)`), not a chart bar
+    label.
+
+    Same year floor as tests._t_unanimity_trend's own line: only years
+    with >=30 carried motions (on minutes meetings) are plotted at all.
+    For each plotted year, exports the *contested* carried motions
+    (votes_against > 0) that year, capped to `cap`, newest first — the
+    motions actually behind that year's dissent share, not an
+    uninformative sample of the largely-unanimous rest. A plotted year
+    with zero contested motions still gets a bucket, empty (a real fact:
+    nothing split the chamber that year), same as any other no-evidence
+    case in this file.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import Meeting, Motion, MotionOutcome
+
+    rows = (
+        session.query(Motion.id, Motion.votes_against, Meeting.meeting_date)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.outcome == MotionOutcome.CARRIED,
+        )
+        .all()
+    )
+
+    total_by_year: dict[int, int] = {}
+    contested_by_year: dict[int, list[tuple[int, object]]] = {}
+    for motion_id, votes_against, meeting_date in rows:
+        if not meeting_date:
+            continue
+        year = meeting_date.year
+        total_by_year[year] = total_by_year.get(year, 0) + 1
+        if (votes_against or 0) > 0:
+            contested_by_year.setdefault(year, []).append((motion_id, meeting_date))
+
+    plotted_years = sorted(year for year, n in total_by_year.items() if n >= 30)
+
+    ids_by_year: dict[int, list[int]] = {}
+    for year in plotted_years:
+        newest_first = sorted(contested_by_year.get(year, []), key=lambda t: t[1], reverse=True)
+        ids_by_year[year] = [motion_id for motion_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("motions", motion_id, "contested_motion")
+        for ids in ids_by_year.values()
+        for motion_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": str(year), "entries": [entries_by_id[i] for i in ids_by_year[year]]}
+            for year in plotted_years
+        ]
+    }
