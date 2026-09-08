@@ -2853,6 +2853,21 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/transparency.confidential_topics.json ({_n_ct_ev} item(s))"
     )
 
+    # Evidence chain for procurement.incumbency (Phase 2, tests.<generator>
+    # group) — top-10-by-recurring-years firms, the chart's own ranking.
+    from src.analysis.evidence import evidence_for_incumbency
+    incumbency_evidence = evidence_for_incumbency(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "procurement.incumbency.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": incumbency_evidence,
+    }, indent=2))
+    written.append("evidence/procurement.incumbency")
+    _n_inc_ev = sum(len(b["entries"]) for b in incumbency_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/procurement.incumbency.json ({_n_inc_ev} tender(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

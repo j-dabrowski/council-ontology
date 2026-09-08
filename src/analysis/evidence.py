@@ -1038,3 +1038,73 @@ def evidence_for_confidential_topics(
             for name, _pattern in _CONFIDENTIAL_TOPIC_THEMES
         ]
     }
+
+
+def evidence_for_incumbency(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for procurement.incumbency.
+
+    Same population, normalisation and exclusions as tests._t_procurement_
+    incumbency's own chart: tenders on minutes meetings with an
+    awarded_to name, grouped by `_normalise_contractor(awarded_to)`
+    (dropping names that normalise to empty or contain "respondent"), then
+    the top 10 firms by *distinct years won* — the same top-10 the chart
+    actually plots. (A separate top-10-by-dollar-value ranking feeds only
+    the aggregate test's internal overlap flag and is never charted, so it
+    has no bucket here — nothing could ever click into it.)
+
+    Bucket labels are `key.title()[:22]`, matching the chart bar label
+    exactly, even where normalisation has collapsed a name past
+    readability (e.g. "R J Vincent" -> "rjvincent" -> "Rjvincent") —
+    because that IS the label a click has to match.
+
+    Capped to `cap` tenders per firm, newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.analysis.queries import _normalise_contractor
+    from src.models import Meeting, Tender
+
+    rows = (
+        session.query(Tender.id, Tender.awarded_to, Meeting.meeting_date)
+        .join(Meeting, Tender.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+        .all()
+    )
+
+    by_firm: dict[str, dict] = {}
+    for tender_id, name, meeting_date in rows:
+        if not name:
+            continue
+        key = _normalise_contractor(name)
+        if not key or "respondent" in key:
+            continue
+        rec = by_firm.setdefault(key, {"years": set(), "tenders": []})
+        if meeting_date:
+            rec["years"].add(meeting_date.year)
+        rec["tenders"].append((tender_id, meeting_date))
+
+    top_recurring = sorted(by_firm.items(), key=lambda kv: len(kv[1]["years"]), reverse=True)[:10]
+
+    ids_by_bucket: dict[str, list[int]] = {}
+    for key, rec in top_recurring:
+        label = key.title()[:22]
+        newest_first = sorted(rec["tenders"], key=lambda t: t[1], reverse=True)
+        ids_by_bucket[label] = [tender_id for tender_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("tenders", tender_id, "tender")
+        for ids in ids_by_bucket.values()
+        for tender_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids]}
+            for label, ids in ids_by_bucket.items()
+        ]
+    }

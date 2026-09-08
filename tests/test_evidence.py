@@ -20,6 +20,7 @@ from src.analysis.evidence import (
     evidence_for_confidential_tender_size,
     evidence_for_confidential_topics,
     evidence_for_eoy_spending,
+    evidence_for_incumbency,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
     evidence_for_repeat_applicant,
@@ -927,3 +928,79 @@ def test_confidential_topics_caps_per_theme(session):
     result = evidence_for_confidential_topics(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["Commercial-in-conf"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_incumbency()
+# ---------------------------------------------------------------------------
+
+def _tenders_for_firm(session, council_id, name, n_years):
+    """n_years tenders for `name`, one per distinct year starting 2000."""
+    ids = []
+    for j in range(n_years):
+        meeting_id = _meeting(session, council_id, date(2000 + j, 1, 1), minutes_text="text")
+        t = Tender(meeting_id=meeting_id, awarded_to=name, amount=1000)
+        session.add(t)
+        session.flush()
+        ids.append(t.id)
+    return ids
+
+
+def test_incumbency_normalises_name_variants_into_one_firm(session):
+    council_id = _council(session)
+    meeting_2020 = _meeting(session, council_id, date(2020, 1, 1),
+                             minutes_text="Awarded to R J Vincent Pty Ltd.")
+    meeting_2021 = _meeting(session, council_id, date(2021, 1, 1), minutes_text="text")
+
+    t1 = Tender(meeting_id=meeting_2020, awarded_to="R J Vincent Pty Ltd")
+    session.add(t1)
+    session.flush()
+    _evidence(session, meeting_2020, "tenders", t1.id, "Awarded to R J Vincent Pty Ltd.")
+
+    t2 = Tender(meeting_id=meeting_2021, awarded_to="RJ Vincent")
+    session.add(t2)
+    session.flush()
+
+    result = evidence_for_incumbency(session, council_id)
+    # Both variants normalise to the same firm key "rjvincent" -> label "Rjvincent".
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert "Rjvincent" in by_label
+    ids = {e["entity_id"] for e in by_label["Rjvincent"]["entries"]}
+    assert ids == {t1.id, t2.id}
+    exact_entry = next(e for e in by_label["Rjvincent"]["entries"] if e["entity_id"] == t1.id)
+    assert exact_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_incumbency_excludes_names_containing_respondent(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    session.add(Tender(meeting_id=meeting_id, awarded_to="Respondent A"))
+    session.flush()
+
+    result = evidence_for_incumbency(session, council_id)
+    all_ids = {e["entity_id"] for b in result["buckets"] for e in b["entries"]}
+    assert all_ids == set()
+
+
+def test_incumbency_keeps_only_top_10_by_distinct_years(session):
+    council_id = _council(session)
+    for i in range(1, 12):  # 11 firms, 1..11 distinct years each
+        _tenders_for_firm(session, council_id, f"Firm{i}", i)
+
+    result = evidence_for_incumbency(session, council_id)
+    labels = [b["label"] for b in result["buckets"]]
+    assert len(labels) == 10
+    assert "Firm1" not in labels  # the least-recurring firm, excluded
+    assert "Firm11" in labels    # the most-recurring, definitely included
+
+
+def test_incumbency_caps_tenders_per_firm(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    for i in range(3):
+        session.add(Tender(meeting_id=meeting_id, awarded_to="Acme Co"))
+    session.flush()
+
+    result = evidence_for_incumbency(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["Acmeco"]["entries"]) == 2
