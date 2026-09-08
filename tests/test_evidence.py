@@ -15,6 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.analysis.evidence import (
+    evidence_for_big_dollar_leniency,
     evidence_for_chair_capture,
     evidence_for_eoy_spending,
     evidence_for_objection_responsiveness,
@@ -640,3 +641,48 @@ def test_eoy_spending_caps_per_month(session):
     result = evidence_for_eoy_spending(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["Dec"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_big_dollar_leniency()
+# ---------------------------------------------------------------------------
+
+def test_big_dollar_leniency_splits_into_equal_count_quartiles(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    app_ids = []
+    for i in range(1, 21):  # 20 applications, values $10k..$200k
+        motion_id = _motion(session, meeting_id, title=f"App {i}", item_number=str(i))
+        app_id = _planning_app(session, motion_id, status=ApplicationStatus.APPROVED)
+        session.query(PlanningApplication).filter_by(id=app_id).update(
+            {"estimated_value": i * 10_000}
+        )
+        app_ids.append(app_id)
+    session.flush()
+
+    result = evidence_for_big_dollar_leniency(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    q1_ids = {e["entity_id"] for e in by_label["Q1 (lowest $)"]["entries"]}
+    q4_ids = {e["entity_id"] for e in by_label["Q4 (highest $)"]["entries"]}
+    assert q1_ids == set(app_ids[0:5])
+    assert q4_ids == set(app_ids[15:20])
+    # Highest value first within a bucket.
+    q4_ordered = [e["entity_id"] for e in by_label["Q4 (highest $)"]["entries"]]
+    assert q4_ordered == list(reversed(app_ids[15:20]))
+
+
+def test_big_dollar_leniency_below_n20_floor_returns_empty_buckets(session):
+    """Matches tests._t_big_dollar_leniency's own len(vals) < 20 floor — the
+    real chart reports "not computable" below it, so there's nothing a
+    click could ever reach; empty buckets, not a guessed quartile split."""
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    for i in range(5):
+        motion_id = _motion(session, meeting_id, title=f"App {i}", item_number=str(i))
+        app_id = _planning_app(session, motion_id, status=ApplicationStatus.APPROVED)
+        session.query(PlanningApplication).filter_by(id=app_id).update({"estimated_value": 50_000})
+    session.flush()
+
+    result = evidence_for_big_dollar_leniency(session, council_id)
+    assert all(len(b["entries"]) == 0 for b in result["buckets"])

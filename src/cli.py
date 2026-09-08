@@ -2776,6 +2776,21 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/finance.eoy_spending.json ({_n_eoy_ev} tender(s))"
     )
 
+    # Evidence chain for planning.big_dollar_leniency (Phase 2,
+    # tests.<generator> group) — value quartiles instead of $-bin/month.
+    from src.analysis.evidence import evidence_for_big_dollar_leniency
+    big_dollar_evidence = evidence_for_big_dollar_leniency(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "planning.big_dollar_leniency.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": big_dollar_evidence,
+    }, indent=2))
+    written.append("evidence/planning.big_dollar_leniency")
+    _n_bd_ev = sum(len(b["entries"]) for b in big_dollar_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/planning.big_dollar_leniency.json ({_n_bd_ev} application(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (
