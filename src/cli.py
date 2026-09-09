@@ -2399,7 +2399,8 @@ def _generate_snapshots(
         "histogram": tenure.histogram,
         "profiles": [
             {"name": p.name, "years": p.years, "n_votes": p.n_votes,
-             "first": p.first, "last": p.last, "is_active": p.is_active}
+             "first": p.first, "last": p.last, "is_active": p.is_active,
+             "first_motion_id": p.first_motion_id, "last_motion_id": p.last_motion_id}
             for p in tenure.profiles
         ],
     })
@@ -3081,6 +3082,22 @@ def _generate_snapshots(
     _n_part_ev = sum(len(y["items"]) for y in participation_evidence["years"])
     console.print(
         f"  [green]✓[/green] evidence/engagement.participation.json ({_n_part_ev} item(s))"
+    )
+
+    # Evidence chain for governance.incumbency (Phase 2, remaining-11
+    # group) — TenurePanel's new drill-down (no prior click-through): each
+    # councillor's earliest/latest recorded vote, a flat `entries` list.
+    from src.analysis.evidence import evidence_for_tenure
+    tenure_evidence = evidence_for_tenure(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "governance.incumbency.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": tenure_evidence,
+    }, indent=2))
+    written.append("evidence/governance.incumbency")
+    console.print(
+        "  [green]✓[/green] evidence/governance.incumbency.json "
+        f"({len(tenure_evidence['entries'])} motion(s))"
     )
 
     # councillors.json — unified cross-link profile keyed by full name; used by

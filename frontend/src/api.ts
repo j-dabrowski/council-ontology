@@ -297,6 +297,8 @@ export interface TenureProfile {
   first: string;
   last: string;
   is_active: boolean;
+  first_motion_id: number | null;  // earliest recorded vote's motion, for the evidence chain
+  last_motion_id: number | null;   // latest recorded vote's motion, for the evidence chain
 }
 
 export interface TenureData {
@@ -896,6 +898,13 @@ export interface ParticipationEvidence {
   years: ParticipationEvidenceYear[];
 }
 
+// TenurePanel had no drill-down at all before this. Flat, since there's no
+// per-item population to bucket — just each profile's own first/last
+// recorded vote, looked up directly by entity_id.
+export interface TenureEvidence {
+  entries: EvidenceEntry[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -995,4 +1004,6 @@ export const api = {
     getSnapshot<ConcentrationEvidence>("evidence/procurement.concentration"),
   evidenceParticipation: () =>
     getSnapshot<ParticipationEvidence>("evidence/engagement.participation"),
+  evidenceTenure: () =>
+    getSnapshot<TenureEvidence>("evidence/governance.incumbency"),
 };

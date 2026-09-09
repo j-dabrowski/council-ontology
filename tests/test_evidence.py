@@ -37,6 +37,7 @@ from src.analysis.evidence import (
     evidence_for_recusal_management,
     evidence_for_recusal_trend,
     evidence_for_repeat_applicant,
+    evidence_for_tenure,
     evidence_for_threshold_gaming,
     evidence_for_transparency,
     evidence_for_unanimity_trend,
@@ -1839,3 +1840,41 @@ def test_participation_caps_per_table_per_year_independently(session):
     # affected by the questions' own cap (separate ROW_NUMBER partitions).
     assert len(pq_items) == 2
     assert len(dep_items) == 1
+
+
+def test_tenure_resolves_first_and_last_motion(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Long", "Server")
+    first_quote = "MOVED the first motion be adopted."
+    last_quote = "MOVED the final motion be adopted."
+    meeting_first = _meeting(session, council_id, date(2005, 1, 1), minutes_text=first_quote)
+    motion_first = _motion(session, meeting_first, title="First motion", outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_first, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    _evidence(session, meeting_first, "motions", motion_first, first_quote)
+
+    meeting_last = _meeting(session, council_id, date(2020, 1, 1), minutes_text=last_quote)
+    motion_last = _motion(session, meeting_last, title="Last motion", item_number="2",
+                           outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_last, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    _evidence(session, meeting_last, "motions", motion_last, last_quote)
+    session.flush()
+
+    result = evidence_for_tenure(session, council_id, min_votes=1)
+    ids = {e["entity_id"] for e in result["entries"]}
+    assert {motion_first, motion_last} <= ids
+    first_entry = next(e for e in result["entries"] if e["entity_id"] == motion_first)
+    assert first_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_tenure_excludes_below_cohort_floor(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Below", "Floor")
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, title="Only vote", outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    # min_votes=2 but this councillor only has 1 vote -> excluded from
+    # `profiles` entirely (councillor_tenure()'s own cohort floor).
+    result = evidence_for_tenure(session, council_id, min_votes=2)
+    assert result["entries"] == []

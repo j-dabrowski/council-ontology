@@ -3111,6 +3111,12 @@ class TenureProfile:
     first: str          # YYYY-MM
     last: str
     is_active: bool
+    # The two votes that anchor the tenure span itself — the closest thing
+    # to a "receipt" a derived-from-many-votes statistic like this can have
+    # (evidence_for_tenure() lookup keys). None only if councillor_id had no
+    # motion-joined vote at all, which the query below can't actually produce.
+    first_motion_id: int | None = None
+    last_motion_id: int | None = None
 
 
 @dataclass
@@ -3127,8 +3133,11 @@ def councillor_tenure(session: Session, council_id: int, min_votes: int = 20) ->
     votes (councillor_terms is too sparse to use directly). Returns a
     longest-serving leaderboard plus a histogram of service length.
     """
+    from sqlalchemy import text
+
     rows = (
         session.query(
+            Councillor.id,
             Councillor.given_name,
             Councillor.family_name,
             func.count(Vote.id).label("n"),
@@ -3144,9 +3153,34 @@ def councillor_tenure(session: Session, council_id: int, min_votes: int = 20) ->
         .all()
     )
 
+    # The motion behind each qualifying councillor's earliest/latest vote —
+    # the two receipts that anchor their tenure span (evidence_for_tenure()).
+    # One row per (councillor, first-or-last) via a window function rather
+    # than N extra queries; ties broken by motion_id for a stable pick.
+    bookend_rows = session.execute(text("""
+        SELECT councillor_id, motion_id, rn_first, rn_last FROM (
+            SELECT v.councillor_id, v.motion_id,
+                   ROW_NUMBER() OVER (PARTITION BY v.councillor_id
+                                      ORDER BY mt.meeting_date ASC, v.motion_id ASC) AS rn_first,
+                   ROW_NUMBER() OVER (PARTITION BY v.councillor_id
+                                      ORDER BY mt.meeting_date DESC, v.motion_id DESC) AS rn_last
+              FROM votes v
+              JOIN motions mo ON v.motion_id = mo.id
+              JOIN meetings mt ON mo.meeting_id = mt.id
+             WHERE mt.council_id = :cid
+        ) WHERE rn_first = 1 OR rn_last = 1
+    """), {"cid": council_id}).all()
+    first_motion_by_cid: dict[int, int] = {}
+    last_motion_by_cid: dict[int, int] = {}
+    for cid, motion_id, rn_first, rn_last in bookend_rows:
+        if rn_first == 1:
+            first_motion_by_cid[cid] = motion_id
+        if rn_last == 1:
+            last_motion_by_cid[cid] = motion_id
+
     cutoff = date.today() - timedelta(days=548)  # ~18 months
     profiles: list[TenureProfile] = []
-    for given, family, n, first, last in rows:
+    for cid, given, family, n, first, last in rows:
         name = f"{given or ''} {family or ''}".strip()
         if "unknown" in name.lower() or not first or not last:
             continue  # drop mis-split / undated identities
@@ -3158,6 +3192,8 @@ def councillor_tenure(session: Session, council_id: int, min_votes: int = 20) ->
             first=first.strftime("%Y-%m"),
             last=last.strftime("%Y-%m"),
             is_active=last >= cutoff,
+            first_motion_id=first_motion_by_cid.get(cid),
+            last_motion_id=last_motion_by_cid.get(cid),
         ))
 
     profiles.sort(key=lambda p: p.years, reverse=True)

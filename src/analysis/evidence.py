@@ -1888,6 +1888,48 @@ def evidence_for_participation(
     }
 
 
+def evidence_for_tenure(
+    session: Session, council_id: int, min_votes: int = 20,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.incumbency (TenurePanel).
+
+    TenurePanel had no drill-down of any kind before this. Unlike every
+    other test in this file, a tenure figure is itself derived from many
+    votes' dates, not a single motion or declaration — there's no natural
+    "per-item" population to bucket or paginate. The closest defensible
+    receipt: the two votes that anchor the claimed span itself, a
+    councillor's earliest and latest recorded vote
+    (councillor_tenure()'s own first_motion_id/last_motion_id, added to
+    TenureProfile for this lookup — the same motion-as-receipt-for-a-vote
+    convention as evidence_for_attendance() and friends).
+
+    `min_votes` defaults to councillor_tenure()'s own default (20) —
+    exposed only so tests don't need 20 fixture votes to reach the
+    cohort floor; src/cli.py never overrides it.
+
+    Flat `entries` list — there's no chart-bar-category concept here
+    (only one bar per councillor); the frontend looks up a clicked
+    profile's first_motion_id/last_motion_id directly in one
+    Map<entity_id, EvidenceEntry>.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.analysis.queries import councillor_tenure
+
+    stats = councillor_tenure(session, council_id, min_votes=min_votes)
+    ids = sorted({
+        mid
+        for p in stats.profiles
+        for mid in (p.first_motion_id, p.last_motion_id)
+        if mid is not None
+    })
+    refs: list[EntityRef] = [("motions", mid, "tenure_bookend_motion") for mid in ids]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+
+    return {"entries": entries}
+
+
 def evidence_for_recusal_trend(
     session: Session, council_id: int,
     source_cache: dict[int, _MeetingSource] | None = None,

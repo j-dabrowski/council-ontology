@@ -1,12 +1,13 @@
+import { useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip,
   ResponsiveContainer, CartesianGrid, Cell, LabelList,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, TenureProfile } from "../api";
+import { api, TenureProfile, EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
-import { Reveal } from "./DrillDown";
+import { DrillDown, Reveal, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const HIST_ORDER = ["<2y", "2-5y", "5-10y", "10-15y", "15y+"];
@@ -28,9 +29,23 @@ const LeaderTooltip = ({ active, payload }: {
 
 export function TenurePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.tenure());
+  // The evidence chain, loaded separately: this panel had no drill-down at
+  // all before, so a missing/unpublished evidence file just means clicking
+  // a bar does nothing, rather than blocking the chart itself.
+  const { data: evidence } = useData(() => api.evidenceTenure());
+  const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const e of evidence.entries) evidenceById.set(e.entity_id, e);
+  }
+
+  const selectedProfile = selected
+    ? data.profiles.find((p) => p.name === selected) ?? null
+    : null;
 
   // Sorted here rather than trusted from the backend, so a future ordering
   // change on the pipeline side can't silently misattribute "longest serving"
@@ -82,7 +97,10 @@ export function TenurePanel({ test }: { test: ResolvedTest }) {
         </span>
       </div>
 
-      <p className="section-heading">Longest-serving councillors</p>
+      <p className="section-heading">
+        Longest-serving councillors
+        <span className="section-hint"> · click a bar to see their first and last recorded vote</span>
+      </p>
       <ResponsiveContainer width="100%" height={leaderHeight}>
         <BarChart data={leaders} layout="vertical" margin={{ top: 4, right: 48, bottom: 4, left: 92 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
@@ -92,7 +110,9 @@ export function TenurePanel({ test }: { test: ResolvedTest }) {
               <CouncillorTick x={x} y={y} payload={payload} />
             )} />
           <Tooltip content={<LeaderTooltip />} cursor={{ fill: "var(--cursor)" }} />
-          <Bar dataKey="years" name="Years" radius={[0, 3, 3, 0]}>
+          <Bar dataKey="years" name="Years" radius={[0, 3, 3, 0]} cursor="pointer"
+            onClick={(item: { payload?: { name?: string } }) =>
+              item?.payload?.name && setSelected(item.payload.name)}>
             {leaders.map((entry, i) => (
               <Cell key={i} fill={entry.is_active ? "#60a5fa" : "#475569"} />
             ))}
@@ -101,6 +121,37 @@ export function TenurePanel({ test }: { test: ResolvedTest }) {
           </Bar>
         </BarChart>
       </ResponsiveContainer>
+
+      {selectedProfile && (
+        <DrillDown
+          title={<><CouncillorLink name={selectedProfile.name} /> — tenure span</>}
+          subtitle={`${selectedProfile.first} → ${selectedProfile.last} · ${selectedProfile.years} years · ${selectedProfile.n_votes} votes cast`}
+          onClose={() => setSelected(null)}
+        >
+          <div className="decl-row">
+            <div className="decl-row-head">
+              <span className="decl-type decl-type-other">First recorded vote</span>
+              <span className="decl-date">{selectedProfile.first}</span>
+            </div>
+            {selectedProfile.first_motion_id != null ? (
+              <SourceQuote entry={evidenceById.get(selectedProfile.first_motion_id) ?? null} />
+            ) : (
+              <SourceQuote quote={null} />
+            )}
+          </div>
+          <div className="decl-row">
+            <div className="decl-row-head">
+              <span className="decl-type decl-type-other">Last recorded vote</span>
+              <span className="decl-date">{selectedProfile.last}</span>
+            </div>
+            {selectedProfile.last_motion_id != null ? (
+              <SourceQuote entry={evidenceById.get(selectedProfile.last_motion_id) ?? null} />
+            ) : (
+              <SourceQuote quote={null} />
+            )}
+          </div>
+        </DrillDown>
+      )}
 
       <p className="section-heading">Distribution of service length</p>
       <ResponsiveContainer width="100%" height={180}>
