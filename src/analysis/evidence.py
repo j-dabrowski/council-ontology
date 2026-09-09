@@ -1782,6 +1782,41 @@ def evidence_for_question_responsiveness(
     return {"entries": entries}
 
 
+def evidence_for_concentration(
+    session: Session, council_id: int,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for procurement.concentration (TenderConcentrationPanel).
+
+    Per-contractor drill-down, same flat-`entries` shape as the other
+    per-cell/per-profile evidence files — the frontend builds one
+    Map<entity_id, EvidenceEntry> and looks each TenderAward up by its
+    own `entity_id` (`tenders.id`, added to that dataclass for this
+    lookup).
+
+    Population: tender_concentration()'s own top-N (default limit=15)
+    contractors and their awards — reused directly, not re-derived, so
+    this can't disagree with what the drill-down itself shows. Awards to
+    contractors outside the top N (and redacted "Respondent N"
+    placeholders) aren't charted, so aren't included here.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.analysis.queries import tender_concentration
+
+    stats = tender_concentration(session, council_id)
+    ids = sorted({
+        a.entity_id
+        for c in stats.contractors
+        for a in c.awards
+        if a.entity_id is not None
+    })
+    refs: list[EntityRef] = [("tenders", tid, "award") for tid in ids]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+
+    return {"entries": entries}
+
+
 def evidence_for_recusal_trend(
     session: Session, council_id: int,
     source_cache: dict[int, _MeetingSource] | None = None,

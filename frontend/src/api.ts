@@ -214,6 +214,7 @@ export interface TenderAward {
   reference: string | null;
   is_confidential: boolean;
   quote: string | null;            // verbatim minute text
+  entity_id: number | null;        // tenders.id, for the evidence chain lookup
 }
 
 export interface ContractorTotal {
@@ -876,6 +877,12 @@ export interface QuestionResponsivenessEvidence {
   entries: EvidenceEntry[];
 }
 
+// TenderConcentrationPanel's per-contractor drill-down, also flat — same
+// lookup convention as the other per-cell/per-profile evidence files.
+export interface ConcentrationEvidence {
+  entries: EvidenceEntry[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -971,4 +978,6 @@ export const api = {
     getSnapshot<PowerSpreadEvidence>("evidence/governance.power_spread"),
   evidenceQuestionResponsiveness: () =>
     getSnapshot<QuestionResponsivenessEvidence>("evidence/engagement.question_responsiveness"),
+  evidenceConcentration: () =>
+    getSnapshot<ConcentrationEvidence>("evidence/procurement.concentration"),
 };

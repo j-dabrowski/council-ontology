@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid, Cell,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, ContractorTotal, TenderAward } from "../api";
+import { api, ContractorTotal, TenderAward, EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -13,7 +13,7 @@ const fmtM = (n: number) => `$${(n / 1e6).toFixed(1)}M`;
 const fmt$ = (n: number) =>
   n >= 1e6 ? fmtM(n) : `$${Math.round(n).toLocaleString()}`;
 
-function AwardRow({ a }: { a: TenderAward }) {
+function AwardRow({ a, evidence }: { a: TenderAward; evidence?: EvidenceEntry }) {
   return (
     <div className="decl-row">
       <div className="decl-row-head">
@@ -24,7 +24,7 @@ function AwardRow({ a }: { a: TenderAward }) {
         {a.is_confidential && <span className="decl-action">confidential report</span>}
       </div>
       <div className="decl-what">{a.description || <em>no description recorded</em>}</div>
-      <SourceQuote quote={a.quote} />
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={a.quote} />}
     </div>
   );
 }
@@ -56,10 +56,19 @@ const CustomTooltip = ({ active, payload }: {
 
 export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.tenders());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file degrades gracefully to each row's legacy `quote` field (see
+  // AwardRow) rather than blocking the panel.
+  const { data: evidence } = useData(() => api.evidenceConcentration());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const e of evidence.entries) evidenceById.set(e.entity_id, e);
+  }
 
   const chartData = data.contractors.map((c) => ({
     ...c,
@@ -146,7 +155,8 @@ export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
             <p className="chart-note">No itemised awards extracted for this contractor.</p>
           )}
           {selectedContractor.awards.map((a, i) => (
-            <AwardRow key={i} a={a} />
+            <AwardRow key={i} a={a}
+              evidence={a.entity_id != null ? evidenceById.get(a.entity_id) : undefined} />
           ))}
         </DrillDown>
       )}

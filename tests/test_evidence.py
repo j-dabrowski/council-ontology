@@ -18,6 +18,7 @@ from src.analysis.evidence import (
     evidence_for_attendance,
     evidence_for_big_dollar_leniency,
     evidence_for_chair_capture,
+    evidence_for_concentration,
     evidence_for_confidential_tender_size,
     evidence_for_confidential_topics,
     evidence_for_decider_supplier_conflict,
@@ -1767,3 +1768,31 @@ def test_question_responsiveness_excludes_blank_responses(session):
 
     result = evidence_for_question_responsiveness(session, council_id)
     assert pq_blank.id not in {e["entity_id"] for e in result["entries"]}
+
+
+def test_concentration_resolves_top_contractor_awards(session):
+    council_id = _council(session)
+    quote_text = "Council awarded the contract to Acme Builders for $500,000."
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text=quote_text)
+    t = Tender(meeting_id=meeting_id, awarded_to="Acme Builders", amount=500000)
+    session.add(t)
+    session.flush()
+    _evidence(session, meeting_id, "tenders", t.id, quote_text)
+    session.flush()
+
+    result = evidence_for_concentration(session, council_id)
+    ids = {e["entity_id"] for e in result["entries"]}
+    assert t.id in ids
+    entry = next(e for e in result["entries"] if e["entity_id"] == t.id)
+    assert entry["quotes"][0]["tier"] == "exact"
+
+
+def test_concentration_excludes_redacted_recipients(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    t = Tender(meeting_id=meeting_id, awarded_to="Respondent 4", amount=100000)
+    session.add(t)
+    session.flush()
+
+    result = evidence_for_concentration(session, council_id)
+    assert t.id not in {e["entity_id"] for e in result["entries"]}

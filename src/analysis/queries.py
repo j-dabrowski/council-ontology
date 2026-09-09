@@ -2075,6 +2075,7 @@ class TenderAward:
     reference: str | None
     is_confidential: bool
     quote: str | None           # verbatim minute text (extraction_evidence)
+    entity_id: int | None = None  # tenders.id (evidence_for_concentration() lookup key)
 
 
 @dataclass
@@ -2225,6 +2226,7 @@ def tender_concentration(
                     reference=ref,
                     is_confidential=conf,
                     quote=quote_by_tender.get(tid),
+                    entity_id=tid,
                 )
                 for tid, amt, desc, ref, conf, mdate in awards
             ],
