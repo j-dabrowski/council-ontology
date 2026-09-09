@@ -20,6 +20,7 @@ from src.analysis.evidence import (
     evidence_for_chair_capture,
     evidence_for_confidential_tender_size,
     evidence_for_confidential_topics,
+    evidence_for_decider_supplier_conflict,
     evidence_for_deputation_dissent,
     evidence_for_election_cycle,
     evidence_for_eoy_spending,
@@ -1330,3 +1331,64 @@ def test_attendance_caps_per_bucket(session):
     result = evidence_for_attendance(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["Genuine absence"]["entries"]) == 2
+
+
+def test_decider_supplier_conflict_matches_tender_title_keyword(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    tender_motion = _motion(session, meeting_id, title="Tender for road works")
+    _evidence(session, meeting_id, "motions", tender_motion, "text")
+    other_motion = _motion(session, meeting_id, title="Approve the minutes", item_number="2")
+    session.flush()
+
+    result = evidence_for_decider_supplier_conflict(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    ids = {e["entity_id"] for e in by_label["Tender-award votes"]["entries"]}
+    assert ids == {tender_motion}
+    assert other_motion not in ids
+    # No natural "notable subset" of the whole-corpus baseline — left empty
+    # rather than fabricated, see evidence_for_decider_supplier_conflict().
+    assert by_label["Chamber base rate"]["entries"] == []
+
+
+def test_decider_supplier_conflict_matches_motion_text_keyword_too(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    motion_id = _motion(
+        session, meeting_id, title="Item 4",
+        motion_text="Council awards the contract to Acme Pty Ltd",
+    )
+    session.flush()
+
+    result = evidence_for_decider_supplier_conflict(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert motion_id in {e["entity_id"] for e in by_label["Tender-award votes"]["entries"]}
+
+
+def test_decider_supplier_conflict_excludes_agenda_documents(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1),
+                           document_type="agenda", minutes_text="text")
+    motion_id = _motion(session, meeting_id, title="Tender for cleaning services")
+    session.flush()
+
+    result = evidence_for_decider_supplier_conflict(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert motion_id not in {e["entity_id"] for e in by_label["Tender-award votes"]["entries"]}
+
+
+def test_decider_supplier_conflict_caps_and_orders_newest_first(session):
+    council_id = _council(session)
+    ids_by_year = {}
+    for i, yr in enumerate([2019, 2021, 2020]):
+        meeting_id = _meeting(session, council_id, date(yr, 1, 1), minutes_text="text")
+        motion_id = _motion(session, meeting_id, title=f"Tender {i}", item_number=str(i))
+        ids_by_year[yr] = motion_id
+    session.flush()
+
+    result = evidence_for_decider_supplier_conflict(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    entries = by_label["Tender-award votes"]["entries"]
+    assert len(entries) == 2
+    expected_newest_two = {ids_by_year[2021], ids_by_year[2020]}
+    assert {e["entity_id"] for e in entries} == expected_newest_two

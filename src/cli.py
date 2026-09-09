@@ -2932,6 +2932,24 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/governance.attendance.json ({_n_att_ev} motion(s))"
     )
 
+    # Evidence chain for procurement.decider_supplier_conflict (Phase 2,
+    # remaining-11 group) — "Tender-award votes" bucket reproduces Limb 1's
+    # own keyword match; "Chamber base rate" is deliberately empty (no
+    # notable subset of the whole-corpus baseline to single out).
+    from src.analysis.evidence import evidence_for_decider_supplier_conflict
+    decider_supplier_evidence = evidence_for_decider_supplier_conflict(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "procurement.decider_supplier_conflict.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": decider_supplier_evidence,
+    }, indent=2))
+    written.append("evidence/procurement.decider_supplier_conflict")
+    _n_dsc_ev = sum(len(b["entries"]) for b in decider_supplier_evidence["buckets"])
+    console.print(
+        "  [green]✓[/green] evidence/procurement.decider_supplier_conflict.json "
+        f"({_n_dsc_ev} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

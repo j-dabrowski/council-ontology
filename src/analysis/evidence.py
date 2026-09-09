@@ -1387,3 +1387,78 @@ def evidence_for_attendance(
             for label in labels
         ]
     }
+
+
+# ---------------------------------------------------------------------------
+# The 11 remaining bespoke/generic-panel tests: unlike the tests.<generator>
+# group, these have a real query function in src/analysis/queries.py. Some
+# already join ExtractionEvidence inside that function (a real cap/order
+# already chosen — reused verbatim here rather than re-decided); others have
+# no drill-down anywhere yet, same starting point as the tests.<generator>
+# group.
+# ---------------------------------------------------------------------------
+
+def evidence_for_decider_supplier_conflict(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for procurement.decider_supplier_conflict.
+
+    "Tender-award votes" bucket: the same keyword-matched tender-award
+    motions decider_supplier_conflict()'s own Limb 1 identifies (title/
+    motion_text keyword match, minutes only — copied verbatim from that
+    function so the population matches exactly) — capped to `cap`, newest
+    first. Lets a reader verify the keyword classification itself, since
+    that is what the chart's declaration-rate figure is computed over.
+
+    "Chamber base rate" is deliberately an empty bucket: it is a baseline
+    over every minutes vote corpus-wide (15,000+), with no notable subset
+    to single out — sampling it arbitrarily would not verify anything the
+    chart claims, unlike every other bucket in this file.
+
+    Not covered here: the function's own Limb 2 (surname collisions
+    between a tender winner and a councillor) is the rarer, more
+    interesting finding — and the one the function's own docstring says
+    needs a source quote to resolve — but it is never charted (only
+    mentioned in prose), so there is no bar a click could reach it from.
+    Flagged, not built, since this mechanism is driven by chart-bar
+    clicks, not a bespoke third list.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from sqlalchemy import func
+
+    from src.models import Meeting, Motion
+
+    tender_kw = (
+        func.lower(Motion.title).like("%tender%")
+        | func.lower(Motion.title).like("% rft %")
+        | func.lower(Motion.title).like("rft %")
+        | func.lower(Motion.title).like("%contract%award%")
+        | func.lower(Motion.motion_text).like("%accept the tender%")
+        | func.lower(Motion.motion_text).like("%awards%contract%")
+        | func.lower(Motion.motion_text).like("%rft %")
+    )
+    rows = (
+        session.query(Motion.id, Meeting.meeting_date)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            tender_kw,
+        )
+        .all()
+    )
+    newest_first = sorted(rows, key=lambda t: t[1], reverse=True)
+    ids = [motion_id for motion_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [("motions", motion_id, "tender_award_motion") for motion_id in ids]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": "Tender-award votes", "entries": [entries_by_id[i] for i in ids]},
+            {"label": "Chamber base rate", "entries": []},
+        ]
+    }
