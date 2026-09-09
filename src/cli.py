@@ -2968,6 +2968,24 @@ def _generate_snapshots(
         f"({_n_dbc_ev} motion(s))"
     )
 
+    # Evidence chain for governance.oversight_body_capture (Phase 2,
+    # remaining-11 group) — "Appointees"/"Non-appointees" buckets, motion as
+    # receipt, reproducing the query's own appointee-set match, cohort
+    # floor, and contested-vote population verbatim.
+    from src.analysis.evidence import evidence_for_oversight_body_capture
+    oversight_evidence = evidence_for_oversight_body_capture(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "governance.oversight_body_capture.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": oversight_evidence,
+    }, indent=2))
+    written.append("evidence/governance.oversight_body_capture")
+    _n_obc_ev = sum(len(b["entries"]) for b in oversight_evidence["buckets"])
+    console.print(
+        "  [green]✓[/green] evidence/governance.oversight_body_capture.json "
+        f"({_n_obc_ev} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

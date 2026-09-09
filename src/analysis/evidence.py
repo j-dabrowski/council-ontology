@@ -1570,3 +1570,101 @@ def evidence_for_delegate_body_conflict(
         })
 
     return {"buckets": buckets}
+
+
+def evidence_for_oversight_body_capture(
+    session: Session, council_id: int, cap: int = 30, min_votes: int = 20,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.oversight_body_capture.
+
+    "Appointees" / "Non-appointees" buckets reproduce
+    oversight_body_capture()'s own appointee-set match (audit / CEO-
+    performance body_name keywords), cohort floor (`min_votes`, default
+    20 matching that function's own default), and contested-vote
+    population (`document_type='minutes'`, outcome CARRIED/LOST,
+    votes_against > 0, FOR/AGAINST only) verbatim, since that is exactly
+    what each bar's win-rate figure is computed over.
+
+    Votes have no independent quote (see evidence_for_attendance()); the
+    parent motion is the receipt. A motion can appear in BOTH buckets if
+    a cohort appointee and a cohort non-appointee both voted on it (this
+    mirrors evidence_for_freshman_effect()'s "allowed in both buckets"
+    convention) — capped per bucket, newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from collections import defaultdict
+
+    from src.models import Appointment, Motion, MotionOutcome, Vote, VoteChoice
+
+    appt_pattern = (
+        Appointment.body_name.ilike("%audit%")
+        | (
+            (Appointment.body_name.ilike("%ceo%") | Appointment.body_name.ilike("%chief executive%"))
+            & Appointment.body_name.ilike("%performance%")
+        )
+    )
+    appointee_ids: set[int] = {
+        cid for (cid,) in (
+            session.query(Appointment.councillor_id)
+            .join(Meeting, Appointment.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Appointment.councillor_id.isnot(None),
+                appt_pattern,
+            )
+            .distinct()
+        )
+    }
+
+    rows = (
+        session.query(Vote.councillor_id, Motion.id, Meeting.meeting_date)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.outcome.in_([MotionOutcome.CARRIED, MotionOutcome.LOST]),
+            Motion.votes_against > 0,
+            Vote.choice.in_([VoteChoice.FOR, VoteChoice.AGAINST]),
+        )
+        .all()
+    )
+
+    counts: dict[int, int] = defaultdict(int)
+    for cid, _mid, _mdate in rows:
+        counts[cid] += 1
+    cohort = {cid for cid, n in counts.items() if n >= min_votes}
+
+    app_motions: dict[int, object] = {}
+    non_motions: dict[int, object] = {}
+    for cid, mid, mdate in rows:
+        if cid not in cohort:
+            continue
+        target = app_motions if cid in appointee_ids else non_motions
+        existing = target.get(mid)
+        if existing is None or (mdate and mdate > existing):
+            target[mid] = mdate
+
+    def _top_ids(motions: dict[int, object]) -> list[int]:
+        newest_first = sorted(motions.items(), key=lambda kv: kv[1], reverse=True)
+        return [mid for mid, _d in newest_first[:cap]]
+
+    app_ids = _top_ids(app_motions)
+    non_ids = _top_ids(non_motions)
+
+    refs: list[EntityRef] = [
+        ("motions", mid, "oversight_appointee_vote_motion") for mid in app_ids
+    ] + [
+        ("motions", mid, "oversight_non_appointee_vote_motion") for mid in non_ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": "Appointees", "entries": [entries_by_id[i] for i in app_ids]},
+            {"label": "Non-appointees", "entries": [entries_by_id[i] for i in non_ids]},
+        ]
+    }

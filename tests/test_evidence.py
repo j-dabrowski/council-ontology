@@ -29,6 +29,7 @@ from src.analysis.evidence import (
     evidence_for_incumbency,
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
+    evidence_for_oversight_body_capture,
     evidence_for_repeat_applicant,
     evidence_for_threshold_gaming,
     evidence_for_transparency,
@@ -1480,6 +1481,97 @@ def test_delegate_body_conflict_caps_and_orders_newest_first(session):
     result = evidence_for_delegate_body_conflict(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     entries = by_label["Tamala Park Regional Council"]["entries"]
+    assert len(entries) == 2
+    expected_newest_two = {ids_by_year[2021], ids_by_year[2020]}
+    assert {e["entity_id"] for e in entries} == expected_newest_two
+
+
+def test_oversight_body_capture_splits_by_audit_appointment(session):
+    council_id = _council(session)
+    appointee_cllr = _councillor(session, "Audit", "Member")
+    other_cllr = _councillor(session, "Regular", "Member")
+
+    meeting_appt = _meeting(session, council_id, date(2019, 1, 1), minutes_text="text")
+    session.add(Appointment(meeting_id=meeting_appt, councillor_id=appointee_cllr,
+                             body_name="Audit Committee"))
+
+    meeting_vote = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    motion_app = _motion(session, meeting_vote, title="Contested motion A",
+                          outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_app).update({"votes_against": 1})
+    session.add(Vote(motion_id=motion_app, councillor_id=appointee_cllr, choice=VoteChoice.FOR))
+    _evidence(session, meeting_vote, "motions", motion_app, "text")
+
+    motion_non = _motion(session, meeting_vote, title="Contested motion B", item_number="2",
+                          outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_non).update({"votes_against": 1})
+    session.add(Vote(motion_id=motion_non, councillor_id=other_cllr, choice=VoteChoice.FOR))
+    session.flush()
+
+    result = evidence_for_oversight_body_capture(session, council_id, min_votes=1)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert {e["entity_id"] for e in by_label["Appointees"]["entries"]} == {motion_app}
+    assert {e["entity_id"] for e in by_label["Non-appointees"]["entries"]} == {motion_non}
+
+
+def test_oversight_body_capture_ceo_keyword_requires_performance_too(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Partial", "Match")
+
+    # "ceo" alone (no "performance") must NOT count as an appointee match.
+    meeting_appt = _meeting(session, council_id, date(2019, 1, 1), minutes_text="text")
+    session.add(Appointment(meeting_id=meeting_appt, councillor_id=cllr_id,
+                             body_name="CEO Recruitment Panel"))
+
+    meeting_vote = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_vote, title="Contested", outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_id).update({"votes_against": 1})
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    result = evidence_for_oversight_body_capture(session, council_id, min_votes=1)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert motion_id in {e["entity_id"] for e in by_label["Non-appointees"]["entries"]}
+    assert motion_id not in {e["entity_id"] for e in by_label["Appointees"]["entries"]}
+
+
+def test_oversight_body_capture_excludes_below_cohort_floor_and_uncontested(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Contested", "Only")
+    meeting_vote = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+
+    # No votes_against set (None) -> uncontested -> excluded regardless of cohort.
+    uncontested = _motion(session, meeting_vote, title="Uncontested", outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=uncontested, councillor_id=cllr_id, choice=VoteChoice.FOR))
+
+    contested = _motion(session, meeting_vote, title="Contested", item_number="2",
+                         outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=contested).update({"votes_against": 1})
+    session.add(Vote(motion_id=contested, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    # min_votes=2 but this councillor only has 1 contested vote -> below cohort floor.
+    result = evidence_for_oversight_body_capture(session, council_id, min_votes=2)
+    all_ids = {e["entity_id"] for b in result["buckets"] for e in b["entries"]}
+    assert uncontested not in all_ids
+    assert contested not in all_ids
+
+
+def test_oversight_body_capture_caps_and_orders_newest_first(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Prolific", "Voter")
+    ids_by_year = {}
+    for yr in (2019, 2021, 2020):
+        meeting_vote = _meeting(session, council_id, date(yr, 1, 1), minutes_text="text")
+        motion_id = _motion(session, meeting_vote, title=f"Contested {yr}", outcome=MotionOutcome.CARRIED)
+        session.query(Motion).filter_by(id=motion_id).update({"votes_against": 1})
+        session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+        ids_by_year[yr] = motion_id
+    session.flush()
+
+    result = evidence_for_oversight_body_capture(session, council_id, cap=2, min_votes=1)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    entries = by_label["Non-appointees"]["entries"]
     assert len(entries) == 2
     expected_newest_two = {ids_by_year[2021], ids_by_year[2020]}
     assert {e["entity_id"] for e in entries} == expected_newest_two
