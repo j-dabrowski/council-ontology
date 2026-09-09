@@ -4,7 +4,12 @@ docs/frontend/METHOD_PAGE_PLAN.md Step 1) — every metric traces to a fixture
 file and carries that file's own generated_at, and a missing or malformed
 source file degrades to an explicit `source_missing` gap rather than a zero
 or a crash.
+
+The entity-resolution tests (ENTITY_RESOLUTION_SECTION_PLAN.md Step 1) cover
+the one block computed from the database rather than a fixture file.
 """
+import json
+import re
 from datetime import date
 from pathlib import Path
 
@@ -13,7 +18,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.analysis.method import build_method_record
-from src.models import Base, Council, Meeting
+from src.invariant_gate import usable_roster_names
+from src.models import Base, Council, Councillor, Meeting, Motion, Tender, Vote
+from src.models.ontology import VoteChoice
 from src.storage.database import _enable_wal_and_fk
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -194,3 +201,139 @@ def test_malformed_source_file_degrades_without_crashing_other_sections(session)
     # extraction_errors.json is valid in this fixture and must still load.
     assert record["extraction_batch"]["batch_id"] == "msgbatch_fixture01"
     assert record["extraction_batch"]["attempted"] == 2
+
+
+# ---------------------------------------------------------------------------
+# entity_resolution (docs/frontend/ENTITY_RESOLUTION_SECTION_PLAN.md Step 1)
+# ---------------------------------------------------------------------------
+
+def _seed_entity_resolution(session, council_id: int) -> Councillor:
+    """A minutes meeting carrying: one multi-spelling firm (Acme Concrete,
+    two raw strings), one single-spelling firm, one redaction placeholder,
+    and one firm whose name contains a real voting councillor's surname —
+    the shapes both entity-resolution cases group."""
+    meeting = Meeting(
+        council_id=council_id, meeting_date=date(2022, 1, 1),
+        meeting_type="Ordinary Council Meeting", document_type="minutes",
+    )
+    session.add(meeting)
+    session.flush()
+
+    for name, amount in [
+        ("Acme Concrete Pty Ltd", 1000.0),
+        ("Acme Concrete Pty Ltd", 2000.0),
+        ("Acme Concrete", 500.0),
+        ("Bailey Roofing", 3000.0),
+        ("Respondent 1", 4000.0),
+        ("Baxter Roofing Supplies", 9000.0),
+    ]:
+        session.add(Tender(meeting_id=meeting.id, awarded_to=name, amount=amount))
+
+    councillor = Councillor(given_name="Sam", family_name="Baxter", slug="sam-baxter")
+    session.add(councillor)
+    session.flush()
+
+    # A vote (on an ordinary, non-tender motion) is what makes this
+    # councillor eligible for the surname test at all — surnames_tested is
+    # restricted to councillors who cast >=1 vote.
+    motion = Motion(meeting_id=meeting.id, title="Confirmation of minutes")
+    session.add(motion)
+    session.flush()
+    session.add(Vote(motion_id=motion.id, councillor_id=councillor.id, choice=VoteChoice.FOR))
+    session.flush()
+    return councillor
+
+
+def _entity_resolution_record(session, council_id: int) -> dict:
+    return build_method_record(
+        session, council_id, "fixture", "2020-06-01T00:00:00+00:00",
+        data_dir=FULL_FIXTURE,
+    )["entity_resolution"]
+
+
+def test_supplier_normalisation_groups_variants_and_excludes_placeholders(session):
+    council_id = _council(session)
+    _seed_entity_resolution(session, council_id)
+
+    sn = _entity_resolution_record(session, council_id)["supplier_normalisation"]
+
+    assert sn["named_award_rows"] == 6
+    # acmeconcrete, baileyroofing, respondent1, baxterroofingsupplies
+    assert sn["distinct_firms"] == 4
+    assert sn["multi_variant_firms"] == 1
+    assert len(sn["examples"]) == 1
+
+    example = sn["examples"][0]
+    assert example["merged_key"] == "acmeconcrete"
+    assert example["n_awards"] == 3
+    assert example["total_amount"] == 3500.0
+    assert {r["string"]: r["n"] for r in example["raw"]} == {
+        "Acme Concrete Pty Ltd": 2, "Acme Concrete": 1,
+    }
+    # "Respondent 1" is excluded from the grouping, not counted as a firm.
+    assert sn["excluded_placeholders"]["n_awards"] == 1
+    assert "Baxter Roofing Supplies" not in [e["merged_key"] for e in sn["examples"]]
+
+
+def test_surname_collision_reuses_decider_supplier_conflict_and_drops_councillor_identity(session):
+    council_id = _council(session)
+    _seed_entity_resolution(session, council_id)
+
+    sc = _entity_resolution_record(session, council_id)["surname_collision"]
+
+    assert sc["named_awards"] == 5  # excludes the "Respondent 1" placeholder
+    assert sc["surnames_tested"] == 1
+    assert sc["naive_matches"] == 1
+    assert sc["resolved"] == [{
+        "firm": "Baxter Roofing Supplies", "amount": 9000.0,
+        "what_it_is": None, "resolution": None,
+        "reason": "needs_manual_resolution",
+    }]
+    assert sc["unresolved_matches"] == 1
+    assert sc["genuine_matches"] == 0
+
+    blob = json.dumps(sc)
+    assert "councillor_name" not in blob
+    assert "councillor_id" not in blob
+    assert "Sam" not in blob  # the councillor's given name never appears
+
+
+def _full_name_hits(blob: str, councillors: list[Councillor]) -> list[str]:
+    known = {(c.given_name, c.family_name) for c in councillors}
+    hits = []
+    for given, family in usable_roster_names(known):
+        pattern = rf"\b{re.escape(given)}\s+{re.escape(family)}\b"
+        if re.search(pattern, blob, re.IGNORECASE):
+            hits.append(f"{given} {family}")
+    return sorted(hits)
+
+
+def test_entity_resolution_payload_contains_no_councillor_full_name(session):
+    council_id = _council(session)
+    _seed_entity_resolution(session, council_id)
+    session.add(Councillor(given_name="Peter", family_name="Evans", slug="peter-evans"))
+    session.flush()
+
+    entity_resolution = _entity_resolution_record(session, council_id)
+    blob = json.dumps(entity_resolution)
+
+    councillors = session.query(Councillor).all()
+    assert _full_name_hits(blob, councillors) == []
+
+
+def test_name_scan_fails_when_a_councillor_name_is_injected(session):
+    """Proves the check in the previous test actually catches a leak,
+    rather than passing vacuously — inject a real councillor's full name
+    into a copy of the built block and confirm the scan flags it."""
+    council_id = _council(session)
+    _seed_entity_resolution(session, council_id)
+
+    entity_resolution = _entity_resolution_record(session, council_id)
+    tampered = json.loads(json.dumps(entity_resolution))
+    tampered["surname_collision"]["resolved"][0]["what_it_is"] = (
+        "a business associated with Sam Baxter"
+    )
+    blob = json.dumps(tampered)
+
+    councillors = session.query(Councillor).all()
+    assert _full_name_hits(blob, councillors) == ["Sam Baxter"]

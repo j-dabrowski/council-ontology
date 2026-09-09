@@ -16,17 +16,35 @@ the page's normal condition, not a defect to hide — this module makes no
 attempt to reconcile it. A missing or unparseable source file yields
 `{"value": None, "reason": "source_missing", ...}` rather than a zero;
 Step 3 of the plan renders that as an explicit gap.
+
+`entity_resolution` (docs/frontend/ENTITY_RESOLUTION_SECTION_PLAN.md) is the
+one block computed entirely from the live database rather than a `data/`
+file: supplier-name normalisation across every named tender award, and the
+two raw surname collisions `decider_supplier_conflict()` finds between a
+tender winner and a voting councillor. It reuses that function and
+`_normalise_contractor()` / `_is_redacted_recipient()` from
+`src/analysis/queries.py` directly rather than re-deriving them, and drops
+`councillor_name` / `councillor_id` at the boundary — no councillor's name
+reaches this module's return value.
 """
 
 from __future__ import annotations
 
 import json
 import re
+from collections import Counter, defaultdict
 from pathlib import Path
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from src.models import Meeting
+from src.analysis.queries import (
+    _is_redacted_recipient,
+    _normalise_contractor,
+    _normalise_tender_ref,
+    decider_supplier_conflict,
+)
+from src.models import Meeting, Tender
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_DATA_DIR = _REPO_ROOT / "data"
@@ -266,6 +284,7 @@ def build_method_record(
         "coverage": _build_coverage(session, council_id, census, inventories_summary),
         "validation": _build_validation(sample_summary, report, validation_summary),
         "extraction_batch": _build_extraction_batch(extraction_errors),
+        "entity_resolution": _build_entity_resolution(session, council_id, generated_at),
     }
 
 
@@ -443,4 +462,205 @@ def _build_extraction_batch(extraction_errors: dict | None) -> dict:
             "the last recorded extraction batch, not a corpus-wide rate — "
             "attempted against however many documents are in the database now"
         ),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Entity resolution — two live demonstrations of the join discipline the
+# analysis already applies (ENTITY_RESOLUTION_SECTION_PLAN.md Part C).
+# Computed from the database, not from a `data/` file (B.3 of that plan).
+# ---------------------------------------------------------------------------
+
+_ENTITY_RESOLUTION_SOURCE = "data/council.db"
+
+# The one piece of authored prose in this module (ENTITY_RESOLUTION_SECTION_
+# PLAN.md Part C): a plain-English statement of what a firm actually is,
+# checked against its tender's own `description` and `extraction_evidence`
+# quote rather than against its name. Reuses, unchanged, the wording
+# `tests.py`'s `_t_decider_supplier_conflict` verdict already publishes on
+# the live scorecard for these same two firms (checked here, not retyped
+# from there):
+#   - G T Evans Weed Spraying Service (TEN0008, $70,000): description
+#     "Chemical control of weeds"; quote "...the chemical control of weeds
+#     within the Town of Cambridge..." — fully supports "weed-spraying
+#     contractor".
+#   - MacDonald Johnston (TEN0010, $217,154): description "Supply and
+#     delivery of one road sweeper..."; quote "...a MacDonald Johnston road
+#     sweeper on a 600 Hino series FE truck..." — the quote names the
+#     product after the firm rather than using the word "manufacturer", the
+#     ordinary way a piece of branded plant is described; it does not use
+#     the firm's name for anything else, so the characterisation is kept.
+# A firm not listed here is a collision this module has not been checked
+# against yet, and is reported as such rather than resolved by guess.
+_COLLISION_WHAT_IT_IS = {
+    "gtevansweedsprayingservice": "a weed-spraying contractor",
+    "macdonaldjohnston": "a street-sweeper manufacturer",
+}
+
+_UNRELATED_BUSINESS_RESOLUTION = (
+    "resolves on provenance to an unrelated business, not the councillor "
+    "who shares the surname"
+)
+
+
+def _named_tender_rows(session: Session, council_id: int) -> list[tuple]:
+    """Every minutes tender award with a non-blank `awarded_to` — the
+    population both entity-resolution cases group, before any placeholder
+    exclusion or dedup."""
+    return (
+        session.query(
+            Tender.id, Tender.awarded_to, Tender.amount,
+            Tender.reference_number, Meeting.meeting_date,
+        )
+        .join(Meeting, Tender.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Tender.awarded_to.isnot(None),
+            func.trim(Tender.awarded_to) != "",
+        )
+        .order_by(Tender.id)
+        .all()
+    )
+
+
+def _build_entity_resolution(session: Session, council_id: int, generated_at: str) -> dict:
+    return {
+        "supplier_normalisation": _build_supplier_normalisation(session, council_id, generated_at),
+        "surname_collision": _build_surname_collision(session, council_id, generated_at),
+    }
+
+
+def _build_supplier_normalisation(session: Session, council_id: int, generated_at: str) -> dict:
+    rows = _named_tender_rows(session, council_id)
+    named_award_rows = len(rows)
+
+    all_keys: set[str] = set()
+    real_groups: dict[str, list[tuple[str, float | None]]] = defaultdict(list)
+    placeholder_rows = 0
+    for _tid, awarded_to, amount, _ref, _mdate in rows:
+        name = awarded_to.strip()
+        all_keys.add(_normalise_contractor(name))
+        if _is_redacted_recipient(name):
+            placeholder_rows += 1
+            continue
+        real_groups[_normalise_contractor(name)].append((name, amount))
+
+    examples = []
+    for key, entries in real_groups.items():
+        raw_counts = Counter(name for name, _amount in entries)
+        if len(raw_counts) <= 1:
+            continue
+        examples.append({
+            "merged_key": key,
+            "raw": [{"string": s, "n": n} for s, n in raw_counts.items()],
+            "n_awards": len(entries),
+            "total_amount": sum(amount or 0.0 for _name, amount in entries),
+        })
+    examples.sort(key=lambda e: (-e["n_awards"], e["merged_key"]))
+
+    return {
+        "source": _ENTITY_RESOLUTION_SOURCE,
+        "generated_at": generated_at,
+        "named_award_rows": named_award_rows,
+        "distinct_firms": len(all_keys),
+        "multi_variant_firms": len(examples),
+        "rule": "lowercase; strip company suffixes; drop . and ,; remove internal whitespace",
+        "examples": examples,
+        "excluded_placeholders": {
+            "n_awards": placeholder_rows,
+            "note": (
+                "de-identification placeholders such as 'Respondent 1' or "
+                "'Tenderer 3' are excluded from the grouping above — grouped "
+                "in as if they were suppliers, a placeholder can out-rank "
+                "every real contractor by value"
+            ),
+        },
+    }
+
+
+def _duplicate_extraction_note(
+    dup_groups: dict[tuple[str, str, float], list[tuple[int, object]]],
+    firm: str,
+    amount: float,
+) -> str | None:
+    ck = _normalise_contractor(firm)
+    for (group_key, _ref_key, group_amount), members in dup_groups.items():
+        if group_key != ck or group_amount != amount or len(members) < 2:
+            continue
+        dates = sorted(m[1] for m in members if m[1] is not None)
+        ids = sorted(m[0] for m in members)
+        gap = f"{(dates[-1] - dates[0]).days} days apart" if len(dates) >= 2 else "on separate rows"
+        return (
+            f"this award is itself extracted as {len(members)} minutes rows "
+            f"{gap} (ids {', '.join(str(i) for i in ids)}) — one real award, "
+            f"not {len(members)}; decider_supplier_conflict() counts it once"
+        )
+    return None
+
+
+def _build_surname_collision(session: Session, council_id: int, generated_at: str) -> dict:
+    dsc = decider_supplier_conflict(session, council_id)
+
+    rows = _named_tender_rows(session, council_id)
+    dup_groups: dict[tuple[str, str, float], list[tuple[int, object]]] = defaultdict(list)
+    for tid, awarded_to, amount, ref, mdate in rows:
+        name = awarded_to.strip()
+        if _is_redacted_recipient(name):
+            continue
+        ck = _normalise_contractor(name)
+        rk = _normalise_tender_ref(ref)
+        if ck and rk:
+            dup_groups[(ck, rk, float(amount or 0.0))].append((tid, mdate))
+
+    resolved = []
+    unresolved_matches = 0
+    confirmed_unrelated = 0
+    dedup_note = None
+    for c in dsc.collisions:
+        key = _normalise_contractor(c.firm)
+        what_it_is = _COLLISION_WHAT_IT_IS.get(key)
+        entry = {
+            "firm": c.firm,
+            "amount": c.amount,
+            "what_it_is": what_it_is,
+            "resolution": _UNRELATED_BUSINESS_RESOLUTION if what_it_is else None,
+        }
+        if what_it_is is None:
+            entry["reason"] = "needs_manual_resolution"
+            unresolved_matches += 1
+        else:
+            confirmed_unrelated += 1
+        resolved.append(entry)
+
+        if dedup_note is None:
+            dedup_note = _duplicate_extraction_note(dup_groups, c.firm, c.amount)
+
+    # A genuine match is a collision resolved to an actual relationship — one
+    # this module has no curated case of yet. Every collision is accounted
+    # for in exactly one bucket, so this is never a bare constant: it is
+    # whatever's left once the confirmed-unrelated and still-open ones are
+    # subtracted.
+    genuine_matches = len(dsc.collisions) - confirmed_unrelated - unresolved_matches
+
+    return {
+        "source": _ENTITY_RESOLUTION_SOURCE,
+        "generated_at": generated_at,
+        "named_awards": dsc.named_awards,
+        "surnames_tested": dsc.surnames_tested,
+        "naive_matches": len(dsc.collisions),
+        "resolved": resolved,
+        "genuine_matches": genuine_matches,
+        "unresolved_matches": unresolved_matches,
+        "dedup_note": dedup_note,
+        "limits": [
+            "Surname matching cannot detect a connection through a "
+            "differently-named entity — a councillor with an interest in a "
+            "firm trading under any other name is invisible to this test.",
+            "This is a null within a stated coverage boundary, not proof "
+            "of absence.",
+            f"Only separately-moved tender-award motions are visible, not "
+            f"consent-agenda'd awards — {dsc.named_awards} named awards were "
+            f"tested against {dsc.tender_motions} tender-award motions.",
+        ],
     }
