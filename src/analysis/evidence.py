@@ -1255,3 +1255,72 @@ def evidence_for_freshman_effect(
             for label in labels
         ]
     }
+
+
+def evidence_for_election_cycle(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.election_cycle.
+
+    Same population as tests._t_election_cycle's own chart: votes on
+    carried motions (minutes), classified by whether the meeting falls in
+    the pre-election window (WA: biennial October elections in odd years,
+    window = Apr-Oct of an odd year) or not. Votes have no quote of their
+    own (see evidence_for_freshman_effect's docstring); this resolves the
+    parent motion behind each AGAINST vote — the dissent the chart is
+    about.
+
+    Unlike freshman_effect, the window is a pure function of the meeting
+    date, not of any one councillor, so a motion can only ever fall in one
+    bucket here — still deduplicated per bucket in case more than one
+    councillor dissented on the same motion. Capped to `cap` per bucket,
+    newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import Meeting, Motion, MotionOutcome, Vote, VoteChoice
+
+    rows = (
+        session.query(Vote.choice, Motion.id, Meeting.meeting_date)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            Meeting.document_type == "minutes",
+            Motion.outcome == MotionOutcome.CARRIED,
+        )
+        .all()
+    )
+
+    # Same labels as tests._t_election_cycle's own chart, en dash included.
+    labels = ["Pre-election (Apr–Oct odd yr)", "Rest of cycle"]
+    grouped: dict[str, dict[int, object]] = {label: {} for label in labels}
+    for choice, motion_id, meeting_date in rows:
+        if choice != VoteChoice.AGAINST or not meeting_date:
+            continue
+        in_window = (meeting_date.year % 2 == 1) and (4 <= meeting_date.month <= 10)
+        label = labels[0] if in_window else labels[1]
+        existing = grouped[label].get(motion_id)
+        if existing is None or meeting_date > existing:
+            grouped[label][motion_id] = meeting_date
+
+    ids_by_bucket: dict[str, list[int]] = {}
+    for label, motions in grouped.items():
+        newest_first = sorted(motions.items(), key=lambda kv: kv[1], reverse=True)
+        ids_by_bucket[label] = [motion_id for motion_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("motions", motion_id, "dissenting_vote_motion")
+        for ids in ids_by_bucket.values()
+        for motion_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in labels
+        ]
+    }

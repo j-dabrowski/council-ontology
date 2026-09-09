@@ -20,6 +20,7 @@ from src.analysis.evidence import (
     evidence_for_confidential_tender_size,
     evidence_for_confidential_topics,
     evidence_for_deputation_dissent,
+    evidence_for_election_cycle,
     evidence_for_eoy_spending,
     evidence_for_freshman_effect,
     evidence_for_incumbency,
@@ -1161,3 +1162,91 @@ def test_freshman_effect_caps_per_bucket(session):
     result = evidence_for_freshman_effect(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["First 12 months"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_election_cycle() — same votes-have-no-quote design as
+# freshman_effect, but the window is a pure function of the meeting date,
+# so a motion can only ever land in one bucket.
+# ---------------------------------------------------------------------------
+
+def test_election_cycle_classifies_by_pre_election_window(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "A", "Councillor")
+
+    # 2023 (odd year), June (in Apr-Oct) -> pre-election window.
+    meeting_in_window = _meeting(session, council_id, date(2023, 6, 1),
+                                  minutes_text="MOVED the plan be adopted. CARRIED (3/2).")
+    motion_in_window = _motion(session, meeting_in_window, title="Plan motion",
+                                outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_in_window, councillor_id=cllr_id, choice=VoteChoice.AGAINST))
+    _evidence(session, meeting_in_window, "motions", motion_in_window,
+              "MOVED the plan be adopted.")
+
+    # 2022 (even year) -> outside the window regardless of month.
+    meeting_even_year = _meeting(session, council_id, date(2022, 6, 1), minutes_text="text")
+    motion_even_year = _motion(session, meeting_even_year, title="Even year motion",
+                                item_number="2", outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_even_year, councillor_id=cllr_id, choice=VoteChoice.AGAINST))
+
+    # 2023 (odd year) but December -> outside Apr-Oct, so outside the window.
+    meeting_odd_dec = _meeting(session, council_id, date(2023, 12, 1), minutes_text="text")
+    motion_odd_dec = _motion(session, meeting_odd_dec, title="December motion",
+                              item_number="3", outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_odd_dec, councillor_id=cllr_id, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    result = evidence_for_election_cycle(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    window_ids = {e["entity_id"] for e in by_label["Pre-election (Apr–Oct odd yr)"]["entries"]}
+    rest_ids = {e["entity_id"] for e in by_label["Rest of cycle"]["entries"]}
+    assert window_ids == {motion_in_window}
+    assert rest_ids == {motion_even_year, motion_odd_dec}
+
+    window_entry = by_label["Pre-election (Apr–Oct odd yr)"]["entries"][0]
+    assert window_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_election_cycle_ignores_for_votes(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "A", "Councillor")
+    meeting_id = _meeting(session, council_id, date(2023, 6, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    result = evidence_for_election_cycle(session, council_id)
+    all_ids = {e["entity_id"] for b in result["buckets"] for e in b["entries"]}
+    assert all_ids == set()
+
+
+def test_election_cycle_dedupes_same_motion_within_one_bucket(session):
+    council_id = _council(session)
+    cllr_a = _councillor(session, "A", "One")
+    cllr_b = _councillor(session, "B", "Two")
+    meeting_id = _meeting(session, council_id, date(2023, 6, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_a, choice=VoteChoice.AGAINST))
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_b, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    result = evidence_for_election_cycle(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    window_ids = [e["entity_id"] for e in by_label["Pre-election (Apr–Oct odd yr)"]["entries"]]
+    assert window_ids.count(motion_id) == 1
+
+
+def test_election_cycle_caps_per_bucket(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "A", "Councillor")
+    meeting_id = _meeting(session, council_id, date(2023, 6, 1), minutes_text="text")
+    for i in range(3):
+        motion_id = _motion(session, meeting_id, title=f"Motion {i}", item_number=str(i),
+                             outcome=MotionOutcome.CARRIED)
+        session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    result = evidence_for_election_cycle(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["Pre-election (Apr–Oct odd yr)"]["entries"]) == 2

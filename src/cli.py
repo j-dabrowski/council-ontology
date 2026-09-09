@@ -2900,6 +2900,22 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/governance.freshman_effect.json ({_n_fe_ev} motion(s))"
     )
 
+    # Evidence chain for governance.election_cycle (Phase 2, tests.
+    # <generator> group) — second of three votes-based tests, motion as
+    # receipt again, bucketed by the meeting date's pre-election window.
+    from src.analysis.evidence import evidence_for_election_cycle
+    election_cycle_evidence = evidence_for_election_cycle(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "governance.election_cycle.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": election_cycle_evidence,
+    }, indent=2))
+    written.append("evidence/governance.election_cycle")
+    _n_ec_ev = sum(len(b["entries"]) for b in election_cycle_evidence["buckets"])
+    console.print(
+        f"  [green]✓[/green] evidence/governance.election_cycle.json ({_n_ec_ev} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (
