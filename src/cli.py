@@ -2950,6 +2950,24 @@ def _generate_snapshots(
         f"({_n_dsc_ev} motion(s))"
     )
 
+    # Evidence chain for conflict.delegate_body_conflict (Phase 2,
+    # remaining-11 group) — one bucket per _DELEGATE_BODIES entry, affiliated
+    # votes' parent motions only (the population that body's bar is computed
+    # over); "other" votes on the same motions aren't charted.
+    from src.analysis.evidence import evidence_for_delegate_body_conflict
+    delegate_body_evidence = evidence_for_delegate_body_conflict(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "conflict.delegate_body_conflict.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": delegate_body_evidence,
+    }, indent=2))
+    written.append("evidence/conflict.delegate_body_conflict")
+    _n_dbc_ev = sum(len(b["entries"]) for b in delegate_body_evidence["buckets"])
+    console.print(
+        "  [green]✓[/green] evidence/conflict.delegate_body_conflict.json "
+        f"({_n_dbc_ev} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

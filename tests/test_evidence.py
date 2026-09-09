@@ -21,6 +21,7 @@ from src.analysis.evidence import (
     evidence_for_confidential_tender_size,
     evidence_for_confidential_topics,
     evidence_for_decider_supplier_conflict,
+    evidence_for_delegate_body_conflict,
     evidence_for_deputation_dissent,
     evidence_for_election_cycle,
     evidence_for_eoy_spending,
@@ -36,6 +37,7 @@ from src.analysis.evidence import (
 )
 from src.models import (
     ApplicationStatus,
+    Appointment,
     Base,
     BudgetItem,
     CommunitySubmission,
@@ -1389,6 +1391,95 @@ def test_decider_supplier_conflict_caps_and_orders_newest_first(session):
     result = evidence_for_decider_supplier_conflict(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     entries = by_label["Tender-award votes"]["entries"]
+    assert len(entries) == 2
+    expected_newest_two = {ids_by_year[2021], ids_by_year[2020]}
+    assert {e["entity_id"] for e in entries} == expected_newest_two
+
+
+def test_delegate_body_conflict_only_affiliated_votes_included(session):
+    council_id = _council(session)
+    cllr_aff = _councillor(session, "Aff", "Iliate")
+    cllr_other = _councillor(session, "Other", "Councillor")
+
+    meeting_appt = _meeting(session, council_id, date(2019, 1, 1), minutes_text="text")
+    session.add(Appointment(meeting_id=meeting_appt, councillor_id=cllr_aff,
+                             body_name="Mindarie Regional Council"))
+
+    meeting_vote = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_vote, title="Mindarie Regional Council Annual Report",
+                         outcome=MotionOutcome.CARRIED)
+    _evidence(session, meeting_vote, "motions", motion_id, "text")
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_aff,
+                      choice=VoteChoice.FOR, declared_interest=True))
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_other,
+                      choice=VoteChoice.FOR, declared_interest=False))
+    session.flush()
+
+    result = evidence_for_delegate_body_conflict(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert {e["entity_id"] for e in by_label["Mindarie Regional Council"]["entries"]} == {motion_id}
+    # Buckets for un-triggered bodies still appear, just empty.
+    assert by_label["Tamala Park Regional Council"]["entries"] == []
+    assert by_label["Ocean Gardens (Inc) Board of Management"]["entries"] == []
+
+
+def test_delegate_body_conflict_excludes_votes_outside_the_tenure_window(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Later", "Appointee")
+
+    # Vote cast BEFORE the appointment even happened -> outside any window.
+    meeting_vote = _meeting(session, council_id, date(2015, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_vote, title="Mindarie Regional Council matter")
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+
+    meeting_appt = _meeting(session, council_id, date(2019, 1, 1), minutes_text="text")
+    session.add(Appointment(meeting_id=meeting_appt, councillor_id=cllr_id,
+                             body_name="Mindarie Regional Council"))
+    session.flush()
+
+    result = evidence_for_delegate_body_conflict(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert motion_id not in {e["entity_id"] for e in by_label["Mindarie Regional Council"]["entries"]}
+
+
+def test_delegate_body_conflict_appt_exclude_keyword_is_honoured(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Working", "Group")
+
+    # "Working Group" is a distinct sub-body per _DELEGATE_BODIES' own
+    # appt_exclude — must not count as a Mindarie plenary appointment.
+    meeting_appt = _meeting(session, council_id, date(2018, 1, 1), minutes_text="text")
+    session.add(Appointment(meeting_id=meeting_appt, councillor_id=cllr_id,
+                             body_name="Mindarie Regional Council Working Group"))
+
+    meeting_vote = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_vote, title="Mindarie Regional Council report")
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    result = evidence_for_delegate_body_conflict(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert motion_id not in {e["entity_id"] for e in by_label["Mindarie Regional Council"]["entries"]}
+
+
+def test_delegate_body_conflict_caps_and_orders_newest_first(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Repeat", "Appointee")
+    meeting_appt = _meeting(session, council_id, date(2018, 1, 1), minutes_text="text")
+    session.add(Appointment(meeting_id=meeting_appt, councillor_id=cllr_id,
+                             body_name="Tamala Park Regional Council"))
+
+    ids_by_year = {}
+    for yr in (2019, 2021, 2020):
+        meeting_vote = _meeting(session, council_id, date(yr, 1, 1), minutes_text="text")
+        motion_id = _motion(session, meeting_vote, title=f"Tamala Park Regional Council item {yr}")
+        session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+        ids_by_year[yr] = motion_id
+    session.flush()
+
+    result = evidence_for_delegate_body_conflict(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    entries = by_label["Tamala Park Regional Council"]["entries"]
     assert len(entries) == 2
     expected_newest_two = {ids_by_year[2021], ids_by_year[2020]}
     assert {e["entity_id"] for e in entries} == expected_newest_two

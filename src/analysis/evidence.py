@@ -1462,3 +1462,111 @@ def evidence_for_decider_supplier_conflict(
             {"label": "Chamber base rate", "entries": []},
         ]
     }
+
+
+def evidence_for_delegate_body_conflict(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for conflict.delegate_body_conflict.
+
+    One bucket per body in `_DELEGATE_BODIES`, reproducing
+    delegate_body_conflict()'s own appointment-window and motion-keyword
+    logic verbatim so the population matches exactly what that body's
+    bar (affiliated_declared_pct) is computed over: the AFFILIATED votes
+    only (cast by a councillor inside their own tenure window for that
+    body) — the "other" (non-affiliated) votes on the same motions aren't
+    charted, so aren't included here, same "no bar to reach it from"
+    reasoning as evidence_for_decider_supplier_conflict()'s Limb 2.
+
+    Votes have no independent quote (see evidence_for_attendance()); the
+    parent motion is the receipt. A motion can appear once per bucket even
+    if more than one affiliated vote was cast on it (multiple appointees).
+
+    `source_cache`: see resolve_evidence().
+    """
+    from collections import defaultdict
+    from datetime import timedelta
+
+    from src.analysis.queries import _DELEGATE_BODIES
+    from src.models import Appointment, Motion, Vote
+
+    buckets: list[dict] = []
+    all_refs: list[EntityRef] = []
+    ids_by_body: dict[str, list[int]] = {}
+
+    for body in _DELEGATE_BODIES:
+        appt_q = (
+            session.query(Appointment.councillor_id, Meeting.meeting_date)
+            .join(Meeting, Appointment.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Meeting.document_type == "minutes",
+                Appointment.councillor_id.isnot(None),
+            )
+        )
+        like_clause = None
+        for kw in body["appt_like"]:
+            c = Appointment.body_name.ilike(f"%{kw}%")
+            like_clause = c if like_clause is None else (like_clause | c)
+        appt_q = appt_q.filter(like_clause)
+        for ex in body["appt_exclude"]:
+            appt_q = appt_q.filter(~Appointment.body_name.ilike(f"%{ex}%"))
+
+        by_cid: dict[int, list] = defaultdict(list)
+        for cid, mdate in appt_q.all():
+            if mdate:
+                by_cid[cid].append(mdate)
+
+        windows: list[tuple[int, object, object]] = []
+        for cid, dates in by_cid.items():
+            dates = sorted(set(dates))
+            for i, d in enumerate(dates):
+                end = dates[i + 1] if i + 1 < len(dates) else d + timedelta(days=365 * 4)
+                windows.append((cid, d, end))
+
+        motion_q = (
+            session.query(Motion.id, Meeting.meeting_date)
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Meeting.document_type == "minutes",
+                (Motion.title.ilike(f"%{body['motion_keyword']}%"))
+                | (Motion.motion_text.ilike(f"%{body['motion_keyword']}%")),
+            )
+        )
+        motion_date = {mid: mdate for mid, mdate in motion_q.all() if mdate}
+
+        affiliated: dict[int, object] = {}
+        if motion_date:
+            vote_rows = (
+                session.query(Vote.motion_id, Vote.councillor_id)
+                .filter(Vote.motion_id.in_(list(motion_date.keys())))
+                .all()
+            )
+            for mid, cid in vote_rows:
+                mdate = motion_date[mid]
+                is_aff = any(
+                    wcid == cid and start <= mdate < end for wcid, start, end in windows
+                )
+                if is_aff:
+                    existing = affiliated.get(mid)
+                    if existing is None or mdate > existing:
+                        affiliated[mid] = mdate
+
+        newest_first = sorted(affiliated.items(), key=lambda kv: kv[1], reverse=True)
+        ids = [mid for mid, _d in newest_first[:cap]]
+        ids_by_body[body["label"]] = ids
+        all_refs.extend(("motions", mid, "delegate_body_affiliated_motion") for mid in ids)
+
+    entries = resolve_evidence(session, all_refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    for body in _DELEGATE_BODIES:
+        label = body["label"]
+        buckets.append({
+            "label": label,
+            "entries": [entries_by_id[i] for i in ids_by_body[label]],
+        })
+
+    return {"buckets": buckets}
