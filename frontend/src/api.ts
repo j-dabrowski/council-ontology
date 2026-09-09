@@ -883,6 +883,19 @@ export interface ConcentrationEvidence {
   entries: EvidenceEntry[];
 }
 
+// EngagementChart had no drill-down at all before this. Bucketed by year
+// (matching the chart's year-clustered bars), spanning public_questions/
+// deputations/petitions in one combined list per year — same shape as
+// TransparencyEvidence above.
+export interface ParticipationEvidenceYear {
+  year: number;
+  items: EvidenceEntry[];
+}
+
+export interface ParticipationEvidence {
+  years: ParticipationEvidenceYear[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -980,4 +993,6 @@ export const api = {
     getSnapshot<QuestionResponsivenessEvidence>("evidence/engagement.question_responsiveness"),
   evidenceConcentration: () =>
     getSnapshot<ConcentrationEvidence>("evidence/procurement.concentration"),
+  evidenceParticipation: () =>
+    getSnapshot<ParticipationEvidence>("evidence/engagement.participation"),
 };

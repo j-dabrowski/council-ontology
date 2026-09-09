@@ -3067,6 +3067,22 @@ def _generate_snapshots(
         f"({len(concentration_evidence['entries'])} award(s))"
     )
 
+    # Evidence chain for engagement.participation (Phase 2, remaining-11
+    # group) — EngagementChart's per-year drill-down (new UI, no prior
+    # click-through), spanning public_questions/deputations/petitions.
+    from src.analysis.evidence import evidence_for_participation
+    participation_evidence = evidence_for_participation(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "engagement.participation.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": participation_evidence,
+    }, indent=2))
+    written.append("evidence/engagement.participation")
+    _n_part_ev = sum(len(y["items"]) for y in participation_evidence["years"])
+    console.print(
+        f"  [green]✓[/green] evidence/engagement.participation.json ({_n_part_ev} item(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

@@ -1817,6 +1817,77 @@ def evidence_for_concentration(
     return {"entries": entries}
 
 
+def evidence_for_participation(
+    session: Session, council_id: int, cap: int = 10,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for engagement.participation (EngagementChart).
+
+    EngagementChart.tsx had no drill-down of any kind before this — a
+    plain per-year stacked bar chart (public questions / deputations /
+    petitions), no existing click-through to build on, unlike every other
+    test in this file.
+
+    Buckets by year (matching public_engagement_by_year()'s own per-year
+    aggregation), spanning all three source tables per year — same
+    UNION-ALL-with-per-branch-ROW_NUMBER pattern as
+    evidence_for_transparency(), capped to `cap` per table per year,
+    newest first. Clicking any bar in a year's cluster opens one drill-down
+    listing that year's items across all three types, since a reader
+    wants "what happened this year," not one series in isolation
+    (petitions/deputations are usually too sparse to filter further).
+
+    `source_cache`: see resolve_evidence().
+    """
+    from sqlalchemy import text
+
+    sql = text("""
+        SELECT year, entity_table, entity_id
+        FROM (
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER) year,
+                   'public_questions' entity_table, pq.id entity_id, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM public_questions pq JOIN meetings m ON pq.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes'
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'deputations', d.id, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM deputations d JOIN meetings m ON d.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes'
+            UNION ALL
+            SELECT CAST(substr(m.meeting_date,1,4) AS INTEGER),
+                   'petitions', p.id, m.meeting_date,
+                   ROW_NUMBER() OVER (PARTITION BY CAST(substr(m.meeting_date,1,4) AS INTEGER)
+                                      ORDER BY m.meeting_date DESC) rn
+              FROM petitions p JOIN meetings m ON p.meeting_id = m.id
+             WHERE m.council_id = :cid AND m.document_type = 'minutes'
+        ) WHERE rn <= :cap
+        ORDER BY year, meeting_date DESC
+    """)
+    rows = session.execute(sql, {"cid": council_id, "cap": cap}).fetchall()
+
+    refs_by_year: dict[int, list[EntityRef]] = {}
+    for year, entity_table, entity_id in rows:
+        refs_by_year.setdefault(year, []).append((entity_table, entity_id, "engagement_item"))
+
+    all_refs: list[EntityRef] = [ref for refs in refs_by_year.values() for ref in refs]
+    entries = resolve_evidence(session, all_refs, council_id, source_cache)
+    entries_by_ref = {(e["entity_table"], e["entity_id"]): e for e in entries}
+
+    return {
+        "years": [
+            {
+                "year": year,
+                "items": [entries_by_ref[(t, i)] for (t, i, _role) in refs_by_year[year]],
+            }
+            for year in sorted(refs_by_year)
+        ]
+    }
+
+
 def evidence_for_recusal_trend(
     session: Session, council_id: int,
     source_cache: dict[int, _MeetingSource] | None = None,

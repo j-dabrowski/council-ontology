@@ -31,6 +31,7 @@ from src.analysis.evidence import (
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
     evidence_for_oversight_body_capture,
+    evidence_for_participation,
     evidence_for_power_spread,
     evidence_for_question_responsiveness,
     evidence_for_recusal_management,
@@ -59,6 +60,7 @@ from src.models import (
     Motion,
     MotionOutcome,
     OtherItem,
+    Petition,
     PlanningApplication,
     PublicQuestion,
     Tender,
@@ -1796,3 +1798,44 @@ def test_concentration_excludes_redacted_recipients(session):
 
     result = evidence_for_concentration(session, council_id)
     assert t.id not in {e["entity_id"] for e in result["entries"]}
+
+
+def test_participation_groups_all_three_types_by_year(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    pq = PublicQuestion(meeting_id=meeting_id, questioner_name="A", question_summary="Q?")
+    dep = Deputation(meeting_id=meeting_id, presenter_name="B", topic="Topic")
+    pet = Petition(meeting_id=meeting_id, subject="Subject", presented_by="C")
+    session.add_all([pq, dep, pet])
+    session.flush()
+
+    result = evidence_for_participation(session, council_id)
+    years = {y["year"]: y["items"] for y in result["years"]}
+    assert 2020 in years
+    tables = {(i["entity_table"], i["entity_id"]) for i in years[2020]}
+    assert tables == {
+        ("public_questions", pq.id),
+        ("deputations", dep.id),
+        ("petitions", pet.id),
+    }
+
+
+def test_participation_caps_per_table_per_year_independently(session):
+    council_id = _council(session)
+    for i in range(3):
+        meeting_id = _meeting(session, council_id, date(2020, i + 1, 1), minutes_text="text")
+        session.add(PublicQuestion(meeting_id=meeting_id, questioner_name=f"Q{i}",
+                                    question_summary="Q?"))
+    meeting_id = _meeting(session, council_id, date(2020, 6, 1), minutes_text="text")
+    session.add(Deputation(meeting_id=meeting_id, presenter_name="D", topic="T"))
+    session.flush()
+
+    result = evidence_for_participation(session, council_id, cap=2)
+    years = {y["year"]: y["items"] for y in result["years"]}
+    items = years[2020]
+    pq_items = [i for i in items if i["entity_table"] == "public_questions"]
+    dep_items = [i for i in items if i["entity_table"] == "deputations"]
+    # 3 public questions capped to 2, but the single deputation isn't
+    # affected by the questions' own cap (separate ROW_NUMBER partitions).
+    assert len(pq_items) == 2
+    assert len(dep_items) == 1
