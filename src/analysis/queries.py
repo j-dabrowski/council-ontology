@@ -3370,6 +3370,8 @@ class RecusalDeclarationDetail:
     action: str           # "Stepped out" / "Stayed — voted"
     what: str | None      # the interest description
     quote: str | None     # verbatim minute text (extraction_evidence)
+    entity_id: int | None = None  # interest_declarations.id — None when no declaration
+                                   # matched (evidence_for_recusal_trend() lookup key)
 
 
 @dataclass
@@ -3514,6 +3516,7 @@ def recusal_compliance_trend(
                 action="Stepped out" if rec else "Stayed — voted",
                 what=descr,
                 quote=quote_by_decl.get(did),
+                entity_id=did,
             ))
         return out
 

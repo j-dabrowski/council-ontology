@@ -31,6 +31,7 @@ from src.analysis.evidence import (
     evidence_for_officer_ratification,
     evidence_for_oversight_body_capture,
     evidence_for_recusal_management,
+    evidence_for_recusal_trend,
     evidence_for_repeat_applicant,
     evidence_for_threshold_gaming,
     evidence_for_transparency,
@@ -1638,3 +1639,41 @@ def test_recusal_management_skips_votes_with_no_matched_declaration(session):
 
     result = evidence_for_recusal_management(session, council_id)
     assert len(result["entries"]) == 7
+
+
+def test_recusal_trend_resolves_matched_declarations(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Financial", "Interest")
+    quote_text = "Cr Financial Interest declared a financial interest and left the meeting."
+    meeting_id = _meeting(session, council_id, date(2020, 3, 1), minutes_text=quote_text)
+    motion_id = _motion(session, meeting_id, title="Item 1", item_number="1",
+                         outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id,
+                      choice=VoteChoice.ABSENT, declared_interest=True))
+    decl = InterestDeclaration(meeting_id=meeting_id, councillor_id=cllr_id,
+                                interest_type=InterestDeclarationType.FINANCIAL,
+                                description="Owns nearby land", item_reference="1")
+    session.add(decl)
+    session.flush()
+    _evidence(session, meeting_id, "interest_declarations", decl.id, quote_text)
+    session.flush()
+
+    result = evidence_for_recusal_trend(session, council_id)
+    ids = {e["entity_id"] for e in result["entries"]}
+    assert decl.id in ids
+    entry = next(e for e in result["entries"] if e["entity_id"] == decl.id)
+    assert entry["quotes"][0]["tier"] == "exact"
+
+
+def test_recusal_trend_skips_votes_with_no_matched_declaration(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "No", "Match")
+    meeting_id = _meeting(session, council_id, date(2020, 3, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, title="Unmatched item", item_number="unmatched",
+                         outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR,
+                      declared_interest=True, interest_description="Some interest"))
+    session.flush()
+
+    result = evidence_for_recusal_trend(session, council_id)
+    assert result["entries"] == []

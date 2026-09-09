@@ -3003,6 +3003,22 @@ def _generate_snapshots(
         f"({len(recusal_mgmt_evidence['entries'])} declaration(s))"
     )
 
+    # Evidence chain for conflict.recusal_trend (Phase 2, remaining-11
+    # group) — RecusalTrendPanel's per-cell (interest type × era) drill-down,
+    # a flat `entries` list keyed by RecusalDeclarationDetail's own entity_id.
+    from src.analysis.evidence import evidence_for_recusal_trend
+    recusal_trend_evidence = evidence_for_recusal_trend(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "conflict.recusal_trend.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": recusal_trend_evidence,
+    }, indent=2))
+    written.append("evidence/conflict.recusal_trend")
+    console.print(
+        "  [green]✓[/green] evidence/conflict.recusal_trend.json "
+        f"({len(recusal_trend_evidence['entries'])} declaration(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

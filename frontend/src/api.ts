@@ -383,6 +383,7 @@ export interface RecusalDeclarationDetail {
   action: string;          // "Stepped out" / "Stayed — voted"
   what: string | null;
   quote: string | null;    // verbatim minute text
+  entity_id: number | null; // interest_declarations.id, for the evidence chain lookup
 }
 
 export interface RecusalTypeEra {
@@ -854,6 +855,13 @@ export interface RecusalManagementEvidence {
   entries: EvidenceEntry[];
 }
 
+// RecusalTrendPanel's drill-down is per-cell (interest type × era), also
+// flat rather than chart-bar buckets — same lookup convention as
+// RecusalManagementEvidence above.
+export interface RecusalTrendEvidence {
+  entries: EvidenceEntry[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -943,4 +951,6 @@ export const api = {
     getSnapshot<ChairCaptureEvidence>("evidence/governance.chair_capture"),
   evidenceRecusalManagement: () =>
     getSnapshot<RecusalManagementEvidence>("evidence/conflict.recusal_management"),
+  evidenceRecusalTrend: () =>
+    getSnapshot<RecusalTrendEvidence>("evidence/conflict.recusal_trend"),
 };

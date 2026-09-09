@@ -5,7 +5,7 @@ import {
   BarChart, Bar, Legend, Cell,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail } from "../api";
+import { api, RecusalData, RecusalYearPoint, RecusalDeclarationDetail, EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -39,7 +39,7 @@ const ERA_FULL: Record<string, string> = {
 // SMALL_N_FLOOR. See docs/review, BLOCKING flag, 2026-08-24 pass 2.
 const SMALL_N_FLOOR = 3;
 
-function RecusalDeclRow({ d }: { d: RecusalDeclarationDetail }) {
+function RecusalDeclRow({ d, evidence }: { d: RecusalDeclarationDetail; evidence?: EvidenceEntry }) {
   const left = d.action.startsWith("Stepped");
   return (
     <div className="decl-row">
@@ -53,7 +53,7 @@ function RecusalDeclRow({ d }: { d: RecusalDeclarationDetail }) {
         <span className="decl-action">{d.councillor}</span>
       </div>
       <div className="decl-what">{d.what || <em>no description recorded</em>}</div>
-      <SourceQuote quote={d.quote} />
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={d.quote} />}
     </div>
   );
 }
@@ -106,10 +106,19 @@ const TypeEraTooltip = ({ active, payload, label }: {
 
 export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<RecusalData>(() => api.recusal());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file degrades gracefully to each row's legacy `quote` field (see
+  // RecusalDeclRow) rather than blocking the panel.
+  const { data: evidence } = useData(() => api.evidenceRecusalTrend());
   const [selected, setSelected] = useState<{ era: string; type: string } | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const e of evidence.entries) evidenceById.set(e.entity_id, e);
+  }
 
   const selectedCell = selected
     ? data.by_type_era.find(
@@ -252,7 +261,8 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
           )}
           {selectedCell.declarations.length > 0 && selectedCell.declared > SMALL_N_FLOOR && (
             selectedCell.declarations.map((d, i) => (
-              <RecusalDeclRow key={i} d={d} />
+              <RecusalDeclRow key={i} d={d}
+                evidence={d.entity_id != null ? evidenceById.get(d.entity_id) : undefined} />
             ))
           )}
         </DrillDown>

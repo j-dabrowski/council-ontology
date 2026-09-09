@@ -1707,3 +1707,40 @@ def evidence_for_recusal_management(
     entries = resolve_evidence(session, refs, council_id, source_cache)
 
     return {"entries": entries}
+
+
+def evidence_for_recusal_trend(
+    session: Session, council_id: int,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for conflict.recusal_trend (RecusalTrendPanel).
+
+    Like evidence_for_recusal_management(), this panel's drill-down is
+    per-cell (interest type × era), not chart-bar-category driven in the
+    generic sense — a flat `entries` list, not `buckets`. The frontend
+    builds one Map<entity_id, EvidenceEntry> and looks each
+    RecusalDeclarationDetail up by its own `entity_id`
+    (`interest_declarations.id`, added to that dataclass for this lookup).
+
+    Population: recusal_compliance_trend()'s own by_type_era cells, already
+    capped at that function's _CELL_CAP (60) per cell — reused directly
+    (not re-derived) so this can't disagree with what the drill-down shows.
+    A declaration with no matched InterestDeclaration row (entity_id is
+    None) has nothing to resolve and is skipped, same as
+    evidence_for_recusal_management().
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.analysis.queries import recusal_compliance_trend
+
+    stats = recusal_compliance_trend(session, council_id)
+    ids = sorted({
+        d.entity_id
+        for cell in stats.by_type_era
+        for d in cell.declarations
+        if d.entity_id is not None
+    })
+    refs: list[EntityRef] = [("interest_declarations", did, "declaration") for did in ids]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+
+    return {"entries": entries}
