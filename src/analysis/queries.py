@@ -1660,6 +1660,8 @@ class DeclarationDetail:
     action: str                # "Stepped out" / "Stayed — voted for" / "Stayed — voted against"
     must_leave: bool           # financial/proximity legally require leaving
     quote: str | None          # verbatim minute text (extraction_evidence)
+    entity_id: int | None = None  # interest_declarations.id — None when no declaration
+                                   # matched (evidence_for_recusal_management() lookup key)
 
 
 @dataclass
@@ -1884,6 +1886,7 @@ def _populate_declaration_details(session, council_id, profiles, from_year, to_y
             action=action,
             must_leave=must_leave,
             quote=row.quote,
+            entity_id=row.declaration_id,
         ))
 
     for p in profiles:

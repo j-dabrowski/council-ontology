@@ -1668,3 +1668,42 @@ def evidence_for_oversight_body_capture(
             {"label": "Non-appointees", "entries": [entries_by_id[i] for i in non_ids]},
         ]
     }
+
+
+def evidence_for_recusal_management(
+    session: Session, council_id: int,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for conflict.recusal_management (ConflictRecusalPanel).
+
+    Unlike every chart-bar-driven test above, this panel's drill-down is
+    per-councillor (click a bar, see that person's declared interests), not
+    per-category — so this returns a flat `entries` list, not `buckets`.
+    The frontend builds one Map<entity_id, EvidenceEntry> from it and looks
+    each DeclarationDetail up by its own `entity_id`
+    (`interest_declarations.id`, added to that dataclass for this lookup).
+
+    Population: every declared-interest vote conflict_recusal_stats()'s own
+    min_declared=8 profile drill-down surfaces (matching declared.json's
+    own min_declared=8 call in src/cli.py) that resolved to a real
+    InterestDeclaration row — `_linked_declared_votes()`'s item-level match,
+    not a fresh join, so this can't disagree with what the drill-down
+    itself shows. A vote with no matched declaration (entity_id is None —
+    only the vote's own interest_description was ever recorded) has no
+    entity to resolve; the panel already renders quote=None for those.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.analysis.queries import conflict_recusal_stats
+
+    stats = conflict_recusal_stats(session, council_id, min_declared=8)
+    ids = sorted({
+        d.entity_id
+        for p in stats.profiles
+        for d in p.declarations
+        if d.entity_id is not None
+    })
+    refs: list[EntityRef] = [("interest_declarations", did, "declaration") for did in ids]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+
+    return {"entries": entries}

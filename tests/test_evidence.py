@@ -30,6 +30,7 @@ from src.analysis.evidence import (
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
     evidence_for_oversight_body_capture,
+    evidence_for_recusal_management,
     evidence_for_repeat_applicant,
     evidence_for_threshold_gaming,
     evidence_for_transparency,
@@ -48,6 +49,8 @@ from src.models import (
     DelegatedDecision,
     Deputation,
     ExtractionEvidence,
+    InterestDeclaration,
+    InterestDeclarationType,
     Meeting,
     Motion,
     MotionOutcome,
@@ -1575,3 +1578,63 @@ def test_oversight_body_capture_caps_and_orders_newest_first(session):
     assert len(entries) == 2
     expected_newest_two = {ids_by_year[2021], ids_by_year[2020]}
     assert {e["entity_id"] for e in entries} == expected_newest_two
+
+
+def test_recusal_management_resolves_matched_declarations(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Declares", "Often")
+    decl_ids = []
+    # conflict_recusal_stats()'s own min_declared=8 cohort floor (matching
+    # declared.json's call in src/cli.py) -> need >= 8 declared votes.
+    for i in range(8):
+        text = "Cr Declares Often declared a financial interest in Item 0." if i == 0 else "text"
+        meeting_id = _meeting(session, council_id, date(2020, 1, i + 1), minutes_text=text)
+        motion_id = _motion(session, meeting_id, title=f"Item {i}", item_number=str(i),
+                             outcome=MotionOutcome.CARRIED)
+        session.add(Vote(motion_id=motion_id, councillor_id=cllr_id,
+                          choice=VoteChoice.FOR, declared_interest=True))
+        decl = InterestDeclaration(meeting_id=meeting_id, councillor_id=cllr_id,
+                                    interest_type=InterestDeclarationType.FINANCIAL,
+                                    description="Owns property nearby", item_reference=str(i))
+        session.add(decl)
+        session.flush()
+        decl_ids.append(decl.id)
+        if i == 0:
+            _evidence(session, meeting_id, "interest_declarations", decl.id,
+                      "Cr Declares Often declared a financial interest in Item 0.")
+    session.flush()
+
+    result = evidence_for_recusal_management(session, council_id)
+    ids = {e["entity_id"] for e in result["entries"]}
+    # Every declared vote here has a matched declaration -> all resolve, even
+    # the 7 with zero ExtractionEvidence rows (never dropped, B.5).
+    assert set(decl_ids) == ids
+    entry0 = next(e for e in result["entries"] if e["entity_id"] == decl_ids[0])
+    assert entry0["quotes"][0]["tier"] == "exact"
+
+
+def test_recusal_management_skips_votes_with_no_matched_declaration(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Partial", "Match")
+    for i in range(7):
+        meeting_id = _meeting(session, council_id, date(2020, 1, i + 1), minutes_text="text")
+        motion_id = _motion(session, meeting_id, title=f"Item {i}", item_number=str(i),
+                             outcome=MotionOutcome.CARRIED)
+        session.add(Vote(motion_id=motion_id, councillor_id=cllr_id,
+                          choice=VoteChoice.FOR, declared_interest=True))
+        session.add(InterestDeclaration(meeting_id=meeting_id, councillor_id=cllr_id,
+                                         interest_type=InterestDeclarationType.FINANCIAL,
+                                         description="d", item_reference=str(i)))
+    # 8th declared vote has no InterestDeclaration whose item_reference
+    # matches this motion's item_number -> DeclarationDetail.entity_id is
+    # None -> nothing for this mechanism to resolve (panel falls back to
+    # the vote's own interest_description, not an ExtractionEvidence quote).
+    meeting_id = _meeting(session, council_id, date(2020, 2, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, title="Unmatched item", item_number="unmatched",
+                         outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR,
+                      declared_interest=True, interest_description="Some interest"))
+    session.flush()
+
+    result = evidence_for_recusal_management(session, council_id)
+    assert len(result["entries"]) == 7

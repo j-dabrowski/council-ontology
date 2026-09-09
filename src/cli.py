@@ -2986,6 +2986,23 @@ def _generate_snapshots(
         f"({_n_obc_ev} motion(s))"
     )
 
+    # Evidence chain for conflict.recusal_management (Phase 2, remaining-11
+    # group) — ConflictRecusalPanel's per-councillor drill-down, a flat
+    # `entries` list (no chart-bar buckets) keyed by DeclarationDetail's own
+    # entity_id.
+    from src.analysis.evidence import evidence_for_recusal_management
+    recusal_mgmt_evidence = evidence_for_recusal_management(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "conflict.recusal_management.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": recusal_mgmt_evidence,
+    }, indent=2))
+    written.append("evidence/conflict.recusal_management")
+    console.print(
+        "  [green]✓[/green] evidence/conflict.recusal_management.json "
+        f"({len(recusal_mgmt_evidence['entries'])} declaration(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

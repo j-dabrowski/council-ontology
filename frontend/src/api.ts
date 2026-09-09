@@ -177,6 +177,7 @@ export interface DeclarationDetail {
   action: string;                 // "Stepped out" / "Stayed — voted for" / ...
   must_leave: boolean;
   quote: string | null;           // verbatim minute text
+  entity_id: number | null;       // interest_declarations.id, for the evidence chain lookup
 }
 
 export interface RecusalProfile {
@@ -844,6 +845,15 @@ export interface ChairCaptureEvidence {
   mayors: ChairCaptureMayor[];
 }
 
+// ConflictRecusalPanel's drill-down is per-councillor, not chart-bar driven —
+// a flat list, not buckets. The frontend builds one Map<entity_id,
+// EvidenceEntry> from it and looks each DeclarationDetail up by its own
+// entity_id (interest_declarations.id); a declaration with no matched
+// InterestDeclaration row (entity_id: null) has nothing to look up.
+export interface RecusalManagementEvidence {
+  entries: EvidenceEntry[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -931,4 +941,6 @@ export const api = {
     getSnapshot<TransparencyEvidence>("evidence/transparency.confidential_share"),
   evidenceChairCapture: () =>
     getSnapshot<ChairCaptureEvidence>("evidence/governance.chair_capture"),
+  evidenceRecusalManagement: () =>
+    getSnapshot<RecusalManagementEvidence>("evidence/conflict.recusal_management"),
 };

@@ -4,7 +4,7 @@ import {
   ResponsiveContainer, CartesianGrid, Cell, ReferenceLine,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, RecusalProfile, DeclarationDetail } from "../api";
+import { api, RecusalProfile, DeclarationDetail, EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
@@ -15,7 +15,7 @@ const TYPE_LABEL: Record<string, string> = {
   impartiality: "Impartiality", other: "Other",
 };
 
-function DeclarationRow({ d }: { d: DeclarationDetail }) {
+function DeclarationRow({ d, evidence }: { d: DeclarationDetail; evidence?: EvidenceEntry }) {
   const t = d.interest_type ?? "other";
   return (
     <div className={`decl-row${d.must_leave ? " decl-mustleave" : ""}`}>
@@ -29,7 +29,10 @@ function DeclarationRow({ d }: { d: DeclarationDetail }) {
       </div>
       {d.title && <div className="decl-title">{d.title}</div>}
       <div className="decl-what">{d.what || <em>no description recorded</em>}</div>
-      <SourceQuote quote={d.quote} />
+      {/* Full evidence chain (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6)
+          when the separately-fetched evidence snapshot has this declaration;
+          the legacy quote otherwise (e.g. evidence file not yet published). */}
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={d.quote} />}
     </div>
   );
 }
@@ -113,10 +116,19 @@ const HistTooltip = ({ active, payload }: {
 
 export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.declared());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file degrades gracefully to each row's legacy `quote` field (see
+  // DeclarationRow) rather than blocking the panel.
+  const { data: evidence } = useData(() => api.evidenceRecusalManagement());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const e of evidence.entries) evidenceById.set(e.entity_id, e);
+  }
 
   const selectedProfile = selected
     ? data.profiles.find((p) => p.name === selected) ?? null
@@ -276,7 +288,8 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
               <p className="chart-note">No itemised declarations extracted for this councillor.</p>
             )}
             {selectedProfile.declarations.map((d, i) => (
-              <DeclarationRow key={i} d={d} />
+              <DeclarationRow key={i} d={d}
+                evidence={d.entity_id != null ? evidenceById.get(d.entity_id) : undefined} />
             ))}
           </DrillDown>
         )}

@@ -328,6 +328,7 @@ _EVIDENCE_BUILDERS = {
     "decider_supplier_conflict": "evidence_for_decider_supplier_conflict",
     "delegate_body_conflict": "evidence_for_delegate_body_conflict",
     "oversight_body_capture": "evidence_for_oversight_body_capture",
+    "conflict_recusal_stats": "evidence_for_recusal_management",
 }
 _EVIDENCE_SUPPORTED_FILTERS: dict[str, set[str]] = {
     # evidence_query -> filters its underlying query actually supports.
