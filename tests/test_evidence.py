@@ -31,6 +31,7 @@ from src.analysis.evidence import (
     evidence_for_officer_ratification,
     evidence_for_oversight_body_capture,
     evidence_for_power_spread,
+    evidence_for_question_responsiveness,
     evidence_for_recusal_management,
     evidence_for_recusal_trend,
     evidence_for_repeat_applicant,
@@ -58,6 +59,7 @@ from src.models import (
     MotionOutcome,
     OtherItem,
     PlanningApplication,
+    PublicQuestion,
     Tender,
     Vote,
     VoteChoice,
@@ -1726,3 +1728,42 @@ def test_power_spread_excludes_uncontested_motions(session):
 
     result = evidence_for_power_spread(session, council_id, min_votes=1, min_dissents=1)
     assert result["entries"] == []
+
+
+def test_question_responsiveness_resolves_on_notice_and_answered(session):
+    council_id = _council(session)
+    on_notice_text = "This question has been taken on notice."
+    meeting_on = _meeting(session, council_id, date(2020, 1, 1), minutes_text=on_notice_text)
+    pq_on = PublicQuestion(meeting_id=meeting_on, questioner_name="A Resident",
+                            question_summary="When will the road be fixed?",
+                            response_summary=on_notice_text)
+    session.add(pq_on)
+
+    answered_text = "The Manager advised the works are complete."
+    meeting_ans = _meeting(session, council_id, date(2020, 2, 1), minutes_text=answered_text)
+    pq_ans = PublicQuestion(meeting_id=meeting_ans, questioner_name="Another Resident",
+                             question_summary="Is the park open?",
+                             response_summary=answered_text)
+    session.add(pq_ans)
+    session.flush()
+    _evidence(session, meeting_on, "public_questions", pq_on.id, on_notice_text)
+    _evidence(session, meeting_ans, "public_questions", pq_ans.id, answered_text)
+    session.flush()
+
+    result = evidence_for_question_responsiveness(session, council_id)
+    ids = {e["entity_id"] for e in result["entries"]}
+    assert {pq_on.id, pq_ans.id} <= ids
+    on_entry = next(e for e in result["entries"] if e["entity_id"] == pq_on.id)
+    assert on_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_question_responsiveness_excludes_blank_responses(session):
+    council_id = _council(session)
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    pq_blank = PublicQuestion(meeting_id=meeting_id, questioner_name="Resident",
+                               question_summary="Unanswered?", response_summary="")
+    session.add(pq_blank)
+    session.flush()
+
+    result = evidence_for_question_responsiveness(session, council_id)
+    assert pq_blank.id not in {e["entity_id"] for e in result["entries"]}

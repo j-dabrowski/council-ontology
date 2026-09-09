@@ -5,7 +5,7 @@ import {
   BarChart, Bar, Cell,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, QuestionResponsivenessData, PQResponseDetail, PQYearPoint } from "../api";
+import { api, QuestionResponsivenessData, PQResponseDetail, PQYearPoint, EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -22,7 +22,7 @@ const ERA_FULL: Record<string, string> = {
   post: "after the Inquiry (2022+)",
 };
 
-function PQRow({ q }: { q: PQResponseDetail }) {
+function PQRow({ q, evidence }: { q: PQResponseDetail; evidence?: EvidenceEntry }) {
   const deferred = q.status.startsWith("Taken");
   return (
     <div className="decl-row">
@@ -37,7 +37,7 @@ function PQRow({ q }: { q: PQResponseDetail }) {
         </span>
       </div>
       <div className="decl-what">{q.question || <em>no question summary recorded</em>}</div>
-      <SourceQuote quote={q.quote} />
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={q.quote} />}
     </div>
   );
 }
@@ -81,10 +81,19 @@ const EraTooltip = ({ active, payload, label }: {
 export function QuestionResponsivenessPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<QuestionResponsivenessData>(
     () => api.questionResponsiveness());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file degrades gracefully to each row's legacy `quote` field (see PQRow)
+  // rather than blocking the panel.
+  const { data: evidence } = useData(() => api.evidenceQuestionResponsiveness());
   const [selectedEra, setSelectedEra] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const e of evidence.entries) evidenceById.set(e.entity_id, e);
+  }
 
   // year arc: from 1997 (first years are tiny); plot only rate-eligible points
   const yearData = data.by_year.filter((y) => y.year >= 1997);
@@ -194,7 +203,10 @@ export function QuestionResponsivenessPanel({ test }: { test: ResolvedTest }) {
           {selectedCell.questions.length === 0 && (
             <p className="chart-note">No itemised questions behind this era.</p>
           )}
-          {selectedCell.questions.map((q, i) => <PQRow key={i} q={q} />)}
+          {selectedCell.questions.map((q, i) => (
+            <PQRow key={i} q={q}
+              evidence={q.entity_id != null ? evidenceById.get(q.entity_id) : undefined} />
+          ))}
         </DrillDown>
       )}
 

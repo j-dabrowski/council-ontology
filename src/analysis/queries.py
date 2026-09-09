@@ -3644,6 +3644,8 @@ class PQResponseDetail:
     status: str               # "Answered in meeting" / "Taken on notice"
     fielded_by: str | None    # best-effort role/name that responded
     quote: str | None         # verbatim minute text (extraction_evidence)
+    entity_id: int | None = None  # public_questions.id (evidence_for_
+                                   # question_responsiveness() lookup key)
 
 
 @dataclass
@@ -3783,6 +3785,7 @@ def public_question_responsiveness(
                 status="Taken on notice" if cls == "on_notice" else "Answered in meeting",
                 fielded_by=_fielded(response),
                 quote=quote_by_q.get(pid),
+                entity_id=pid,
             ))
         return out
 

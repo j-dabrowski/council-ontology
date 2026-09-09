@@ -437,6 +437,7 @@ export interface PQResponseDetail {
   status: string;           // "Answered in meeting" / "Taken on notice"
   fielded_by: string | null;
   quote: string | null;
+  entity_id: number | null; // public_questions.id, for the evidence chain lookup
 }
 
 export interface PQEraStat {
@@ -869,6 +870,12 @@ export interface PowerSpreadEvidence {
   entries: EvidenceEntry[];
 }
 
+// QuestionResponsivenessPanel's per-era drill-down, also flat — same
+// lookup convention as the other per-councillor/per-cell evidence files.
+export interface QuestionResponsivenessEvidence {
+  entries: EvidenceEntry[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -962,4 +969,6 @@ export const api = {
     getSnapshot<RecusalTrendEvidence>("evidence/conflict.recusal_trend"),
   evidencePowerSpread: () =>
     getSnapshot<PowerSpreadEvidence>("evidence/governance.power_spread"),
+  evidenceQuestionResponsiveness: () =>
+    getSnapshot<QuestionResponsivenessEvidence>("evidence/engagement.question_responsiveness"),
 };

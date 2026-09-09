@@ -1748,6 +1748,40 @@ def evidence_for_power_spread(
     return {"entries": entries}
 
 
+def evidence_for_question_responsiveness(
+    session: Session, council_id: int,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for engagement.question_responsiveness
+    (QuestionResponsivenessPanel).
+
+    Per-era (pre/inquiry/post) drill-down, same flat-`entries` shape as
+    evidence_for_recusal_management() and friends — the frontend builds
+    one Map<entity_id, EvidenceEntry> and looks each PQResponseDetail up
+    by its own `entity_id` (`public_questions.id`, added to that dataclass
+    for this lookup).
+
+    Population: public_question_responsiveness()'s own by_era cells,
+    already capped at that function's cell_cap (default 60, on-notice
+    questions prioritised) — reused directly, not re-derived.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.analysis.queries import public_question_responsiveness
+
+    stats = public_question_responsiveness(session, council_id)
+    ids = sorted({
+        q.entity_id
+        for era in stats.by_era
+        for q in era.questions
+        if q.entity_id is not None
+    })
+    refs: list[EntityRef] = [("public_questions", qid, "question") for qid in ids]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+
+    return {"entries": entries}
+
+
 def evidence_for_recusal_trend(
     session: Session, council_id: int,
     source_cache: dict[int, _MeetingSource] | None = None,
