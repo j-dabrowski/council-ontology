@@ -335,6 +335,7 @@ _EVIDENCE_BUILDERS = {
     "tender_concentration": "evidence_for_concentration",
     "public_engagement_by_year": "evidence_for_participation",
     "councillor_tenure": "evidence_for_tenure",
+    "sponsorship_network": "evidence_for_durable_faction",
 }
 _EVIDENCE_SUPPORTED_FILTERS: dict[str, set[str]] = {
     # evidence_query -> filters its underlying query actually supports.

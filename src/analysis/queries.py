@@ -3906,6 +3906,8 @@ class SponsorEdge:
     agree_pct: float | None    # contested-vote agreement (None if too few shared)
     agree_n: int               # shared contested votes
     kind: str                  # "alliance" | "procedural" | "mixed"
+    id_a: int | None = None    # councillor id (evidence_for_durable_faction() lookup key)
+    id_b: int | None = None
 
 
 @dataclass
@@ -4096,6 +4098,7 @@ def sponsorship_network(session: Session, council_id: int) -> SponsorshipNetwork
             sponsorships=e["obs"], lift=e["lift"],
             agree_pct=e["agree_pct"], agree_n=e["agree_n"],
             kind=_classify(e["agree_pct"]),
+            id_a=e["a"], id_b=e["b"],
         )
 
     strong = [e for e in best.values() if e["lift"] >= 2.0 and e["agree_n"] >= 30]

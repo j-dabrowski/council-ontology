@@ -2621,6 +2621,7 @@ def _generate_snapshots(
             "era_label": e.era_label, "name_a": e.name_a, "name_b": e.name_b,
             "sponsorships": e.sponsorships, "lift": e.lift,
             "agree_pct": e.agree_pct, "agree_n": e.agree_n, "kind": e.kind,
+            "id_a": e.id_a, "id_b": e.id_b,
         }
 
     _write("sponsorship", {
@@ -3098,6 +3099,23 @@ def _generate_snapshots(
     console.print(
         "  [green]✓[/green] evidence/governance.incumbency.json "
         f"({len(tenure_evidence['entries'])} motion(s))"
+    )
+
+    # Evidence chain for governance.durable_faction (Phase 2, remaining-11
+    # group, last of the eleven) — SponsorshipNetworkPanel's per-edge
+    # drill-down: a sample of the motions behind each alliance/procedural
+    # pair's co-sponsorship count, scoped to that edge's own era window.
+    from src.analysis.evidence import evidence_for_durable_faction
+    durable_faction_evidence = evidence_for_durable_faction(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "governance.durable_faction.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": durable_faction_evidence,
+    }, indent=2))
+    written.append("evidence/governance.durable_faction")
+    _n_df_ev = sum(len(e["motions"]) for e in durable_faction_evidence["edges"])
+    console.print(
+        f"  [green]✓[/green] evidence/governance.durable_faction.json ({_n_df_ev} motion(s))"
     )
 
     # councillors.json — unified cross-link profile keyed by full name; used by

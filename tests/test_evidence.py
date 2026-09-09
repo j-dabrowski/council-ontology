@@ -24,6 +24,7 @@ from src.analysis.evidence import (
     evidence_for_decider_supplier_conflict,
     evidence_for_delegate_body_conflict,
     evidence_for_deputation_dissent,
+    evidence_for_durable_faction,
     evidence_for_election_cycle,
     evidence_for_eoy_spending,
     evidence_for_freshman_effect,
@@ -43,6 +44,7 @@ from src.analysis.evidence import (
     evidence_for_unanimity_trend,
     resolve_evidence,
 )
+from src.analysis.queries import SponsorEdge, SponsorshipNetworkStats
 from src.models import (
     ApplicationStatus,
     Appointment,
@@ -1878,3 +1880,95 @@ def test_tenure_excludes_below_cohort_floor(session):
     # `profiles` entirely (councillor_tenure()'s own cohort floor).
     result = evidence_for_tenure(session, council_id, min_votes=2)
     assert result["entries"] == []
+
+
+def _fake_sponsorship_stats(edge: SponsorEdge) -> SponsorshipNetworkStats:
+    return SponsorshipNetworkStats(
+        alliances=[edge], procedural=[], convergence_high_agree=80.0,
+        convergence_low_agree=40.0, oldguard_label="2000–07",
+        oldguard_unanimous_pct=90.0, oldguard_nodes=[], oldguard_edges=[], eras=[],
+    )
+
+
+def test_durable_faction_resolves_motions_within_the_edges_own_era(session, monkeypatch):
+    council_id = _council(session)
+    cllr_a = _councillor(session, "Alice", "Alliance")
+    cllr_b = _councillor(session, "Bob", "Bond")
+
+    # In-era, normal mover/seconder order -> resolved.
+    quote_text = "MOVED by Cr Alliance, seconded by Cr Bond, that the report be noted."
+    meeting_in = _meeting(session, council_id, date(2005, 1, 1), minutes_text=quote_text)
+    motion_in = _motion(session, meeting_in, title="In-era motion", outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_in).update(
+        {"moved_by_id": cllr_a, "seconded_by_id": cllr_b}
+    )
+    _evidence(session, meeting_in, "motions", motion_in, quote_text)
+
+    # In-era, REVERSED mover/seconder order -> also resolved (the edge is
+    # symmetric: co-sponsorship counts either direction).
+    meeting_rev = _meeting(session, council_id, date(2006, 1, 1), minutes_text="text")
+    motion_rev = _motion(session, meeting_rev, title="Reversed-order motion", item_number="2",
+                          outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_rev).update(
+        {"moved_by_id": cllr_b, "seconded_by_id": cllr_a}
+    )
+
+    # Same pair, but OUTSIDE the edge's 2000-07 era window -> excluded.
+    meeting_out = _meeting(session, council_id, date(2015, 1, 1), minutes_text="text")
+    motion_out = _motion(session, meeting_out, title="Out-of-era motion", item_number="3",
+                          outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_out).update(
+        {"moved_by_id": cllr_a, "seconded_by_id": cllr_b}
+    )
+    session.flush()
+
+    fake_edge = SponsorEdge(
+        era_label="2000–07", name_a="Alice Alliance", name_b="Bob Bond",
+        sponsorships=2, lift=3.0, agree_pct=80.0, agree_n=30, kind="alliance",
+        id_a=cllr_a, id_b=cllr_b,
+    )
+    monkeypatch.setattr(
+        "src.analysis.queries.sponsorship_network",
+        lambda session, council_id: _fake_sponsorship_stats(fake_edge),
+    )
+
+    result = evidence_for_durable_faction(session, council_id)
+    assert len(result["edges"]) == 1
+    edge = result["edges"][0]
+    assert edge["id_a"] == cllr_a
+    assert edge["id_b"] == cllr_b
+    ids = {m["entity_id"] for m in edge["motions"]}
+    assert ids == {motion_in, motion_rev}
+    entry = next(m for m in edge["motions"] if m["entity_id"] == motion_in)
+    assert entry["quotes"][0]["tier"] == "exact"
+
+
+def test_durable_faction_caps_and_orders_newest_first(session, monkeypatch):
+    council_id = _council(session)
+    cllr_a = _councillor(session, "Repeat", "Sponsor")
+    cllr_b = _councillor(session, "Other", "Sponsor")
+    ids_by_year = {}
+    for yr in (2001, 2003, 2002):
+        meeting_id = _meeting(session, council_id, date(yr, 1, 1), minutes_text="text")
+        motion_id = _motion(session, meeting_id, title=f"Motion {yr}")
+        session.query(Motion).filter_by(id=motion_id).update(
+            {"moved_by_id": cllr_a, "seconded_by_id": cllr_b}
+        )
+        ids_by_year[yr] = motion_id
+    session.flush()
+
+    fake_edge = SponsorEdge(
+        era_label="2000–07", name_a="Repeat Sponsor", name_b="Other Sponsor",
+        sponsorships=3, lift=3.0, agree_pct=80.0, agree_n=30, kind="alliance",
+        id_a=cllr_a, id_b=cllr_b,
+    )
+    monkeypatch.setattr(
+        "src.analysis.queries.sponsorship_network",
+        lambda session, council_id: _fake_sponsorship_stats(fake_edge),
+    )
+
+    result = evidence_for_durable_faction(session, council_id, cap=2)
+    edge = result["edges"][0]
+    assert len(edge["motions"]) == 2
+    expected_newest_two = {ids_by_year[2003], ids_by_year[2002]}
+    assert {m["entity_id"] for m in edge["motions"]} == expected_newest_two

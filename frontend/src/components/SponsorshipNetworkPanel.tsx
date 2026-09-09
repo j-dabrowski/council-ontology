@@ -1,10 +1,26 @@
+import { useState } from "react";
 import { useData } from "../hooks/useData";
-import { api, SponsorshipData, SponsorEdge, SponsorNode } from "../api";
+import { api, SponsorshipData, SponsorEdge, SponsorNode, EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
-import { Reveal } from "./DrillDown";
+import { DrillDown, Reveal, SourceQuote } from "./DrillDown";
 import { surname } from "../surname";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+
+function edgeKey(a: number, b: number): string {
+  return `${a}:${b}`;
+}
+
+function CoSponsoredMotionRow({ entry }: { entry: EvidenceEntry }) {
+  return (
+    <div className="decl-row">
+      <div className="decl-row-head">
+        <span className="decl-date">{entry.meeting_date ?? ""}</span>
+      </div>
+      <SourceQuote entry={entry} />
+    </div>
+  );
+}
 
 const KIND_COLOR: Record<string, string> = {
   alliance: "#22c55e",   // sponsor AND vote together — a real working bloc
@@ -60,9 +76,12 @@ function OldGuardNetwork({ nodes, edges }: { nodes: SponsorNode[]; edges: Sponso
   );
 }
 
-function EdgeRow({ e, denom }: { e: SponsorEdge; denom: number }) {
+function EdgeRow({ e, denom, onSelect }: { e: SponsorEdge; denom: number; onSelect?: (e: SponsorEdge) => void }) {
+  const clickable = e.id_a != null && e.id_b != null && onSelect;
   return (
-    <div className="spon-edge-row">
+    <div className={`spon-edge-row${clickable ? " spon-edge-row-clickable" : ""}`}
+      style={clickable ? { cursor: "pointer" } : undefined}
+      onClick={clickable ? () => onSelect(e) : undefined}>
       <span className="spon-edge-names">
         <CouncillorLink name={e.name_a}>{surname(e.name_a)}</CouncillorLink>
         {" "}<span className="spon-amp">&amp;</span>{" "}
@@ -84,8 +103,22 @@ function EdgeRow({ e, denom }: { e: SponsorEdge; denom: number }) {
 
 export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData<SponsorshipData>(() => api.sponsorship());
+  // The evidence chain, loaded separately: this panel had no drill-down at
+  // all before, so a missing/unpublished evidence file just means clicking
+  // an edge does nothing, rather than blocking the panel itself.
+  const { data: evidence } = useData(() => api.evidenceDurableFaction());
+  const [selectedEdge, setSelectedEdge] = useState<SponsorEdge | null>(null);
+
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const motionsByEdge = new Map<string, EvidenceEntry[]>();
+  if (evidence) {
+    for (const edge of evidence.edges) motionsByEdge.set(edgeKey(edge.id_a, edge.id_b), edge.motions);
+  }
+  const selectedMotions = selectedEdge && selectedEdge.id_a != null && selectedEdge.id_b != null
+    ? motionsByEdge.get(edgeKey(selectedEdge.id_a, selectedEdge.id_b)) ?? []
+    : [];
 
   const maxAllyLift = Math.max(...data.alliances.map((e) => e.lift), 3);
   const maxEras = Math.max(...data.eras.map((e) => e.cluster_size), 1);
@@ -123,7 +156,7 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
       {/* ── Part 1 — validated alliances ── */}
       <p className="section-heading">1 · The validated alliances — sponsor <em>and</em> vote together</p>
       <div className="spon-edge-list">
-        {data.alliances.map((e, i) => <EdgeRow key={i} e={e} denom={maxAllyLift} />)}
+        {data.alliances.map((e, i) => <EdgeRow key={i} e={e} denom={maxAllyLift} onSelect={setSelectedEdge} />)}
       </div>
       <p className="chart-note">
         Each pair seconded each other's motions far more than their activity predicts (lift = observed ÷
@@ -149,7 +182,7 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
           </p>
           <Reveal label={`the ${data.procedural.length} pairs whose seconding looks procedural, not endorsing`}>
             <div className="spon-edge-list">
-              {data.procedural.map((e, i) => <EdgeRow key={i} e={e} denom={maxAllyLift} />)}
+              {data.procedural.map((e, i) => <EdgeRow key={i} e={e} denom={maxAllyLift} onSelect={setSelectedEdge} />)}
             </div>
           </Reveal>
           <p className="chart-note">
@@ -159,6 +192,21 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
             why the network must be validated against votes before any pair is called an "alliance."
           </p>
         </>
+      )}
+
+      {selectedEdge && (
+        <DrillDown
+          title={<>{surname(selectedEdge.name_a)} &amp; {surname(selectedEdge.name_b)} — co-sponsored motions</>}
+          subtitle={`${selectedEdge.era_label} · ${selectedEdge.sponsorships} co-sponsorship(s) observed · showing up to ${selectedMotions.length} most recent`}
+          onClose={() => setSelectedEdge(null)}
+        >
+          {selectedMotions.length === 0 && (
+            <p className="chart-note">No itemised co-sponsored motions extracted for this pair.</p>
+          )}
+          {selectedMotions.map((entry, i) => (
+            <CoSponsoredMotionRow key={i} entry={entry} />
+          ))}
+        </DrillDown>
       )}
 
       {/* ── Part 2 — the 2000s old-guard network ── */}

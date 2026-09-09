@@ -1930,6 +1930,74 @@ def evidence_for_tenure(
     return {"entries": entries}
 
 
+def evidence_for_durable_faction(
+    session: Session, council_id: int, cap: int = 10,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.durable_faction (SponsorshipNetworkPanel).
+
+    Every SponsorEdge here is an aggregate over many motions (a mutual
+    mover<->seconder count within an era window), not a single quote —
+    the closest defensible receipt is a sample of the actual motions
+    where that specific pair co-sponsored, scoped to the SAME year
+    window the edge's own lift/agreement figures were computed over
+    (`_SPON_ERAS`/`_OLDGUARD`, reused directly rather than re-derived).
+
+    Only Part 1's alliances/procedural lists (SponsorshipNetworkPanel's
+    EdgeRow, individually clickable) get a drill-down in this pass — the
+    Part 2 old-guard SVG node-link diagram renders the same underlying
+    edge shape visually but has no per-edge click affordance to hang
+    this off, so `oldguard_edges` isn't covered here.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from datetime import date as _date
+
+    from src.analysis.queries import _OLDGUARD, _SPON_ERAS, _year_filter_query, sponsorship_network
+    from src.models import Motion
+
+    era_years: dict[str, tuple[int | None, int | None]] = {label: (f, t) for label, f, t in _SPON_ERAS}
+    era_years[_OLDGUARD[0]] = (_OLDGUARD[1], _OLDGUARD[2])
+
+    stats = sponsorship_network(session, council_id)
+    edges = [e for e in (stats.alliances + stats.procedural)
+             if e.id_a is not None and e.id_b is not None]
+
+    ids_by_edge: dict[tuple[int, int], list[int]] = {}
+    all_refs: list[EntityRef] = []
+    for e in edges:
+        key = (e.id_a, e.id_b)
+        f, t = era_years.get(e.era_label, (None, None))
+        q = (
+            session.query(Motion.id, Meeting.meeting_date)
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                Meeting.document_type == "minutes",
+                (
+                    (Motion.moved_by_id == e.id_a) & (Motion.seconded_by_id == e.id_b)
+                ) | (
+                    (Motion.moved_by_id == e.id_b) & (Motion.seconded_by_id == e.id_a)
+                ),
+            )
+        )
+        q = _year_filter_query(q, Meeting, f, t)
+        newest_first = sorted(q.all(), key=lambda r: r[1] or _date.min, reverse=True)
+        ids = [mid for mid, _d in newest_first[:cap]]
+        ids_by_edge[key] = ids
+        all_refs.extend(("motions", mid, "co_sponsored_motion") for mid in ids)
+
+    entries = resolve_evidence(session, all_refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "edges": [
+            {"id_a": a, "id_b": b, "motions": [entries_by_id[i] for i in ids]}
+            for (a, b), ids in ids_by_edge.items()
+        ]
+    }
+
+
 def evidence_for_recusal_trend(
     session: Session, council_id: int,
     source_cache: dict[int, _MeetingSource] | None = None,

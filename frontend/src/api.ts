@@ -534,6 +534,8 @@ export interface SponsorEdge {
   agree_pct: number | null;
   agree_n: number;
   kind: "alliance" | "procedural" | "mixed";
+  id_a: number | null;  // councillor id, for the evidence chain lookup
+  id_b: number | null;
 }
 
 export interface SponsorNode {
@@ -905,6 +907,22 @@ export interface TenureEvidence {
   entries: EvidenceEntry[];
 }
 
+// SponsorshipNetworkPanel had no drill-down at all before this. Each edge
+// (a pair of councillors) is an aggregate over many motions, not a single
+// quote — keyed by the pair's own two councillor ids since names alone can
+// collide. Only Part 1's alliances/procedural edges are covered (see
+// evidence_for_durable_faction()'s docstring for why the old-guard SVG
+// diagram isn't).
+export interface DurableFactionEdge {
+  id_a: number;
+  id_b: number;
+  motions: EvidenceEntry[];
+}
+
+export interface DurableFactionEvidence {
+  edges: DurableFactionEdge[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -1006,4 +1024,6 @@ export const api = {
     getSnapshot<ParticipationEvidence>("evidence/engagement.participation"),
   evidenceTenure: () =>
     getSnapshot<TenureEvidence>("evidence/governance.incumbency"),
+  evidenceDurableFaction: () =>
+    getSnapshot<DurableFactionEvidence>("evidence/governance.durable_faction"),
 };
