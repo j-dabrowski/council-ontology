@@ -30,6 +30,7 @@ from src.analysis.evidence import (
     evidence_for_objection_responsiveness,
     evidence_for_officer_ratification,
     evidence_for_oversight_body_capture,
+    evidence_for_power_spread,
     evidence_for_recusal_management,
     evidence_for_recusal_trend,
     evidence_for_repeat_applicant,
@@ -1676,4 +1677,52 @@ def test_recusal_trend_skips_votes_with_no_matched_declaration(session):
     session.flush()
 
     result = evidence_for_recusal_trend(session, council_id)
+    assert result["entries"] == []
+
+
+def test_power_spread_resolves_matched_motions(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Contested", "Voter")
+    quote_text = "MOVED that the application be approved. CARRIED (5/2)."
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text=quote_text)
+    motion_id = _motion(session, meeting_id, title="Item 1", outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_id).update({"votes_against": 2, "votes_for": 5})
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    _evidence(session, meeting_id, "motions", motion_id, quote_text)
+    session.flush()
+
+    result = evidence_for_power_spread(session, council_id, min_votes=1, min_dissents=1)
+    ids = {e["entity_id"] for e in result["entries"]}
+    assert motion_id in ids
+    entry = next(e for e in result["entries"] if e["entity_id"] == motion_id)
+    assert entry["quotes"][0]["tier"] == "exact"
+
+
+def test_power_spread_excludes_below_cohort_floor(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Below", "Floor")
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, title="Item 1", outcome=MotionOutcome.CARRIED)
+    session.query(Motion).filter_by(id=motion_id).update({"votes_against": 1})
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    # min_votes=2 but this councillor only has 1 contested vote -> excluded
+    # from `profiles` entirely (voting_power()'s own cohort floor), so its
+    # motion never reaches this builder's resolve at all.
+    result = evidence_for_power_spread(session, council_id, min_votes=2, min_dissents=1)
+    assert result["entries"] == []
+
+
+def test_power_spread_excludes_uncontested_motions(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Uncontested", "Voter")
+    meeting_id = _meeting(session, council_id, date(2020, 1, 1), minutes_text="text")
+    # votes_against left unset (None) -> uncontested, per voting_power()'s
+    # own Motion.votes_against > 0 filter.
+    motion_id = _motion(session, meeting_id, title="Item 1", outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=cllr_id, choice=VoteChoice.FOR))
+    session.flush()
+
+    result = evidence_for_power_spread(session, council_id, min_votes=1, min_dissents=1)
     assert result["entries"] == []

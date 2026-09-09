@@ -3019,6 +3019,22 @@ def _generate_snapshots(
         f"({len(recusal_trend_evidence['entries'])} declaration(s))"
     )
 
+    # Evidence chain for governance.power_spread (Phase 2, remaining-11
+    # group) — PowerPanel's per-councillor drill-down, a flat `entries` list
+    # keyed by ContestedVoteDetail's own entity_id (motions.id).
+    from src.analysis.evidence import evidence_for_power_spread
+    power_spread_evidence = evidence_for_power_spread(
+        session, council_id, source_cache=evidence_source_cache,
+    )
+    (evidence_dir / "governance.power_spread.json").write_text(_json.dumps({
+        "published_at": generated_at, "data": power_spread_evidence,
+    }, indent=2))
+    written.append("evidence/governance.power_spread")
+    console.print(
+        "  [green]✓[/green] evidence/governance.power_spread.json "
+        f"({len(power_spread_evidence['entries'])} motion(s))"
+    )
+
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
     from src.models import (

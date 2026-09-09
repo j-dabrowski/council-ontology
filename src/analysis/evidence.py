@@ -1709,6 +1709,45 @@ def evidence_for_recusal_management(
     return {"entries": entries}
 
 
+def evidence_for_power_spread(
+    session: Session, council_id: int, min_votes: int = 30, min_dissents: int = 15,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.power_spread (PowerPanel).
+
+    Per-councillor drill-down, same flat-`entries` shape as
+    evidence_for_recusal_management()/evidence_for_recusal_trend() —
+    the frontend builds one Map<entity_id, EvidenceEntry> and looks each
+    ContestedVoteDetail up by its own `entity_id` (motions.id, added to
+    that dataclass for this lookup).
+
+    `min_votes`/`min_dissents` default to voting_power()'s own defaults
+    (30/15) — exposed only so tests don't need 30 fixture rows to reach
+    the cohort floor; src/cli.py never overrides them.
+
+    Population: voting_power()'s own _populate_contested_votes() (already
+    capped at 50 most-recent contested votes per councillor) — reused
+    directly, not re-derived. Votes have no independent quote (see
+    evidence_for_attendance()); the parent motion is the receipt, exactly
+    as _populate_contested_votes() already treats it.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.analysis.queries import voting_power
+
+    stats = voting_power(session, council_id, min_votes=min_votes, min_dissents=min_dissents)
+    ids = sorted({
+        v.entity_id
+        for p in stats.profiles
+        for v in p.votes
+        if v.entity_id is not None
+    })
+    refs: list[EntityRef] = [("motions", mid, "contested_vote_motion") for mid in ids]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+
+    return {"entries": entries}
+
+
 def evidence_for_recusal_trend(
     session: Session, council_id: int,
     source_cache: dict[int, _MeetingSource] | None = None,

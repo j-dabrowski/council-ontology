@@ -5,7 +5,7 @@ import {
   LineChart, Line, Legend,
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api, PowerProfile, ContestedVoteDetail } from "../api";
+import { api, PowerProfile, ContestedVoteDetail, EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
@@ -13,7 +13,7 @@ import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
-function ContestedVoteRow({ v }: { v: ContestedVoteDetail }) {
+function ContestedVoteRow({ v, evidence }: { v: ContestedVoteDetail; evidence?: EvidenceEntry }) {
   return (
     <div className="decl-row">
       <div className="decl-row-head">
@@ -29,7 +29,7 @@ function ContestedVoteRow({ v }: { v: ContestedVoteDetail }) {
         </span>
       </div>
       <div className="decl-title">{v.title || <em>untitled motion</em>}</div>
-      <SourceQuote quote={v.quote} />
+      {evidence ? <SourceQuote entry={evidence} /> : <SourceQuote quote={v.quote} />}
     </div>
   );
 }
@@ -71,10 +71,19 @@ const ScatterTooltip = ({ active, payload }: {
 
 export function PowerPanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.power());
+  // The evidence chain, loaded separately: a missing/unpublished evidence
+  // file degrades gracefully to each row's legacy `quote` field (see
+  // ContestedVoteRow) rather than blocking the panel.
+  const { data: evidence } = useData(() => api.evidencePowerSpread());
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
+
+  const evidenceById = new Map<number, EvidenceEntry>();
+  if (evidence) {
+    for (const e of evidence.entries) evidenceById.set(e.entity_id, e);
+  }
 
   const selectedProfile = selected
     ? data.profiles.find((p) => p.name === selected) ?? null
@@ -229,7 +238,8 @@ export function PowerPanel({ test }: { test: ResolvedTest }) {
             <p className="chart-note">No itemised contested votes extracted for this councillor.</p>
           )}
           {selectedProfile.votes.map((v, i) => (
-            <ContestedVoteRow key={i} v={v} />
+            <ContestedVoteRow key={i} v={v}
+              evidence={v.entity_id != null ? evidenceById.get(v.entity_id) : undefined} />
           ))}
         </DrillDown>
       )}

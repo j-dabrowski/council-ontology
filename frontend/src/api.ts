@@ -343,6 +343,7 @@ export interface ContestedVoteDetail {
   won: boolean;
   margin: number | null;           // votes_for − votes_against
   quote: string | null;            // verbatim minute text
+  entity_id: number | null;        // motions.id, for the evidence chain lookup
 }
 
 export interface PowerProfile {
@@ -862,6 +863,12 @@ export interface RecusalTrendEvidence {
   entries: EvidenceEntry[];
 }
 
+// PowerPanel's per-councillor drill-down, also flat — same lookup
+// convention as RecusalManagementEvidence/RecusalTrendEvidence above.
+export interface PowerSpreadEvidence {
+  entries: EvidenceEntry[];
+}
+
 // The tests.<generator> group's shared shape (docs/frontend/
 // EVIDENCE_CHAIN_PLAN.md Step 6): unlike the tests above, these have no
 // bespoke panel — BatteryTestBody's one generic drill-down reads this same
@@ -953,4 +960,6 @@ export const api = {
     getSnapshot<RecusalManagementEvidence>("evidence/conflict.recusal_management"),
   evidenceRecusalTrend: () =>
     getSnapshot<RecusalTrendEvidence>("evidence/conflict.recusal_trend"),
+  evidencePowerSpread: () =>
+    getSnapshot<PowerSpreadEvidence>("evidence/governance.power_spread"),
 };

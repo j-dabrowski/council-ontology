@@ -1330,6 +1330,7 @@ class ContestedVoteDetail:
     won: bool                  # voted on the winning side
     margin: int | None         # votes_for − votes_against
     quote: str | None          # verbatim minute text (extraction_evidence, motions)
+    entity_id: int | None = None  # motions.id (evidence_for_power_spread() lookup key)
 
 
 @dataclass
@@ -1449,6 +1450,7 @@ def _populate_contested_votes(session, council_id, profiles, cap: int = 50) -> N
                 won=won,
                 margin=margin,
                 quote=quote_by_motion.get(mid),
+                entity_id=mid,
             ))
         p.votes = details
         p.n_shown = len(details)
