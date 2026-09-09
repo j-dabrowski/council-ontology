@@ -15,6 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from src.analysis.evidence import (
+    evidence_for_attendance,
     evidence_for_big_dollar_leniency,
     evidence_for_chair_capture,
     evidence_for_confidential_tender_size,
@@ -1250,3 +1251,82 @@ def test_election_cycle_caps_per_bucket(session):
     result = evidence_for_election_cycle(session, council_id, cap=2)
     by_label = {b["label"]: b for b in result["buckets"]}
     assert len(by_label["Pre-election (Apr–Oct odd yr)"]["entries"]) == 2
+
+
+# ---------------------------------------------------------------------------
+# evidence_for_attendance() — last of the tests.<generator> batch. Same
+# motion-as-receipt design; no CARRIED-only filter (the real test has none);
+# ABSENT rows split by declared_interest, not a time-based bucket.
+# ---------------------------------------------------------------------------
+
+def test_attendance_splits_absent_votes_by_declared_interest(session):
+    council_id = _council(session)
+    recused_cllr = _councillor(session, "Recused", "Councillor")
+    absent_cllr = _councillor(session, "Genuinely", "Absent")
+
+    # LOST outcome (not CARRIED) — the real test has no outcome filter at
+    # all, so this must still count.
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1),
+                           minutes_text="MOVED the rezoning be approved. LOST.")
+    motion_recusal = _motion(session, meeting_id, title="Rezoning motion",
+                              outcome=MotionOutcome.LOST)
+    session.add(Vote(motion_id=motion_recusal, councillor_id=recused_cllr,
+                      choice=VoteChoice.ABSENT, declared_interest=True))
+    _evidence(session, meeting_id, "motions", motion_recusal, "MOVED the rezoning be approved.")
+
+    motion_genuine = _motion(session, meeting_id, title="Other motion", item_number="2",
+                              outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_genuine, councillor_id=absent_cllr,
+                      choice=VoteChoice.ABSENT, declared_interest=False))
+
+    # A FOR vote must never appear in either bucket.
+    for_only_motion = _motion(session, meeting_id, title="For only", item_number="3",
+                               outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=for_only_motion, councillor_id=recused_cllr, choice=VoteChoice.FOR))
+    session.flush()
+
+    result = evidence_for_attendance(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+
+    recusal_ids = {e["entity_id"] for e in by_label["Recusal (declared)"]["entries"]}
+    genuine_ids = {e["entity_id"] for e in by_label["Genuine absence"]["entries"]}
+    assert recusal_ids == {motion_recusal}
+    assert genuine_ids == {motion_genuine}
+    assert for_only_motion not in recusal_ids | genuine_ids
+
+    recusal_entry = by_label["Recusal (declared)"]["entries"][0]
+    assert recusal_entry["quotes"][0]["tier"] == "exact"
+
+
+def test_attendance_allows_the_same_motion_in_both_buckets(session):
+    council_id = _council(session)
+    recused_cllr = _councillor(session, "Recused", "One")
+    absent_cllr = _councillor(session, "Genuine", "Two")
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    motion_id = _motion(session, meeting_id, outcome=MotionOutcome.CARRIED)
+    session.add(Vote(motion_id=motion_id, councillor_id=recused_cllr,
+                      choice=VoteChoice.ABSENT, declared_interest=True))
+    session.add(Vote(motion_id=motion_id, councillor_id=absent_cllr,
+                      choice=VoteChoice.ABSENT, declared_interest=False))
+    session.flush()
+
+    result = evidence_for_attendance(session, council_id)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert motion_id in {e["entity_id"] for e in by_label["Recusal (declared)"]["entries"]}
+    assert motion_id in {e["entity_id"] for e in by_label["Genuine absence"]["entries"]}
+
+
+def test_attendance_caps_per_bucket(session):
+    council_id = _council(session)
+    cllr_id = _councillor(session, "Genuine", "Absent")
+    meeting_id = _meeting(session, council_id, date(2022, 1, 1), minutes_text="text")
+    for i in range(3):
+        motion_id = _motion(session, meeting_id, title=f"Motion {i}", item_number=str(i),
+                             outcome=MotionOutcome.CARRIED)
+        session.add(Vote(motion_id=motion_id, councillor_id=cllr_id,
+                          choice=VoteChoice.ABSENT, declared_interest=False))
+    session.flush()
+
+    result = evidence_for_attendance(session, council_id, cap=2)
+    by_label = {b["label"]: b for b in result["buckets"]}
+    assert len(by_label["Genuine absence"]["entries"]) == 2

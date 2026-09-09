@@ -1324,3 +1324,66 @@ def evidence_for_election_cycle(
             for label in labels
         ]
     }
+
+
+def evidence_for_attendance(
+    session: Session, council_id: int, cap: int = 30,
+    source_cache: dict[int, _MeetingSource] | None = None,
+) -> dict:
+    """Evidence chain for governance.attendance.
+
+    Same population as tests._t_attendance's own chart: ALL votes on
+    minutes meetings — no CARRIED-only filter, unlike freshman_effect and
+    election_cycle, since this test's own query has none — restricted to
+    ABSENT rows, split into "Recusal (declared)" (declared_interest=True)
+    and "Genuine absence" (declared_interest=False). This is a composition
+    split of the ABSENT subset, not a dissent measure. Votes have no quote
+    of their own (see evidence_for_freshman_effect's docstring); this
+    resolves the parent motion behind each ABSENT vote.
+
+    A motion with more than one ABSENT voter can have some declared and
+    some not — like freshman_effect (and unlike election_cycle), a motion
+    can legitimately appear in both buckets; deduplicated within each.
+    Capped to `cap` per bucket, newest first.
+
+    `source_cache`: see resolve_evidence().
+    """
+    from src.models import Meeting, Motion, Vote, VoteChoice
+
+    rows = (
+        session.query(Vote.choice, Vote.declared_interest, Motion.id, Meeting.meeting_date)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+        .all()
+    )
+
+    labels = ["Recusal (declared)", "Genuine absence"]
+    grouped: dict[str, dict[int, object]] = {label: {} for label in labels}
+    for choice, declared_interest, motion_id, meeting_date in rows:
+        if choice != VoteChoice.ABSENT:
+            continue
+        label = "Recusal (declared)" if declared_interest else "Genuine absence"
+        existing = grouped[label].get(motion_id)
+        if existing is None or (meeting_date and meeting_date > existing):
+            grouped[label][motion_id] = meeting_date
+
+    ids_by_bucket: dict[str, list[int]] = {}
+    for label, motions in grouped.items():
+        newest_first = sorted(motions.items(), key=lambda kv: kv[1], reverse=True)
+        ids_by_bucket[label] = [motion_id for motion_id, _d in newest_first[:cap]]
+
+    refs: list[EntityRef] = [
+        ("motions", motion_id, "absent_vote_motion")
+        for ids in ids_by_bucket.values()
+        for motion_id in ids
+    ]
+    entries = resolve_evidence(session, refs, council_id, source_cache)
+    entries_by_id = {e["entity_id"]: e for e in entries}
+
+    return {
+        "buckets": [
+            {"label": label, "entries": [entries_by_id[i] for i in ids_by_bucket[label]]}
+            for label in labels
+        ]
+    }
