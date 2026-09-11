@@ -2,13 +2,21 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend
 } from "recharts";
 import { useData } from "../hooks/useData";
-import { api } from "../api";
+import { api, CouncillorsData } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
+import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 export function ContestationChart({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.trends());
+  // most_contested is a motion title — free text, computed per run, not a
+  // registry-authored string — so it goes through the same guardrail every
+  // other computed claim field does (ScorecardPanel/BatteryTestPanel):
+  // a councillor's surname can land in a title ("Motion for Cr Pinerua")
+  // with no other check catching it before render.
+  const { data: cllrData } = useData<CouncillorsData>(() => api.councillors());
+  const councillorNames = cllrData ? Object.keys(cllrData.by_name) : [];
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -61,12 +69,19 @@ export function ContestationChart({ test }: { test: ResolvedTest }) {
             <div key={r.year} className="contested-row">
               <span className="contested-year">{r.year}</span>
               <span className="contested-title">
-                {r.most_contested[0] ?? "—"}
-                {r.most_contested[0] && (
-                  <span style={{ color: "var(--text-muted)" }}>
-                    {" "}({r.total_with_dissent} of {r.total_carried} motions had any dissent that year)
-                  </span>
-                )}
+                {r.most_contested[0] ? (
+                  <>
+                    <RedactedText
+                      text={r.most_contested[0]}
+                      names={councillorNames}
+                      testId={test.id}
+                      field="most_contested"
+                    />
+                    <span style={{ color: "var(--text-muted)" }}>
+                      {" "}({r.total_with_dissent} of {r.total_carried} motions had any dissent that year)
+                    </span>
+                  </>
+                ) : "—"}
               </span>
             </div>
           ))}
