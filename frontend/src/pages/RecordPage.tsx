@@ -1,14 +1,19 @@
 import { useMemo, useState } from "react";
-import { api, ObjectionDoseBucket, ObjectionDoseData, RecordStreetsApplication, RecordStreetsStreet } from "../api";
+import {
+  api, ObjectionDoseBucket, ObjectionDoseData, RecordCouncillor,
+  RecordStreetsApplication, RecordStreetsStreet,
+} from "../api";
 import { useData } from "../hooks/useData";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
+import { Reveal } from "../components/DrillDown";
 import { REGISTRY_BY_ID } from "../registry";
 
-// docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-5: type-ahead street lookup
-// (feature 1) and the objector calculator (feature 2). Deliberately plain:
-// no severity chip, no principles list, no Objection/Response block — this
-// page doesn't argue, it looks things up. Every figure shown comes straight
-// from record_streets.json / dose.json; nothing is computed here beyond
+// docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-6: type-ahead street lookup
+// (feature 1), the objector calculator (feature 2), and councillor cards
+// (feature 3, Phase 2). Deliberately plain: no severity chip, no principles
+// list, no Objection/Response block — this page doesn't argue, it looks
+// things up. Every figure shown comes straight from record_streets.json /
+// dose.json / record_councillors.json; nothing is computed here beyond
 // formatting, the search filter, and picking the currently-selected bucket.
 
 function formatDate(iso: string | null): string {
@@ -235,9 +240,81 @@ function ObjectorCalculator({ dose }: { dose: ObjectionDoseData }) {
   );
 }
 
+function formatYears(n: number): string {
+  return `${n} ${n === 1 ? "year" : "years"}`;
+}
+
+function CouncillorCard({ c }: { c: RecordCouncillor }) {
+  return (
+    <dl className="rec-cllr-fields">
+      <div className="rec-cllr-field">
+        <dt>Years served</dt>
+        <dd>{formatYears(c.years_served)}</dd>
+      </div>
+      <div className="rec-cllr-field">
+        <dt>Motions moved</dt>
+        <dd>{c.motions_moved}</dd>
+      </div>
+      <div className="rec-cllr-field">
+        <dt>Votes cast</dt>
+        <dd>{c.votes_cast}</dd>
+      </div>
+      <div className="rec-cllr-field">
+        <dt>Most frequent seconder</dt>
+        <dd>
+          {c.most_frequent_seconder
+            ? `${c.most_frequent_seconder.name} (${c.most_frequent_seconder.count} times)`
+            : "not recorded"}
+        </dd>
+      </div>
+      <div className="rec-cllr-field">
+        <dt>Contested votes</dt>
+        <dd>
+          {c.contested_votes.total} total — {c.contested_votes.won} on the winning
+          side, {c.contested_votes.lost} on the losing side
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
+function CouncillorCards({ councillors }: { councillors: RecordCouncillor[] }) {
+  // Computed from the data, never hardcoded — the earliest first_vote
+  // across every councillor on record, not a typed year.
+  const earliestYear = useMemo(() => {
+    const years = councillors
+      .map((c) => c.first_vote)
+      .filter((d): d is string => !!d)
+      .map((d) => Number(d.slice(0, 4)));
+    return years.length ? Math.min(...years) : null;
+  }, [councillors]);
+
+  return (
+    <section className="rec-cllrs">
+      <h2 className="static-h2">Councillors on record</h2>
+      <p className="rec-dose-intro">
+        {councillors.length} councillors{earliestYear && <> have served since {earliestYear}</>}.
+        Select a name to see their record — years served, motions moved, votes
+        cast, who most often seconded their motions, and how their contested
+        votes split.
+      </p>
+      <ul className="rec-cllr-list">
+        {councillors.map((c) => (
+          <li key={c.name} className="rec-cllr-row">
+            <Reveal label={c.name}>
+              <CouncillorCard c={c} />
+            </Reveal>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function RecordPage() {
   const streetsData = useData(api.recordStreets);
   const doseData = useData(api.dose);
+  const councillorsData = useData(api.recordCouncillors);
 
   return (
     <div className="static-page">
@@ -265,6 +342,12 @@ export function RecordPage() {
         {doseData.loading && <LoadingCard />}
         {doseData.error && <ErrorCard msg={doseData.error} />}
         {doseData.data && <ObjectorCalculator dose={doseData.data} />}
+      </section>
+
+      <section className="static-section">
+        {councillorsData.loading && <LoadingCard />}
+        {councillorsData.error && <ErrorCard msg={councillorsData.error} />}
+        {councillorsData.data && <CouncillorCards councillors={councillorsData.data.councillors} />}
       </section>
     </div>
   );

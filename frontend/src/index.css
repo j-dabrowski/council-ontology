@@ -2274,3 +2274,47 @@ a:hover { text-decoration: underline; }
   font-size: 1.6rem;
   font-weight: 700;
 }
+
+/* ── /record councillor cards (RECORD_PAGE_PLAN.md Step 6) ─────────────── */
+
+.rec-cllr-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rec-cllr-row {
+  padding: 9px 0;
+  border-top: 1px solid var(--border-muted);
+}
+
+.rec-cllr-row:first-child {
+  border-top: none;
+}
+
+.rec-cllr-fields {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 12px 14px;
+  background: var(--sunken);
+  border-radius: 8px;
+}
+
+.rec-cllr-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 0.85rem;
+}
+
+.rec-cllr-field dt {
+  color: var(--text-dim);
+  min-width: 160px;
+}
+
+.rec-cllr-field dd {
+  margin: 0;
+  color: var(--text-hi);
+  font-weight: 500;
+}

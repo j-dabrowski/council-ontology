@@ -1895,8 +1895,15 @@ SNAPSHOT_TIER: dict[str, str] = {
     "record_streets": "public",
     # Step 5 — public only because apps[].description, apps[].quote and
     # headline_examples are all redacted at export time (above), same
-    # guarantee as record_streets — see tests/test_dose_redaction.py.
+    # guarantee as record_streets — see tests/test_privacy.py's
+    # test_redact_before_truncate_not_after and
+    # scripts/verify_dose_redaction.py's real-corpus check.
     "dose": "public",
+    # Step 6 — a reduced, factual-fields-only projection (B.3); no
+    # win_rate/dissent_rate/recusal_rate/declarations reach this file at
+    # all, so unlike dose/record_streets there's no redaction step to
+    # verify here — see tests/test_record_councillors.py.
+    "record_councillors": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
@@ -3304,6 +3311,13 @@ def _generate_snapshots(
             "top_partners": _top_p,
         }
     _write("councillors", {"by_name": _cllr_profiles})
+
+    # record_councillors.json (docs/frontend/RECORD_PAGE_PLAN.md Step 6,
+    # B.3) — a REDUCED projection, not councillors.json republished.
+    # councillors.json itself stays full-tier; this is the only
+    # councillor data /record is allowed to publish.
+    from src.analysis.record_councillors import build_record_councillors
+    _write("record_councillors", build_record_councillors(session, council_id, generated_at))
 
     # method.json (docs/frontend/METHOD_PAGE_PLAN.md Step 2) — the
     # extraction-quality record: every figure sourced from a file in data/

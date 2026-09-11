@@ -189,6 +189,40 @@ export interface RecordStreetsData {
   streets: RecordStreetsStreet[];
 }
 
+// docs/frontend/RECORD_PAGE_PLAN.md Step 6 / Part B.3
+// (src/analysis/record_councillors.py) — a REDUCED projection, not
+// CouncillorProfile/councillors.json: exactly these five fields, no
+// win_rate, no dissent_rate, no recusal_rate, no declarations.
+export interface RecordCouncillorSeconder {
+  name: string;
+  count: number;
+}
+
+export interface RecordCouncillorContestedVotes {
+  total: number;
+  won: number;
+  lost: number;
+}
+
+export interface RecordCouncillor {
+  name: string;
+  given_name: string;
+  family_name: string;
+  slug: string | null;
+  years_served: number;
+  first_vote: string | null;
+  motions_moved: number;
+  votes_cast: number;
+  most_frequent_seconder: RecordCouncillorSeconder | null;
+  contested_votes: RecordCouncillorContestedVotes;
+}
+
+export interface RecordCouncillorsData {
+  generated_at: string;
+  source: string;
+  councillors: RecordCouncillor[];
+}
+
 export interface DissenterProfile {
   name: string;
   total_votes_on_carried: number;
@@ -1136,4 +1170,7 @@ export const api = {
   // docs/frontend/RECORD_PAGE_PLAN.md Step 4 — public tier (src/cli.py
   // SNAPSHOT_TIER).
   recordStreets: () => getSnapshot<RecordStreetsData>("record_streets"),
+  // docs/frontend/RECORD_PAGE_PLAN.md Step 6 — public tier; councillors.json
+  // itself (the by_name cross-link profile) stays full-tier (B.3).
+  recordCouncillors: () => getSnapshot<RecordCouncillorsData>("record_councillors"),
 };
