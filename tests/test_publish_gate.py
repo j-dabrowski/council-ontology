@@ -245,3 +245,24 @@ def test_digest_and_period_digest_stay_excluded_watch_is_a_real_snapshot(tmp_pat
     assert "watch" in {p.stem for p in tmp_path.glob("*.json")}
     assert manifest.tiers["watch"] == "public"
     assert verify_draft_integrity(tmp_path, manifest) == []
+
+
+# ---------------------------------------------------------------------------
+# SNAPSHOT_TIER / _tier_of (ENTITY_RESOLUTION_SECTION_PLAN.md Step 3):
+# method.json moved to public tier once its entity_resolution block was
+# made name-free by construction (B.1/B.2) — a static entry, not
+# claim-derived, since it carries no TestResult (src/cli.py's SNAPSHOT_TIER
+# comment). Regression-checked here so a future edit can't silently drop it
+# back to full-tier (an empty live /method) or newly-derived-full snapshot
+# can't slip out as public (the fail-safe direction both ways).
+# ---------------------------------------------------------------------------
+
+def test_method_snapshot_is_public_tier():
+    from src.cli import SNAPSHOT_TIER, _tier_of
+    assert SNAPSHOT_TIER["method"] == "public"
+    assert _tier_of("method") == "public"
+
+
+def test_unlisted_non_claim_snapshot_defaults_to_full_tier():
+    from src.cli import _tier_of
+    assert _tier_of("some_snapshot_nobody_has_listed") == "full"

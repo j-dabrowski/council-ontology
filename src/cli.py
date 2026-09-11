@@ -1876,7 +1876,14 @@ def cmd_analyse(args) -> None:
 # below) because by the time it's written it already IS public-tier only —
 # project_watch_feed_to_public() (docs/frontend/WATCH_FEED_PLAN.md B.3/Step 5)
 # filtered and re-verified it per claim before cmd_draft ever calls _tier_of.
-SNAPSHOT_TIER: dict[str, str] = {"watch": "public"}
+# "method" is static "public" too, for a different reason: it carries no
+# TestResult and no per-claim tier to derive, but its `entity_resolution`
+# block names two real firms beside a "sitting councillor's surname" claim
+# (ENTITY_RESOLUTION_SECTION_PLAN.md A.6/B.1) — public only because that
+# block drops `councillor_name`/`councillor_id` at the boundary by
+# construction (src/analysis/method.py's `_build_surname_collision()`), not
+# because nobody will look.
+SNAPSHOT_TIER: dict[str, str] = {"watch": "public", "method": "public"}
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
 # tier-derivation rule (src/invariant_gate.py's derive_claim_tier). Only
@@ -3260,8 +3267,14 @@ def _generate_snapshots(
     # plus the live per-year database columns, never a bare number. Not
     # claim-derived — carries no TestResult, no unit_of_analysis, no
     # named_entities — so it is deliberately not added to
-    # CLAIM_DERIVED_SNAPSHOTS above; S7 has nothing to check on it, by
-    # design (B.6).
+    # CLAIM_DERIVED_SNAPSHOTS above. S7 still has nothing to check on it,
+    # but that's no longer because the file carries nothing sensitive: its
+    # `entity_resolution` block (ENTITY_RESOLUTION_SECTION_PLAN.md Step 1)
+    # pairs a firm with a "sitting councillor's surname" claim, and is
+    # name-free by construction rather than by exemption —
+    # `_build_surname_collision()` drops `councillor_name`/`councillor_id`
+    # before this dict is ever built, checked by
+    # tests/test_method.py's roster-scan tests, not left to review to catch.
     from src.analysis.method import build_method_record
     from src.models import Council as _CouncilM
     _council_row = session.get(_CouncilM, council_id)
