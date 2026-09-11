@@ -4,7 +4,8 @@ import { useData } from "../hooks/useData";
 import {
   api, MethodData, MethodSourcedValue, MethodYearRow, MethodMetric,
   MethodValidationSplit, MethodInventoryAgreementFlag, MethodSamplePerFileRow,
-  MethodExtractionBatch, ScorecardData,
+  MethodExtractionBatch, MethodSupplierExample, MethodResolvedCollision,
+  MethodEntityResolution, ScorecardData,
 } from "../api";
 import { scorecardHref } from "../registry/anchors";
 
@@ -274,6 +275,158 @@ function SchemaFlags({ v }: { v: MethodSourcedValue<number> & { flagged_files?: 
   );
 }
 
+const fmtM = (n: number) => `$${(n / 1e6).toFixed(1)}M`;
+const fmt$ = (n: number) => (n >= 1e6 ? fmtM(n) : `$${Math.round(n).toLocaleString()}`);
+
+// docs/frontend/ENTITY_RESOLUTION_SECTION_PLAN.md Step 2 — a validation
+// story: does the analysis's own supplier-matching and surname-collision
+// logic hold up on this corpus's real spelling variants and real name
+// collisions? Every string and number here reads off method.json's
+// `entity_resolution` block; nothing is retyped from the plan's own
+// worked examples.
+
+// Case 1: every multi-spelling firm shown in full (there are 15 on the real
+// corpus) — a short enough list to show whole, and more convincing than a
+// chosen three.
+function SupplierVariantRow({ example }: { example: MethodSupplierExample }) {
+  return (
+    <tr>
+      <td>
+        {example.raw.map((r, i) => (
+          <span key={r.string}>
+            {i > 0 && ", "}
+            {r.string} <span className="method-variant-n">×{r.n}</span>
+          </span>
+        ))}
+        <div>
+          <code className="method-supplier-key">{example.merged_key}</code>
+        </div>
+      </td>
+      <td className="method-num-cell">{example.n_awards}</td>
+      <td className="method-num-cell">{fmt$(example.total_amount)}</td>
+    </tr>
+  );
+}
+
+function SupplierNormalisationCase({ sn }: { sn: MethodEntityResolution["supplier_normalisation"] }) {
+  return (
+    <>
+      <h4 className="method-split-label">Case 1 — the same supplier, spelled differently</h4>
+      <p className="chart-note">
+        As of {formatDate(sn.generated_at)} · <code>{sn.source}</code> ·{" "}
+        {sn.named_award_rows.toLocaleString()} named award rows, {sn.distinct_firms.toLocaleString()}{" "}
+        distinct normalised firms.
+      </p>
+      <p>
+        Every <code>tenders.awarded_to</code> value is normalised by lowercasing it, stripping
+        company suffixes, dropping <code>.</code> and <code>,</code>, and removing internal
+        whitespace — the rule is <code>{sn.rule}</code>. That collapses{" "}
+        <strong>{sn.multi_variant_firms}</strong> firms whose award rows spell their own name more
+        than one way, shown in full below.
+      </p>
+      <table className="method-table">
+        <thead>
+          <tr>
+            <th>Raw spellings on record</th>
+            <th>Awards</th>
+            <th>Total value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sn.examples.map((ex) => (
+            <SupplierVariantRow key={ex.merged_key} example={ex} />
+          ))}
+        </tbody>
+      </table>
+      <p className="chart-note">{sn.excluded_placeholders.note} — {sn.excluded_placeholders.n_awards}{" "}
+        award row{sn.excluded_placeholders.n_awards === 1 ? "" : "s"} excluded on this basis.</p>
+    </>
+  );
+}
+
+// Case 2: before (raw collisions), after (both resolved on provenance) — the
+// room the brief asks for, not a one-line mention. The three B.6 limits sit
+// beside the figure each one qualifies rather than collecting at the bottom.
+function CollisionCard({ c }: { c: MethodResolvedCollision }) {
+  return (
+    <div className="method-metric" key={c.firm}>
+      <h4 className="method-metric-label">{c.firm} — {fmt$(c.amount)}</h4>
+      {c.what_it_is ? (
+        <p className="method-metric-def">{c.what_it_is[0].toUpperCase() + c.what_it_is.slice(1)}.</p>
+      ) : (
+        <p className="method-metric-def">Not yet characterised.</p>
+      )}
+      <p className="method-metric-consequence">
+        {c.resolution
+          ? `Resolution: ${c.resolution}.`
+          : `Unresolved — ${(c.reason ?? "needs manual review").replace(/_/g, " ")}.`}
+      </p>
+    </div>
+  );
+}
+
+function SurnameCollisionCase({ sc }: { sc: MethodEntityResolution["surname_collision"] }) {
+  return (
+    <>
+      <h4 className="method-split-label">Case 2 — does a tender winner share a decider's surname?</h4>
+      <p className="chart-note">
+        As of {formatDate(sc.generated_at)} · <code>{sc.source}</code>
+      </p>
+      <div className="method-metric-values">
+        <div className="method-metric-value">
+          <span className="method-metric-value-label">Named awards tested</span>
+          <span className="method-metric-value-num">{sc.named_awards.toLocaleString()}</span>
+        </div>
+        <div className="method-metric-value">
+          <span className="method-metric-value-label">Voting-councillor surnames tested</span>
+          <span className="method-metric-value-num">{sc.surnames_tested.toLocaleString()}</span>
+        </div>
+        <div className="method-metric-value">
+          <span className="method-metric-value-label">Raw candidate matches</span>
+          <span className="method-metric-value-num">{sc.naive_matches.toLocaleString()}</span>
+        </div>
+      </div>
+      <p className="chart-note">{sc.limits[2]}</p>
+
+      {sc.resolved.map((c) => (
+        <CollisionCard key={c.firm} c={c} />
+      ))}
+      {sc.dedup_note && <p className="chart-note">{sc.dedup_note}.</p>}
+
+      <div className="method-metric-values">
+        <div className="method-metric-value">
+          <span className="method-metric-value-label">Genuine matches</span>
+          <span className="method-metric-value-num">{sc.genuine_matches.toLocaleString()}</span>
+        </div>
+        {sc.unresolved_matches > 0 && (
+          <div className="method-metric-value">
+            <span className="method-metric-value-label">Awaiting manual resolution</span>
+            <span className="method-metric-value-num">{sc.unresolved_matches.toLocaleString()}</span>
+          </div>
+        )}
+      </div>
+      <p className="chart-note">{sc.limits[1]}</p>
+      <p className="chart-note">{sc.limits[0]}</p>
+    </>
+  );
+}
+
+function EntityResolutionSection({ er }: { er: MethodEntityResolution }) {
+  return (
+    <div className="static-section">
+      <h3 className="static-h2">Entity resolution</h3>
+      <p>
+        Two live demonstrations of a join discipline the analysis already applies elsewhere on
+        this site: matching supplier names that are spelled inconsistently across the corpus, and
+        checking whether a tender ever went to a firm sharing a surname with the councillor who
+        voted on it.
+      </p>
+      <SupplierNormalisationCase sn={er.supplier_normalisation} />
+      <SurnameCollisionCase sc={er.surname_collision} />
+    </div>
+  );
+}
+
 function statusChipClass(status: MethodSamplePerFileRow["status"]): string {
   if (status === "PASS") return "valence-chip valence-supportive";
   if (status === "REVIEW") return "valence-chip valence-neutral";
@@ -500,6 +653,8 @@ export function MethodPage() {
           <h4 className="method-split-label">Sample per-file results</h4>
           <PerFileTable v={data.validation.sample_per_file} />
         </div>
+
+        <EntityResolutionSection er={data.entity_resolution} />
 
         <div className="static-section">
           <h3 className="static-h2">Pipeline</h3>

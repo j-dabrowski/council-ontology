@@ -160,6 +160,37 @@
       "generated_at": null,
       "n": null,
       "reason": "source_missing"
+    },
+    "entity_resolution": {
+      "supplier_normalisation": {
+        "source": "data/council.db",
+        "generated_at": "2026-09-07T08:11:30.838614+00:00",
+        "named_award_rows": 0,
+        "distinct_firms": 0,
+        "multi_variant_firms": 0,
+        "rule": "lowercase; strip company suffixes; drop . and ,; remove internal whitespace",
+        "examples": [],
+        "excluded_placeholders": {
+          "n_awards": 0,
+          "note": ""
+        }
+      },
+      "surname_collision": {
+        "source": "data/council.db",
+        "generated_at": "2026-09-07T08:11:30.838614+00:00",
+        "named_awards": 0,
+        "surnames_tested": 0,
+        "naive_matches": 0,
+        "resolved": [],
+        "genuine_matches": 0,
+        "unresolved_matches": 0,
+        "dedup_note": null,
+        "limits": [
+          "Surname matching cannot detect a connection through a differently-named entity \u2014 a councillor with an interest in a firm trading under any other name is invisible to this test.",
+          "This is a null within a stated coverage boundary, not proof of absence.",
+          "Only separately-moved tender-award motions are visible, not consent-agenda'd awards \u2014 0 named awards were tested against 0 tender-award motions."
+        ]
+      }
     }
   }
 }

@@ -2036,3 +2036,17 @@ a:hover { text-decoration: underline; }
   color: var(--text-muted);
   word-break: break-word;
 }
+
+/* ── /method entity resolution (ENTITY_RESOLUTION_SECTION_PLAN.md Step 2) ── */
+
+.method-variant-n {
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+.method-supplier-key {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  color: var(--text-faint);
+}

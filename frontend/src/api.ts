@@ -773,6 +773,63 @@ export type MethodExtractionBatch =
     }
   | MethodSourcedValue<null>;
 
+// The entity-resolution section (docs/frontend/ENTITY_RESOLUTION_SECTION_PLAN.md
+// Part C) — the one block of method.json computed live from the database
+// rather than a data/ file. Case 1 (supplier_normalisation): every named
+// tender award, grouped by src/analysis/queries.py's own
+// `_normalise_contractor()`. Case 2 (surname_collision):
+// `decider_supplier_conflict()`'s own output, with `councillor_name`/
+// `councillor_id` dropped before it ever reaches this type — no
+// councillor's name is part of this shape (B.1/B.2 of that plan).
+export interface MethodSupplierRawSpelling {
+  string: string;
+  n: number;
+}
+
+export interface MethodSupplierExample {
+  merged_key: string;
+  raw: MethodSupplierRawSpelling[];
+  n_awards: number;
+  total_amount: number;
+}
+
+export interface MethodSupplierNormalisation {
+  source: string;
+  generated_at: string;
+  named_award_rows: number;
+  distinct_firms: number;
+  multi_variant_firms: number;
+  rule: string;
+  examples: MethodSupplierExample[];
+  excluded_placeholders: { n_awards: number; note: string };
+}
+
+export interface MethodResolvedCollision {
+  firm: string;
+  amount: number;
+  what_it_is: string | null;
+  resolution: string | null;
+  reason?: string;
+}
+
+export interface MethodSurnameCollision {
+  source: string;
+  generated_at: string;
+  named_awards: number;
+  surnames_tested: number;
+  naive_matches: number;
+  resolved: MethodResolvedCollision[];
+  genuine_matches: number;
+  unresolved_matches: number;
+  dedup_note: string | null;
+  limits: string[];
+}
+
+export interface MethodEntityResolution {
+  supplier_normalisation: MethodSupplierNormalisation;
+  surname_collision: MethodSurnameCollision;
+}
+
 // The evidence chain (docs/frontend/EVIDENCE_CHAIN_PLAN.md Part C):
 // resolve_evidence()'s full output — every quote behind one entity, each
 // carrying a match tier computed at request time (B.2), never char_offset.
@@ -968,6 +1025,7 @@ export interface MethodData {
     schema_flags: MethodSourcedValue<number> & { flagged_files?: string[] };
   };
   extraction_batch: MethodExtractionBatch;
+  entity_resolution: MethodEntityResolution;
 }
 
 export const api = {
