@@ -1912,6 +1912,16 @@ SNAPSHOT_TIER: dict[str, str] = {
     # time, so the guardrail fix (RedactedText, same file) had to land
     # first, not as a follow-up.
     "trends": "public",
+    # Step 8 — `tenure`/`transparency` are aggregate figures, no names, no
+    # quotes. The three evidence/*.json files below carry real quotes and
+    # publish here for the first time; each is redacted at export (above)
+    # after finding real private names in the raw quotes (38/223 planning,
+    # 3/129 tenure, 3/636 transparency) — see tests/test_evidence_redaction.py.
+    "tenure": "public",
+    "transparency": "public",
+    "evidence/governance.incumbency": "public",
+    "evidence/transparency.confidential_share": "public",
+    "evidence/planning.objection_responsiveness": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
@@ -2309,11 +2319,19 @@ def _generate_snapshots(
     # function returns, for governance.officer_ratification's own export —
     # exist_ok=True makes the order harmless either way.)
     from src.analysis.evidence import evidence_for_objection_responsiveness
+    from src.privacy import redact_evidence_quotes
     evidence_dir = output_dir / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
     objection_responsiveness_evidence = evidence_for_objection_responsiveness(
         session, council_id, source_cache=evidence_source_cache,
     )
+    # RECORD_PAGE_PLAN.md Step 8 — this file publishes at public tier now
+    # (SNAPSHOT_TIER below); 38 of 223 raw quotes carried a real private
+    # resident's name (planning-application Owner:/Applicant: fields, the
+    # same shape B.1 already covers elsewhere) before this redaction.
+    redact_evidence_quotes([
+        app for b in objection_responsiveness_evidence["buckets"] for app in b["applications"]
+    ])
     (evidence_dir / "planning.objection_responsiveness.json").write_text(_json.dumps({
         "published_at": generated_at, "data": objection_responsiveness_evidence,
     }, indent=2))
@@ -2442,9 +2460,13 @@ def _generate_snapshots(
     # exports above, joined to it by (entity_table, entity_id) in the
     # frontend rather than duplicated here.
     from src.analysis.evidence import evidence_for_transparency
+    from src.privacy import redact_evidence_quotes
     transparency_evidence = evidence_for_transparency(
         session, council_id, source_cache=evidence_source_cache,
     )
+    # RECORD_PAGE_PLAN.md Step 8 — public tier now; 3 of 636 raw quotes
+    # named a private presenter/consultant before this redaction.
+    redact_evidence_quotes([item for y in transparency_evidence["years"] for item in y["items"]])
     evidence_dir = output_dir / "evidence"
     evidence_dir.mkdir(parents=True, exist_ok=True)
     (evidence_dir / "transparency.confidential_share.json").write_text(_json.dumps({
@@ -3154,9 +3176,14 @@ def _generate_snapshots(
     # group) — TenurePanel's new drill-down (no prior click-through): each
     # councillor's earliest/latest recorded vote, a flat `entries` list.
     from src.analysis.evidence import evidence_for_tenure
+    from src.privacy import redact_evidence_quotes
     tenure_evidence = evidence_for_tenure(
         session, council_id, source_cache=evidence_source_cache,
     )
+    # RECORD_PAGE_PLAN.md Step 8 — public tier now; 3 of 129 raw quotes
+    # named a private citizen or an external body's director before this
+    # redaction.
+    redact_evidence_quotes(tenure_evidence["entries"])
     (evidence_dir / "governance.incumbency.json").write_text(_json.dumps({
         "published_at": generated_at, "data": tenure_evidence,
     }, indent=2))

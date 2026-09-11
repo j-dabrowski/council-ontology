@@ -117,3 +117,28 @@ def contains_private_name_pattern(text: str | None) -> bool:
     if not text:
         return False
     return bool(_LINE_RE.search(text) or _TITLE_RE.search(text))
+
+
+def redact_evidence_quotes(entries: list[dict]) -> None:
+    """Redact every quote's `text` in place across a flat list of
+    src.analysis.evidence.resolve_evidence() entries (EVIDENCE_CHAIN_PLAN.md
+    Part C — each entry carries `quotes: [{"text": ..., ...}]`).
+
+    resolve_evidence() itself must never do this — its own B.6 requires
+    quotes come back "exactly as stored, never trimmed or tidied," so a
+    caller that needs the raw text for its own purposes (e.g. a future
+    Editor review) still gets it. Redaction is instead an explicit step a
+    caller applies only when about to write a *public-tier* export —
+    RECORD_PAGE_PLAN.md Step 8, after finding 38 of 223 raw quotes in
+    evidence/planning.objection_responsiveness.json carried a real
+    private resident's name (the same "Owner:"/"Applicant:" shapes B.1
+    already covers for record_streets.json/dose.json), applied here
+    rather than inside the shared resolver.
+
+    Callers pass a flat list — flatten whatever nested shape their own
+    evidence dict uses (buckets[].applications[], years[].items[], or
+    already-flat entries[]) before calling this.
+    """
+    for entry in entries:
+        for quote in entry.get("quotes") or []:
+            quote["text"] = redact_private_names(quote["text"])
