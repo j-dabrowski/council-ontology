@@ -2284,6 +2284,25 @@ def _generate_snapshots(
         f"  [green]✓[/green] evidence/planning.objection_responsiveness.json ({_n_dose_ev} application(s))"
     )
 
+    # record_streets: street -> sites -> applications index for /record's
+    # address lookup (docs/frontend/RECORD_PAGE_PLAN.md Step 3). Shares
+    # evidence_source_cache with the evidence chain above, so a meeting's
+    # PDF already parsed for another test isn't parsed again here.
+    from src.analysis.record_streets import build_record_streets
+    record_streets = build_record_streets(
+        session, council_id, generated_at, source_cache=evidence_source_cache,
+    )
+    _write("record_streets", record_streets)
+    _cov = record_streets["coverage"]
+    console.print(
+        f"    {_cov['sites'] - _cov['sites_with_street']} of {_cov['sites']} sites yield no street name; "
+        f"{_cov['applications'] - _cov['applications_with_site']} of {_cov['applications']} "
+        "applications have no linked site"
+    )
+    _top_streets = sorted(record_streets["streets"], key=lambda s: -s["n_applications"])[:10]
+    for _s in _top_streets:
+        console.print(f"    {_s['n_applications']:4d} applications — {_s['name']}")
+
     # transparency: share of council business decided behind closed doors over time
     trans = transparency_by_year(session, council_id)
     # drill-down detail: per-year confidential item lists (capped at 30)
