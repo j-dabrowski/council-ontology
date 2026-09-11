@@ -88,7 +88,7 @@
     "evidence_query": "tender_concentration",
     "evidence_snapshot": "tenders",
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": true,
     "digest_threshold": {
       "kind": "any_occurrence"
@@ -140,7 +140,7 @@
     "evidence_query": "conflict_recusal_stats",
     "evidence_snapshot": "declared",
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": true,
     "digest_threshold": {
       "kind": "any_occurrence"
@@ -214,7 +214,7 @@
     "evidence_query": "tests._t_big_dollar_leniency",
     "evidence_snapshot": null,
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": true,
     "digest_threshold": {
       "kind": "percentile",
@@ -241,7 +241,7 @@
     "evidence_query": "tests._t_repeat_applicant",
     "evidence_snapshot": null,
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": false,
     "digest_threshold": null,
     "detail_panel": "repeat-applicant"
@@ -264,7 +264,7 @@
     "evidence_query": "objection_dose_response",
     "evidence_snapshot": "dose",
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": true,
     "digest_threshold": {
       "kind": "percentile",
@@ -440,7 +440,7 @@
     "evidence_query": "councillor_tenure",
     "evidence_snapshot": "tenure",
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": false,
     "digest_threshold": null,
     "detail_panel": "tenure"
@@ -535,7 +535,7 @@
     "evidence_query": "transparency_by_year",
     "evidence_snapshot": "transparency",
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": true,
     "digest_threshold": {
       "kind": "any_occurrence"
@@ -658,7 +658,7 @@
     "evidence_query": "public_engagement_by_year",
     "evidence_snapshot": "engagement",
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": true,
     "digest_threshold": {
       "kind": "percentile",
@@ -710,7 +710,7 @@
     "evidence_query": "public_question_responsiveness",
     "evidence_snapshot": "question-responsiveness",
     "has_deep_dive": true,
-    "public_interest": false,
+    "public_interest": true,
     "meeting_scope": true,
     "digest_threshold": {
       "kind": "percentile",

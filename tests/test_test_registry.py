@@ -133,6 +133,31 @@ def test_digest_threshold_matches_one_of_the_four_kinds():
     assert not bad, f"digest_threshold doesn't match one of the four kinds: {bad}"
 
 
+def test_public_interest_matches_the_record_page_decision():
+    """RECORD_PAGE_PLAN.md B.2/C.1 — the nine rows a resident would ask about
+    unprompted, settled before Step 1. Every flagged row must also carry the
+    plain-language title /record needs (title_public non-empty is already
+    asserted for all 29 rows above; this just pins the flagged set itself so
+    it can't silently drift)."""
+    expected = {
+        "conflict.recusal_management",
+        "engagement.participation",
+        "engagement.question_responsiveness",
+        "governance.incumbency",
+        "planning.big_dollar_leniency",
+        "planning.objection_responsiveness",
+        "planning.repeat_applicant",
+        "procurement.concentration",
+        "transparency.confidential_share",
+    }
+    registry = load_test_registry()
+    flagged = {row.id for row in registry if row.public_interest}
+    assert flagged, "at least one row must be flagged public_interest"
+    assert flagged == expected, f"flagged set drifted from the decision: {flagged ^ expected}"
+    empty_title = [row.id for row in registry if row.public_interest and not row.title_public]
+    assert not empty_title, f"flagged rows with an empty title_public: {empty_title}"
+
+
 def test_evidence_query_names_a_real_function():
     queries_fns = _defined_function_names(QUERIES_SOURCE)
     divergence_fns = _defined_function_names(DIVERGENCE_SOURCE)

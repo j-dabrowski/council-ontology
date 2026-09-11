@@ -8,6 +8,7 @@ import { AnalysisPage } from "./pages/AnalysisPage";
 import { WatchPage } from "./pages/WatchPage";
 import { MethodPage } from "./pages/MethodPage";
 import { MapPage } from "./pages/MapPage";
+import { RecordPage } from "./pages/RecordPage";
 import { AboutPage } from "./pages/AboutPage";
 import { ContactPage } from "./pages/ContactPage";
 
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/method" element={<MethodPage />} />
             <Route path="/evidence" element={<Navigate to="/method" replace />} />
             <Route path="/map" element={<MapPage />} />
+            <Route path="/record" element={<RecordPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
           </Routes>
