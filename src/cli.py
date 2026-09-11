@@ -1904,6 +1904,14 @@ SNAPSHOT_TIER: dict[str, str] = {
     # all, so unlike dose/record_streets there's no redaction step to
     # verify here — see tests/test_record_councillors.py.
     "record_councillors": "public",
+    # Step 7 — `topics` is a pure year x category count grid, no names, no
+    # quotes. `contestation`'s most_contested titles occasionally name a
+    # councillor ("Motion for Cr Pinerua") and were rendered completely
+    # unguarded by frontend/src/components/TrendsChart.tsx before this
+    # step — this tier flip is what makes that path live for the first
+    # time, so the guardrail fix (RedactedText, same file) had to land
+    # first, not as a follow-up.
+    "trends": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's

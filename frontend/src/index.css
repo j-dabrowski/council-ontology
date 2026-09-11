@@ -34,6 +34,24 @@
   --grid:        #e2e8f0;
   --cursor:      rgba(100,116,139,0.1);
 
+  /* Topic-drift categorical palette (RECORD_PAGE_PLAN.md Step 7) — the
+     dataviz skill's validated 8-hue default, alphabetical by category
+     name, checked against --surface (#ffffff): all six checks pass
+     (CVD floor 9.1, normal-vision floor 19.6; contrast WARN on 3 slots,
+     mitigated by the legend + table view both always shown). "Other" is
+     deliberately NOT one of the 8 identity hues — it is the catch-all
+     residual bucket, not a designed category, and folding a real 9th
+     series into a generated hue is exactly what the skill rules out. */
+  --topic-1: #2a78d6;  /* budget */
+  --topic-2: #eb6834;  /* community */
+  --topic-3: #1baf7a;  /* development */
+  --topic-4: #eda100;  /* governance */
+  --topic-5: #e87ba4;  /* infrastructure */
+  --topic-6: #008300;  /* planning */
+  --topic-7: #4a3aa7;  /* procedural */
+  --topic-8: #e34948;  /* residential */
+  --topic-other: var(--text-faint);
+
   /* Spinner */
   --spin-t:      #cbd5e1;
   --spin-h:      #2563eb;
@@ -186,6 +204,17 @@
     --logo-dot:   #C2974A;
     --logo-text:  #F4EEE2;
     --logo-tag:   #DBB572;
+    /* Topic-drift palette, dark-mode steps — validated separately against
+       --surface (#1e293b): CVD floor 8.4, normal-vision floor 19.3. */
+    --topic-1: #3987e5;
+    --topic-2: #d95926;
+    --topic-3: #199e70;
+    --topic-4: #c98500;
+    --topic-5: #d55181;
+    --topic-6: #008300;
+    --topic-7: #9085e9;
+    --topic-8: #e66767;
+    --topic-other: var(--text-faint);
     color-scheme: dark;
   }
 }
@@ -2317,4 +2346,40 @@ a:hover { text-decoration: underline; }
   margin: 0;
   color: var(--text-hi);
   font-weight: 500;
+}
+
+/* ── /record topic drift (RECORD_PAGE_PLAN.md Step 7) ───────────────────── */
+
+.rec-topics-table-wrap {
+  margin-top: 12px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.rec-topics-table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.rec-topics-table th,
+.rec-topics-table td {
+  padding: 5px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border-muted);
+}
+
+.rec-topics-table th:first-child,
+.rec-topics-table td:first-child {
+  text-align: left;
+  color: var(--text-hi);
+  font-weight: 600;
+}
+
+.rec-topics-table th {
+  color: var(--text-dim);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  background: var(--surface);
 }

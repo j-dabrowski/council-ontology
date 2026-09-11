@@ -1,20 +1,24 @@
 import { useMemo, useState } from "react";
 import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
+} from "recharts";
+import {
   api, ObjectionDoseBucket, ObjectionDoseData, RecordCouncillor,
-  RecordStreetsApplication, RecordStreetsStreet,
+  RecordStreetsApplication, RecordStreetsStreet, TrendsData,
 } from "../api";
 import { useData } from "../hooks/useData";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { Reveal } from "../components/DrillDown";
 import { REGISTRY_BY_ID } from "../registry";
 
-// docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-6: type-ahead street lookup
-// (feature 1), the objector calculator (feature 2), and councillor cards
-// (feature 3, Phase 2). Deliberately plain: no severity chip, no principles
-// list, no Objection/Response block — this page doesn't argue, it looks
-// things up. Every figure shown comes straight from record_streets.json /
-// dose.json / record_councillors.json; nothing is computed here beyond
-// formatting, the search filter, and picking the currently-selected bucket.
+// docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-7: type-ahead street lookup
+// (feature 1), the objector calculator (feature 2), councillor cards
+// (feature 3, Phase 2), and topic drift (feature 4, Phase 3). Deliberately
+// plain: no severity chip, no principles list, no Objection/Response block
+// — this page doesn't argue, it looks things up. Every figure shown comes
+// straight from record_streets.json / dose.json / record_councillors.json /
+// trends.json; nothing is computed here beyond formatting, the search
+// filter, and picking the currently-selected bucket/year.
 
 function formatDate(iso: string | null): string {
   if (!iso) return "date not recorded";
@@ -311,10 +315,140 @@ function CouncillorCards({ councillors }: { councillors: RecordCouncillor[] }) {
   );
 }
 
+// Fixed order, validated categorical palette (see index.css --topic-1..8 —
+// dataviz skill's 8-hue default). "other" is deliberately NOT one of these
+// eight — it's the residual catch-all bucket topic_distribution_by_year()
+// bins anything outside the top 8 tags into, not a designed category, and
+// gets its own muted, always-visible colour (--topic-other) instead of
+// competing for a slot. Colours are assigned by alphabetical POSITION, not
+// a name->colour dictionary, because the underlying tag vocabulary is
+// LLM-assigned free text that can shift on a re-extraction — a hardcoded
+// name map would silently stop covering a renamed or replaced category.
+const TOPIC_COLOR_VARS = [
+  "var(--topic-1)", "var(--topic-2)", "var(--topic-3)", "var(--topic-4)",
+  "var(--topic-5)", "var(--topic-6)", "var(--topic-7)", "var(--topic-8)",
+];
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function TopicDriftChart({ trends }: { trends: TrendsData }) {
+  const [showTable, setShowTable] = useState(false);
+
+  const years = useMemo(
+    () => Object.keys(trends.topics).map(Number).sort((a, b) => a - b),
+    [trends]
+  );
+
+  // Every category that appears in any year, "other" pulled out (it's
+  // rendered separately below, always last, never folded away — RECORD_PAGE_
+  // PLAN.md Step 7: "do not collapse or rename the 'other' bucket").
+  const categories = useMemo(() => {
+    const set = new Set<string>();
+    for (const y of years) {
+      for (const cat of Object.keys(trends.topics[String(y)] ?? {})) {
+        if (cat !== "other") set.add(cat);
+      }
+    }
+    return [...set].sort();
+  }, [trends, years]);
+
+  const colorByCategory = useMemo(() => {
+    const map: Record<string, string> = { other: "var(--topic-other)" };
+    categories.forEach((cat, i) => {
+      map[cat] = TOPIC_COLOR_VARS[i % TOPIC_COLOR_VARS.length];
+    });
+    return map;
+  }, [categories]);
+
+  const allCategories = [...categories, "other"];
+
+  const chartData = useMemo(
+    () =>
+      years.map((year) => {
+        const row: Record<string, number | string> = { year };
+        const yearTopics = trends.topics[String(year)] ?? {};
+        for (const cat of allCategories) row[cat] = yearTopics[cat] ?? 0;
+        return row;
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [trends, years, categories]
+  );
+
+  // Computed from the data, never hardcoded — how many years "other" is
+  // the single largest bucket, the fact Step 7 requires be on screen, not
+  // buried behind a tidier-looking chart.
+  const otherLargestYears = useMemo(
+    () =>
+      chartData.filter((row) =>
+        categories.every((cat) => Number(row.other) >= Number(row[cat] ?? 0))
+      ).length,
+    [chartData, categories]
+  );
+
+  return (
+    <section className="rec-topics">
+      <h2 className="static-h2">What the council spent its time on</h2>
+      <p className="rec-dose-intro">
+        Every carried motion since {years[0]}, grouped by topic and counted
+        by year. "Other" is the largest single category in {otherLargestYears}{" "}
+        of {years.length} years on record — it is shown here rather than
+        folded into a tidier-looking handful of categories.
+      </p>
+
+      <ResponsiveContainer width="100%" height={380}>
+        <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 4, left: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" />
+          <XAxis dataKey="year" tick={{ fontSize: 11 }} interval={2} />
+          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} width={36} />
+          <Tooltip
+            contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
+            labelStyle={{ color: "var(--text-hi)" }}
+          />
+          <Legend formatter={(value) => capitalize(String(value))} />
+          {allCategories.map((cat) => (
+            <Bar key={cat} dataKey={cat} stackId="a" fill={colorByCategory[cat]} name={cat} />
+          ))}
+        </BarChart>
+      </ResponsiveContainer>
+
+      <button type="button" className="src-toggle" onClick={() => setShowTable((s) => !s)}>
+        {showTable ? "▾" : "▸"} view the exact figures as a table
+      </button>
+      {showTable && (
+        <div className="rec-topics-table-wrap">
+          <table className="rec-topics-table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                {allCategories.map((cat) => (
+                  <th key={cat}>{capitalize(cat)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {chartData.map((row) => (
+                <tr key={String(row.year)}>
+                  <td>{row.year}</td>
+                  {allCategories.map((cat) => (
+                    <td key={cat}>{row[cat]}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function RecordPage() {
   const streetsData = useData(api.recordStreets);
   const doseData = useData(api.dose);
   const councillorsData = useData(api.recordCouncillors);
+  const trendsData = useData(api.trends);
 
   return (
     <div className="static-page">
@@ -348,6 +482,12 @@ export function RecordPage() {
         {councillorsData.loading && <LoadingCard />}
         {councillorsData.error && <ErrorCard msg={councillorsData.error} />}
         {councillorsData.data && <CouncillorCards councillors={councillorsData.data.councillors} />}
+      </section>
+
+      <section className="static-section">
+        {trendsData.loading && <LoadingCard />}
+        {trendsData.error && <ErrorCard msg={trendsData.error} />}
+        {trendsData.data && <TopicDriftChart trends={trendsData.data} />}
       </section>
     </div>
   );
