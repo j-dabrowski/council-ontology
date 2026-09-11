@@ -3,22 +3,25 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import {
-  api, ObjectionDoseBucket, ObjectionDoseData, RecordCouncillor,
-  RecordStreetsApplication, RecordStreetsStreet, TrendsData,
+  api, ObjectionDoseBucket, ObjectionDoseData, ObjectionResponsivenessEvidence,
+  RecordCouncillor, RecordStreetsApplication, RecordStreetsStreet,
+  TenureData, TenureEvidence, TransparencyData, TransparencyEvidence, TrendsData,
 } from "../api";
 import { useData } from "../hooks/useData";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
-import { Reveal } from "../components/DrillDown";
+import { Reveal, SourceQuote } from "../components/DrillDown";
 import { REGISTRY_BY_ID } from "../registry";
 
-// docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-7: type-ahead street lookup
+// docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-8: type-ahead street lookup
 // (feature 1), the objector calculator (feature 2), councillor cards
-// (feature 3, Phase 2), and topic drift (feature 4, Phase 3). Deliberately
-// plain: no severity chip, no principles list, no Objection/Response block
-// — this page doesn't argue, it looks things up. Every figure shown comes
-// straight from record_streets.json / dose.json / record_councillors.json /
-// trends.json; nothing is computed here beyond formatting, the search
-// filter, and picking the currently-selected bucket/year.
+// (feature 3, Phase 2), topic drift (feature 4, Phase 3), and notable
+// moments (feature 5, Phase 3). Deliberately plain: no severity chip, no
+// principles list, no Objection/Response block — this page doesn't argue,
+// it looks things up. Every figure shown comes straight from
+// record_streets.json / dose.json / record_councillors.json / trends.json /
+// tenure.json / transparency.json; nothing is computed here beyond
+// formatting, the search filter, and picking the currently-selected
+// bucket/year.
 
 function formatDate(iso: string | null): string {
   if (!iso) return "date not recorded";
@@ -444,10 +447,132 @@ function TopicDriftChart({ trends }: { trends: TrendsData }) {
   );
 }
 
+function MomentCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rec-moment">
+      <h3 className="rec-moment-title">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+function LongestTenureMoment({
+  tenure, evidence,
+}: { tenure: TenureData; evidence: TenureEvidence | null }) {
+  // Computed from the data, never hardcoded (frontend/INTERACTIVITY.md's
+  // hard rule) — the councillor with the highest `years`, not a typed name.
+  const byTenureDesc = useMemo(
+    () => [...tenure.profiles].sort((a, b) => b.years - a.years),
+    [tenure]
+  );
+  const longest = byTenureDesc[0] ?? null;
+  if (!longest) return null;
+  const runnersUp = byTenureDesc.slice(1, 3).map((p) => p.years);
+
+  const entriesById = new Map((evidence?.entries ?? []).map((e) => [e.entity_id, e]));
+  const firstEntry = longest.first_motion_id != null ? entriesById.get(longest.first_motion_id) ?? null : null;
+  const lastEntry = longest.last_motion_id != null ? entriesById.get(longest.last_motion_id) ?? null : null;
+
+  return (
+    <MomentCard title="The longest tenure on record">
+      <p>
+        {longest.name} has served {longest.years} years — longer than anyone
+        else on record
+        {runnersUp.length > 0 && (
+          <>, well ahead of the next-longest tenures ({runnersUp.join(" and ")} years)</>
+        )}
+        .
+      </p>
+      <p className="rec-moment-label">First recorded vote</p>
+      <SourceQuote entry={firstEntry} />
+      <p className="rec-moment-label">Most recent recorded vote</p>
+      <SourceQuote entry={lastEntry} />
+    </MomentCard>
+  );
+}
+
+function ConfidentialitySpikeMoment({
+  transparency, evidence,
+}: { transparency: TransparencyData; evidence: TransparencyEvidence | null }) {
+  const prevYear = transparency.years.find((y) => y.year === transparency.peak_year - 1);
+  const nextYear = transparency.years.find((y) => y.year === transparency.peak_year + 1);
+  const peakItems = evidence?.years.find((y) => y.year === transparency.peak_year)?.items ?? [];
+  const example = peakItems[0] ?? null;
+
+  return (
+    <MomentCard title={`The ${transparency.peak_year} confidentiality spike`}>
+      <p>
+        {transparency.peak_pct}% of decided items were confidential in{" "}
+        {transparency.peak_year}
+        {prevYear && <> — up from {prevYear.confidential_pct}% in {prevYear.year}</>}
+        {nextYear && <> and back down to {nextYear.confidential_pct}% the following year</>}.
+      </p>
+      {example ? (
+        <>
+          <p className="rec-moment-label">An example from {transparency.peak_year}</p>
+          <SourceQuote entry={example} />
+        </>
+      ) : (
+        <p className="rec-moment-label">no source quote recorded for this year</p>
+      )}
+    </MomentCard>
+  );
+}
+
+function MostOpposedMoment({
+  dose, evidence,
+}: { dose: ObjectionDoseData; evidence: ObjectionResponsivenessEvidence | null }) {
+  const bucket5plus = dose.buckets.find((b) => b.label === "5+") ?? null;
+  const mostOpposed = useMemo(() => {
+    if (!bucket5plus || bucket5plus.apps.length === 0) return null;
+    return [...bucket5plus.apps].sort((a, b) => b.n_objectors - a.n_objectors)[0];
+  }, [bucket5plus]);
+  if (!mostOpposed) return null;
+
+  const evBucket = evidence?.buckets.find((b) => b.label === "5+");
+  const entry = evBucket?.applications.find((a) => a.entity_id === mostOpposed.entity_id) ?? null;
+
+  return (
+    <MomentCard title="The most-contested planning application on record">
+      <p>
+        {mostOpposed.description ?? "An application"} drew {mostOpposed.n_objectors}{" "}
+        objections{mostOpposed.outcome && <> and was {mostOpposed.outcome}</>}.
+      </p>
+      <SourceQuote entry={entry} />
+    </MomentCard>
+  );
+}
+
+function NotableMoments({
+  tenure, tenureEvidence, transparency, transparencyEvidence, dose, doseEvidence,
+}: {
+  tenure: TenureData; tenureEvidence: TenureEvidence | null;
+  transparency: TransparencyData; transparencyEvidence: TransparencyEvidence | null;
+  dose: ObjectionDoseData; doseEvidence: ObjectionResponsivenessEvidence | null;
+}) {
+  return (
+    <section className="rec-moments">
+      <h2 className="static-h2">Notable moments</h2>
+      <p className="rec-dose-intro">
+        A few specific facts from the record, each traceable back to a
+        verbatim minute.
+      </p>
+      <LongestTenureMoment tenure={tenure} evidence={tenureEvidence} />
+      <ConfidentialitySpikeMoment transparency={transparency} evidence={transparencyEvidence} />
+      <MostOpposedMoment dose={dose} evidence={doseEvidence} />
+    </section>
+  );
+}
+
 export function RecordPage() {
   const streetsData = useData(api.recordStreets);
   const doseData = useData(api.dose);
+  const doseEvidenceData = useData(api.evidenceObjectionResponsiveness);
   const councillorsData = useData(api.recordCouncillors);
+  const tenureData = useData(api.tenure);
+  const tenureEvidenceData = useData(api.evidenceTenure);
+  const transparencyData = useData(api.transparency);
+  const transparencyEvidenceData = useData(api.evidenceTransparency);
   const trendsData = useData(api.trends);
 
   return (
@@ -488,6 +613,22 @@ export function RecordPage() {
         {trendsData.loading && <LoadingCard />}
         {trendsData.error && <ErrorCard msg={trendsData.error} />}
         {trendsData.data && <TopicDriftChart trends={trendsData.data} />}
+      </section>
+
+      <section className="static-section">
+        {(tenureData.loading || transparencyData.loading || doseData.loading) && <LoadingCard />}
+        {tenureData.error && <ErrorCard msg={tenureData.error} />}
+        {transparencyData.error && <ErrorCard msg={transparencyData.error} />}
+        {tenureData.data && transparencyData.data && doseData.data && (
+          <NotableMoments
+            tenure={tenureData.data}
+            tenureEvidence={tenureEvidenceData.data}
+            transparency={transparencyData.data}
+            transparencyEvidence={transparencyEvidenceData.data}
+            dose={doseData.data}
+            doseEvidence={doseEvidenceData.data}
+          />
+        )}
       </section>
     </div>
   );

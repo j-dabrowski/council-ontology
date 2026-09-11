@@ -2383,3 +2383,33 @@ a:hover { text-decoration: underline; }
   top: 0;
   background: var(--surface);
 }
+
+/* ── /record notable moments (RECORD_PAGE_PLAN.md Step 8) ──────────────── */
+
+.rec-moment {
+  padding: 16px 0;
+  border-top: 1px solid var(--border-muted);
+}
+
+.rec-moment:first-child {
+  border-top: none;
+}
+
+.rec-moment-title {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 8px;
+}
+
+.rec-moment p {
+  color: var(--text-lo);
+  line-height: 1.6;
+  margin: 0 0 8px;
+}
+
+.rec-moment-label {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  margin: 10px 0 2px;
+}
