@@ -38,7 +38,18 @@ function draftOverlay(): Plugin {
     name: 'draft-overlay',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        const match = req.url?.match(/^\/data\/draft\/([\w-]+)\.json(?:\?.*)?$/)
+        // [\w./-]+ (not [\w-]+) — an evidence/*.json snapshot name has both
+        // a "/" and a "." in it before the extension (e.g.
+        // "evidence/governance.incumbency"); the narrower class silently
+        // missed every one of those, falling through to Vite's SPA
+        // index.html fallback instead of the real file — a "." alone
+        // wasn't enough to fix (still no "/"), nor was "/" alone (still no
+        // "."; test_id-shaped names like "governance.incumbency" have one
+        // even without the "evidence/" prefix). Found while verifying
+        // RECORD_PAGE_PLAN.md Step 8 in Draft mode — every evidence-chain
+        // drill-down built so far (DivergencePanel included) was hitting
+        // this same gap in local dev, just unnoticed until now.
+        const match = req.url?.match(/^\/data\/draft\/([\w./-]+)\.json(?:\?.*)?$/)
         if (!match) return next()
         const dir = findLatestDraftDir('cambridge') // single council today, matches CouncilHeader's hardcoded <select>
         if (!dir) return next()
