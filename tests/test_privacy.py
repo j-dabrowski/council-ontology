@@ -69,21 +69,28 @@ def test_owner_applicant_landowner_label_lines_are_redacted():
         redacted = redact_private_names(text)
         assert PLACEHOLDER in redacted, f"no placeholder in: {redacted!r}"
         assert name not in redacted, f"{name!r} survived redaction in: {redacted!r}"
-        # The label itself is kept -- only the value after it is replaced.
+        # The whole labelled span -- label, colon and value -- is gone,
+        # not just the value (RECORD_PAGE_PLAN.md Step 3's payload test
+        # requires no "Owner:"/"Applicant:" string survive anywhere).
+        assert "Owner:" not in redacted and "Owners:" not in redacted
+        assert "Applicant:" not in redacted
+        assert "LANDOWNER:" not in redacted.upper()
+        # A boundary label that ISN'T one of the redacted fields is left
+        # alone -- only OWNER/LANDOWNER/APPLICANT values are stripped.
         assert "Application:" in redacted or "APPLICATION" in redacted or "REFERENCE" in redacted
 
 
-def test_redaction_keeps_field_labels_and_non_name_content_untouched():
+def test_redaction_keeps_non_name_field_content_untouched():
     redacted = redact_private_names(LABELLED_SAMPLES[4])
     assert "BA/DA REFERENCE: 60DA-2009" in redacted
     assert "ZONING: Residential R12.5" in redacted
     assert "LAND AREA: 1191m2" in redacted
     assert "USE CLASS: Dwelling (single): 'P' (permitted)" in redacted
-    # Fields stay properly spaced apart -- the separating whitespace
-    # between two adjacent labelled fields must survive redaction, not
-    # get glued into the removed span (a real bug caught while building
-    # this step: "LANDOWNER: [placeholder]APPLICANT:" with no space).
-    assert f"{PLACEHOLDER} APPLICANT:" in redacted
+    # Two adjacent labelled fields stay properly spaced apart -- the
+    # whitespace between them must survive redaction, not get glued into
+    # a removed span (a real bug caught while building this step:
+    # "LANDOWNER: [placeholder]APPLICANT:" with no space).
+    assert f"{PLACEHOLDER} {PLACEHOLDER} ZONING:" in redacted
 
 
 def test_bare_personal_title_is_redacted_even_with_no_label():

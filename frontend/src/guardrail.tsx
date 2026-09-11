@@ -108,12 +108,14 @@ const PRIVATE_TITLE_RE = new RegExp(
   "g",
 );
 
+// Whole match (label, colon and value) is replaced by the placeholder —
+// not just the value — so no "Owner:"/"Applicant:" string survives
+// anywhere in a redacted payload (RECORD_PAGE_PLAN.md Step 3's payload
+// test checks exactly that; B.1 says "lines removed", not "values
+// redacted"). src/privacy.py has the identical fix and the same note.
 export function redactPrivateNames(text: string | null | undefined): string | null | undefined {
   if (!text) return text;
-  const withLinesRedacted = text.replace(PRIVATE_LINE_RE, (match) => {
-    const label = match.split(":", 1)[0];
-    return `${label}: ${PATTERNS.placeholder}`;
-  });
+  const withLinesRedacted = text.replace(PRIVATE_LINE_RE, PATTERNS.placeholder);
   return withLinesRedacted.replace(PRIVATE_TITLE_RE, PATTERNS.placeholder);
 }
 

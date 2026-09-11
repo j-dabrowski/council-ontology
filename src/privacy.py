@@ -9,9 +9,14 @@ instead:
 1. A labelled owner/applicant field — "Owner: Mr Peter Northcott",
    "LANDOWNER: Y Xie APPLICANT: Delstrat Pty Ltd", newline- or
    space-delimited, bounded by the next recognised field label, a
-   newline, or the end of the string. The whole field value is stripped,
-   not just a name inside it — a company name in an Applicant field is
-   collateral (over-redaction is the safe direction here; there is no
+   newline, or the end of the string. The whole match — label, colon and
+   value — is replaced by the placeholder, not just the value: an
+   earlier version of this module kept the label ("Owner: [withheld]"),
+   but that leaves the literal string "Owner:" in the output, which
+   RECORD_PAGE_PLAN.md Step 3's payload test explicitly checks is absent
+   everywhere, and B.1 itself says "lines removed", not "values
+   redacted". A company name in an Applicant field is collateral damage
+   either way (over-redaction is the safe direction here; there is no
    reliable way to tell a person from a company by regex alone).
 2. A bare personal title in front of a capitalised name — "Mr Peter
    Northcott" — wherever it appears, labelled or not.
@@ -93,17 +98,15 @@ PLACEHOLDER: Final[str] = _PATTERNS["placeholder"]
 
 
 def redact_private_names(text: str | None) -> str | None:
-    """Strip Owner:/Applicant:/Landowner: field values and bare
+    """Strip Owner:/Applicant:/Landowner: fields (label, colon and value
+    together — B.1 says "lines removed", and RECORD_PAGE_PLAN.md Step 3
+    asserts no "Owner:"/"Applicant:" string survives anywhere in
+    record_streets.json, so the label can't be kept either) and bare
     Mr/Mrs/Ms/Dr-prefixed names from `text`. `None`/empty input passes
     through unchanged."""
     if not text:
         return text
-
-    def _line_sub(match: re.Match) -> str:
-        label = match.group(0).split(":", 1)[0]
-        return f"{label}: {PLACEHOLDER}"
-
-    redacted = _LINE_RE.sub(_line_sub, text)
+    redacted = _LINE_RE.sub(PLACEHOLDER, text)
     redacted = _TITLE_RE.sub(PLACEHOLDER, redacted)
     return redacted
 
