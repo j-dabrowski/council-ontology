@@ -1,13 +1,15 @@
 import { useMemo, useState } from "react";
-import { api, RecordStreetsApplication, RecordStreetsStreet } from "../api";
+import { api, ObjectionDoseBucket, ObjectionDoseData, RecordStreetsApplication, RecordStreetsStreet } from "../api";
 import { useData } from "../hooks/useData";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
+import { REGISTRY_BY_ID } from "../registry";
 
-// docs/frontend/RECORD_PAGE_PLAN.md — Step 4: type-ahead street lookup.
-// Deliberately plain: no severity chip, no principles list, no
-// Objection/Response block — this page doesn't argue, it looks things up.
-// Every figure shown comes straight from record_streets.json; nothing is
-// computed here beyond formatting and the search filter itself.
+// docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-5: type-ahead street lookup
+// (feature 1) and the objector calculator (feature 2). Deliberately plain:
+// no severity chip, no principles list, no Objection/Response block — this
+// page doesn't argue, it looks things up. Every figure shown comes straight
+// from record_streets.json / dose.json; nothing is computed here beyond
+// formatting, the search filter, and picking the currently-selected bucket.
 
 function formatDate(iso: string | null): string {
   if (!iso) return "date not recorded";
@@ -151,8 +153,91 @@ function StreetSearch({ streets }: { streets: RecordStreetsStreet[] }) {
   );
 }
 
+const OBJECTOR_BUCKET_LABELS: Record<string, string> = {
+  "0": "no objections",
+  "1": "1 objection",
+  "2-4": "2 to 4 objections",
+  "5+": "5 or more objections",
+};
+
+function bucketLabel(bucket: ObjectionDoseBucket): string {
+  return OBJECTOR_BUCKET_LABELS[bucket.label] ?? bucket.label;
+}
+
+function ObjectorCalculator({ dose }: { dose: ObjectionDoseData }) {
+  const [index, setIndex] = useState(0);
+  const bucket = dose.buckets[index] ?? dose.buckets[0];
+
+  // Computed from the data, never hardcoded (frontend/INTERACTIVITY.md's
+  // hard rule) — the "5+" bucket's sample size and the single most-opposed
+  // application are both derived from dose.buckets, not typed as a literal.
+  const bucket5plus = dose.buckets.find((b) => b.label === "5+") ?? null;
+  const mostOpposed = useMemo(() => {
+    if (!bucket5plus || bucket5plus.apps.length === 0) return null;
+    return [...bucket5plus.apps].sort((a, b) => b.n_objectors - a.n_objectors)[0];
+  }, [bucket5plus]);
+
+  const registryRow = REGISTRY_BY_ID["planning.objection_responsiveness"];
+
+  return (
+    <section className="rec-dose">
+      <h2 className="static-h2">{registryRow?.title_public ?? "Whether objecting changes the outcome"}</h2>
+      <p className="rec-dose-intro">
+        Every decided planning application on record, grouped by how many
+        residents formally objected to it. Move the slider to see how the
+        refusal rate changes as objections rise.
+      </p>
+
+      <input
+        className="rec-dose-slider"
+        type="range"
+        min={0}
+        max={dose.buckets.length - 1}
+        step={1}
+        value={index}
+        onChange={(e) => setIndex(Number(e.target.value))}
+        aria-label="Number of objections"
+      />
+      <div className="rec-dose-ticks">
+        {dose.buckets.map((b, i) => (
+          <button
+            type="button"
+            key={b.label}
+            className={i === index ? "rec-dose-tick rec-dose-tick-active" : "rec-dose-tick"}
+            onClick={() => setIndex(i)}
+          >
+            {bucketLabel(b)}
+          </button>
+        ))}
+      </div>
+
+      <p className="rec-dose-rate">
+        <span className="rec-dose-rate-num">{bucket.refusal_pct}%</span> of applications with{" "}
+        {bucketLabel(bucket)} were refused
+      </p>
+
+      <p className="rec-caveat">
+        {bucket5plus && (
+          <>
+            The busiest end of this — {OBJECTOR_BUCKET_LABELS["5+"]} — rests on only{" "}
+            {bucket5plus.n} applications, so read that figure as directional, not a
+            precise measurement.{" "}
+          </>
+        )}
+        {mostOpposed && mostOpposed.outcome && (
+          <>
+            The most-opposed application on record drew {mostOpposed.n_objectors} objections,
+            and it was {mostOpposed.outcome}.
+          </>
+        )}
+      </p>
+    </section>
+  );
+}
+
 export function RecordPage() {
-  const { data, loading, error } = useData(api.recordStreets);
+  const streetsData = useData(api.recordStreets);
+  const doseData = useData(api.dose);
 
   return (
     <div className="static-page">
@@ -166,14 +251,20 @@ export function RecordPage() {
       </div>
 
       <section className="static-section">
-        {loading && <LoadingCard />}
-        {error && <ErrorCard msg={error} />}
-        {data && (
+        {streetsData.loading && <LoadingCard />}
+        {streetsData.error && <ErrorCard msg={streetsData.error} />}
+        {streetsData.data && (
           <>
-            <StreetSearch streets={data.streets} />
-            <p className="rec-caveat">{data.coverage.note}</p>
+            <StreetSearch streets={streetsData.data.streets} />
+            <p className="rec-caveat">{streetsData.data.coverage.note}</p>
           </>
         )}
+      </section>
+
+      <section className="static-section">
+        {doseData.loading && <LoadingCard />}
+        {doseData.error && <ErrorCard msg={doseData.error} />}
+        {doseData.data && <ObjectorCalculator dose={doseData.data} />}
       </section>
     </div>
   );

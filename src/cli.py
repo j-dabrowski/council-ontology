@@ -1893,6 +1893,10 @@ SNAPSHOT_TIER: dict[str, str] = {
     # never carries applicant_name or a quote — see tests/test_record_streets.py.
     "planning": "public",
     "record_streets": "public",
+    # Step 5 — public only because apps[].description, apps[].quote and
+    # headline_examples are all redacted at export time (above), same
+    # guarantee as record_streets — see tests/test_dose_redaction.py.
+    "dose": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
@@ -2225,6 +2229,16 @@ def _generate_snapshots(
         if n <= 4:
             return "2-4"
         return "5+"
+    # docs/frontend/RECORD_PAGE_PLAN.md Step 5 — dose.json is about to
+    # publish at public tier, and its description/quote fields carry the
+    # exact same free-text-can-leak-a-name risk record_streets.json's did
+    # (A.1's live example — "Owner: Mr Peter Northcott" — sits in this
+    # payload's apps[].quote). Redact before truncating, not after —
+    # tests/test_privacy.py::test_redact_before_truncate_not_after pins
+    # exactly what the wrong order leaves behind (a dangling, colon-less
+    # label fragment at the cut, not a full name — the regex's `$` anchor
+    # means a cut inside a captured name redacts fine either order).
+    from src.privacy import redact_private_names
     _apps_by_bucket: dict[str, list] = {"0": [], "1": [], "2-4": [], "5+": []}
     _app_ids_needed: list[int] = []
     for pid, ref, desc, status, n_obj, addr in _dose_rows:
@@ -2234,7 +2248,7 @@ def _generate_snapshots(
             _apps_by_bucket[bk].append({
                 "id": pid,
                 "reference": ref,
-                "description": (desc or "")[:200] or None,
+                "description": (redact_private_names(desc) or "")[:200] or None,
                 "address": addr,
                 "n_objectors": n_obj,
                 "outcome": status.value if status else None,
@@ -2257,11 +2271,11 @@ def _generate_snapshots(
             # (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6) — additive,
             # doesn't change any existing field.
             app["entity_id"] = eid
-            app["quote"] = _dose_quote.get(eid)
+            app["quote"] = redact_private_names(_dose_quote.get(eid))
     _write("dose", {
         "total_decided": dose.total_decided,
         "max_objections": dose.max_objections,
-        "headline_examples": dose.headline_examples,
+        "headline_examples": [redact_private_names(h) for h in dose.headline_examples],
         "buckets": [
             {
                 "label": b.label, "n": b.n, "refused": b.refused, "refusal_pct": b.refusal_pct,

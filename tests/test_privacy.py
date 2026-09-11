@@ -113,6 +113,32 @@ def test_bare_name_with_no_label_or_title_is_not_caught():
         )
 
 
+def test_redact_before_truncate_not_after():
+    """RECORD_PAGE_PLAN.md Step 5: src/cli.py's dose.json export truncates
+    apps[].description to 200 chars. Measured directly (see this test):
+    the regex's `$`-anchored lookahead means a cut landing anywhere INSIDE
+    a captured name is safe either order -- the match still runs to the
+    new end-of-string and gets replaced. The one real difference is a cut
+    landing inside the LABEL itself, before its colon completes: truncate
+    -then-redact leaves a bare, colon-less "Landowner" fragment sitting
+    unredacted (not a name -- the regex correctly doesn't recognise an
+    incomplete label -- but still a stray artifact), where redact-then
+    -truncate never produces one, because the label is always complete
+    when the redactor sees it. Pinned here so the safer order (redact
+    first, in src/cli.py) doesn't quietly get "simplified" back later."""
+    padding = "x" * 170
+    text = f"{padding} Landowner: Christopher Northcott-Wellington the third"
+    cut = len(padding) + len(" Landowner")  # lands exactly mid-label, before ":"
+    truncate_then_redact = redact_private_names(text[:cut])
+    redact_then_truncate = redact_private_names(text)[:cut]
+    assert truncate_then_redact.endswith("Landowner"), (
+        "fixture didn't land mid-label as intended -- adjust padding"
+    )
+    assert "Landowner" not in redact_then_truncate
+    assert "Christopher" not in truncate_then_redact
+    assert "Christopher" not in redact_then_truncate
+
+
 def test_redact_private_names_passes_through_none_and_empty():
     assert redact_private_names(None) is None
     assert redact_private_names("") == ""

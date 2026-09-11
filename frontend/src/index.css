@@ -2219,3 +2219,58 @@ a:hover { text-decoration: underline; }
   font-size: 0.8rem;
   line-height: 1.6;
 }
+
+/* ── /record objector calculator (RECORD_PAGE_PLAN.md Step 5) ──────────── */
+
+.rec-dose-intro {
+  color: var(--text-lo);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.rec-dose-slider {
+  width: 100%;
+  margin: 8px 0 10px;
+  accent-color: var(--link);
+}
+
+.rec-dose-ticks {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.rec-dose-tick {
+  flex: 1;
+  padding: 6px 4px;
+  font-size: 0.76rem;
+  text-align: center;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rec-dose-tick:hover {
+  background: var(--link-bg);
+}
+
+.rec-dose-tick-active {
+  color: var(--text-hi);
+  font-weight: 700;
+  background: var(--link-bg);
+}
+
+.rec-dose-rate {
+  font-size: 1.1rem;
+  color: var(--text-hi);
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+
+.rec-dose-rate-num {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
