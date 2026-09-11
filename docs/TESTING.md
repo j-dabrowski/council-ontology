@@ -430,17 +430,30 @@ the whole-batch `SNAPSHOT_TIER`/`derive_claim_tier` mechanism above:
 (`docs/frontend/METHOD_PAGE_PLAN.md`, built 2026-09-07).** Also a real
 snapshot — `_generate_snapshots()` writes it via `build_method_record()`
 (`src/analysis/method.py`), joining `manifest.snapshots`/`file_hashes` the
-same way `watch.json` does. Unlike `watch`, nothing in the plan promotes it
-to `"public"` in `SNAPSHOT_TIER`, so it defaults to `"full"` like most
-snapshots and currently ships to `data/published_full/` on publish, not
-`frontend/public/data/`. It's also not claim-derived — no `TestResult`, no
-`unit_of_analysis`, no `named_entities` — so it's deliberately left out of
-`CLAIM_DERIVED_SNAPSHOTS`: the S7 gate has nothing to check on it. Every
-figure on `/method` instead traces to one of five files under `data/`
-(census, inventories, sample validation, full-corpus validation, extraction
-errors) or the live database, each carrying its own `generated_at` next to
-it — a missing or unparseable source renders as an explicit gap
-(`{"value": null, "reason": "source_missing"}`), never a zero.
+same way `watch.json` does. Every figure on `/method` traces to one of five
+files under `data/` (census, inventories, sample validation, full-corpus
+validation, extraction errors) or the live database, each carrying its own
+`generated_at` next to it — a missing or unparseable source renders as an
+explicit gap (`{"value": null, "reason": "source_missing"}`), never a zero.
+It's not claim-derived — no `TestResult`, no `unit_of_analysis`, no
+`named_entities` — so it's deliberately left out of
+`CLAIM_DERIVED_SNAPSHOTS`.
+
+**Since `docs/frontend/ENTITY_RESOLUTION_SECTION_PLAN.md` (built
+2026-09-10), `method.json` is `"public"` in `SNAPSHOT_TIER`** — a static
+entry like `watch`, not derived, since there's still no `TestResult` to
+derive from. The page carries a real claim now: its `entity_resolution`
+block pairs two real firms with the fact that each contains "a sitting
+councillor's surname" (Case 2, `decider_supplier_conflict()`'s own raw
+collisions). What makes this publishable is that the block is name-free
+*by construction* — `_build_surname_collision()` drops
+`councillor_name`/`councillor_id` before the dict is ever built, checked
+by `tests/test_method.py`'s roster-scan tests (which also confirm the scan
+actually fires, by injecting a name and watching it get caught) — not
+because the S7 gate has nothing to check on it. `method.json` sits at the
+draft root like every other snapshot, so it was already inside Editor's
+`*.json` scope before this tier change; the entity-resolution section had
+its first real Editor pass alongside this promotion.
 
 **`council publish <council> --from-draft <path>`** is the actual gate.
 `--from-draft` is always required — there is no code path that publishes

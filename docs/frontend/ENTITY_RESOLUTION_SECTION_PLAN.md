@@ -1,6 +1,7 @@
 # /method — an entity-resolution section, from two live cases
 
-Status: **plan only, nothing built.** Written 2026-09-10.
+Status: **built** (Steps 1–4, 2026-09-11). Written 2026-09-10.
+B.5 was settled **yes** — `method.json` is public-tier.
 Extends `METHOD_PAGE_PLAN.md` (built 2026-09-07, Steps 1–7) with a fifth
 section. Same rules apply: every figure traces to a file under `data/` or the
 live database, and carries its own date.

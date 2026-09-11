@@ -6,6 +6,15 @@ Fifth in the sequence, after `TEST_REGISTRY_PLAN.md`, `PANEL_FRAMING_PLAN.md`,
 Audience: the person handing Part D's steps, one at a time, to a fresh model
 instance. Parts A–C are the context every step assumes.
 
+**Extended 2026-09-10** (`docs/frontend/ENTITY_RESOLUTION_SECTION_PLAN.md`,
+built) with a fifth section, "Entity resolution" — placed on the page
+between §2 (validation) and §3 (pipeline), since it's a validation story in
+its own right. Unlike the four sections in Part C below, its source is
+`data/council.db` itself at build time, not one of the five files this
+plan's Part A surveys. It also moved `method.json` to `"public"` in
+`SNAPSHOT_TIER` (B.6 below assumed `"full"`; that assumption no longer
+holds — see that plan's B.5).
+
 This is the page the project's credibility rests on, so its own rule is
 stricter than the others': **every number traces to a file in `data/`, and
 carries the date that file was generated.**
@@ -233,6 +242,12 @@ all** — the page renders only what the snapshot carries.
 does not apply to it. It still passes through draft → review → publish like
 every other snapshot.
 
+*(As of `ENTITY_RESOLUTION_SECTION_PLAN.md`, the "no claim about any person"
+half of that sentence no longer holds unconditionally — the entity-resolution
+section pairs a firm with a "sitting councillor's surname" fact. It still
+carries no *name*, by construction, which is what keeps it out of S7's
+scope; see that plan's B.1/B.2.)*
+
 ### B.7 `/evidence` redirects to `/method`.
 
 Same pattern as `/digest` → `/watch`, already built. `EvidencePage.tsx` is
@@ -257,6 +272,7 @@ moves anything still wanted there.
 | 3 | Pipeline diagram | README "Multi-level extraction pipeline" table | statuses as at that table |
 | 3 | Last batch | `extraction_errors.json` (B.4) | 2026-06-22 |
 | 4 | Nulls statement | `scorecard.json` — `n_not_computable`, `n_supportive` | current draft |
+| 5 | Entity resolution — supplier spelling variants, surname collisions | `data/council.db`, live (`ENTITY_RESOLUTION_SECTION_PLAN.md`) | live |
 
 Section 4's counts are the point of it: the battery ships **2 not-computable**
 tests and **10 supportive** results in the current draft. A page arguing that
