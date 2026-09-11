@@ -17,7 +17,8 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
-      "@registry": ["../config/test_registry.json"]
+      "@registry": ["../config/test_registry.json"],
+      "@patterns": ["../config/private_name_patterns.json"]
     },
 
     /* Linting */

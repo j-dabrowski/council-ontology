@@ -1,0 +1,17 @@
+{
+  "_comment": "docs/frontend/RECORD_PAGE_PLAN.md B.1 — pattern definitions for the private-name redactor, read by both src/privacy.py and frontend/src/guardrail.tsx (via the @patterns Vite alias) so the two implementations can't drift apart. Data only, no code. field_labels bound where a redacted field ends; redacted_labels are the fields whose value is actually stripped.",
+  "field_labels": [
+    "BA/DA REFERENCE",
+    "APPLICATION",
+    "REFERENCE",
+    "LANDOWNER",
+    "OWNER",
+    "APPLICANT",
+    "ZONING",
+    "USE CLASS",
+    "LAND AREA"
+  ],
+  "redacted_labels": ["OWNER", "LANDOWNER", "APPLICANT"],
+  "personal_titles": ["Mr", "Mrs", "Ms", "Miss", "Dr"],
+  "placeholder": "[private individual — name withheld]"
+}

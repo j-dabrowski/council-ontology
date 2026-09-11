@@ -65,6 +65,11 @@ export default defineConfig({
       // is how the frontend reaches the one copy instead of a duplicated one
       // inside frontend/. See docs/frontend/TEST_REGISTRY_PLAN.md Step 1.
       '@registry': resolve(__dirname, '../config/test_registry.json'),
+      // Pattern data for the private-name redactor (RECORD_PAGE_PLAN.md
+      // B.1) — read by src/privacy.py too, so both implementations build
+      // their regexes from one definition instead of a hand-copied one
+      // that can drift. See frontend/src/guardrail.tsx.
+      '@patterns': resolve(__dirname, '../config/private_name_patterns.json'),
     },
   },
   server: {
