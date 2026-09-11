@@ -140,6 +140,55 @@ export interface PlanningData {
   };
 }
 
+// docs/frontend/RECORD_PAGE_PLAN.md Part C.2 (src/analysis/record_streets.py).
+// `evidence` is a document reference only — filename/url/page/meeting_date —
+// never a quote; the quote itself is fetched through the full evidence chain
+// separately (B.1), not carried on this snapshot.
+export interface RecordStreetsEvidence {
+  filename: string | null;
+  url: string | null;
+  meeting_date: string | null;
+  page: number | null;
+}
+
+export interface RecordStreetsApplication {
+  date: string | null;
+  reference: string | null;
+  description: string | null;
+  n_objectors: number;
+  outcome: string | null;
+  evidence: RecordStreetsEvidence;
+}
+
+export interface RecordStreetsSite {
+  address: string;
+  lot_number: string | null;
+  applications: RecordStreetsApplication[];
+}
+
+export interface RecordStreetsStreet {
+  name: string;
+  suburbs: string[];
+  n_sites: number;
+  n_applications: number;
+  sites: RecordStreetsSite[];
+}
+
+export interface RecordStreetsCoverage {
+  sites: number;
+  sites_with_street: number;
+  applications: number;
+  applications_with_site: number;
+  note: string;
+}
+
+export interface RecordStreetsData {
+  generated_at: string;
+  source: string;
+  coverage: RecordStreetsCoverage;
+  streets: RecordStreetsStreet[];
+}
+
 export interface DissenterProfile {
   name: string;
   total_votes_on_carried: number;
@@ -1084,4 +1133,7 @@ export const api = {
     getSnapshot<TenureEvidence>("evidence/governance.incumbency"),
   evidenceDurableFaction: () =>
     getSnapshot<DurableFactionEvidence>("evidence/governance.durable_faction"),
+  // docs/frontend/RECORD_PAGE_PLAN.md Step 4 — public tier (src/cli.py
+  // SNAPSHOT_TIER).
+  recordStreets: () => getSnapshot<RecordStreetsData>("record_streets"),
 };

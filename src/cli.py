@@ -1883,7 +1883,17 @@ def cmd_analyse(args) -> None:
 # block drops `councillor_name`/`councillor_id` at the boundary by
 # construction (src/analysis/method.py's `_build_surname_collision()`), not
 # because nobody will look.
-SNAPSHOT_TIER: dict[str, str] = {"watch": "public", "method": "public"}
+SNAPSHOT_TIER: dict[str, str] = {
+    "watch": "public",
+    "method": "public",
+    # docs/frontend/RECORD_PAGE_PLAN.md Step 4 (B.4) — `planning` is a pure
+    # aggregate (year trend + with/no-objection groups, no names, no
+    # quotes); `record_streets` is public only because its description
+    # field is redacted at build time (src/analysis/record_streets.py) and
+    # never carries applicant_name or a quote — see tests/test_record_streets.py.
+    "planning": "public",
+    "record_streets": "public",
+}
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
 # tier-derivation rule (src/invariant_gate.py's derive_claim_tier). Only

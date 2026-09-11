@@ -2050,3 +2050,172 @@ a:hover { text-decoration: underline; }
   font-size: 0.75rem;
   color: var(--text-faint);
 }
+
+/* ── /record street lookup (RECORD_PAGE_PLAN.md Step 4) ────────────────── */
+
+.rec-search {
+  position: relative;
+}
+
+.rec-search-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-md);
+  margin-bottom: 6px;
+}
+
+.rec-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  color: var(--text-hi);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rec-search-input:focus {
+  outline: 2px solid var(--link);
+  outline-offset: 1px;
+}
+
+.rec-suggestions {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.rec-suggestions li + li {
+  border-top: 1px solid var(--border-muted);
+}
+
+.rec-suggestions button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 9px 14px;
+  font-size: 0.9rem;
+  color: var(--text-hi);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.rec-suggestions button:hover {
+  background: var(--link-bg);
+}
+
+.rec-suggestion-count {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+.rec-no-match {
+  margin: 10px 0 0;
+  color: var(--text-dim);
+  font-size: 0.88rem;
+}
+
+.rec-street {
+  margin-top: 28px;
+}
+
+.rec-street-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 4px;
+}
+
+.rec-street-meta {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0 0 20px;
+}
+
+.rec-site {
+  padding: 16px 0;
+  border-top: 1px solid var(--border-muted);
+}
+
+.rec-site-address {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-hi);
+  margin: 0 0 10px;
+}
+
+.rec-site-lot {
+  font-weight: 400;
+  color: var(--text-dim);
+}
+
+.rec-site-none {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.rec-app-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.rec-app {
+  padding: 10px 0;
+  border-top: 1px solid var(--border-muted);
+}
+
+.rec-app:first-child {
+  border-top: none;
+}
+
+.rec-app-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  align-items: baseline;
+  font-size: 0.85rem;
+}
+
+.rec-app-date {
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.rec-app-outcome {
+  color: var(--text-lo);
+}
+
+.rec-app-objectors {
+  color: var(--text-dim);
+}
+
+.rec-app-desc {
+  margin: 6px 0 0;
+  color: var(--text-lo);
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+
+.rec-app-ref {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 0.78rem;
+}
+
+.rec-caveat {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-muted);
+  color: var(--text-dim);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
