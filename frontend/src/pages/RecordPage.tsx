@@ -78,8 +78,10 @@ function StreetResults({ street }: { street: RecordStreetsStreet }) {
     <div className="rec-street">
       <h2 className="rec-street-name">{street.name}</h2>
       <p className="rec-street-meta">
-        {street.n_sites} {street.n_sites === 1 ? "site" : "sites"} ·{" "}
-        {street.n_applications} {street.n_applications === 1 ? "application" : "applications"}
+        <strong className="rec-street-count">
+          {street.n_applications} {street.n_applications === 1 ? "result" : "results"}
+        </strong>{" "}
+        across {street.n_sites} {street.n_sites === 1 ? "site" : "sites"}
         {street.suburbs.length > 0 && <> · {street.suburbs.join(", ")}</>}
       </p>
       {street.sites.map((site) => (
@@ -128,39 +130,62 @@ function StreetSearch({ streets }: { streets: RecordStreetsStreet[] }) {
     if (selected && value !== selected.name) setSelected(null);
   }
 
+  function clear() {
+    setQuery("");
+    setSelected(null);
+  }
+
+  const showPanel = query.trim().length > 0 || selected !== null;
+
   return (
     <div className="rec-search">
       <label className="rec-search-label" htmlFor="rec-street-input">
         Type a street name
       </label>
-      <input
-        id="rec-street-input"
-        className="rec-search-input"
-        type="text"
-        value={query}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="e.g. Cambridge Street"
-        autoComplete="off"
-      />
-      {suggestions.length > 0 && (
-        <ul className="rec-suggestions">
-          {suggestions.map((s) => (
-            <li key={s.name}>
-              <button type="button" onClick={() => pick(s)}>
-                {s.name}
-                <span className="rec-suggestion-count">
-                  {" "}
-                  — {s.n_sites} {s.n_sites === 1 ? "site" : "sites"}
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
+      <div className="rec-search-bar">
+        <input
+          id="rec-street-input"
+          className="rec-search-input"
+          type="text"
+          value={query}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="e.g. Cambridge Street"
+          autoComplete="off"
+        />
+        {showPanel && (
+          <button
+            type="button"
+            className="rec-search-clear"
+            onClick={clear}
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {showPanel && (
+        <div className="rec-search-panel">
+          {suggestions.length > 0 && (
+            <ul className="rec-suggestions">
+              {suggestions.map((s) => (
+                <li key={s.name}>
+                  <button type="button" onClick={() => pick(s)}>
+                    {s.name}
+                    <span className="rec-suggestion-count">
+                      {" "}
+                      — {s.n_sites} {s.n_sites === 1 ? "site" : "sites"}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {query.trim() && !selected && suggestions.length === 0 && (
+            <p className="rec-no-match">No street matches "{query.trim()}".</p>
+          )}
+          {selected && <StreetResults street={selected} />}
+        </div>
       )}
-      {query.trim() && !selected && suggestions.length === 0 && (
-        <p className="rec-no-match">No street matches "{query.trim()}".</p>
-      )}
-      {selected && <StreetResults street={selected} />}
     </div>
   );
 }
@@ -580,9 +605,7 @@ export function RecordPage() {
       <div className="static-hero">
         <h1 className="static-h1">The record</h1>
         <p className="static-lead">
-          A place to look up what's on the public record for your street — not
-          an argument, just the facts as recorded in council minutes, with a
-          link back to the source document for every application shown.
+          A place to look up what's on the public record for your street.
         </p>
       </div>
 

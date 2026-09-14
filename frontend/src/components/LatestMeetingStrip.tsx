@@ -17,6 +17,15 @@ export function LatestMeetingStrip() {
     day: "numeric", month: "long", year: "numeric",
   });
 
+  const facts: string[] = [latest.meeting_type];
+  facts.push(`${latest.tests.within_baseline} of ${latest.tests.run} tests within baseline`);
+  if (latest.exceptions_withheld > 0) {
+    facts.push(`+${latest.exceptions_withheld} withheld from public feed`);
+  }
+  if (latest.provenance.validation_status) {
+    facts.push(latest.provenance.validation_status);
+  }
+
   return (
     <a className="latest-meeting-strip" href={watchHref(latest.meeting_id)}>
       <span className="latest-meeting-label">Latest meeting</span>
@@ -25,7 +34,8 @@ export function LatestMeetingStrip() {
         {latest.counts.items} items, {latest.counts.motions} motions,{" "}
         {latest.tests.exceptions} exception{latest.tests.exceptions === 1 ? "" : "s"}
       </span>
-      <span className="latest-meeting-link">View in Watch →</span>
+      <span className="latest-meeting-facts">{facts.join(" · ")}</span>
+      <span className="latest-meeting-link">View in History →</span>
     </a>
   );
 }

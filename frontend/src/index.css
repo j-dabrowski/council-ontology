@@ -1820,6 +1820,12 @@ a:hover { text-decoration: underline; }
   color: var(--text-muted);
 }
 
+.latest-meeting-facts {
+  flex-basis: 100%;
+  font-size: 0.78rem;
+  color: var(--text-faint);
+}
+
 .latest-meeting-link {
   margin-left: auto;
   font-size: 0.82rem;
@@ -2110,14 +2116,51 @@ a:hover { text-decoration: underline; }
   outline-offset: 1px;
 }
 
-.rec-suggestions {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
+.rec-search-bar {
+  position: relative;
+}
+
+.rec-search-bar .rec-search-input {
+  padding-right: 38px;
+}
+
+.rec-search-clear {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--text-dim);
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.rec-search-clear:hover {
+  color: var(--text-hi);
+  background: var(--link-bg);
+}
+
+.rec-search-panel {
+  margin-top: 6px;
+  max-height: 480px;
+  overflow-y: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
-  overflow: hidden;
   background: var(--surface);
+}
+
+.rec-suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .rec-suggestions li + li {
@@ -2146,38 +2189,43 @@ a:hover { text-decoration: underline; }
 }
 
 .rec-no-match {
-  margin: 10px 0 0;
+  margin: 0;
+  padding: 10px 14px;
   color: var(--text-dim);
   font-size: 0.88rem;
 }
 
 .rec-street {
-  margin-top: 28px;
+  padding: 12px 14px 14px;
 }
 
 .rec-street-name {
-  font-size: 1.2rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text-hi);
-  margin: 0 0 4px;
+  margin: 0 0 2px;
 }
 
 .rec-street-meta {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text-dim);
-  margin: 0 0 20px;
+  margin: 0 0 10px;
+}
+
+.rec-street-count {
+  color: var(--text-hi);
 }
 
 .rec-site {
-  padding: 16px 0;
+  padding: 8px 0;
   border-top: 1px solid var(--border-muted);
 }
 
 .rec-site-address {
-  font-size: 0.95rem;
+  font-size: 0.86rem;
   font-weight: 600;
   color: var(--text-hi);
-  margin: 0 0 10px;
+  margin: 0 0 4px;
 }
 
 .rec-site-lot {
@@ -2186,7 +2234,7 @@ a:hover { text-decoration: underline; }
 }
 
 .rec-site-none {
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--text-dim);
   margin: 0;
 }
@@ -2198,7 +2246,7 @@ a:hover { text-decoration: underline; }
 }
 
 .rec-app {
-  padding: 10px 0;
+  padding: 6px 0;
   border-top: 1px solid var(--border-muted);
 }
 
@@ -2209,9 +2257,9 @@ a:hover { text-decoration: underline; }
 .rec-app-head {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
+  gap: 2px 10px;
   align-items: baseline;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
 }
 
 .rec-app-date {
@@ -2228,16 +2276,16 @@ a:hover { text-decoration: underline; }
 }
 
 .rec-app-desc {
-  margin: 6px 0 0;
+  margin: 3px 0 0;
   color: var(--text-lo);
-  line-height: 1.5;
-  font-size: 0.88rem;
+  line-height: 1.4;
+  font-size: 0.8rem;
 }
 
 .rec-app-ref {
-  margin: 4px 0 0;
+  margin: 2px 0 0;
   color: var(--text-dim);
-  font-size: 0.78rem;
+  font-size: 0.72rem;
 }
 
 .rec-caveat {
