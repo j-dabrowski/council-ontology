@@ -1948,7 +1948,7 @@ def _tier_of(name: str, battery: list | None = None) -> str:
 
 def _generate_snapshots(
     session, council_id: int, output_dir: Path, generated_at: str,
-    evidence_source_cache: dict,
+    evidence_source_cache: dict, only: set[str] | None = None,
 ) -> tuple[list[str], list]:
     """Run the full analysis + standard test battery and write one JSON file
     per dashboard snapshot into output_dir. Returns the list of snapshot
@@ -1966,11 +1966,29 @@ def _generate_snapshots(
     function returns — so a meeting whose PDF several tests' entities share
     gets parsed once for the whole draft run, not once per test
     (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6).
+
+    `only`: `council draft --only <names>`'s debug-speed escape hatch — see
+    that flag's own help text for the full story. When set, every one of
+    this function's ~25 `evidence_for_*()` blocks is skipped entirely
+    (computation *and* write) unless its own `evidence/<name>` is in the
+    set — that's where the real time goes (PDF parsing), not the ~30 plain
+    SQL business-data snapshots below, which stay cheap enough that only
+    their *write* (not computation) is worth skipping, via `_write()`'s own
+    check. `battery` (the S7 gate's input) is never skipped either way —
+    `only` narrows which *files* land on disk, not what the gate checks.
     """
     import json as _json
     from dataclasses import asdict
 
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Defined unconditionally, always, regardless of `only` — several of
+    # the evidence_for_*() blocks below reuse this one variable rather
+    # than each re-deriving it (a pre-existing pattern, not new here), so
+    # it can't be allowed to only exist as a side effect of whichever
+    # block happens to run first when `only` skips some of them.
+    evidence_dir = output_dir / "evidence"
+    evidence_dir.mkdir(parents=True, exist_ok=True)
 
     def _dc(obj) -> dict:
         d = asdict(obj)
@@ -1982,10 +2000,18 @@ def _generate_snapshots(
     written: list[str] = []
 
     def _write(name: str, data) -> None:
+        if only is not None and name not in only:
+            return
         path = output_dir / f"{name}.json"
         path.write_text(_json.dumps({"published_at": generated_at, "data": data}, indent=2))
         console.print(f"  [green]✓[/green] {name}.json")
         written.append(name)
+
+    def _want_evidence(name: str) -> bool:
+        """Gate for the ~25 evidence_for_*() blocks below — `name` is the
+        bare test id (e.g. "planning.objection_responsiveness"), not the
+        "evidence/"-prefixed snapshot name `written`/the manifest use."""
+        return only is None or f"evidence/{name}" in only
 
     from src.analysis.queries import (
         interest_declarations_summary, co_mover_pairs,
@@ -2318,47 +2344,58 @@ def _generate_snapshots(
     # (output_dir/"evidence" is also created in cmd_draft below, after this
     # function returns, for governance.officer_ratification's own export —
     # exist_ok=True makes the order harmless either way.)
-    from src.analysis.evidence import evidence_for_objection_responsiveness
-    from src.privacy import redact_evidence_quotes
-    evidence_dir = output_dir / "evidence"
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    objection_responsiveness_evidence = evidence_for_objection_responsiveness(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    # RECORD_PAGE_PLAN.md Step 8 — this file publishes at public tier now
-    # (SNAPSHOT_TIER below); 38 of 223 raw quotes carried a real private
-    # resident's name (planning-application Owner:/Applicant: fields, the
-    # same shape B.1 already covers elsewhere) before this redaction.
-    redact_evidence_quotes([
-        app for b in objection_responsiveness_evidence["buckets"] for app in b["applications"]
-    ])
-    (evidence_dir / "planning.objection_responsiveness.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": objection_responsiveness_evidence,
-    }, indent=2))
-    written.append("evidence/planning.objection_responsiveness")
-    _n_dose_ev = sum(len(b["applications"]) for b in objection_responsiveness_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/planning.objection_responsiveness.json ({_n_dose_ev} application(s))"
-    )
+    if _want_evidence("planning.objection_responsiveness"):
+        from src.analysis.evidence import evidence_for_objection_responsiveness
+        from src.privacy import redact_evidence_quotes
+        evidence_dir = output_dir / "evidence"
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        objection_responsiveness_evidence = evidence_for_objection_responsiveness(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        # RECORD_PAGE_PLAN.md Step 8 — this file publishes at public tier now
+        # (SNAPSHOT_TIER below); 38 of 223 raw quotes carried a real private
+        # resident's name (planning-application Owner:/Applicant: fields, the
+        # same shape B.1 already covers elsewhere) before this redaction.
+        redact_evidence_quotes([
+            app for b in objection_responsiveness_evidence["buckets"] for app in b["applications"]
+        ])
+        (evidence_dir / "planning.objection_responsiveness.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": objection_responsiveness_evidence,
+        }, indent=2))
+        written.append("evidence/planning.objection_responsiveness")
+        _n_dose_ev = sum(len(b["applications"]) for b in objection_responsiveness_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/planning.objection_responsiveness.json ({_n_dose_ev} application(s))"
+        )
 
     # record_streets: street -> sites -> applications index for /record's
     # address lookup (docs/frontend/RECORD_PAGE_PLAN.md Step 3). Shares
     # evidence_source_cache with the evidence chain above, so a meeting's
     # PDF already parsed for another test isn't parsed again here.
-    from src.analysis.record_streets import build_record_streets
-    record_streets = build_record_streets(
-        session, council_id, generated_at, source_cache=evidence_source_cache,
-    )
-    _write("record_streets", record_streets)
-    _cov = record_streets["coverage"]
-    console.print(
-        f"    {_cov['sites'] - _cov['sites_with_street']} of {_cov['sites']} sites yield no street name; "
-        f"{_cov['applications'] - _cov['applications_with_site']} of {_cov['applications']} "
-        "applications have no linked site"
-    )
-    _top_streets = sorted(record_streets["streets"], key=lambda s: -s["n_applications"])[:10]
-    for _s in _top_streets:
-        console.print(f"    {_s['n_applications']:4d} applications — {_s['name']}")
+    #
+    # Gated on its own, not left to _write()'s skip alone: unlike the
+    # ~30 other _write()-based snapshots, build_record_streets() calls
+    # resolve_evidence() *internally*, for nearly every application in
+    # the corpus — it is exactly as PDF-parsing-expensive as the
+    # evidence_for_*() blocks below, just reached through a different
+    # code path. Found by --only mayoral still costing a full run: the
+    # bug this comment exists to stop someone reintroducing is skipping
+    # only the write and assuming that means the cost was skipped too.
+    if only is None or "record_streets" in only:
+        from src.analysis.record_streets import build_record_streets
+        record_streets = build_record_streets(
+            session, council_id, generated_at, source_cache=evidence_source_cache,
+        )
+        _write("record_streets", record_streets)
+        _cov = record_streets["coverage"]
+        console.print(
+            f"    {_cov['sites'] - _cov['sites_with_street']} of {_cov['sites']} sites yield no street name; "
+            f"{_cov['applications'] - _cov['applications_with_site']} of {_cov['applications']} "
+            "applications have no linked site"
+        )
+        _top_streets = sorted(record_streets["streets"], key=lambda s: -s["n_applications"])[:10]
+        for _s in _top_streets:
+            console.print(f"    {_s['n_applications']:4d} applications — {_s['name']}")
 
     # transparency: share of council business decided behind closed doors over time
     trans = transparency_by_year(session, council_id)
@@ -2459,24 +2496,25 @@ def _generate_snapshots(
     # same per-year, per-table capped confidential-item list transparency.json
     # exports above, joined to it by (entity_table, entity_id) in the
     # frontend rather than duplicated here.
-    from src.analysis.evidence import evidence_for_transparency
-    from src.privacy import redact_evidence_quotes
-    transparency_evidence = evidence_for_transparency(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    # RECORD_PAGE_PLAN.md Step 8 — public tier now; 3 of 636 raw quotes
-    # named a private presenter/consultant before this redaction.
-    redact_evidence_quotes([item for y in transparency_evidence["years"] for item in y["items"]])
-    evidence_dir = output_dir / "evidence"
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    (evidence_dir / "transparency.confidential_share.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": transparency_evidence,
-    }, indent=2))
-    written.append("evidence/transparency.confidential_share")
-    _n_conf_ev = sum(len(y["items"]) for y in transparency_evidence["years"])
-    console.print(
-        f"  [green]✓[/green] evidence/transparency.confidential_share.json ({_n_conf_ev} item(s))"
-    )
+    if _want_evidence("transparency.confidential_share"):
+        from src.analysis.evidence import evidence_for_transparency
+        from src.privacy import redact_evidence_quotes
+        transparency_evidence = evidence_for_transparency(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        # RECORD_PAGE_PLAN.md Step 8 — public tier now; 3 of 636 raw quotes
+        # named a private presenter/consultant before this redaction.
+        redact_evidence_quotes([item for y in transparency_evidence["years"] for item in y["items"]])
+        evidence_dir = output_dir / "evidence"
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        (evidence_dir / "transparency.confidential_share.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": transparency_evidence,
+        }, indent=2))
+        written.append("evidence/transparency.confidential_share")
+        _n_conf_ev = sum(len(y["items"]) for y in transparency_evidence["years"])
+        console.print(
+            f"  [green]✓[/green] evidence/transparency.confidential_share.json ({_n_conf_ev} item(s))"
+        )
 
     # tenure: career councillors vs one-term blow-ins
     tenure = councillor_tenure(session, council_id)
@@ -2593,20 +2631,21 @@ def _generate_snapshots(
     # EVIDENCE_CHAIN_PLAN.md Step 6) — every quote behind the same
     # per-mayor capped contested-motion list mayoral.json exports above,
     # joined to it by entity_id in the frontend rather than duplicated here.
-    from src.analysis.evidence import evidence_for_chair_capture
-    chair_capture_evidence = evidence_for_chair_capture(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    evidence_dir = output_dir / "evidence"
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    (evidence_dir / "governance.chair_capture.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": chair_capture_evidence,
-    }, indent=2))
-    written.append("evidence/governance.chair_capture")
-    _n_mayor_ev = sum(len(m["motions"]) for m in chair_capture_evidence["mayors"])
-    console.print(
-        f"  [green]✓[/green] evidence/governance.chair_capture.json ({_n_mayor_ev} motion(s))"
-    )
+    if _want_evidence("governance.chair_capture"):
+        from src.analysis.evidence import evidence_for_chair_capture
+        chair_capture_evidence = evidence_for_chair_capture(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        evidence_dir = output_dir / "evidence"
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        (evidence_dir / "governance.chair_capture.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": chair_capture_evidence,
+        }, indent=2))
+        written.append("evidence/governance.chair_capture")
+        _n_mayor_ev = sum(len(m["motions"]) for m in chair_capture_evidence["mayors"])
+        console.print(
+            f"  [green]✓[/green] evidence/governance.chair_capture.json ({_n_mayor_ev} motion(s))"
+        )
 
     # voting power: who wins on contested decisions, and whose dissent prevails?
     power = voting_power(session, council_id)
@@ -2834,381 +2873,404 @@ def _generate_snapshots(
     # from scratch rather than upgrading a prior lossy join. Generic
     # {"buckets": [{"label", "entries"}]} shape shared by every test in this
     # group, read by BatteryTestBody's one drill-down mechanism.
-    from src.analysis.evidence import evidence_for_threshold_gaming
-    threshold_gaming_evidence = evidence_for_threshold_gaming(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    evidence_dir = output_dir / "evidence"
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    (evidence_dir / "procurement.threshold_gaming.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": threshold_gaming_evidence,
-    }, indent=2))
-    written.append("evidence/procurement.threshold_gaming")
-    _n_tg_ev = sum(len(b["entries"]) for b in threshold_gaming_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/procurement.threshold_gaming.json ({_n_tg_ev} tender(s))"
-    )
+    if _want_evidence("procurement.threshold_gaming"):
+        from src.analysis.evidence import evidence_for_threshold_gaming
+        threshold_gaming_evidence = evidence_for_threshold_gaming(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        evidence_dir = output_dir / "evidence"
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        (evidence_dir / "procurement.threshold_gaming.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": threshold_gaming_evidence,
+        }, indent=2))
+        written.append("evidence/procurement.threshold_gaming")
+        _n_tg_ev = sum(len(b["entries"]) for b in threshold_gaming_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/procurement.threshold_gaming.json ({_n_tg_ev} tender(s))"
+        )
 
     # Evidence chain for finance.eoy_spending (Phase 2, tests.<generator>
     # group) — same shape as threshold_gaming above, bucketed by calendar
     # month instead of $ range.
-    from src.analysis.evidence import evidence_for_eoy_spending
-    eoy_spending_evidence = evidence_for_eoy_spending(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "finance.eoy_spending.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": eoy_spending_evidence,
-    }, indent=2))
-    written.append("evidence/finance.eoy_spending")
-    _n_eoy_ev = sum(len(b["entries"]) for b in eoy_spending_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/finance.eoy_spending.json ({_n_eoy_ev} tender(s))"
-    )
+    if _want_evidence("finance.eoy_spending"):
+        from src.analysis.evidence import evidence_for_eoy_spending
+        eoy_spending_evidence = evidence_for_eoy_spending(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "finance.eoy_spending.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": eoy_spending_evidence,
+        }, indent=2))
+        written.append("evidence/finance.eoy_spending")
+        _n_eoy_ev = sum(len(b["entries"]) for b in eoy_spending_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/finance.eoy_spending.json ({_n_eoy_ev} tender(s))"
+        )
 
     # Evidence chain for planning.big_dollar_leniency (Phase 2,
     # tests.<generator> group) — value quartiles instead of $-bin/month.
-    from src.analysis.evidence import evidence_for_big_dollar_leniency
-    big_dollar_evidence = evidence_for_big_dollar_leniency(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "planning.big_dollar_leniency.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": big_dollar_evidence,
-    }, indent=2))
-    written.append("evidence/planning.big_dollar_leniency")
-    _n_bd_ev = sum(len(b["entries"]) for b in big_dollar_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/planning.big_dollar_leniency.json ({_n_bd_ev} application(s))"
-    )
+    if _want_evidence("planning.big_dollar_leniency"):
+        from src.analysis.evidence import evidence_for_big_dollar_leniency
+        big_dollar_evidence = evidence_for_big_dollar_leniency(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "planning.big_dollar_leniency.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": big_dollar_evidence,
+        }, indent=2))
+        written.append("evidence/planning.big_dollar_leniency")
+        _n_bd_ev = sum(len(b["entries"]) for b in big_dollar_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/planning.big_dollar_leniency.json ({_n_bd_ev} application(s))"
+        )
 
     # Evidence chain for planning.repeat_applicant (Phase 2,
     # tests.<generator> group) — frequency buckets by applicant name.
-    from src.analysis.evidence import evidence_for_repeat_applicant
-    repeat_applicant_evidence = evidence_for_repeat_applicant(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "planning.repeat_applicant.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": repeat_applicant_evidence,
-    }, indent=2))
-    written.append("evidence/planning.repeat_applicant")
-    _n_ra_ev = sum(len(b["entries"]) for b in repeat_applicant_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/planning.repeat_applicant.json ({_n_ra_ev} application(s))"
-    )
+    if _want_evidence("planning.repeat_applicant"):
+        from src.analysis.evidence import evidence_for_repeat_applicant
+        repeat_applicant_evidence = evidence_for_repeat_applicant(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "planning.repeat_applicant.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": repeat_applicant_evidence,
+        }, indent=2))
+        written.append("evidence/planning.repeat_applicant")
+        _n_ra_ev = sum(len(b["entries"]) for b in repeat_applicant_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/planning.repeat_applicant.json ({_n_ra_ev} application(s))"
+        )
 
     # Evidence chain for governance.unanimity_trend (Phase 2, tests.
     # <generator> group) — the first line-chart test in this group; bucket
     # labels are year strings, contested carried motions per plotted year.
-    from src.analysis.evidence import evidence_for_unanimity_trend
-    unanimity_trend_evidence = evidence_for_unanimity_trend(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.unanimity_trend.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": unanimity_trend_evidence,
-    }, indent=2))
-    written.append("evidence/governance.unanimity_trend")
-    _n_ut_ev = sum(len(b["entries"]) for b in unanimity_trend_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/governance.unanimity_trend.json ({_n_ut_ev} motion(s))"
-    )
+    if _want_evidence("governance.unanimity_trend"):
+        from src.analysis.evidence import evidence_for_unanimity_trend
+        unanimity_trend_evidence = evidence_for_unanimity_trend(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.unanimity_trend.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": unanimity_trend_evidence,
+        }, indent=2))
+        written.append("evidence/governance.unanimity_trend")
+        _n_ut_ev = sum(len(b["entries"]) for b in unanimity_trend_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/governance.unanimity_trend.json ({_n_ut_ev} motion(s))"
+        )
 
     # Evidence chain for transparency.confidential_tender_size (Phase 2,
     # tests.<generator> group) — Confidential vs Open tenders by amount.
-    from src.analysis.evidence import evidence_for_confidential_tender_size
-    conf_tender_size_evidence = evidence_for_confidential_tender_size(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "transparency.confidential_tender_size.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": conf_tender_size_evidence,
-    }, indent=2))
-    written.append("evidence/transparency.confidential_tender_size")
-    _n_cts_ev = sum(len(b["entries"]) for b in conf_tender_size_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/transparency.confidential_tender_size.json ({_n_cts_ev} tender(s))"
-    )
+    if _want_evidence("transparency.confidential_tender_size"):
+        from src.analysis.evidence import evidence_for_confidential_tender_size
+        conf_tender_size_evidence = evidence_for_confidential_tender_size(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "transparency.confidential_tender_size.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": conf_tender_size_evidence,
+        }, indent=2))
+        written.append("evidence/transparency.confidential_tender_size")
+        _n_cts_ev = sum(len(b["entries"]) for b in conf_tender_size_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/transparency.confidential_tender_size.json ({_n_cts_ev} tender(s))"
+        )
 
     # Evidence chain for transparency.confidential_topics (Phase 2, tests.
     # <generator> group) — six theme buckets, spans tenders/other_items/
     # delegated_decisions; an item can appear in more than one bucket.
-    from src.analysis.evidence import evidence_for_confidential_topics
-    conf_topics_evidence = evidence_for_confidential_topics(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "transparency.confidential_topics.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": conf_topics_evidence,
-    }, indent=2))
-    written.append("evidence/transparency.confidential_topics")
-    _n_ct_ev = sum(len(b["entries"]) for b in conf_topics_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/transparency.confidential_topics.json ({_n_ct_ev} item(s))"
-    )
+    if _want_evidence("transparency.confidential_topics"):
+        from src.analysis.evidence import evidence_for_confidential_topics
+        conf_topics_evidence = evidence_for_confidential_topics(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "transparency.confidential_topics.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": conf_topics_evidence,
+        }, indent=2))
+        written.append("evidence/transparency.confidential_topics")
+        _n_ct_ev = sum(len(b["entries"]) for b in conf_topics_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/transparency.confidential_topics.json ({_n_ct_ev} item(s))"
+        )
 
     # Evidence chain for procurement.incumbency (Phase 2, tests.<generator>
     # group) — top-10-by-recurring-years firms, the chart's own ranking.
-    from src.analysis.evidence import evidence_for_incumbency
-    incumbency_evidence = evidence_for_incumbency(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "procurement.incumbency.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": incumbency_evidence,
-    }, indent=2))
-    written.append("evidence/procurement.incumbency")
-    _n_inc_ev = sum(len(b["entries"]) for b in incumbency_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/procurement.incumbency.json ({_n_inc_ev} tender(s))"
-    )
+    if _want_evidence("procurement.incumbency"):
+        from src.analysis.evidence import evidence_for_incumbency
+        incumbency_evidence = evidence_for_incumbency(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "procurement.incumbency.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": incumbency_evidence,
+        }, indent=2))
+        written.append("evidence/procurement.incumbency")
+        _n_inc_ev = sum(len(b["entries"]) for b in incumbency_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/procurement.incumbency.json ({_n_inc_ev} tender(s))"
+        )
 
     # Evidence chain for engagement.deputation_dissent (Phase 2, tests.
     # <generator> group) — contested motions on both sides, split by
     # whether the motion's meeting had a deputation at all.
-    from src.analysis.evidence import evidence_for_deputation_dissent
-    deputation_dissent_evidence = evidence_for_deputation_dissent(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "engagement.deputation_dissent.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": deputation_dissent_evidence,
-    }, indent=2))
-    written.append("evidence/engagement.deputation_dissent")
-    _n_dd_ev = sum(len(b["entries"]) for b in deputation_dissent_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/engagement.deputation_dissent.json ({_n_dd_ev} motion(s))"
-    )
+    if _want_evidence("engagement.deputation_dissent"):
+        from src.analysis.evidence import evidence_for_deputation_dissent
+        deputation_dissent_evidence = evidence_for_deputation_dissent(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "engagement.deputation_dissent.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": deputation_dissent_evidence,
+        }, indent=2))
+        written.append("evidence/engagement.deputation_dissent")
+        _n_dd_ev = sum(len(b["entries"]) for b in deputation_dissent_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/engagement.deputation_dissent.json ({_n_dd_ev} motion(s))"
+        )
 
     # Evidence chain for governance.freshman_effect (Phase 2, tests.
     # <generator> group) — the first of three votes-based tests. Votes have
     # no quote of their own; each AGAINST vote resolves to its motion.
-    from src.analysis.evidence import evidence_for_freshman_effect
-    freshman_effect_evidence = evidence_for_freshman_effect(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.freshman_effect.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": freshman_effect_evidence,
-    }, indent=2))
-    written.append("evidence/governance.freshman_effect")
-    _n_fe_ev = sum(len(b["entries"]) for b in freshman_effect_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/governance.freshman_effect.json ({_n_fe_ev} motion(s))"
-    )
+    if _want_evidence("governance.freshman_effect"):
+        from src.analysis.evidence import evidence_for_freshman_effect
+        freshman_effect_evidence = evidence_for_freshman_effect(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.freshman_effect.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": freshman_effect_evidence,
+        }, indent=2))
+        written.append("evidence/governance.freshman_effect")
+        _n_fe_ev = sum(len(b["entries"]) for b in freshman_effect_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/governance.freshman_effect.json ({_n_fe_ev} motion(s))"
+        )
 
     # Evidence chain for governance.election_cycle (Phase 2, tests.
     # <generator> group) — second of three votes-based tests, motion as
     # receipt again, bucketed by the meeting date's pre-election window.
-    from src.analysis.evidence import evidence_for_election_cycle
-    election_cycle_evidence = evidence_for_election_cycle(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.election_cycle.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": election_cycle_evidence,
-    }, indent=2))
-    written.append("evidence/governance.election_cycle")
-    _n_ec_ev = sum(len(b["entries"]) for b in election_cycle_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/governance.election_cycle.json ({_n_ec_ev} motion(s))"
-    )
+    if _want_evidence("governance.election_cycle"):
+        from src.analysis.evidence import evidence_for_election_cycle
+        election_cycle_evidence = evidence_for_election_cycle(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.election_cycle.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": election_cycle_evidence,
+        }, indent=2))
+        written.append("evidence/governance.election_cycle")
+        _n_ec_ev = sum(len(b["entries"]) for b in election_cycle_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/governance.election_cycle.json ({_n_ec_ev} motion(s))"
+        )
 
     # Evidence chain for governance.attendance (Phase 2, tests.<generator>
     # group) — last of three votes-based tests, motion as receipt again;
     # ABSENT rows split by declared_interest, no CARRIED-only filter.
-    from src.analysis.evidence import evidence_for_attendance
-    attendance_evidence = evidence_for_attendance(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.attendance.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": attendance_evidence,
-    }, indent=2))
-    written.append("evidence/governance.attendance")
-    _n_att_ev = sum(len(b["entries"]) for b in attendance_evidence["buckets"])
-    console.print(
-        f"  [green]✓[/green] evidence/governance.attendance.json ({_n_att_ev} motion(s))"
-    )
+    if _want_evidence("governance.attendance"):
+        from src.analysis.evidence import evidence_for_attendance
+        attendance_evidence = evidence_for_attendance(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.attendance.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": attendance_evidence,
+        }, indent=2))
+        written.append("evidence/governance.attendance")
+        _n_att_ev = sum(len(b["entries"]) for b in attendance_evidence["buckets"])
+        console.print(
+            f"  [green]✓[/green] evidence/governance.attendance.json ({_n_att_ev} motion(s))"
+        )
 
     # Evidence chain for procurement.decider_supplier_conflict (Phase 2,
     # remaining-11 group) — "Tender-award votes" bucket reproduces Limb 1's
     # own keyword match; "Chamber base rate" is deliberately empty (no
     # notable subset of the whole-corpus baseline to single out).
-    from src.analysis.evidence import evidence_for_decider_supplier_conflict
-    decider_supplier_evidence = evidence_for_decider_supplier_conflict(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "procurement.decider_supplier_conflict.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": decider_supplier_evidence,
-    }, indent=2))
-    written.append("evidence/procurement.decider_supplier_conflict")
-    _n_dsc_ev = sum(len(b["entries"]) for b in decider_supplier_evidence["buckets"])
-    console.print(
-        "  [green]✓[/green] evidence/procurement.decider_supplier_conflict.json "
-        f"({_n_dsc_ev} motion(s))"
-    )
+    if _want_evidence("procurement.decider_supplier_conflict"):
+        from src.analysis.evidence import evidence_for_decider_supplier_conflict
+        decider_supplier_evidence = evidence_for_decider_supplier_conflict(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "procurement.decider_supplier_conflict.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": decider_supplier_evidence,
+        }, indent=2))
+        written.append("evidence/procurement.decider_supplier_conflict")
+        _n_dsc_ev = sum(len(b["entries"]) for b in decider_supplier_evidence["buckets"])
+        console.print(
+            "  [green]✓[/green] evidence/procurement.decider_supplier_conflict.json "
+            f"({_n_dsc_ev} motion(s))"
+        )
 
     # Evidence chain for conflict.delegate_body_conflict (Phase 2,
     # remaining-11 group) — one bucket per _DELEGATE_BODIES entry, affiliated
     # votes' parent motions only (the population that body's bar is computed
     # over); "other" votes on the same motions aren't charted.
-    from src.analysis.evidence import evidence_for_delegate_body_conflict
-    delegate_body_evidence = evidence_for_delegate_body_conflict(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "conflict.delegate_body_conflict.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": delegate_body_evidence,
-    }, indent=2))
-    written.append("evidence/conflict.delegate_body_conflict")
-    _n_dbc_ev = sum(len(b["entries"]) for b in delegate_body_evidence["buckets"])
-    console.print(
-        "  [green]✓[/green] evidence/conflict.delegate_body_conflict.json "
-        f"({_n_dbc_ev} motion(s))"
-    )
+    if _want_evidence("conflict.delegate_body_conflict"):
+        from src.analysis.evidence import evidence_for_delegate_body_conflict
+        delegate_body_evidence = evidence_for_delegate_body_conflict(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "conflict.delegate_body_conflict.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": delegate_body_evidence,
+        }, indent=2))
+        written.append("evidence/conflict.delegate_body_conflict")
+        _n_dbc_ev = sum(len(b["entries"]) for b in delegate_body_evidence["buckets"])
+        console.print(
+            "  [green]✓[/green] evidence/conflict.delegate_body_conflict.json "
+            f"({_n_dbc_ev} motion(s))"
+        )
 
     # Evidence chain for governance.oversight_body_capture (Phase 2,
     # remaining-11 group) — "Appointees"/"Non-appointees" buckets, motion as
     # receipt, reproducing the query's own appointee-set match, cohort
     # floor, and contested-vote population verbatim.
-    from src.analysis.evidence import evidence_for_oversight_body_capture
-    oversight_evidence = evidence_for_oversight_body_capture(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.oversight_body_capture.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": oversight_evidence,
-    }, indent=2))
-    written.append("evidence/governance.oversight_body_capture")
-    _n_obc_ev = sum(len(b["entries"]) for b in oversight_evidence["buckets"])
-    console.print(
-        "  [green]✓[/green] evidence/governance.oversight_body_capture.json "
-        f"({_n_obc_ev} motion(s))"
-    )
+    if _want_evidence("governance.oversight_body_capture"):
+        from src.analysis.evidence import evidence_for_oversight_body_capture
+        oversight_evidence = evidence_for_oversight_body_capture(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.oversight_body_capture.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": oversight_evidence,
+        }, indent=2))
+        written.append("evidence/governance.oversight_body_capture")
+        _n_obc_ev = sum(len(b["entries"]) for b in oversight_evidence["buckets"])
+        console.print(
+            "  [green]✓[/green] evidence/governance.oversight_body_capture.json "
+            f"({_n_obc_ev} motion(s))"
+        )
 
     # Evidence chain for conflict.recusal_management (Phase 2, remaining-11
     # group) — ConflictRecusalPanel's per-councillor drill-down, a flat
     # `entries` list (no chart-bar buckets) keyed by DeclarationDetail's own
     # entity_id.
-    from src.analysis.evidence import evidence_for_recusal_management
-    recusal_mgmt_evidence = evidence_for_recusal_management(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "conflict.recusal_management.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": recusal_mgmt_evidence,
-    }, indent=2))
-    written.append("evidence/conflict.recusal_management")
-    console.print(
-        "  [green]✓[/green] evidence/conflict.recusal_management.json "
-        f"({len(recusal_mgmt_evidence['entries'])} declaration(s))"
-    )
+    if _want_evidence("conflict.recusal_management"):
+        from src.analysis.evidence import evidence_for_recusal_management
+        recusal_mgmt_evidence = evidence_for_recusal_management(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "conflict.recusal_management.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": recusal_mgmt_evidence,
+        }, indent=2))
+        written.append("evidence/conflict.recusal_management")
+        console.print(
+            "  [green]✓[/green] evidence/conflict.recusal_management.json "
+            f"({len(recusal_mgmt_evidence['entries'])} declaration(s))"
+        )
 
     # Evidence chain for conflict.recusal_trend (Phase 2, remaining-11
     # group) — RecusalTrendPanel's per-cell (interest type × era) drill-down,
     # a flat `entries` list keyed by RecusalDeclarationDetail's own entity_id.
-    from src.analysis.evidence import evidence_for_recusal_trend
-    recusal_trend_evidence = evidence_for_recusal_trend(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "conflict.recusal_trend.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": recusal_trend_evidence,
-    }, indent=2))
-    written.append("evidence/conflict.recusal_trend")
-    console.print(
-        "  [green]✓[/green] evidence/conflict.recusal_trend.json "
-        f"({len(recusal_trend_evidence['entries'])} declaration(s))"
-    )
+    if _want_evidence("conflict.recusal_trend"):
+        from src.analysis.evidence import evidence_for_recusal_trend
+        recusal_trend_evidence = evidence_for_recusal_trend(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "conflict.recusal_trend.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": recusal_trend_evidence,
+        }, indent=2))
+        written.append("evidence/conflict.recusal_trend")
+        console.print(
+            "  [green]✓[/green] evidence/conflict.recusal_trend.json "
+            f"({len(recusal_trend_evidence['entries'])} declaration(s))"
+        )
 
     # Evidence chain for governance.power_spread (Phase 2, remaining-11
     # group) — PowerPanel's per-councillor drill-down, a flat `entries` list
     # keyed by ContestedVoteDetail's own entity_id (motions.id).
-    from src.analysis.evidence import evidence_for_power_spread
-    power_spread_evidence = evidence_for_power_spread(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.power_spread.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": power_spread_evidence,
-    }, indent=2))
-    written.append("evidence/governance.power_spread")
-    console.print(
-        "  [green]✓[/green] evidence/governance.power_spread.json "
-        f"({len(power_spread_evidence['entries'])} motion(s))"
-    )
+    if _want_evidence("governance.power_spread"):
+        from src.analysis.evidence import evidence_for_power_spread
+        power_spread_evidence = evidence_for_power_spread(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.power_spread.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": power_spread_evidence,
+        }, indent=2))
+        written.append("evidence/governance.power_spread")
+        console.print(
+            "  [green]✓[/green] evidence/governance.power_spread.json "
+            f"({len(power_spread_evidence['entries'])} motion(s))"
+        )
 
     # Evidence chain for engagement.question_responsiveness (Phase 2,
     # remaining-11 group) — QuestionResponsivenessPanel's per-era drill-down,
     # a flat `entries` list keyed by PQResponseDetail's own entity_id.
-    from src.analysis.evidence import evidence_for_question_responsiveness
-    question_resp_evidence = evidence_for_question_responsiveness(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "engagement.question_responsiveness.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": question_resp_evidence,
-    }, indent=2))
-    written.append("evidence/engagement.question_responsiveness")
-    console.print(
-        "  [green]✓[/green] evidence/engagement.question_responsiveness.json "
-        f"({len(question_resp_evidence['entries'])} question(s))"
-    )
+    if _want_evidence("engagement.question_responsiveness"):
+        from src.analysis.evidence import evidence_for_question_responsiveness
+        question_resp_evidence = evidence_for_question_responsiveness(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "engagement.question_responsiveness.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": question_resp_evidence,
+        }, indent=2))
+        written.append("evidence/engagement.question_responsiveness")
+        console.print(
+            "  [green]✓[/green] evidence/engagement.question_responsiveness.json "
+            f"({len(question_resp_evidence['entries'])} question(s))"
+        )
 
     # Evidence chain for procurement.concentration (Phase 2, remaining-11
     # group) — TenderConcentrationPanel's per-contractor drill-down, a flat
     # `entries` list keyed by TenderAward's own entity_id (tenders.id).
-    from src.analysis.evidence import evidence_for_concentration
-    concentration_evidence = evidence_for_concentration(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "procurement.concentration.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": concentration_evidence,
-    }, indent=2))
-    written.append("evidence/procurement.concentration")
-    console.print(
-        "  [green]✓[/green] evidence/procurement.concentration.json "
-        f"({len(concentration_evidence['entries'])} award(s))"
-    )
+    if _want_evidence("procurement.concentration"):
+        from src.analysis.evidence import evidence_for_concentration
+        concentration_evidence = evidence_for_concentration(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "procurement.concentration.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": concentration_evidence,
+        }, indent=2))
+        written.append("evidence/procurement.concentration")
+        console.print(
+            "  [green]✓[/green] evidence/procurement.concentration.json "
+            f"({len(concentration_evidence['entries'])} award(s))"
+        )
 
     # Evidence chain for engagement.participation (Phase 2, remaining-11
     # group) — EngagementChart's per-year drill-down (new UI, no prior
     # click-through), spanning public_questions/deputations/petitions.
-    from src.analysis.evidence import evidence_for_participation
-    participation_evidence = evidence_for_participation(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "engagement.participation.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": participation_evidence,
-    }, indent=2))
-    written.append("evidence/engagement.participation")
-    _n_part_ev = sum(len(y["items"]) for y in participation_evidence["years"])
-    console.print(
-        f"  [green]✓[/green] evidence/engagement.participation.json ({_n_part_ev} item(s))"
-    )
+    if _want_evidence("engagement.participation"):
+        from src.analysis.evidence import evidence_for_participation
+        participation_evidence = evidence_for_participation(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "engagement.participation.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": participation_evidence,
+        }, indent=2))
+        written.append("evidence/engagement.participation")
+        _n_part_ev = sum(len(y["items"]) for y in participation_evidence["years"])
+        console.print(
+            f"  [green]✓[/green] evidence/engagement.participation.json ({_n_part_ev} item(s))"
+        )
 
     # Evidence chain for governance.incumbency (Phase 2, remaining-11
     # group) — TenurePanel's new drill-down (no prior click-through): each
     # councillor's earliest/latest recorded vote, a flat `entries` list.
-    from src.analysis.evidence import evidence_for_tenure
-    from src.privacy import redact_evidence_quotes
-    tenure_evidence = evidence_for_tenure(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    # RECORD_PAGE_PLAN.md Step 8 — public tier now; 3 of 129 raw quotes
-    # named a private citizen or an external body's director before this
-    # redaction.
-    redact_evidence_quotes(tenure_evidence["entries"])
-    (evidence_dir / "governance.incumbency.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": tenure_evidence,
-    }, indent=2))
-    written.append("evidence/governance.incumbency")
-    console.print(
-        "  [green]✓[/green] evidence/governance.incumbency.json "
-        f"({len(tenure_evidence['entries'])} motion(s))"
-    )
+    if _want_evidence("governance.incumbency"):
+        from src.analysis.evidence import evidence_for_tenure
+        from src.privacy import redact_evidence_quotes
+        tenure_evidence = evidence_for_tenure(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        # RECORD_PAGE_PLAN.md Step 8 — public tier now; 3 of 129 raw quotes
+        # named a private citizen or an external body's director before this
+        # redaction.
+        redact_evidence_quotes(tenure_evidence["entries"])
+        (evidence_dir / "governance.incumbency.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": tenure_evidence,
+        }, indent=2))
+        written.append("evidence/governance.incumbency")
+        console.print(
+            "  [green]✓[/green] evidence/governance.incumbency.json "
+            f"({len(tenure_evidence['entries'])} motion(s))"
+        )
 
     # Evidence chain for governance.durable_faction (Phase 2, remaining-11
     # group, last of the eleven) — SponsorshipNetworkPanel's per-edge
     # drill-down: a sample of the motions behind each alliance/procedural
     # pair's co-sponsorship count, scoped to that edge's own era window.
-    from src.analysis.evidence import evidence_for_durable_faction
-    durable_faction_evidence = evidence_for_durable_faction(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.durable_faction.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": durable_faction_evidence,
-    }, indent=2))
-    written.append("evidence/governance.durable_faction")
-    _n_df_ev = sum(len(e["motions"]) for e in durable_faction_evidence["edges"])
-    console.print(
-        f"  [green]✓[/green] evidence/governance.durable_faction.json ({_n_df_ev} motion(s))"
-    )
+    if _want_evidence("governance.durable_faction"):
+        from src.analysis.evidence import evidence_for_durable_faction
+        durable_faction_evidence = evidence_for_durable_faction(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.durable_faction.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": durable_faction_evidence,
+        }, indent=2))
+        written.append("evidence/governance.durable_faction")
+        _n_df_ev = sum(len(e["motions"]) for e in durable_faction_evidence["edges"])
+        console.print(
+            f"  [green]✓[/green] evidence/governance.durable_faction.json ({_n_df_ev} motion(s))"
+        )
 
     # councillors.json — unified cross-link profile keyed by full name; used by
     # CouncillorModal (opens whenever a councillor name is clicked in the UI).
@@ -3397,6 +3459,22 @@ def cmd_draft(args) -> None:
         sys.exit(1)
     short_name = COUNCILS[key]["short_name"]
 
+    # --only: a debug-speed escape hatch, not a real draft — a full run's
+    # ~25 evidence_for_*() calls (PDF parsing) are most of a ~30-minute
+    # run; this skips every one of them not explicitly asked for, so
+    # iterating on one page's data doesn't mean waiting on all the rest.
+    # The result still clears the S7 gate (battery is never filtered) but
+    # its manifest only lists what was actually built — never publish
+    # from a run made with this flag; it exists to shorten your own
+    # inner loop while writing/debugging one snapshot's code, nothing else.
+    only: set[str] | None = None
+    if getattr(args, "only", None):
+        only = {n.strip() for n in args.only.split(",") if n.strip()}
+        console.print(
+            f"[yellow]--only {sorted(only)} — partial draft, debug speed only, "
+            "never publish this run[/yellow]"
+        )
+
     # Validated up front, same discipline as `council digest` — a malformed
     # --period-end is a user-input error (fail fast, sys.exit), not a
     # "digest unavailable" condition to swallow into a skip message below.
@@ -3431,6 +3509,7 @@ def cmd_draft(args) -> None:
     evidence_source_cache: dict = {}
     written, battery = _generate_snapshots(
         session, council_id, output_dir, generated_at, evidence_source_cache,
+        only=only,
     )
 
     # Local-review-only: a single-meeting digest for the latest minutes
@@ -3605,16 +3684,20 @@ def cmd_draft(args) -> None:
                 style="red",
             ))
             sys.exit(1)
-        (output_dir / "watch.json").write_text(_json.dumps({
-            "published_at": generated_at, "data": published_watch_feed,
-        }, indent=2))
-        written.append("watch")
-        n_exceptions = sum(len(r["exceptions"]) for r in published_watch_feed["meetings"])
-        n_withheld = sum(r["exceptions_withheld"] for r in published_watch_feed["meetings"])
-        console.print(
-            f"  [green]✓[/green] watch.json ({published_watch_feed['n_meetings']} meeting(s), "
-            f"{n_exceptions} published exception(s), {n_withheld} withheld)"
-        )
+        # watch_feed/its gate re-verification always run above (cheap, not
+        # PDF-bound, and a real safety check) — --only narrows the *file
+        # write* only, same as every business-data snapshot's _write().
+        if only is None or "watch" in only:
+            (output_dir / "watch.json").write_text(_json.dumps({
+                "published_at": generated_at, "data": published_watch_feed,
+            }, indent=2))
+            written.append("watch")
+            n_exceptions = sum(len(r["exceptions"]) for r in published_watch_feed["meetings"])
+            n_withheld = sum(r["exceptions_withheld"] for r in published_watch_feed["meetings"])
+            console.print(
+                f"  [green]✓[/green] watch.json ({published_watch_feed['n_meetings']} meeting(s), "
+                f"{n_exceptions} published exception(s), {n_withheld} withheld)"
+            )
     else:
         console.print(f"  [yellow]○[/yellow] watch.json skipped — {watch_feed_skip_reason}")
 
@@ -3627,20 +3710,21 @@ def cmd_draft(args) -> None:
     # draft/review/publish gate as everything else. It lives outside the
     # root-level *.json glob, so Editor_prompt.txt's "Read first" carries an
     # explicit bullet for it (v0.10) rather than relying on the glob.
-    from src.analysis.evidence import evidence_for_officer_ratification
-    evidence_dir = output_dir / "evidence"
-    evidence_dir.mkdir(parents=True, exist_ok=True)
-    officer_ratification_evidence = evidence_for_officer_ratification(
-        session, council_id, source_cache=evidence_source_cache,
-    )
-    (evidence_dir / "governance.officer_ratification.json").write_text(_json.dumps({
-        "published_at": generated_at, "data": officer_ratification_evidence,
-    }, indent=2))
-    written.append("evidence/governance.officer_ratification")
-    console.print(
-        f"  [green]✓[/green] evidence/governance.officer_ratification.json "
-        f"({len(officer_ratification_evidence['pairs'])} pair(s))"
-    )
+    if only is None or "evidence/governance.officer_ratification" in only:
+        from src.analysis.evidence import evidence_for_officer_ratification
+        evidence_dir = output_dir / "evidence"
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        officer_ratification_evidence = evidence_for_officer_ratification(
+            session, council_id, source_cache=evidence_source_cache,
+        )
+        (evidence_dir / "governance.officer_ratification.json").write_text(_json.dumps({
+            "published_at": generated_at, "data": officer_ratification_evidence,
+        }, indent=2))
+        written.append("evidence/governance.officer_ratification")
+        console.print(
+            f"  [green]✓[/green] evidence/governance.officer_ratification.json "
+            f"({len(officer_ratification_evidence['pairs'])} pair(s))"
+        )
 
     file_hashes = {
         name: hashlib.sha256((output_dir / f"{name}.json").read_bytes()).hexdigest()
@@ -4943,6 +5027,22 @@ def main() -> None:
              "date — same override `council digest` already takes, for targeting a "
              "historical period (e.g. testing Renderer/Editor against real content "
              "instead of the current, possibly-quiet, week)",
+    )
+    p_draft.add_argument(
+        "--only",
+        help="Comma-separated snapshot names to actually build — skips every "
+             "other snapshot's evidence-chain work (the ~25 evidence_for_*() "
+             "calls are most of a full run's ~30 minutes, PDF parsing; "
+             "everything else is plain SQL and stays cheap either way). "
+             "Names match manifest.json's \"snapshots\" list, e.g. "
+             "'record_streets,dose,record_councillors,trends,tenure,"
+             "transparency,evidence/governance.incumbency,"
+             "evidence/transparency.confidential_share,"
+             "evidence/planning.objection_responsiveness' for everything "
+             "/record reads. Still clears the S7 gate (the battery itself "
+             "is never filtered) but the manifest only lists what was "
+             "actually built — debug speed only, never publish a run made "
+             "with this flag.",
     )
     p_draft.set_defaults(func=cmd_draft)
 
