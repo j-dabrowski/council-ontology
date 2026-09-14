@@ -56,9 +56,23 @@ class _MeetingSource:
     pages_stripped: list[str] | None
 
 
-def _pdf_pages(meeting: Meeting) -> list[str] | None:
-    """Per-page text of the meeting's PDF, or None if it isn't on disk."""
-    if not meeting.minutes_pdf_path:
+class EvidenceSourceCache(dict):
+    """A resolve_evidence() source_cache that also carries the
+    --fast-evidence flag (src/cli.py's cmd_draft). A dict subclass so every
+    existing caller -- 26 evidence_for_*() functions, plus
+    record_streets.py and privacy.py -- keeps working unchanged; only
+    resolve_evidence() itself reads .skip_pdf."""
+
+    def __init__(self, skip_pdf: bool = False):
+        super().__init__()
+        self.skip_pdf = skip_pdf
+
+
+def _pdf_pages(meeting: Meeting, skip_pdf: bool = False) -> list[str] | None:
+    """Per-page text of the meeting's PDF, or None if it isn't on disk (or
+    `skip_pdf` forces the minutes_text fallback below instead — the
+    --fast-evidence debug path, which skips every fitz.open() for the run)."""
+    if skip_pdf or not meeting.minutes_pdf_path:
         return None
     path = _REPO_ROOT / meeting.minutes_pdf_path
     if not path.exists():
@@ -72,8 +86,8 @@ def _pdf_pages(meeting: Meeting) -> list[str] | None:
         return None
 
 
-def _build_meeting_source(meeting: Meeting) -> _MeetingSource:
-    pages_raw = _pdf_pages(meeting)
+def _build_meeting_source(meeting: Meeting, skip_pdf: bool = False) -> _MeetingSource:
+    pages_raw = _pdf_pages(meeting, skip_pdf=skip_pdf)
     if pages_raw is not None:
         resolved_against = "pdf"
         raw_text = "\n".join(pages_raw)
@@ -217,10 +231,11 @@ def resolve_evidence(
 
     if source_cache is None:
         source_cache = {}
+    skip_pdf = getattr(source_cache, "skip_pdf", False)
 
     def _source_for(meeting_id: int) -> _MeetingSource:
         if meeting_id not in source_cache:
-            source_cache[meeting_id] = _build_meeting_source(meetings[meeting_id])
+            source_cache[meeting_id] = _build_meeting_source(meetings[meeting_id], skip_pdf=skip_pdf)
         return source_cache[meeting_id]
 
     entries: list[dict] = []

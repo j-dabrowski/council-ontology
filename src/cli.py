@@ -3475,6 +3475,21 @@ def cmd_draft(args) -> None:
             "never publish this run[/yellow]"
         )
 
+    # --fast-evidence: skips every fitz.open() this run by forcing
+    # resolve_evidence() to fall back to the DB's minutes_text column
+    # instead of re-parsing each meeting's PDF (the ~25 evidence_for_*()
+    # calls' dominant cost, per the --only comment above). Quotes for
+    # meetings with no minutes_text resolve to tier "paraphrase" and every
+    # quote's page comes back unrecorded — fine for a debug-speed run,
+    # never for a published one.
+    fast_evidence = bool(getattr(args, "fast_evidence", False))
+    if fast_evidence:
+        console.print(
+            "[yellow]--fast-evidence — skipping PDF parsing, quotes resolve "
+            "against minutes_text only (lower match tier, no page numbers) "
+            "— debug speed only, never publish this run[/yellow]"
+        )
+
     # Validated up front, same discipline as `council digest` — a malformed
     # --period-end is a user-input error (fail fast, sys.exit), not a
     # "digest unavailable" condition to swallow into a skip message below.
@@ -3506,7 +3521,8 @@ def cmd_draft(args) -> None:
     # _generate_snapshots and the officer_ratification one below it) so a
     # meeting several tests' entities share gets its PDF parsed once, not
     # once per test (docs/frontend/EVIDENCE_CHAIN_PLAN.md Step 6).
-    evidence_source_cache: dict = {}
+    from src.analysis.evidence import EvidenceSourceCache
+    evidence_source_cache = EvidenceSourceCache(skip_pdf=fast_evidence)
     written, battery = _generate_snapshots(
         session, council_id, output_dir, generated_at, evidence_source_cache,
         only=only,
@@ -5043,6 +5059,17 @@ def main() -> None:
              "is never filtered) but the manifest only lists what was "
              "actually built — debug speed only, never publish a run made "
              "with this flag.",
+    )
+    p_draft.add_argument(
+        "--fast-evidence", action="store_true", dest="fast_evidence",
+        help="Skip every meeting PDF re-parse (fitz.open()) this run — the "
+             "dominant cost of a full run's ~25 evidence_for_*() calls, per "
+             "the --only note above (measured ~1.6s/PDF, ~15 minutes across "
+             "the corpus). Quotes fall back to the DB's minutes_text column "
+             "instead (same match logic, no page numbers, meetings with no "
+             "minutes_text resolve to tier 'paraphrase'). Combine with "
+             "--only for the fastest inner loop. Debug speed only, never "
+             "publish a run made with this flag.",
     )
     p_draft.set_defaults(func=cmd_draft)
 

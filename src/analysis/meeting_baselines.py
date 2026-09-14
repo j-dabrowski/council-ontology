@@ -181,10 +181,18 @@ def compute_watch_feed(
         "validation_status": None, "coverage_ratio": None,
     }
 
+    # Shared across every run_meeting_digest() call in this loop so a query
+    # that only depends on something coarser than meeting_id — e.g.
+    # _t_transparency_meeting()'s body_types-keyed corpus lookup — runs
+    # once per distinct value instead of once per meeting. Measured: this
+    # loop alone took ~20 minutes over 506 meetings before this cache,
+    # almost entirely re-running the same handful of corpus-wide queries.
+    digest_pc: dict = {}
+
     rows: list[dict] = []
     for m in meetings:
         body_class = body_class_of(m.meeting_type, meeting_bodies)
-        claims = run_meeting_digest(session, council_id, m.id)
+        claims = run_meeting_digest(session, council_id, m.id, pc=digest_pc)
         tiers = derive_claim_tiers(claims, min_n=min_n, known_names=known_names)
 
         inv = meeting_inventory(session, council_id, m.id)

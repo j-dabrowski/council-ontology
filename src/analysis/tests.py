@@ -444,7 +444,7 @@ def _comparable_label(session, meeting_id: int, types: list[str]) -> str:
 
 def _t_transparency(session, council_id, pc, meeting_id=None) -> TestResult:
     if meeting_id is not None:
-        return _t_transparency_meeting(session, council_id, meeting_id)
+        return _t_transparency_meeting(session, council_id, meeting_id, pc)
     t = pc.get("transparency") or transparency_by_year(session, council_id)
     return TestResult(
         test_id="transparency.confidential_share",
@@ -465,15 +465,30 @@ def _t_transparency(session, council_id, pc, meeting_id=None) -> TestResult:
     )
 
 
-def _t_transparency_meeting(session, council_id, meeting_id) -> TestResult:
+def _t_transparency_meeting(session, council_id, meeting_id, pc=None) -> TestResult:
     """This meeting's own confidential share, next to the whole-corpus rate
     (never re-derived from the single meeting — see the module note by
     `transparency_by_year`'s meeting_id param). Institutional: a closed-item
-    count names no one."""
+    count names no one.
+
+    The `corpus` lookup below depends only on `body_types`, not on
+    `meeting_id` — every meeting sharing a body class (Cambridge's ~90%
+    full_council majority, in particular) recomputes the identical
+    corpus-wide query otherwise. Measured directly: `compute_watch_feed()`
+    calling this once per one of 506 meetings took ~20 minutes, almost
+    entirely `transparency_by_year(meeting_types=...)` re-run for the same
+    handful of distinct `body_types` values. `pc` (the same precomputed
+    dict `run_meeting_digest()`'s caller can now share across its whole
+    per-meeting loop) memoizes it by body_types instead.
+    """
     body_types = _same_body_meeting_types(session, meeting_id)
     comparable = _comparable_label(session, meeting_id, body_types)
     this = transparency_by_year(session, council_id, meeting_id=meeting_id)
-    corpus = transparency_by_year(session, council_id, meeting_types=body_types)
+    corpus_cache = (pc if pc is not None else {}).setdefault("_transparency_corpus_by_body_types", {})
+    cache_key = tuple(sorted(body_types))
+    if cache_key not in corpus_cache:
+        corpus_cache[cache_key] = transparency_by_year(session, council_id, meeting_types=body_types)
+    corpus = corpus_cache[cache_key]
     total = sum(y.total for y in this.years)
     conf = sum(y.confidential for y in this.years)
     pct = round(100 * conf / total, 1) if total else 0.0
@@ -1897,7 +1912,7 @@ def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> Test
     """[37] Public-question responsiveness — answered in the room, or 'taken on
     notice'? Deferral share by era, tracking the 2018–21 Inquiry shock."""
     if meeting_id is not None:
-        return _t_question_responsiveness_meeting(session, council_id, meeting_id)
+        return _t_question_responsiveness_meeting(session, council_id, meeting_id, pc)
     r = pc.get("pq_responsiveness") or public_question_responsiveness(session, council_id)
     series = [{"x": y.year, "y": y.on_notice_pct}
               for y in r.by_year if y.on_notice_pct is not None]
@@ -1926,13 +1941,22 @@ def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> Test
     )
 
 
-def _t_question_responsiveness_meeting(session, council_id, meeting_id) -> TestResult:
+def _t_question_responsiveness_meeting(session, council_id, meeting_id, pc=None) -> TestResult:
     """This meeting's own answered-vs-on-notice split, next to the
-    pre-Inquiry corpus baseline (never re-derived from this one meeting)."""
+    pre-Inquiry corpus baseline (never re-derived from this one meeting).
+
+    Same fix as _t_transparency_meeting's `corpus` lookup: it depends only
+    on `body_types`, not `meeting_id`, so `pc` memoizes it by body_types
+    instead of recomputing the identical corpus-wide query once per
+    meeting sharing that body class."""
     body_types = _same_body_meeting_types(session, meeting_id)
     comparable = _comparable_label(session, meeting_id, body_types)
     r = public_question_responsiveness(session, council_id, meeting_id=meeting_id)
-    corpus = public_question_responsiveness(session, council_id, meeting_types=body_types)
+    corpus_cache = (pc if pc is not None else {}).setdefault("_pq_responsiveness_corpus_by_body_types", {})
+    cache_key = tuple(sorted(body_types))
+    if cache_key not in corpus_cache:
+        corpus_cache[cache_key] = public_question_responsiveness(session, council_id, meeting_types=body_types)
+    corpus = corpus_cache[cache_key]
     era = _meeting_label(session, meeting_id)
     total = r.answered + r.on_notice
     if total == 0:
@@ -2057,7 +2081,9 @@ def run_test_battery(session: Session, council_id: int,
     return results
 
 
-def run_meeting_digest(session: Session, council_id: int, meeting_id: int) -> list[TestResult]:
+def run_meeting_digest(
+    session: Session, council_id: int, meeting_id: int, pc: dict | None = None,
+) -> list[TestResult]:
     """Run only the SCOPE_SINGLE_MEETING-eligible tests (_MEETING_BATTERY),
     scoped to one meeting (docs/frontend/PRODUCT_ROADMAP.md F2) — a review
     artifact for looking at what a single-meeting digest would actually say
@@ -2070,7 +2096,17 @@ def run_meeting_digest(session: Session, council_id: int, meeting_id: int) -> li
     `council publish` can reach; see that exclusion (and
     `tests/test_publish_gate.py`) for why, and `council meeting-digest`'s own
     docstring for the separate one-off manual preview path.
+
+    `pc`: an optional precomputed-value dict, same shape run_test_battery()
+    already threads through as `precomputed` — a caller looping this over
+    many meetings (compute_watch_feed()) can pass one shared dict so a
+    query that only depends on something coarser than meeting_id (e.g.
+    _t_transparency_meeting()'s body_types-keyed corpus lookup) is computed
+    once per distinct value, not once per meeting. Defaults to a fresh
+    dict per call, i.e. no sharing, for every other caller.
     """
+    if pc is None:
+        pc = {}
     registry = _load_registry_or_raise()
     results: list[TestResult] = []
     for row in registry:
@@ -2078,7 +2114,7 @@ def run_meeting_digest(session: Session, council_id: int, meeting_id: int) -> li
             continue
         fn = _GENERATORS[row.id]
         try:
-            results.append(fn(session, council_id, {}, meeting_id=meeting_id))
+            results.append(fn(session, council_id, pc, meeting_id=meeting_id))
         except Exception as exc:  # a broken test must not sink the digest
             results.append(TestResult(
                 test_id=getattr(fn, "__name__", "unknown"),

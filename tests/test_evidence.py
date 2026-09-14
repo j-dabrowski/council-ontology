@@ -43,6 +43,7 @@ from src.analysis.evidence import (
     evidence_for_transparency,
     evidence_for_unanimity_trend,
     resolve_evidence,
+    EvidenceSourceCache,
 )
 from src.analysis.queries import SponsorEdge, SponsorshipNetworkStats
 from src.models import (
@@ -264,6 +265,38 @@ def test_pdf_tier_and_page_when_pdf_is_on_disk(tmp_path, monkeypatch, session):
         "url": "https://example.test/minutes.pdf",
         "page": 2,
     }
+
+
+def test_fast_evidence_skips_pdf_even_when_present_on_disk(tmp_path, monkeypatch, session):
+    import src.analysis.evidence as evidence_mod
+
+    monkeypatch.setattr(evidence_mod, "_REPO_ROOT", tmp_path)
+    raw_dir = tmp_path / "data" / "raw" / "testcouncil"
+    raw_dir.mkdir(parents=True)
+    pdf_path = raw_dir / "minutes.pdf"
+    _write_pdf(pdf_path, ["Cover page, nothing relevant here.",
+                          "MOVED that the tender be accepted. CARRIED."])
+
+    def _forbid_open(*_args, **_kwargs):
+        raise AssertionError("fitz.open() must not be called under --fast-evidence")
+    monkeypatch.setattr(evidence_mod.fitz, "open", _forbid_open)
+
+    council_id = _council(session)
+    meeting_id = _meeting(
+        session, council_id, date(2024, 1, 1),
+        minutes_text="MOVED that the tender be accepted. CARRIED.",
+        minutes_pdf_path="data/raw/testcouncil/minutes.pdf",
+        minutes_pdf_url="https://example.test/minutes.pdf",
+    )
+    motion_id = _motion(session, meeting_id)
+    _evidence(session, meeting_id, "motions", motion_id, "MOVED that the tender be accepted.")
+
+    cache = EvidenceSourceCache(skip_pdf=True)
+    entries = resolve_evidence(session, [("motions", motion_id, "minutes_motion")], council_id, cache)
+    q = entries[0]["quotes"][0]
+    assert q["resolved_against"] == "minutes_text"
+    assert q["tier"] == "exact"
+    assert entry_page_is_none(entries[0])
 
 
 def test_falls_back_to_minutes_text_when_pdf_missing_from_disk(session):
@@ -607,9 +640,9 @@ def test_shared_source_cache_parses_a_meeting_once_across_two_calls(session, mon
     calls = {"n": 0}
     real_build = evidence_mod._build_meeting_source
 
-    def counting_build(meeting):
+    def counting_build(meeting, skip_pdf=False):
         calls["n"] += 1
-        return real_build(meeting)
+        return real_build(meeting, skip_pdf=skip_pdf)
 
     monkeypatch.setattr(evidence_mod, "_build_meeting_source", counting_build)
 
