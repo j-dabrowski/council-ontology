@@ -84,6 +84,16 @@ COUNCILS = {
         "short_name": "Cambridge",
         "scraper": "src.scraper.cambridge:CambridgeScraper",
     },
+    # Synthetic — no scraper, never real data. `synthetic: True` (not the
+    # name "testville") is what every gate keys on: `council publish`
+    # refuses it (src/publish_gate.py), and it's the only council
+    # selectable in the frontend's Draft mode (docs/SECOND_COUNCIL_PLAN.md
+    # Phase 0.4/2.5). Seed it locally with `council seed-fixture testville`
+    # (src/fixtures/testville.py) — never via `council scrape`.
+    "testville": {
+        "short_name": "Testville",
+        "synthetic": True,
+    },
 }
 
 
@@ -104,6 +114,46 @@ def _get_council(session, short_name: str):
             f"[red]Council '{short_name}' not found in DB. Run init first.[/red]"
         )
     return obj
+
+
+def cmd_seed_fixture(args) -> None:
+    """Seed a synthetic council's fixture corpus into the local DB
+    (docs/SECOND_COUNCIL_PLAN.md Phase 0.4) — no LLM, idempotent, and
+    refused for any council whose `COUNCILS` entry isn't flagged
+    `synthetic`. `key` names both the `COUNCILS` entry and the fixture
+    profile in `src/fixtures/testville.PROFILES` (currently only
+    "testville"). `data/council.db` is gitignored, so a seeded fixture in
+    a developer's local DB never travels — see docs/TESTING.md.
+    """
+    key = args.council
+    if key not in COUNCILS:
+        console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+    if not COUNCILS[key].get("synthetic"):
+        console.print(
+            f"[red]'{key}' is not a synthetic council — refusing to seed a fixture "
+            "over it. `council seed-fixture` only ever writes synthetic corpora "
+            "(see COUNCILS' `synthetic` flag).[/red]"
+        )
+        sys.exit(1)
+
+    from src.fixtures.testville import PROFILES, seed_profile
+    from src.storage.database import init_db, make_session_factory
+
+    if key not in PROFILES:
+        console.print(f"[red]No fixture profile named '{key}' in src.fixtures.testville.PROFILES[/red]")
+        sys.exit(1)
+
+    engine = init_db()
+    session = make_session_factory(engine)()
+    council_id, created = seed_profile(session, key)
+    session.close()
+    if created:
+        console.print(Panel(f"[green]Seeded[/green] {key} (council_id={council_id})", style="green"))
+    else:
+        console.print(
+            f"[yellow]'{key}' already has meetings — left unchanged (idempotent).[/yellow]"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -4083,11 +4133,21 @@ def cmd_publish(args) -> None:
     import shutil
     from datetime import datetime, timezone
 
-    from src.publish_gate import load_draft_manifest, verify_draft_integrity, check_clearance
+    from src.publish_gate import (
+        check_clearance,
+        check_not_synthetic,
+        load_draft_manifest,
+        verify_draft_integrity,
+    )
 
     key = args.council
     if key not in COUNCILS:
         console.print(f"[red]Unknown council: {key}[/red]")
+        sys.exit(1)
+
+    synthetic_check = check_not_synthetic(COUNCILS[key])
+    if not synthetic_check.cleared:
+        console.print(f"[red]Refusing to publish '{key}': {synthetic_check.reason}[/red]")
         sys.exit(1)
 
     draft_dir = Path(args.from_draft)
@@ -4243,6 +4303,14 @@ def main() -> None:
     p_scrape.add_argument("--since-year", type=int, metavar="YYYY", default=2020,
                           dest="since_year", help="Only include meetings from this year (default: 2020)")
     p_scrape.set_defaults(func=cmd_scrape)
+
+    # seed-fixture (docs/SECOND_COUNCIL_PLAN.md Phase 0.4) — synthetic
+    # councils only; refuses any COUNCILS entry not flagged `synthetic`.
+    p_seed_fixture = sub.add_parser(
+        "seed-fixture", help="Seed a synthetic council's fixture corpus into the local DB (no LLM)",
+    )
+    p_seed_fixture.add_argument("council", choices=list(COUNCILS))
+    p_seed_fixture.set_defaults(func=cmd_seed_fixture)
 
     # extract
     p_extract = sub.add_parser("extract", help="Extract already-downloaded PDFs",

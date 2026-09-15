@@ -30,6 +30,9 @@ jobs:
       - name: Ruff lint
         run: ruff check src/ scripts/ api/ tests/
 
+      - name: Static content gate (no hardcoded council-specific content)
+        run: python scripts/check_no_hardcoded_content.py
+
       - name: Run tests
         run: pytest tests/ -q
 

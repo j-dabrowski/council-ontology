@@ -14,10 +14,34 @@ import pytest
 from src.publish_gate import (
     DraftManifest,
     check_clearance,
+    check_not_synthetic,
     load_draft_manifest,
     snapshot_hash,
     verify_draft_integrity,
 )
+
+
+# ---------------------------------------------------------------------------
+# check_not_synthetic (docs/SECOND_COUNCIL_PLAN.md Phase 0.4) — the first of
+# three independent barriers keeping Testville out of production.
+# ---------------------------------------------------------------------------
+
+def test_synthetic_council_is_refused():
+    result = check_not_synthetic({"short_name": "Testville", "synthetic": True})
+    assert result.cleared is False
+    assert "synthetic" in result.reason
+
+
+def test_real_council_clears():
+    result = check_not_synthetic({"short_name": "Cambridge", "scraper": "src.scraper.cambridge:CambridgeScraper"})
+    assert result.cleared is True
+
+
+def test_missing_synthetic_flag_defaults_to_cleared():
+    """A registry entry that simply never mentions `synthetic` (every real
+    council today) must not be refused — the flag is opt-in, not opt-out."""
+    result = check_not_synthetic({"short_name": "SomeRealCouncil"})
+    assert result.cleared is True
 
 
 # ---------------------------------------------------------------------------

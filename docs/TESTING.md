@@ -105,6 +105,19 @@ elsewhere says to.
   `staging` isn't an escalation-PR merge). CLI tests drive `main()`
   directly via `monkeypatch.setattr("sys.argv", ...)` and `capsys`, no
   subprocess.
+- **`test_council_agnostic.py`** — docs/SECOND_COUNCIL_PLAN.md Phase 0.2:
+  runs the standard battery (`run_test_battery`) against two synthetic
+  councils built by `src/fixtures/testville.py` (a Cambridge-*shaped*
+  baseline, and Testville — every direction inverted) in one in-memory
+  DB, and asserts no leakage (no "Cambridge"/"Authorised Inquiry"/
+  out-of-span year in Testville's own output) and direction tracking (a
+  test whose `valence`/`grade` is genuinely derived from the data should
+  disagree between the two; one that doesn't is either non-directional or
+  a live B2 hardcode). Both checks carry their own explicit, annotated
+  allow-list — see the module docstring for what's on each and why; this
+  is the Phase 1.1 worklist, not a permanent exemption. Also checks the
+  registry/battery join has no orphan, and that every `data_ok=False`
+  result carries the real `_nodata()` shape.
 
 All of these test **pure functions or hermetic DB/source-parsing logic** —
 same inputs
@@ -220,7 +233,8 @@ ruff check src/ scripts/ api/ tests/ --fix   # auto-fixes what it safely can
 `.github/workflows/ci.yml` — two independent jobs, on `push` to `main` and
 every `pull_request`:
 
-- **`python`** — `pip install -e ".[dev]"`, `ruff check`, `pytest tests/ -q`.
+- **`python`** — `pip install -e ".[dev]"`, `ruff check`, the static
+  content gate below, `pytest tests/ -q`.
 - **`frontend`** — `npm ci`, `npm run lint` (eslint), `npm run build`
   (`tsc -b && vite build` — typecheck and production bundle in one step).
 
@@ -236,6 +250,7 @@ Reproduce either job locally:
 # python job
 pip install -e ".[dev]"
 ruff check src/ scripts/ api/ tests/
+python scripts/check_no_hardcoded_content.py
 pytest tests/ -q
 
 # frontend job
@@ -244,6 +259,33 @@ npm ci
 npm run lint
 npm run build
 ```
+
+### Static content gate (`scripts/check_no_hardcoded_content.py`)
+
+Added `docs/SECOND_COUNCIL_PLAN.md` Phase 0.3, in the python job (it reads
+`frontend/src/**` as plain text — no `npm install` needed). Extends the
+councillor-name hard rule in `docs/frontend/INTERACTIVITY.md` to the
+council-agnosticism failure mode Phase 0 exists to catch mechanically: a
+literal council name, a "Town/City/Shire of X" phrase, an era label
+("Authorised Inquiry", "pre-2018", "2018–21"), or a hardcoded corpus span
+("1995–2026"-shaped, "30-year", "N Years of") in `frontend/src/**` or
+`src/analysis/tests.py`. Neither `tsc`/`eslint` nor the draft/publish gate
+catch this class of bug — see that doc's hard-rule section for why.
+
+Line-based, not AST-based — deliberately simple for what this needs to be
+(a Phase-0 mechanical check, not a linter), which means it also flags a
+few code comments/docstrings that merely *mention* "Cambridge" without
+rendering it anywhere (annotated as such in the allow-list below, not a
+real leak) rather than missing them.
+
+Seeded with an explicit, annotated `ALLOWLIST` of every hit found against
+the tree at commit `70b80ee` (78 entries — the B2/B6 worklist, same shape
+as `tests/test_council_agnostic.py`'s two allow-lists) so this lands
+green rather than blocking CI on a backlog it exists to track. Phases 1
+(`src/analysis/tests.py`'s `era=` literals) and 3 (`frontend/src/**`)
+empty it file by file; the script itself fails loudly if an `ALLOWLIST`
+entry no longer matches, so a fix has to remove its own entry rather than
+leaving it to rot.
 
 ## Draft & publish workflow
 
@@ -875,6 +917,32 @@ any of these via GitHub Actions" section for the install/auth mechanics,
 which these two follow exactly (subscription auth only, `ANTHROPIC_API_KEY`
 never used). `resume.yml` needs neither — it only reads `run_state.json`
 off the pushed `staging` ref and calls `gh workflow run`.
+
+## Testville — the synthetic council
+
+`council seed-fixture testville` (`src/cli.py`, `src/fixtures/testville.py`,
+docs/SECOND_COUNCIL_PLAN.md Phase 0.4) seeds a fully synthetic second
+council into the local `data/council.db` — no LLM, idempotent, and
+refused for any council whose `COUNCILS` entry isn't flagged `synthetic`.
+It exists so second-council-ness is testable (`tests/test_council_agnostic.py`)
+before any real second corpus or LLM spend, and so it can be selected and
+browsed like any other council in the frontend's Draft mode. `council
+draft testville` then works exactly like a real council; `council publish
+testville` is structurally refused (`src/publish_gate.py`'s
+`check_not_synthetic`) — synthetic data reaching `frontend/public/data/`
+is the same class of failure as the 2026-08-06 hardcoded-names incident,
+invisible until deploy.
+
+**`data/council.db` is gitignored, so seeding Testville is a local action
+that never travels.** A seeded Testville in a developer's local DB is
+expected, not contamination — it sits alongside the real Cambridge corpus
+in the same tables, distinguished only by its own `council_id` and the
+`synthetic` registry flag. `pytest` never touches this file: `tests/
+test_council_agnostic.py` builds its own two synthetic councils
+(Testville plus a Cambridge-*shaped* baseline, pytest-only) into a fresh
+in-memory DB per run, calling the exact same `src.fixtures.testville.seed_profile`
+the CLI does — so the two can never quietly drift into different
+definitions of "the synthetic council."
 
 ## Adding coverage
 

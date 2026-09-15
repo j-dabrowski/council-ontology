@@ -96,6 +96,29 @@ def _latest_review_record(draft_dir: Path) -> Path | None:
     return max(candidates, key=_pass_num)
 
 
+def check_not_synthetic(registry_entry: dict) -> ClearanceResult:
+    """Refuse to publish a council whose `COUNCILS` registry entry
+    (`src/cli.py`) is flagged `synthetic` — Testville's first of three
+    independent barriers against reaching `frontend/public/data/`
+    (docs/SECOND_COUNCIL_PLAN.md Phase 0.4/2.5; the other two are the
+    Draft-only dev-server council listing and `getMode()`'s build-time
+    `"publish"` default). Keyed on the flag, not a name check, so a
+    future synthetic council doesn't need this function edited to be
+    covered.
+
+    Takes the registry entry directly (not `COUNCILS` + a key) so this
+    stays testable without importing `src.cli`, which pulls in the whole
+    CLI's dependency surface.
+    """
+    if registry_entry.get("synthetic"):
+        return ClearanceResult(
+            cleared=False,
+            reason="council registry entry is flagged synthetic — synthetic councils "
+                   "can never be published (this is data, not a convention)",
+        )
+    return ClearanceResult(cleared=True, reason="not a synthetic council")
+
+
 def check_clearance(
     draft_dir: Path,
     confirm_note: str | None,
