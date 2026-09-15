@@ -1,4 +1,11 @@
+import { useCouncilList } from "../councils";
+
 export function AboutPage() {
+  // Council-list-aware, not council-scoped (App.tsx keeps this route flat,
+  // outside "/c/:council") — this page describes the whole platform's
+  // coverage across every council, not one council's own dashboard.
+  const { list } = useCouncilList();
+
   return (
     <div className="static-page">
       <div className="static-hero">
@@ -21,11 +28,10 @@ export function AboutPage() {
           is anchored to a recognised governance standard.
         </p>
         <p>
-          The same battery runs on every council we analyse — so you can compare
-          Town of Cambridge against City of Fremantle against City of Perth on
-          identical criteria. A green result means the data actively supports
-          good practice. A critical result means a pattern the evidence warrants
-          explaining. Nothing asserts wrongdoing.
+          The same battery runs on every council we analyse — so any two councils
+          we cover can be compared on identical criteria. A green result means the
+          data actively supports good practice. A critical result means a pattern
+          the evidence warrants explaining. Nothing asserts wrongdoing.
         </p>
       </section>
 
@@ -124,8 +130,20 @@ export function AboutPage() {
       <section className="static-section">
         <h2 className="static-h2">Coverage</h2>
         <p>
-          Currently live: <strong>Town of Cambridge, Western Australia</strong>{" "}
-          (1995–2026 · 537 documents · 30-year corpus).
+          {list.length > 0 ? (
+            <>
+              Currently live:{" "}
+              {list.map((c, i) => (
+                <span key={c.key}>
+                  <strong>{c.display_name}</strong>
+                  {c.corpus_span ? ` (${c.corpus_span})` : ""}
+                  {i < list.length - 1 ? "; " : "."}
+                </span>
+              ))}
+            </>
+          ) : (
+            "Coverage is being finalised — check back shortly."
+          )}
         </p>
         <p>
           Expanding across Western Australia and nationally. If you represent a

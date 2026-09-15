@@ -138,6 +138,10 @@ function StreetSearch({ streets }: { streets: RecordStreetsStreet[] }) {
   }
 
   const showPanel = query.trim().length > 0 || selected !== null;
+  // A real street from this council's own data, not a fixed example name
+  // (SECOND_COUNCIL_PLAN.md Phase 3.2) — the one with the most applications
+  // on record, so it's likely to actually return a result if typed.
+  const exampleStreet = [...streets].sort((a, b) => b.n_applications - a.n_applications)[0]?.name;
 
   return (
     <div className="rec-search">
@@ -151,7 +155,7 @@ function StreetSearch({ streets }: { streets: RecordStreetsStreet[] }) {
           type="text"
           value={query}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="e.g. Cambridge Street"
+          placeholder={exampleStreet ? `e.g. ${exampleStreet}` : "Street name"}
           autoComplete="off"
         />
         {showPanel && (
