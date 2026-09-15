@@ -200,36 +200,48 @@ def test_no_leakage(batteries):
 # Annotated allow-list — the Phase 1.1 worklist (docs/SECOND_COUNCIL_PLAN.md
 # B2/1.1): every `test_id` here computes the SAME valence/grade for
 # baseline and Testville despite Testville's data being the deliberate
-# inverse. Two distinct root causes, both worth keeping visible rather
-# than silently working around:
+# inverse, because `valence`/`grade` is a literal in the TestResult
+# construction, never branched on the data at all (B2's actual finding).
 #
-# - "hardcoded" — `valence`/`grade` is a literal in the TestResult
-#   construction, never branched on the data at all (B2's actual finding).
-# - "cross-council leak" — a genuine, separate bug this fixture surfaced:
-#   `_t_big_dollar_leniency`/`_t_repeat_applicant` (src/analysis/tests.py)
-#   query `PlanningApplication` directly, with no join to Meeting/Motion
-#   and therefore no `council_id` filter at all — every council's report
-#   silently pools BOTH councils' applications. Confirmed by hand: with
-#   two councils seeded in one DB, both councils' `planning.*` numbers are
-#   byte-identical. Not on docs/SECOND_COUNCIL_PLAN.md's B1-B7 list — a
-#   new finding, not merely a hardcode, and arguably higher priority than
-#   the ordinary B2 fix: adding the derive-from-data branch this test
-#   already has does nothing while the underlying query is scoped to the
-#   wrong (both) councils.
+# `planning.big_dollar_leniency`/`planning.repeat_applicant` used to be
+# here too, for a different and more serious reason this fixture
+# surfaced (2026-09-15, not on docs/SECOND_COUNCIL_PLAN.md's B1-B7 list):
+# both queried `PlanningApplication` directly in `src/analysis/tests.py`
+# with no join to Meeting/Motion and therefore no `council_id` filter at
+# all, silently pooling BOTH councils' applications into every council's
+# report. Fixed by joining through Motion -> Meeting, same shape their
+# own meeting-scoped siblings already used; verified against the real
+# Cambridge corpus (`data/council.db`) that the fix only drops the small
+# number of applications with no linked motion (a pre-existing, already-
+# documented coverage gap), not a real number.
+#
+# `conflict.recusal_management` is a third kind of entry: as of this
+# session it's genuinely derived (branches on the real stay-and-vote
+# rate, not a literal), and both fixture profiles still land CRITICAL —
+# honestly, not a hardcode. Impartiality-type declared interests never
+# require stepping out (lawful — see `_MUST_LEAVE_TYPES`), and both
+# profiles' declared interests are ~50% impartiality/other by the
+# fixture's own even split, which drags the *blended* stay rate toward
+# "stay" regardless of either profile's must-leave era trend. That trend
+# is real and does diverge — see `conflict.recusal_trend`, which reports
+# it directly instead of blended — this test's own blended metric just
+# isn't sensitive to it at this fixture's declaration-type mix. A fixture
+# change worth making later, not a code correctness issue now.
 #
 # Every other battery test's valence/grade construction was checked by
 # hand against this exact list (`grep -n "valence=.* if " src/analysis/
-# tests.py` — five conditional constructions in the whole battery; three
-# clear this test on this fixture already: procurement.threshold_gaming,
-# procurement.incumbency, finance.eoy_spending).
+# tests.py` — seven conditional constructions in the whole battery as of
+# this session; six clear this test on this fixture: procurement.threshold_gaming,
+# procurement.incumbency, planning.big_dollar_leniency,
+# planning.repeat_applicant, finance.eoy_spending, conflict.recusal_trend).
 DIRECTION_ALLOW: dict[str, str] = {
     "procurement.concentration": "hardcoded: valence=NEUTRAL always",
     "procurement.decider_supplier_conflict": "hardcoded: valence=SUPPORTIVE always",
-    "conflict.recusal_management": "hardcoded: valence=CRITICAL always",
-    "conflict.recusal_trend": "hardcoded: valence=CRITICAL always",
+    "conflict.recusal_management": (
+        "derived, not hardcoded — both fixture profiles land the same side "
+        "of the blended stay-rate metric (see comment above)"
+    ),
     "conflict.delegate_body_conflict": "hardcoded: valence=SUPPORTIVE always",
-    "planning.big_dollar_leniency": "cross-council leak: no council_id filter (see comment above)",
-    "planning.repeat_applicant": "cross-council leak: no council_id filter (see comment above)",
     "planning.objection_responsiveness": "hardcoded: valence=SUPPORTIVE always",
     "governance.officer_ratification": "hardcoded: valence=CRITICAL always",
     "governance.power_spread": "hardcoded: valence=CRITICAL always",

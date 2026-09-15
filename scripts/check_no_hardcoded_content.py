@@ -64,89 +64,80 @@ _CHECKS: list[tuple[str, re.Pattern]] = [
 
 # Annotated allow-list — today's known offenders (docs/SECOND_COUNCIL_PLAN.md
 # B2/B6), seeded so this check lands green rather than blocking on a backlog
-# it exists to track. Keyed by (path relative to repo root, 1-indexed line
-# number); Phases 1 (src/analysis/tests.py) and 3 (frontend/src) empty this
-# file by file — shrink it as each hardcode is fixed, never widen a pattern
-# to stop matching instead.
-ALLOWLIST: dict[tuple[str, int], str] = {
-    ("frontend/src/components/AlignmentHeatmap.tsx", 49): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/CoMoverGraph.tsx", 33): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/CoMoverGraph.tsx", 61): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/CouncilHeader.tsx", 19): "B6: hardcoded council name/identity",
-    ("frontend/src/components/CouncilHeader.tsx", 25): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/CouncilHeader.tsx", 26): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/EngagementChart.tsx", 84): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/InterestsChart.tsx", 93): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/OverviewPanel.tsx", 28): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/OverviewPanel.tsx", 135): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/OverviewPanel.tsx", 158): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/OverviewPanel.tsx", 159): "B6: hardcoded council name/identity",
-    ("frontend/src/components/OverviewPanel.tsx", 163): "B6: hardcoded council name/identity",
-    ("frontend/src/components/PlanningObjectionsPanel.tsx", 26): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/PlanningTrendChart.tsx", 48): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/PlanningTrendChart.tsx", 49): "B6: hardcoded council name/identity",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 15): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 16): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 20): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 21): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 125): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 130): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 148): "B6: hardcoded council name/identity",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 150): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/QuestionResponsivenessPanel.tsx", 164): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/RecusalTrendPanel.tsx", 15): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/RecusalTrendPanel.tsx", 16): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/RecusalTrendPanel.tsx", 30): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/RecusalTrendPanel.tsx", 31): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/RecusalTrendPanel.tsx", 164): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/RecusalTrendPanel.tsx", 187): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/RecusalTrendPanel.tsx", 205): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/ScorecardPanel.tsx", 109): "B6: hardcoded council name/identity",
-    ("frontend/src/components/SponsorshipNetworkPanel.tsx", 214): "B6: hardcoded council name/identity",
-    ("frontend/src/components/TenurePanel.tsx", 94): "B6: hardcoded council name/identity",
-    ("frontend/src/components/TransparencyTrendPanel.tsx", 98): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/TransparencyTrendPanel.tsx", 138): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/TransparencyTrendPanel.tsx", 171): "B6: hardcoded council name/identity",
-    ("frontend/src/components/TrendsChart.tsx", 63): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/pages/AboutPage.tsx", 25): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/AboutPage.tsx", 127): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/AboutPage.tsx", 128): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/pages/AnalysisPage.tsx", 64): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/MapPage.tsx", 9): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/MapPage.tsx", 27): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/MapPage.tsx", 171): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/MethodPage.tsx", 676): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/OverviewPage.tsx", 25): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/RecordPage.tsx", 154): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/WatchPage.tsx", 212): "B6: hardcoded council name/identity",
-    ("src/analysis/tests.py", 228): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 302): "B6: hardcoded Authorised-Inquiry era label",
-    ("src/analysis/tests.py", 316): "B6: hardcoded Authorised-Inquiry era label",
-    ("src/analysis/tests.py", 392): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 409): "docstring prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
-    ("src/analysis/tests.py", 431): "docstring prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
-    ("src/analysis/tests.py", 461): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 475): "docstring prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
-    ("src/analysis/tests.py", 651): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 675): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 696): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 726): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 810): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 895): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1043): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1230): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1304): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1356): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1399): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1430): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1515): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1648): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1722): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1864): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", 1913): "docstring prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
-    ("src/analysis/tests.py", 1929): "B6: hardcoded council name/identity",
-    ("src/analysis/tests.py", 1935): "B6: hardcoded Authorised-Inquiry era label",
-    ("src/analysis/tests.py", 1936): "B6: hardcoded Authorised-Inquiry era label",
+# it exists to track. Keyed by (path relative to repo root, exact stripped
+# line text) rather than line number — Phase 1.1 edits `src/analysis/
+# tests.py` a line at a time, and a line-number key would go stale on every
+# unrelated edit above the line it names, not just when that specific line
+# is actually fixed. Phases 1 (src/analysis/tests.py) and 3 (frontend/src)
+# empty this file by file — shrink it as each hardcode is fixed, never widen
+# a pattern to stop matching instead.
+ALLOWLIST: dict[tuple[str, str], str] = {
+    ("frontend/src/components/AlignmentHeatmap.tsx", "<Card title=\"Voting Alignment Heatmap\" subtitle=\"Agreement rate on shared votes, 1995\u20132026\" valence=\"neutral\">"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/CoMoverGraph.tsx", "<Card title=\"Co-Mover Network\" subtitle=\"1995\u20132026\" valence=\"neutral\">"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/CoMoverGraph.tsx", "<Card title=\"Co-Mover Network\" subtitle=\"Active councillors, 1995\u20132026\" valence=\"neutral\">"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/CouncilHeader.tsx", "<option value=\"cambridge\">Cambridge</option>"): "B6: hardcoded council name/identity",
+    ("frontend/src/components/CouncilHeader.tsx", "Analysis of meeting minutes \u00b7 1995\u20132026 \u00b7{\" \"}"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/CouncilHeader.tsx", "<span className=\"data-note\">Full 30-year corpus</span>"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/EngagementChart.tsx", "Public engagement across the full 30-year corpus (1995\u20132026)."): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/InterestsChart.tsx", "<Card title=\"Interest Declarations by Councillor\" subtitle=\"1995\u20132026\" valence=\"neutral\">"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/OverviewPanel.tsx", "<>Four independent panels pivot on the 2018\u201321 Authorised Inquiry. Stepping out"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/OverviewPanel.tsx", "statLabel: \"confidential business across two decades (1995\u20132017) \u2014 a genuinely open baseline\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/OverviewPanel.tsx", "title=\"What 30 Years of Minutes Say \u2014 the Big Picture\""): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/OverviewPanel.tsx", "subtitle={`A synthesis across every panel below \u00b7 Town of Cambridge \u00b7 ${d.span} \u00b7 ${d.n_minutes} minutes`}"): "B6: hardcoded council name/identity",
+    ("frontend/src/components/OverviewPanel.tsx", "On the evidence, Cambridge is a <strong>broadly sound council with specific,"): "B6: hardcoded council name/identity",
+    ("frontend/src/components/PlanningObjectionsPanel.tsx", "subtitle=\"Community submissions vs planning decisions, 1995\u20132026\""): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/PlanningTrendChart.tsx", "title=\"Planning Approval Rate, 1995\u20132026\""): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/PlanningTrendChart.tsx", "subtitle=\"Cambridge's shift from permissive to restrictive planning\""): "B6: hardcoded council name/identity",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "pre: \"Before Inquiry\\n(pre-2018)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "inquiry: \"Inquiry\\n(2018\u201321)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "pre: \"before the Inquiry (pre-2018)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "inquiry: \"during the Inquiry (2018\u201321)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "<span className=\"planning-stat-label\">deferred before the Inquiry (pre-2018)</span>"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "<span className=\"planning-stat-label\">deferred during the Inquiry (2018\u201321)</span>"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "roughly <strong>tripled</strong> when Cambridge came under its state-appointed Authorised"): "B6: hardcoded council name/identity",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "to its pre-2018 baseline ({data.post_pct}% after). Most questions are still answered in the"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/QuestionResponsivenessPanel.tsx", "label={{ value: \"Authorised Inquiry\", position: \"insideTop\", fontSize: 10, fill: \"#f59e0b\" }} />"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/RecusalTrendPanel.tsx", "pre: \"Before Inquiry\\n(pre-2018)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/RecusalTrendPanel.tsx", "inquiry: \"Inquiry\\n(2018\u201321)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/RecusalTrendPanel.tsx", "pre: \"before the Inquiry (pre-2018)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/RecusalTrendPanel.tsx", "inquiry: \"during the Inquiry (2018\u201321)\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/RecusalTrendPanel.tsx", "<span className=\"planning-stat-label\">stepped out during the Inquiry (2018\u201321)</span>"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/RecusalTrendPanel.tsx", "state-appointed Authorised Inquiry and <strong>{data.financial_post_pct}%</strong> after it."): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/RecusalTrendPanel.tsx", "label={{ value: \"Authorised Inquiry\", position: \"insideTop\", fontSize: 10, fill: \"#f59e0b\" }} />"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/ScorecardPanel.tsx", "Cambridge's. A \"not computable\" row is part of that comparison too: it says this corpus's"): "B6: hardcoded council name/identity",
+    ("frontend/src/components/SponsorshipNetworkPanel.tsx", "2 \u00b7 The 2000s \"old guard\" \u2014 Cambridge's most entrenched sponsorship web ({data.oldguard_label})"): "B6: hardcoded council name/identity",
+    ("frontend/src/components/TenurePanel.tsx", "Cambridge matters for over <strong>{Math.floor(top?.years ?? 0)} years</strong>."): "B6: hardcoded council name/identity",
+    ("frontend/src/components/TransparencyTrendPanel.tsx", "<span className=\"planning-stat-label\">confidential, 1995\u20132017 average</span>"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/components/TransparencyTrendPanel.tsx", "label={{ value: \"Authorised Inquiry era\", position: \"insideTop\", fontSize: 10, fill: \"#f59e0b\" }} />"): "B6: hardcoded Authorised-Inquiry era label",
+    ("frontend/src/components/TransparencyTrendPanel.tsx", "with the state-appointed Authorised Inquiry into the Town of Cambridge. Years with fewer than"): "B6: hardcoded council name/identity",
+    ("frontend/src/components/TrendsChart.tsx", "Contestation rate across the full 30-year corpus (1995\u20132026)."): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/pages/AboutPage.tsx", "Town of Cambridge against City of Fremantle against City of Perth on"): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/AboutPage.tsx", "Currently live: <strong>Town of Cambridge, Western Australia</strong>{\" \"}"): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/AboutPage.tsx", "(1995\u20132026 \u00b7 537 documents \u00b7 30-year corpus)."): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("frontend/src/pages/AnalysisPage.tsx", "Source: Town of Cambridge council meeting minutes (public record) \u00b7"): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/MapPage.tsx", "\"Cambridge\": \"cambridge\","): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/MapPage.tsx", "// Score \u2192 fill colour.  Amber for Cambridge's current 6 supportive / 5 critical."): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/MapPage.tsx", "label: \"Town of Cambridge\","): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/MethodPage.tsx", "Source: Town of Cambridge council meeting minutes (public record) \u00b7"): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/OverviewPage.tsx", "Source: Town of Cambridge council meeting minutes (public record) \u00b7"): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/RecordPage.tsx", "placeholder=\"e.g. Cambridge Street\""): "B6: hardcoded council name/identity",
+    ("frontend/src/pages/WatchPage.tsx", "Source: Town of Cambridge council meeting minutes (public record) \u00b7"): "B6: hardcoded council name/identity",
+    ("src/analysis/tests.py", "era=\"1995\u20132026\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("src/analysis/tests.py", "# rather than assuming Cambridge's own rose-then-fell shape. A \u00b15pp"): "B6: hardcoded council name/identity",
+    ("src/analysis/tests.py", "title=\"Did recusal compliance track the Authorised Inquiry?\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("src/analysis/tests.py", "era=\"pre-2018 / 2018\u201321 / post-2022\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("src/analysis/tests.py", "era=\"1995\u20132026 \u00b7 DIRECTIONAL (thin n per body)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("src/analysis/tests.py", "meeting regardless of body. Cambridge's corpus is ~90% full_council, so a"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "A body-matched baseline is the comparable one but can be thin (Cambridge's"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "`meeting_id` \u2014 every meeting sharing a body class (Cambridge's ~90%"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "era=\"1995\u20132026, era-pooled\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("src/analysis/tests.py", "era=\"1999\u20132026 (mayors with dated terms)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("src/analysis/tests.py", "era=\"1996\u20132023 (electoral terms)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("src/analysis/tests.py", "era=\"1995\u20132026 (years with \u226530 carried motions)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("src/analysis/tests.py", "era=\"1995\u20132026 \u00b7 DIRECTIONAL (n<30)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
+    ("src/analysis/tests.py", "notice'? Deferral share by era, tracking the 2018\u201321 Inquiry shock.\"\"\""): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "verdict=(\"Cambridge answers most public questions live, but during and after its Authorised \""): "B6: hardcoded council name/identity",
+    ("src/analysis/tests.py", "base_rate=f\"{r.pre_pct}% deferred pre-2018 baseline\","): "B6: hardcoded Authorised-Inquiry era label",
 }
 
 
@@ -154,22 +145,25 @@ def _relpath(p: Path) -> str:
     return str(p.relative_to(REPO_ROOT))
 
 
-def scan() -> tuple[list[tuple[str, int, str, str]], set[tuple[str, int]]]:
-    """Returns (violations, allowlist_keys_still_hit)."""
+def scan() -> tuple[list[tuple[str, int, str, str]], set[tuple[str, str]]]:
+    """Returns (violations, allowlist_keys_still_hit). Violations carry the
+    current line number (for navigating to the hit); ALLOWLIST itself is
+    keyed by content, not line number — see its own comment for why."""
     violations: list[tuple[str, int, str, str]] = []
-    still_hit: set[tuple[str, int]] = set()
+    still_hit: set[tuple[str, str]] = set()
     for path in _SCAN_TARGETS:
         if not path.exists():
             continue
         rel = _relpath(path)
         for lineno, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            stripped = line.strip()
             for check_name, pattern in _CHECKS:
                 if pattern.search(line):
-                    key = (rel, lineno)
+                    key = (rel, stripped)
                     if key in ALLOWLIST:
                         still_hit.add(key)
                     else:
-                        violations.append((rel, lineno, check_name, line.strip()))
+                        violations.append((rel, lineno, check_name, stripped))
                     break  # one hit per line is enough to report/allow it
     return violations, still_hit
 
@@ -194,8 +188,8 @@ def main() -> int:
     if stale:
         ok = False
         print("\nALLOWLIST entries no longer match — remove them (Phase 1/3 progress):\n")
-        for rel, lineno in sorted(stale):
-            print(f"  {rel}:{lineno} — {ALLOWLIST[(rel, lineno)]}")
+        for rel, text in sorted(stale):
+            print(f"  {rel}: {text!r} — {ALLOWLIST[(rel, text)]}")
 
     if ok:
         print(f"check_no_hardcoded_content: clean ({len(_SCAN_TARGETS)} files scanned, "

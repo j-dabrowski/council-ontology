@@ -213,16 +213,25 @@ def _t_recusal_overall(session, council_id, pc, meeting_id=None) -> TestResult:
     # advisory flag: the two had drifted (hardcoded "~80x" vs. the panel's
     # live 83x for this draft's data).
     factor = round(s.declared_recusal_pct / s.baseline_recusal_pct) if s.baseline_recusal_pct > 0 else 0
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): the
+    # identify-disclose-manage chain only actually breaks at the manage
+    # limb if most declared-interest votes see the member stay anyway.
+    # Below 50% stay, disclosure is doing its job at both limbs.
+    managed = stay < 50.0
     return TestResult(
         test_id="conflict.recusal_management",
         title="Do councillors step out when they declare a conflict?",
         genre="Integrity / conflict (3.3)",
         principle="Nolan Integrity, Objectivity · CIPFA-A",
         question="When an interest is declared, is it *managed* — i.e. does the member recuse?",
-        valence=CRITICAL,
-        grade=G_CONCERN,
-        headline=f"Declaring lifts recusal {factor}×, but members still stay and vote {stay}% of the time",
-        verdict="Disclosure works at the first step; the identify–disclose–manage chain breaks at the manage limb.",
+        valence=SUPPORTIVE if managed else CRITICAL,
+        grade=G_STRENGTH if managed else G_CONCERN,
+        headline=(f"Declaring lifts recusal {factor}× and members step out {100 - stay}% of the time"
+                  if managed else
+                  f"Declaring lifts recusal {factor}×, but members still stay and vote {stay}% of the time"),
+        verdict=("Disclosure works at both limbs: most declared-interest votes see the member step out."
+                 if managed else
+                 "Disclosure works at the first step; the identify–disclose–manage chain breaks at the manage limb."),
         n=s.declared_total,
         base_rate=f"{s.baseline_recusal_pct}% recuse on a normal vote",
         era="1995–2026",
@@ -297,20 +306,49 @@ def _t_recusal_overall_meeting(session, council_id, meeting_id) -> TestResult:
 
 def _t_recusal_trend(session, council_id, pc) -> TestResult:
     r = pc.get("recusal_trend") or recusal_compliance_trend(session, council_id)
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): whether
+    # must-leave recusal actually rose or fell across the scrutiny window,
+    # rather than assuming Cambridge's own rose-then-fell shape. A ±5pp
+    # band around the pre-era baseline is treated as no clear trend.
+    declined = r.must_leave_post_pct < r.must_leave_pre_pct - 5
+    improved = r.must_leave_post_pct > r.must_leave_pre_pct + 5
+    thin_financial = r.financial_post_n < 5
+    if declined:
+        valence, grade = CRITICAL, G_CONCERN
+        headline = (f"Must-leave recusal fell from {r.must_leave_pre_pct}% before scrutiny to "
+                    f"{r.must_leave_post_pct}% after (peaked at {r.must_leave_inquiry_pct}% during it)")
+        financial_move = f"{r.financial_inquiry_pct}%→{r.financial_post_pct}% (n={r.financial_post_n})"
+        if thin_financial:
+            verdict = (f"Financial-only recusal (leaving is mandatory) moved {financial_move} over the "
+                       "same window — too few post-scrutiny financial declarations to confirm or rule "
+                       "out a confound from a shift in which interest type gets declared.")
+        elif r.financial_post_pct < r.financial_inquiry_pct - 5:
+            verdict = (f"Survives the obvious confound: financial-only recusal (leaving is mandatory) also "
+                       f"declined, {financial_move} — not just a shift in which interest type gets declared.")
+        else:
+            verdict = (f"Confounded by interest-type mix: financial-only recusal held at {financial_move}, "
+                       "so some of the blended decline is a shift in which interest type gets declared, "
+                       "not a change in compliance on a fixed type.")
+    elif improved:
+        valence, grade = SUPPORTIVE, G_STRENGTH
+        headline = (f"Must-leave recusal rose from {r.must_leave_pre_pct}% before scrutiny to "
+                    f"{r.must_leave_post_pct}% after")
+        verdict = "Compliance on the legally mandatory conflicts improved, not eroded, across the scrutiny window."
+    else:
+        valence, grade = NEUTRAL, G_OBSERVATION
+        headline = (f"Must-leave recusal held near {r.must_leave_pre_pct}% before scrutiny and "
+                    f"{r.must_leave_post_pct}% after — no clear trend")
+        verdict = "No material change in must-leave recusal compliance across the scrutiny window."
     return TestResult(
         test_id="conflict.recusal_trend",
         title="Did recusal compliance track the Authorised Inquiry?",
         genre="Integrity / conflict (3.3)",
         principle="Nolan Accountability · CIPFA-A",
         question="Did stepping out of serious conflicts change around external scrutiny?",
-        valence=CRITICAL,
-        grade=G_CONCERN,
-        headline=(f"Must-leave recusal rose to {r.must_leave_inquiry_pct}% during the Inquiry, "
-                  f"then fell to {r.must_leave_post_pct}% after"),
-        verdict=("Survives its own promoter: even within financial conflicts (leaving is mandatory) "
-                 f"recusal held at {r.financial_inquiry_pct}%→{r.financial_post_pct}% — the only "
-                 f"post-2022 financial declaration on record (n={r.financial_post_n}) is too few "
-                 "to assess a trend either way."),
+        valence=valence,
+        grade=grade,
+        headline=headline,
+        verdict=verdict,
         n=r.must_leave_pre_n + r.must_leave_inquiry_n + r.must_leave_post_n,
         base_rate="leaving is legally mandatory for financial/proximity interests",
         era="pre-2018 / 2018–21 / post-2022",
@@ -1050,9 +1088,16 @@ def _t_procurement_incumbency(session, council_id, pc) -> TestResult:
 def _t_big_dollar_leniency(session, council_id, pc, meeting_id=None) -> TestResult:
     if meeting_id is not None:
         return _t_big_dollar_leniency_meeting(session, council_id, meeting_id)
+    # council_id-scoped via the same Motion/Meeting join the meeting-scoped
+    # sibling below already uses — this query had none until 2026-09-15
+    # (found by tests/test_council_agnostic.py's direction-tracking check):
+    # a bare PlanningApplication scan pools every council sharing the DB.
     rows = (
         session.query(PlanningApplication.estimated_value, PlanningApplication.status)
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
         .filter(
+            Meeting.council_id == council_id,
             PlanningApplication.estimated_value.isnot(None),
             PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]),
         ).all()
@@ -1139,9 +1184,14 @@ def _t_big_dollar_leniency_meeting(session, council_id, meeting_id) -> TestResul
 
 
 def _t_repeat_applicant(session, council_id, pc) -> TestResult:
+    # council_id-scoped — same missing-join bug as _t_big_dollar_leniency
+    # just above, found the same way.
     rows = (
         session.query(PlanningApplication.applicant_name, PlanningApplication.status)
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
         .filter(
+            Meeting.council_id == council_id,
             PlanningApplication.applicant_name.isnot(None),
             PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]),
         ).all()

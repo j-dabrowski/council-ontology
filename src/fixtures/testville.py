@@ -780,6 +780,7 @@ def build_corpus(session: Session, council_id: int, profile: CorpusProfile) -> N
 
     if not profile.incumbency_overlap:
         _inject_no_overlap_big_dollar_firms(session, all_minutes, rng)
+    _inject_big_dollar_quartile_batch(session, all_minutes, sites, profile, rng)
 
     session.commit()
 
@@ -811,6 +812,67 @@ def _inject_no_overlap_big_dollar_firms(session: Session, all_minutes: list[Meet
                 awarded_to=firm, amount=amount, is_confidential=False,
             )
             session.add(t)
+
+
+def _inject_big_dollar_quartile_batch(session: Session, all_minutes: list[Meeting],
+                                      sites: list[Site], profile: CorpusProfile,
+                                      rng: random.Random) -> None:
+    """A dedicated, deterministic-count batch isolating
+    `planning.big_dollar_leniency`'s value-quartile signal from the
+    objector-count and applicant-frequency pressures the organic
+    per-meeting draw (above) also injects into every application. At this
+    fixture's organic scale (~90 applications, ~23/quartile) those other
+    two pressures are large enough relative to `big_dollar_gap` that plain
+    per-application sampling noise regularly pushed even a near-zero
+    `big_dollar_gap` past the 12pp "flat" threshold `_t_big_dollar_leniency`
+    checks — not a codebase bug, a fixture-scale one. Refusal *counts* are
+    computed once per band, not drawn per application, so the intended
+    signal survives regardless of corpus size. Every row here gets a
+    unique one-shot applicant name and zero objectors, so it adds no
+    cross-contamination into `planning.repeat_applicant` or
+    `planning.objection_responsiveness`'s own signals.
+    """
+    if not all_minutes:
+        return
+    bands = [(20_000, 150_000), (150_000, 500_000), (500_000, 1_200_000), (1_200_000, 4_000_000)]
+    n_per_band = 40
+    base_rate = 0.22
+    for qi, (lo, hi) in enumerate(bands):
+        value_frac = min(((lo + hi) / 2) / 4_000_000, 1.0)
+        value_pressure = (value_frac - 0.5) * (profile.big_dollar_gap / 100.0) * 4
+        refusal_p = max(0.03, min(0.9, base_rate + value_pressure))
+        n_refused = round(refusal_p * n_per_band)
+        statuses = (
+            [ApplicationStatus.REFUSED] * n_refused
+            + [ApplicationStatus.APPROVED] * (n_per_band - n_refused)
+        )
+        rng.shuffle(statuses)
+        for i, status in enumerate(statuses):
+            meeting = rng.choice(all_minutes)
+            site = rng.choice(sites)
+            value = rng.uniform(lo, hi)
+            mo = Motion(
+                meeting_id=meeting.id, item_number=f"DQ{qi}.{i}",
+                title=f"Development Application - {site.address}",
+                outcome=MotionOutcome.CARRIED, votes_for=1, votes_against=0,
+                tags="planning",
+            )
+            session.add(mo)
+            session.flush()
+            # No applicant_name: planning.repeat_applicant's own query
+            # filters `applicant_name.isnot(None)`, so a nameless row is
+            # structurally invisible to it — this batch's value-driven
+            # approval pattern can't dilute that test's own
+            # applicant-frequency signal. planning.big_dollar_leniency
+            # doesn't read applicant_name at all.
+            session.add(PlanningApplication(
+                motion_id=mo.id, site_id=site.id, reference_number=f"DQ{qi}-{i}",
+                applicant_name=None,
+                description=f"Proposed development at {site.address}",
+                application_date=meeting.meeting_date - timedelta(days=60),
+                decision_date=meeting.meeting_date, status=status,
+                estimated_value=round(value, 2),
+            ))
 
 
 def seed_profile(session: Session, profile_key: str) -> tuple[int, bool]:
