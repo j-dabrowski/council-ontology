@@ -128,6 +128,10 @@ ALLOWLIST: dict[tuple[str, str], str] = {
     ("src/analysis/tests.py", "era=\"pre-2018 / 2018\u201321 / post-2022\","): "B6: hardcoded Authorised-Inquiry era label",
     ("src/analysis/tests.py", "era=\"1995\u20132026 \u00b7 DIRECTIONAL (thin n per body)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("src/analysis/tests.py", "meeting regardless of body. Cambridge's corpus is ~90% full_council, so a"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "# Cambridge's specific 2000s-old-guard history, not derived from `s` at"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "# 1996-2023 electoral-term calendar and a hand-written era-by-era"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "# On a second council this renders the exact same Cambridge sentence"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "# against a corpus with real raw collisions (Cambridge has 2 \u2014 see"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
     ("src/analysis/tests.py", "A body-matched baseline is the comparable one but can be thin (Cambridge's"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
     ("src/analysis/tests.py", "`meeting_id` \u2014 every meeting sharing a body class (Cambridge's ~90%"): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
     ("src/analysis/tests.py", "era=\"1995\u20132026, era-pooled\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
@@ -136,8 +140,8 @@ ALLOWLIST: dict[tuple[str, str], str] = {
     ("src/analysis/tests.py", "era=\"1995\u20132026 (years with \u226530 carried motions)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("src/analysis/tests.py", "era=\"1995\u20132026 \u00b7 DIRECTIONAL (n<30)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("src/analysis/tests.py", "notice'? Deferral share by era, tracking the 2018\u201321 Inquiry shock.\"\"\""): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
-    ("src/analysis/tests.py", "verdict=(\"Cambridge answers most public questions live, but during and after its Authorised \""): "B6: hardcoded council name/identity",
-    ("src/analysis/tests.py", "base_rate=f\"{r.pre_pct}% deferred pre-2018 baseline\","): "B6: hardcoded Authorised-Inquiry era label",
+    ("src/analysis/tests.py", "# unconditional text were Cambridge-specific statistics this function"): "docstring/comment prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
+    ("src/analysis/tests.py", "# the verdict, which used to name Cambridge and its Authorised Inquiry"): "docstring/comment prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
 }
 
 

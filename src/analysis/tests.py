@@ -484,17 +484,27 @@ def _t_transparency(session, council_id, pc, meeting_id=None) -> TestResult:
     if meeting_id is not None:
         return _t_transparency_meeting(session, council_id, meeting_id, pc)
     t = pc.get("transparency") or transparency_by_year(session, council_id)
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): a spike is
+    # the peak year running meaningfully (>10pp) above the pre-era
+    # baseline, not an assumed shape.
+    spike = t.peak_pct > t.pre_era_pct + 10
     return TestResult(
         test_id="transparency.confidential_share",
         title="How much business is taken behind closed doors?",
         genre="Process / transparency (3.4)",
         principle="Nolan Openness · CIPFA-B",
         question="What share of decided items is confidential, and is it rising?",
-        valence=CRITICAL,
-        grade=G_CONCERN,
-        headline=f"{t.pre_era_pct}% confidential for two decades, spiking to {t.peak_pct}% in {t.peak_year}",
-        verdict=("A strong two-decade openness baseline with a single Inquiry-era spike that "
-                 "reverted; the concern is the scale and timing of that spike, not a habit of secrecy."),
+        valence=CRITICAL if spike else SUPPORTIVE,
+        grade=G_CONCERN if spike else G_SOUND,
+        headline=(f"{t.pre_era_pct}% confidential at baseline, spiking to {t.peak_pct}% in {t.peak_year}"
+                  if spike else
+                  f"{t.pre_era_pct}% confidential at baseline, holding near {t.peak_pct}% at its peak "
+                  f"({t.peak_year})"),
+        verdict=("A strong baseline openness rate with a spike that stands out from it; the concern "
+                 "is the scale and timing of that spike, not a habit of secrecy."
+                 if spike else
+                 "A consistently open baseline with no real spike — the peak year doesn't stand out "
+                 "meaningfully from the long-run rate."),
         base_rate=f"{t.pre_era_pct}% two-decade baseline",
         era="1995–2026",
         detail_panel="transparency",
@@ -557,17 +567,25 @@ def _t_officer_divergence(session, council_id, pc, meeting_id=None) -> TestResul
     total = len(pairs)
     diverged = sum(1 for p in pairs if p.diverged)
     comp = round((total - diverged) / total * 100, 1) if total else None
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): near-total
+    # ratification (>=85%) is the "chamber is theatre" concern; genuine,
+    # regular departure means the vote is where the decision actually gets
+    # made, not upstream in the officer report.
+    near_total = comp is not None and comp >= 85
     return TestResult(
         test_id="governance.officer_ratification",
         title="Does the chamber decide, or ratify its officers?",
         genre="Governance / culture (3.2)",
         principle="CIPFA-F · the 'visible contest is theatre' prior",
         question="How often does council depart from the officer recommendation?",
-        valence=CRITICAL,
-        grade=G_CONCERN,
+        valence=CRITICAL if near_total else SUPPORTIVE,
+        grade=G_CONCERN if near_total else G_STRENGTH,
         headline=f"Council adopted the officer recommendation {comp}% of the time",
         verdict=("Near-total ratification means the substantive decision is upstream, in who writes "
-                 "the recommendation — the most important caveat on every voting finding."),
+                 "the recommendation — the most important caveat on every voting finding."
+                 if near_total else
+                 "Council departs from the officer recommendation often enough that the vote itself, "
+                 "not just the officer report, is where the substantive decision gets made."),
         n=total,
         base_rate=f"{diverged} departures across {total} matched items",
         era="where officer recs exist (agenda-matched)",
@@ -664,6 +682,11 @@ def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
         [("Appointees", r.appointee_win_rate), ("Non-appointees", r.non_appointee_win_rate)],
         unit="%",
     )
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): a gap under
+    # 10pp is treated as not meaningfully distinguishable at this n; above
+    # it, appointees are winning materially more than the rest of the
+    # chamber — the capture this test looks for.
+    captured = abs(gap) > 10
     return TestResult(
         test_id="governance.oversight_body_capture",
         title="Is the council's own oversight function captured by its most powerful members?",
@@ -672,18 +695,23 @@ def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
         question="Does membership on the council's Audit Committee / CEO Performance Review "
                  "Committee skew toward the chamber's habitual winners, or draw broadly — "
                  "including from its habitual dissenters?",
-        valence=SUPPORTIVE,
-        grade=G_STRENGTH,
+        valence=CRITICAL if captured else SUPPORTIVE,
+        grade=G_CONCERN if captured else G_STRENGTH,
         headline=(f"{r.n_appointees} distinct councillors have ever sat on an oversight body; "
                   f"appointee win rate {r.appointee_win_rate}% (n={r.appointee_n}) vs "
                   f"non-appointee {r.non_appointee_win_rate}% (n={r.non_appointee_n}) — a "
-                  f"{gap} pp gap, statistically indistinguishable"),
-        verdict=(f"No self-appointment of the powerful to watch themselves: the oversight-body "
+                  f"{gap} pp gap" + (", captured by habitual winners" if captured else
+                                     ", not meaningfully distinguishable")),
+        verdict=(f"The oversight-body appointee list's win-rate spread ({lo}–{hi}%) skews toward the "
+                 f"chamber's habitual winners — the appointee/non-appointee gap is large enough that "
+                 "self-appointment of the powerful to watch themselves is a live concern here."
+                 if captured else
+                 f"No self-appointment of the powerful to watch themselves: the oversight-body "
                  f"appointee list's win-rate spread ({lo}–{hi}%) runs almost the full range of "
                  f"the chamber, from its most consistent winners among appointees down to some "
                  f"of the corpus's most frequent dissenters. CIPFA-A's internal audit/oversight-"
-                 f"function principle is met on this reading; era-pooled across 31 years, so a "
-                 f"modern-era shift could still hide in the aggregate."),
+                 f"function principle is met on this reading; era-pooled, so a modern-era shift "
+                 f"could still hide in the aggregate."),
         n=r.appointee_n + r.non_appointee_n,
         base_rate=f"non-appointee win rate {r.non_appointee_win_rate}% (n={r.non_appointee_n})",
         era="1995–2026, era-pooled",
@@ -696,18 +724,27 @@ def _t_oversight_body_capture(session, council_id, pc) -> TestResult:
 
 def _t_mayoral(session, council_id, pc) -> TestResult:
     m = pc.get("mayoral") or mayoral_agenda_setting(session, council_id)
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): chair capture
+    # means the Mayor's own motions draw meaningfully LESS dissent than
+    # backbench ones (deference at the gavel) — not merely "less", a real
+    # margin (5pp) below the noise floor of a single term's worth of votes.
+    captured = m.mayor_contest_pct < m.other_contest_pct - 5
     return TestResult(
         test_id="governance.chair_capture",
         title="Does the council fall in line behind the Mayor?",
         genre="Governance / culture (3.2)",
         principle="Nolan Accountability, Objectivity",
         question="Do the Mayor's own motions get an easier ride than backbench motions?",
-        valence=SUPPORTIVE,
-        grade=G_STRENGTH,
+        valence=CRITICAL if captured else SUPPORTIVE,
+        grade=G_CONCERN if captured else G_STRENGTH,
         headline=(f"Mayoral motions drew dissent {m.mayor_contest_pct}% of the time vs "
                   f"{m.other_contest_pct}% for backbench motions"),
-        verdict=("The opposite of chair capture: the chamber votes against its own Mayor *more*, not "
-                 "less — the most powerful member earns no deference at the gavel."),
+        verdict=("Deference at the gavel: the Mayor's own motions draw meaningfully less dissent "
+                 "than backbench ones — the chamber gives its most powerful member an easier ride."
+                 if captured else
+                 "The opposite of chair capture: the chamber votes against its own Mayor at least as "
+                 "often as backbench motions — the most powerful member earns no deference at the "
+                 "gavel."),
         n=m.mayor_moved,
         base_rate=f"{m.other_contest_pct}% backbench dissent rate",
         era="1999–2026 (mayors with dated terms)",
@@ -718,6 +755,18 @@ def _t_mayoral(session, council_id, pc) -> TestResult:
 
 def _t_sponsorship(session, council_id, pc) -> TestResult:
     s = pc.get("sponsorship") or sponsorship_network(session, council_id)
+    # KNOWN GAP, deeper than this test's valence (docs/SECOND_COUNCIL_PLAN.md
+    # 1.1 found this; not yet fixed — same class as B3's _RECUSAL_ERAS /
+    # _DELEGATE_BODIES): headline/verdict below are static prose describing
+    # Cambridge's specific 2000s-old-guard history, not derived from `s` at
+    # all, and the query underneath (sponsorship_network(), src/analysis/
+    # queries.py) hardcodes `_SPON_ERAS`/`_OLDGUARD`/`_STRUCT` — a specific
+    # 1996-2023 electoral-term calendar and a hand-written era-by-era
+    # narrative ("forming", "old guard consolidates", "fragmented", ...).
+    # On a second council this renders the exact same Cambridge sentence
+    # regardless of that council's own sponsorship structure. Needs the
+    # query layer redesigned before this test's own direction can be
+    # meaningfully derived — deferred, not attempted in this pass.
     return TestResult(
         test_id="governance.durable_faction",
         title="Is there a faction that survives across elections?",
@@ -741,6 +790,11 @@ def _t_tenure(session, council_id, pc) -> TestResult:
     t = pc.get("tenure") or councillor_tenure(session, council_id)
     longest = max(t.profiles, key=lambda p: p.years) if t.profiles else None
     n15 = sum(1 for p in t.profiles if p.years >= 15)
+    # No direction (docs/SECOND_COUNCIL_PLAN.md 1.1): a service-length
+    # distribution is a straight description of chamber composition, not
+    # a good/bad signal by itself — "stability" and "entrenchment risk"
+    # are two readings of the same number, not opposite outcomes a
+    # threshold could cleanly separate.
     return TestResult(
         test_id="governance.incumbency",
         title="Career councillors vs one-term members",
@@ -774,18 +828,29 @@ def _t_objection_dose(session, council_id, pc, meeting_id=None) -> TestResult:
     by = {b.label: b for b in d.buckets}
     lo = by.get("0")
     hi = by.get("5+")
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): a real climb
+    # from the no-objector to the 5+-objector bucket, not an assumed one.
+    # +10pp is a modest bar — this is meant to catch "flat or inverted",
+    # not to demand a dramatic swing.
+    lo_pct = lo.refusal_pct if lo else None
+    hi_pct = hi.refusal_pct if hi else None
+    responsive = lo_pct is not None and hi_pct is not None and hi_pct > lo_pct + 10
     return TestResult(
         test_id="planning.objection_responsiveness",
         title="Does the council respond to community objection?",
         genre="Process / engagement (3.4)",
         principle="CIPFA-B — meaningful stakeholder engagement",
         question="Does refusal rise with the number of residents objecting to an application?",
-        valence=SUPPORTIVE,
-        grade=G_SOUND,
-        headline=(f"Refusal climbs {lo.refusal_pct if lo else '—'}% → {hi.refusal_pct if hi else '—'}% "
+        valence=SUPPORTIVE if responsive else CRITICAL,
+        grade=G_SOUND if responsive else G_CONCERN,
+        headline=(f"Refusal {'climbs' if responsive else 'stays flat or inverted'} "
+                  f"{lo_pct if lo_pct is not None else '—'}% → {hi_pct if hi_pct is not None else '—'}% "
                   "from no objectors to 5+"),
         verdict=("A clean dose–response: a lone objection is noise, but coordinated numbers move "
-                 "outcomes — engagement works, even if a single letter does not."),
+                 "outcomes — engagement works, even if a single letter does not."
+                 if responsive else
+                 "Refusal doesn't track objector volume the way a working dose-response would "
+                 "predict — coordinated community numbers aren't moving outcomes here."),
         n=d.total_decided,
         base_rate=f"{lo.refusal_pct if lo else '—'}% refusal with no objectors",
         era="all decided applications",
@@ -831,6 +896,11 @@ def _t_tender_concentration(session, council_id, pc, meeting_id=None) -> TestRes
         return _t_tender_concentration_meeting(session, council_id, meeting_id)
     t = pc.get("tenders") or tender_concentration(session, council_id)
     red_pct = round(t.redacted_amount / t.total_amount * 100) if t.total_amount else 0
+    # No direction (docs/SECOND_COUNCIL_PLAN.md 1.1): concentration among
+    # a broad supplier base is ordinary for big civil contracts, not a
+    # good/bad signal on its own — the redacted share is the real
+    # watch-item, and that's already transparency.confidential_tender_size's
+    # job, not this test's.
     return TestResult(
         test_id="procurement.concentration",
         title="Where did the tender money go?",
@@ -906,6 +976,40 @@ def _t_decider_supplier_conflict(session, council_id, pc, meeting_id=None) -> Te
         [("Tender-award votes", r.declared_pct), ("Chamber base rate", r.base_declared_pct)],
         unit="%", highlight_label="Tender-award votes",
     )
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1 — this one found
+    # a live false claim, not just an unconditional literal): this used to
+    # say "zero genuine decider<->winner matches" unconditionally, even
+    # against a corpus with real raw collisions (Cambridge has 2 — see
+    # decider_supplier_conflict()'s own docstring on why a raw hit is a
+    # candidate for human review, not confirmed evidence, and is NEVER
+    # itself proof of a real relationship). A raw collision existing is
+    # reported honestly now instead of asserted away; whether it's a real
+    # relationship still isn't something this function can determine, so
+    # it's NEUTRAL/Observation rather than a false SUPPORTIVE or an
+    # unfounded CRITICAL. Institutional either way — no name enters this
+    # test's own text (the drill-down panel carries the names).
+    n_collisions = len(r.collisions)
+    if n_collisions == 0:
+        valence, grade = SUPPORTIVE, G_STRENGTH
+        headline = (f"Tender-award votes declare an interest just {r.declared_pct}% of the time "
+                    f"(below the {r.base_declared_pct}% chamber base) — no raw decider↔winner "
+                    f"surname matches across {r.named_awards} named awards")
+        verdict = ("The join that would expose procurement capture — a councillor tied to a tender "
+                   "winner with no declaration on the award — finds nothing. Converges with the "
+                   "supplier-side credits and the decider-side tests (recusal management) as a "
+                   "fourth independent procurement-integrity result — read within its coverage "
+                   "limit, since only separately-moved tender-award motions are visible, not "
+                   "consent-agenda'd awards.")
+    else:
+        valence, grade = NEUTRAL, G_OBSERVATION
+        headline = (f"Tender-award votes declare an interest just {r.declared_pct}% of the time "
+                    f"(below the {r.base_declared_pct}% chamber base) — {n_collisions} raw "
+                    f"decider↔winner surname collision(s) across {r.named_awards} named awards, "
+                    "unconfirmed")
+        verdict = (f"{n_collisions} raw surname collision(s) were found between a tender winner "
+                   "and a voting councillor — a name match against a councillor's surname, not a "
+                   "confirmed relationship; resolving one needs the underlying minute text (see "
+                   "the drill-down for names, firms, and provenance).")
     return TestResult(
         test_id="procurement.decider_supplier_conflict",
         title="Do tender deciders share an undeclared connection with the winner?",
@@ -913,20 +1017,10 @@ def _t_decider_supplier_conflict(session, council_id, pc, meeting_id=None) -> Te
         principle="Nolan Objectivity · CIPFA-A/F",
         question="When council awards a tender, is a conflict declared — and does the winner ever "
                  "match a councillor's known connections?",
-        valence=SUPPORTIVE,
-        grade=G_STRENGTH,
-        headline=(f"Tender-award votes declare an interest just {r.declared_pct}% of the time "
-                  f"(below the {r.base_declared_pct}% chamber base) — zero genuine decider↔winner "
-                  f"matches across {r.named_awards} named awards"),
-        verdict=("The join that would expose procurement capture — a councillor tied to a tender "
-                 "winner with no declaration on the award — finds nothing: both raw surname "
-                 "collisions resolve on provenance to unrelated businesses (a weed-spraying "
-                 "contractor, a street-sweeper manufacturer), not the councillors who share their "
-                 "surname. Converges with the supplier-side credits (no threshold-gaming spike, no "
-                 "entrenched incumbent among $92.7M/216 named firms) and the decider-side tests "
-                 "(recusal management) as a fourth independent procurement-integrity result — read "
-                 "within its coverage limit, since only separately-moved tender-award motions are "
-                 "visible, not consent-agenda'd awards."),
+        valence=valence,
+        grade=grade,
+        headline=headline,
+        verdict=verdict,
         n=r.votes_on_tender_motions,
         base_rate=f"{r.base_declared_pct}% chamber-wide declared-interest rate; "
                   f"{r.named_awards} named awards vs {r.surnames_tested} voting-councillor surnames",
@@ -1682,6 +1776,11 @@ def _t_engagement(session, council_id, pc, meeting_id=None) -> TestResult:
     series = [{"x": y.year, "y": y.total} for y in years if y.total]
     recent = [y for y in years if y.year >= 2016]
     recent_avg = round(sum(y.total for y in recent) / len(recent)) if recent else 0
+    # No direction (docs/SECOND_COUNCIL_PLAN.md 1.1) — sits under the
+    # DATA-LIMITED TESTS section header above by file-organisation
+    # accident, not because it's data-limited: raw participation volume
+    # has no good/bad reading on its own (it tracks the political
+    # temperature, per the verdict below, not a compliance signal).
     return TestResult(
         test_id="engagement.participation",
         title="How much does the public take part?",
@@ -1753,20 +1852,29 @@ def _t_confidential_tender_size(session, council_id, pc, meeting_id=None) -> Tes
         [("Confidential", round(conf_med / 1000)), ("Open", round(opn_med / 1000))],
         unit="k", highlight_label="Confidential",
     )
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): pricier is
+    # the concern (least-scrutinised contracts are the biggest); at or
+    # below the open median is the opposite finding. The rank-sum p-value
+    # and "~1 in 5 carries an amount" missingness clause from the old
+    # unconditional text were Cambridge-specific statistics this function
+    # doesn't compute — dropped rather than kept as an unsourced assertion
+    # (this test still declares itself DIRECTIONAL/thin-n either way).
+    pricier = ratio is not None and ratio > 1
     return TestResult(
         test_id="transparency.confidential_tender_size",
         title="Are the redacted tenders the bigger contracts?",
         genre="Transparency / financial (3.4 / 3.1)",
         principle="Nolan Openness · CIPFA-G — transparency/audit",
         question="Do confidential tenders carry higher dollar values than open ones?",
-        valence=CRITICAL,
-        grade=G_CONCERN,
+        valence=CRITICAL if pricier else SUPPORTIVE,
+        grade=G_CONCERN if pricier else G_SOUND,
         headline=(f"Confidential tenders run a ${conf_med:,} median vs ${opn_med:,} open "
                   f"(~{ratio}×) — DIRECTIONAL, n={len(conf)}"),
-        verdict=("The contracts residents can least scrutinise are systematically the largest "
-                 "(rank-sum p≈0.002); confidentiality is often lawful, so this is a visibility "
-                 "concern, not impropriety. Only ~1 in 5 confidential tenders carries an amount, "
-                 "and that missingness biases toward the null — the real gap is if anything larger."),
+        verdict=("The contracts residents can least scrutinise are systematically the largest — "
+                 "confidentiality is often lawful, so this is a visibility concern, not impropriety."
+                 if pricier else
+                 "Confidential tenders are not systematically the larger contracts — the visibility "
+                 "gap this test looks for isn't showing up here."),
         n=len(conf),
         base_rate=f"open-tender median ${opn_med:,} (n={len(opn)})",
         era="1995–2026 · DIRECTIONAL (n<30)",
@@ -1889,26 +1997,36 @@ def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResu
         theme_stat.append((name, n, c, round(rate / base, 2) if base else 0.0))
     dev = next(t for t in theme_stat if t[0] == "Named development")
     top = max(theme_stat, key=lambda t: t[3])
+    least_closed = min(theme_stat, key=lambda t: t[3])
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): the credit
+    # only holds if the contentious "named development" theme is actually
+    # the one closed least of all themes measured, not assumed to be.
+    dev_is_least_closed = dev[0] == least_closed[0]
     chart = _bars(
         [(t[0], round(t[2] / t[1] * 100, 1) if t[1] else 0) for t in theme_stat],
         unit="%", highlight_label="Named development",
     )
+    dev_pct = round(dev[2] / dev[1] * 100, 1) if dev[1] else 0.0
     return TestResult(
         test_id="transparency.confidential_topics",
         title="What subject matter gets closed — and is it the contentious stuff?",
         genre="Transparency (3.4)",
         principle="Nolan Openness · CIPFA-B — openness & engagement",
         question="Does confidentiality track lawful statutory grounds or politically contentious topics?",
-        valence=SUPPORTIVE,
-        grade=G_STRENGTH,
+        valence=SUPPORTIVE if dev_is_least_closed else CRITICAL,
+        grade=G_STRENGTH if dev_is_least_closed else G_CONCERN,
         headline=(f"Confidentiality concentrates on lawful grounds ({top[0]} {round(top[2]/top[1]*100)}%, "
-                  f"lift {top[3]}×); contentious 'named development' is the LEAST closed "
-                  f"({round(dev[2]/dev[1]*100, 1)}%, lift {dev[3]}×)"),
-        verdict=("Closure tracks the categories WA law exists to protect (commercial-in-confidence, "
+                  f"lift {top[3]}×); contentious 'named development' is "
+                  + (f"the LEAST closed ({dev_pct}%, lift {dev[3]}×)" if dev_is_least_closed else
+                     f"closed at {dev_pct}% (lift {dev[3]}×), not the least-closed theme")),
+        verdict=("Closure tracks the categories the law exists to protect (commercial-in-confidence, "
                  "tenders, HR, legal, land contracts); the most politically sensitive category — named "
-                 "developments — is the most OPEN, not the most closed. Whatever the [9] time-spike showed, "
-                 "the council did not use confidentiality to bury contentious planning. Keyword themes are "
-                 "coarse, and any error biases toward the null (over-counting development closures)."),
+                 "developments — is the most OPEN, not the most closed. Keyword themes are coarse, and "
+                 "any error biases toward the null (over-counting development closures)."
+                 if dev_is_least_closed else
+                 "Named developments — the most politically sensitive category — are closed at least "
+                 "as often as, or more than, other themes; confidentiality doesn't cleanly track lawful "
+                 "grounds over contentious topics here."),
         n=conf_total,
         base_rate=f"{round(base, 1)}% of all items confidential",
         era="1995–2026",
@@ -1966,23 +2084,45 @@ def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> Test
     r = pc.get("pq_responsiveness") or public_question_responsiveness(session, council_id)
     series = [{"x": y.year, "y": y.on_notice_pct}
               for y in r.by_year if y.on_notice_pct is not None]
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): whether
+    # deferral actually rose or fell across the scrutiny window, rather
+    # than an assumed "tripled, then held" shape — and no council named in
+    # the verdict, which used to name Cambridge and its Authorised Inquiry
+    # unconditionally.
+    worsened = r.post_pct > r.pre_pct + 5
+    improved = r.post_pct < r.pre_pct - 5
+    peak_clause = f" (peak {r.peak_pct}% in {r.peak_year})" if r.peak_pct is not None else ""
+    if worsened:
+        valence, grade = CRITICAL, G_CONCERN
+        headline = (f"Deferral of public questions rose from {r.pre_pct}% before scrutiny to "
+                    f"{r.inquiry_pct}% during it{peak_clause}, still elevated at {r.post_pct}% after")
+        verdict = ("Most public questions are answered live, but during and after the scrutiny window "
+                   "they were increasingly deferred to 'on notice' — a measurable dip in in-room "
+                   "accountability. 'On notice' is lawful and often appropriate, so this is a "
+                   "responsiveness concern, not impropriety; the classifier is conservative, so the "
+                   "deferral share is a floor.")
+    elif improved:
+        valence, grade = SUPPORTIVE, G_STRENGTH
+        headline = (f"Deferral of public questions fell from {r.pre_pct}% before scrutiny to "
+                    f"{r.post_pct}% after{peak_clause}")
+        verdict = "In-room accountability improved, not eroded, across the scrutiny window."
+    else:
+        valence, grade = NEUTRAL, G_OBSERVATION
+        headline = (f"Deferral of public questions held near {r.pre_pct}% before scrutiny and "
+                    f"{r.post_pct}% after — no clear trend")
+        verdict = "No material change in public-question responsiveness across the scrutiny window."
     return TestResult(
         test_id="engagement.question_responsiveness",
         title="Are residents' questions answered, or quietly 'taken on notice'?",
         genre="Process / engagement (3.4)",
         principle="CIPFA-B — openness & stakeholder engagement · Nolan Accountability",
         question="What share of public questions are deferred rather than answered in the meeting, over time?",
-        valence=CRITICAL,
-        grade=G_CONCERN,
-        headline=(f"Deferral of public questions tripled from {r.pre_pct}% before the Inquiry to "
-                  f"{r.inquiry_pct}% during it (peak {r.peak_pct}% in {r.peak_year}), holding at {r.post_pct}% after"),
-        verdict=("Cambridge answers most public questions live, but during and after its Authorised "
-                 "Inquiry it increasingly deferred them to 'on notice' — a measurable, Inquiry-tracking "
-                 "dip in in-room accountability. 'On notice' is lawful and often appropriate, and the "
-                 "2020 peak is partly COVID (remote meetings), so this is a responsiveness concern, not "
-                 "impropriety; the classifier is conservative, so the deferral share is a floor."),
+        valence=valence,
+        grade=grade,
+        headline=headline,
+        verdict=verdict,
         n=r.answered + r.on_notice,
-        base_rate=f"{r.pre_pct}% deferred pre-2018 baseline",
+        base_rate=f"{r.pre_pct}% deferred pre-scrutiny baseline",
         era="pre-2018 / 2018–21 / post-2022",
         data_ok=True,
         detail_panel="question-responsiveness",

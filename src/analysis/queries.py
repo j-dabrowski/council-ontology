@@ -2669,6 +2669,17 @@ def delegate_body_conflict(
                     oth_n += 1
                     oth_decl += bool(declared)
 
+        # docs/SECOND_COUNCIL_PLAN.md 1.1's "data_ok honesty" principle,
+        # applied at the query layer: a body with zero appointees AND zero
+        # matched motions isn't genuinely absent-with-no-data — it's
+        # absent, full stop (this council never had a delegate on it), so
+        # it should never reach the caller as a computed all-zero row that
+        # `_t_delegate_body_conflict` would otherwise render as a real
+        # (and misleadingly SUPPORTIVE) percentage. Skip it; the caller
+        # falls back to `_nodata` once `bodies` is genuinely empty.
+        if not by_cid and not motion_date:
+            continue
+
         decl_n = (
             session.query(func.count(InterestDeclaration.id))
             .join(Meeting, InterestDeclaration.meeting_id == Meeting.id)

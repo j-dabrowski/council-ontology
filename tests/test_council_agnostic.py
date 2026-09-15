@@ -132,7 +132,6 @@ LEAKAGE_ALLOW: dict[str, str] = {
     "procurement.concentration": "era hardcoded '1995-2026'",
     "procurement.decider_supplier_conflict": "era hardcoded '1995-2026'",
     "conflict.recusal_management": "era hardcoded '1995-2026'",
-    "conflict.delegate_body_conflict": "era hardcoded '1995-2026 . DIRECTIONAL...'",
     "governance.power_spread": "era hardcoded '2003-2026 (contested motions)'",
     "governance.oversight_body_capture": "era hardcoded '1995-2026, era-pooled'",
     "governance.unanimity_trend": "era hardcoded '1995-2026 (years with >=30 carried motions)'",
@@ -151,10 +150,6 @@ LEAKAGE_ALLOW: dict[str, str] = {
     "finance.eoy_spending": "era hardcoded '1995-2026'",
     "engagement.participation": "era hardcoded '1995-2026'",
     "engagement.deputation_dissent": "era hardcoded '1995-2026'",
-    "engagement.question_responsiveness": (
-        "verdict hardcoded, literally: 'Cambridge answers most public questions "
-        "live, but during and after its Authorised Inquiry...'"
-    ),
 }
 
 
@@ -235,30 +230,40 @@ def test_no_leakage(batteries):
 # procurement.incumbency, planning.big_dollar_leniency,
 # planning.repeat_applicant, finance.eoy_spending, conflict.recusal_trend).
 DIRECTION_ALLOW: dict[str, str] = {
-    "procurement.concentration": "hardcoded: valence=NEUTRAL always",
-    "procurement.decider_supplier_conflict": "hardcoded: valence=SUPPORTIVE always",
+    "procurement.concentration": "no direction by design (see comment in tests.py) — always NEUTRAL",
+    "procurement.decider_supplier_conflict": (
+        "derived, not hardcoded (branches on raw collision count) — this "
+        "fixture's synthetic surnames/firm names don't happen to collide, "
+        "so both profiles land SUPPORTIVE on the zero-collision branch"
+    ),
     "conflict.recusal_management": (
         "derived, not hardcoded — both fixture profiles land the same side "
         "of the blended stay-rate metric (see comment above)"
     ),
-    "conflict.delegate_body_conflict": "hardcoded: valence=SUPPORTIVE always",
-    "planning.objection_responsiveness": "hardcoded: valence=SUPPORTIVE always",
-    "governance.officer_ratification": "hardcoded: valence=CRITICAL always",
     "governance.power_spread": "hardcoded: valence=CRITICAL always",
-    "governance.oversight_body_capture": "hardcoded: valence=SUPPORTIVE always",
     "governance.unanimity_trend": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
-    "governance.chair_capture": "hardcoded: valence=SUPPORTIVE always",
-    "governance.durable_faction": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
-    "governance.incumbency": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
+    "governance.durable_faction": (
+        "deeper than a valence hardcode — headline/verdict are static Cambridge "
+        "prose, and the query layer itself hardcodes an era calendar + narrative "
+        "(see comment in tests.py); not attempted this pass"
+    ),
+    "governance.incumbency": "no direction by design (see comment in tests.py) — always NEUTRAL",
     "governance.freshman_effect": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
     "governance.election_cycle": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
     "governance.attendance": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
-    "transparency.confidential_share": "hardcoded: valence=CRITICAL always",
-    "transparency.confidential_tender_size": "hardcoded: valence=CRITICAL always",
-    "transparency.confidential_topics": "hardcoded: valence=SUPPORTIVE always",
-    "engagement.participation": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
+    "transparency.confidential_share": (
+        "derived, not hardcoded (branches on peak-vs-baseline spike size) — "
+        "the fixture gives both profiles the same inquiry-era confidentiality "
+        "bump (not one of Testville's inverted signals), so both land CRITICAL"
+    ),
+    "transparency.confidential_topics": (
+        "derived, not hardcoded (branches on whether 'named development' is "
+        "actually the least-closed theme) — the fixture gives both profiles "
+        "the same theme-closure shape (not one of Testville's inverted "
+        "signals), so both land SUPPORTIVE"
+    ),
+    "engagement.participation": "no direction by design (see comment in tests.py) — always NEUTRAL",
     "engagement.deputation_dissent": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
-    "engagement.question_responsiveness": "hardcoded: valence=CRITICAL always",
 }
 
 

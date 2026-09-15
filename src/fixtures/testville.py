@@ -95,7 +95,9 @@ class CorpusProfile:
     recusal_post: float = 0.35
     # governance
     officer_divergence_rate: float = 0.05   # share of paired agenda items council departs on
-    mayor_dissent_ratio: float = 0.55        # mayor-moved dissent odds vs backbench
+    mayor_dissent_ratio: float = 1.8          # mayor-moved dissent odds vs backbench (>1: mayor
+                                              # gets MORE dissent, no chair capture; <1: less,
+                                              # deference/capture)
     oversight_capture: bool = False          # audit-committee appointees skew to the chamber's winners
     # planning
     big_dollar_gap: float = 3.0          # pp spread in approval rate, low- vs high-value quartile
@@ -121,7 +123,7 @@ PROFILES: dict[str, CorpusProfile] = {
         eoy_spike=False,
         recusal_pre=0.75, recusal_inquiry=0.55, recusal_post=0.35,
         officer_divergence_rate=0.04,
-        mayor_dissent_ratio=0.5,
+        mayor_dissent_ratio=1.8,
         oversight_capture=False,
         big_dollar_gap=3.0,
         repeat_applicant_gap=2.0,
@@ -141,7 +143,7 @@ PROFILES: dict[str, CorpusProfile] = {
         eoy_spike=True,
         recusal_pre=0.35, recusal_inquiry=0.55, recusal_post=0.75,
         officer_divergence_rate=0.55,
-        mayor_dissent_ratio=1.8,
+        mayor_dissent_ratio=0.4,
         oversight_capture=True,
         big_dollar_gap=28.0,
         repeat_applicant_gap=26.0,
@@ -199,12 +201,15 @@ _TESTVILLE_APPLICANTS = [
 
 _TAGS = ["planning", "finance", "governance", "community", "infrastructure"]
 _CONF_THEMES = [
-    ("commercial-in-confidence contract negotiation", True),
-    ("tender and procurement panel arrangements", True),
-    ("staff remuneration and personnel matter", True),
-    ("legal advice and pending litigation", True),
-    ("land acquisition and property valuation", True),
-    ("named development structure plan", False),
+    # (description text, is_dev_theme) — is_dev_theme is True only for the
+    # "named development" entry; every generator below closes that theme
+    # LESS often than the rest (see _themed_conf_p).
+    ("commercial-in-confidence contract negotiation", False),
+    ("tender and procurement panel arrangements", False),
+    ("staff remuneration and personnel matter", False),
+    ("legal advice and pending litigation", False),
+    ("land acquisition and property valuation", False),
+    ("named development structure plan", True),
 ]
 
 
@@ -705,9 +710,21 @@ def build_corpus(session: Session, council_id: int, profile: CorpusProfile) -> N
         # items, other items — feeds transparency.confidential_share /
         # confidential_topics. -----------------------------------------------
         base_conf_p = 0.35 if 2018 <= year <= 2021 else 0.12
+
+        def _themed_conf_p(is_dev_theme: bool) -> float:
+            # "named development" is deliberately closed far less often than
+            # the others, both profiles — matches the shape the battery
+            # already asserts, and gives a real (not merely hardcoded)
+            # number to compute a lift statistic from. Applied uniformly
+            # across every confidential-flagged table (not just OtherItem)
+            # so transparency.confidential_topics' theme pool (Tender +
+            # OtherItem + DelegatedDecision) isn't diluted by tables that
+            # don't respect the distinction.
+            return min(base_conf_p * (0.3 if is_dev_theme else 1.3), 0.9)
+
         for _ in range(rng.randint(1, 3)):
-            theme, _dev = rng.choice(_CONF_THEMES)
-            is_conf = rng.random() < base_conf_p
+            theme, is_dev_theme = rng.choice(_CONF_THEMES)
+            is_conf = rng.random() < _themed_conf_p(is_dev_theme)
             dd = DelegatedDecision(
                 meeting_id=minutes.id, item_number=f"D{item_no + 1}",
                 description=f"Delegated decision regarding {theme}",
@@ -715,8 +732,8 @@ def build_corpus(session: Session, council_id: int, profile: CorpusProfile) -> N
             )
             session.add(dd)
         for _ in range(rng.randint(1, 2)):
-            theme, _dev = rng.choice(_CONF_THEMES)
-            is_conf = rng.random() < base_conf_p
+            theme, is_dev_theme = rng.choice(_CONF_THEMES)
+            is_conf = rng.random() < _themed_conf_p(is_dev_theme)
             session.add(BudgetItem(
                 meeting_id=minutes.id, item_number=f"B{item_no + 1}",
                 description=f"Budget variation regarding {theme}",
@@ -724,12 +741,7 @@ def build_corpus(session: Session, council_id: int, profile: CorpusProfile) -> N
             ))
         for _ in range(rng.randint(1, 2)):
             theme, is_dev_theme = rng.choice(_CONF_THEMES)
-            # "named development" theme is deliberately closed far less often
-            # than the others, both profiles — matches the shape the battery
-            # already asserts, and gives a real (not merely hardcoded) number
-            # to compute a lift statistic from.
-            p = base_conf_p * (0.3 if is_dev_theme else 1.3)
-            is_conf = rng.random() < min(p, 0.9)
+            is_conf = rng.random() < _themed_conf_p(is_dev_theme)
             session.add(OtherItem(
                 meeting_id=minutes.id, item_number=f"O{item_no + 1}",
                 item_type="Report", description=f"Report regarding {theme}",
