@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { CouncilHeader } from "../components/CouncilHeader";
+import { SiteFooter } from "../components/SiteFooter";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { BatteryTestCard } from "../components/BatteryTestPanel";
 import { useData } from "../hooks/useData";
@@ -207,19 +208,7 @@ export function WatchPage() {
           </div>
         )}
       </main>
-      <footer className="site-footer">
-        <p>
-          Source: Town of Cambridge council meeting minutes (public record) ·
-          Data extracted via Anthropic Claude ·{" "}
-          <a
-            href="https://www.cambridge.wa.gov.au/council/council-meetings"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            cambridge.wa.gov.au
-          </a>
-        </p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

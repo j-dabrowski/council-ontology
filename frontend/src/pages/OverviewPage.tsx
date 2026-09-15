@@ -3,6 +3,7 @@ import { LatestMeetingStrip } from "../components/LatestMeetingStrip";
 import { OverviewPanel } from "../components/OverviewPanel";
 import { RatingBand } from "../components/RatingBand";
 import { ScorecardPanel } from "../components/ScorecardPanel";
+import { SiteFooter } from "../components/SiteFooter";
 
 export function OverviewPage() {
   return (
@@ -24,19 +25,7 @@ export function OverviewPage() {
         </section>
       </main>
 
-      <footer className="site-footer">
-        <p>
-          Source: Town of Cambridge council meeting minutes (public record) ·
-          Data extracted via Anthropic Claude ·{" "}
-          <a
-            href="https://www.cambridge.wa.gov.au/council/council-meetings"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            cambridge.wa.gov.au
-          </a>
-        </p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

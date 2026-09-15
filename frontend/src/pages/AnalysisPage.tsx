@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import { CouncilHeader } from "../components/CouncilHeader";
+import { SiteFooter } from "../components/SiteFooter";
 import { Card, LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { SeverityChip } from "../components/SeverityChip";
 import { ObjectionResponse } from "../components/ObjectionResponse";
@@ -59,19 +60,7 @@ export function AnalysisPage() {
         ))}
       </main>
 
-      <footer className="site-footer">
-        <p>
-          Source: Town of Cambridge council meeting minutes (public record) ·
-          Data extracted via Anthropic Claude ·{" "}
-          <a
-            href="https://www.cambridge.wa.gov.au/council/council-meetings"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            cambridge.wa.gov.au
-          </a>
-        </p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
