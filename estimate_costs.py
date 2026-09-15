@@ -75,9 +75,11 @@ def get_pending_pdfs(session, council: Council, raw_dir: Path, manifest: dict) -
     return result
 
 
-def get_uninventoried_pdfs(raw_dir: Path, force: bool = False) -> list[Path]:
+def get_uninventoried_pdfs(raw_dir: Path, council_key: str, force: bool = False) -> list[Path]:
     """Return PDFs without an existing ok-status inventory file."""
-    inv_dir = Path("data/inventories")
+    # Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4) —
+    # matches scripts/inventory.py's own inventories directory.
+    inv_dir = Path("data") / council_key / "inventories"
     result = []
     for p in sorted(raw_dir.glob("*.pdf")):
         inv_path = inv_dir / f"{p.stem}.json"
@@ -214,7 +216,7 @@ def run(args) -> None:
         manifest_path = raw_dir / "manifest.json"
         manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
 
-        census = load_census()
+        census = load_census(f"data/{key}/census.json")
 
         force: bool = getattr(args, "force", False)
         inv_all = sorted(raw_dir.glob("*.pdf")) if raw_dir.exists() else []
@@ -223,7 +225,7 @@ def run(args) -> None:
         if force:
             inv_docs = inv_all
         else:
-            inv_docs = get_uninventoried_pdfs(raw_dir)
+            inv_docs = get_uninventoried_pdfs(raw_dir, key)
         inv_docs, _ = filter_pdfs_by_year(inv_docs, manifest, args.from_year, args.to_year)
         inv_estimate = estimate_inventory(inv_docs, census)
 

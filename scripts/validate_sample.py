@@ -12,10 +12,10 @@ Reads data/{council}_sample.json, then for each doc computes:
 All matching is done at query time against the live PDF text — the DB column
 char_offset is not used here (it is a best-effort convenience for UI only).
 
-Writes:
-  data/sample_validation/{stem}.json  per-doc JSON report
-  data/sample_validation/report.txt   human-readable summary + interpretation
-  data/sample_validation/paraphrase_report.txt  per-quote paraphrase detail
+Writes (namespaced per council, docs/SECOND_COUNCIL_PLAN.md Phase 1.3):
+  data/<council>/sample_validation/{stem}.json  per-doc JSON report
+  data/<council>/sample_validation/report.txt   human-readable summary + interpretation
+  data/<council>/sample_validation/paraphrase_report.txt  per-quote paraphrase detail
 
 Prints a rich table to stdout.
 
@@ -48,7 +48,10 @@ from src.validation.core import (
 
 console = Console()
 
-VALIDATION_DIR = DATA_DIR / "sample_validation"
+
+def validation_dir(council_key: str) -> Path:
+    # Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4).
+    return DATA_DIR / council_key / "sample_validation"
 
 STATUS_STYLE = {"PASS": "green", "REVIEW": "yellow", "FAIL": "red"}
 
@@ -343,7 +346,7 @@ def _write_report(results: list[dict], council: str, sample: dict) -> None:
                 for case in cases[:5]:
                     lines.append(case)
 
-    (VALIDATION_DIR / "report.txt").write_text("\n".join(lines) + "\n")
+    (validation_dir(council) / "report.txt").write_text("\n".join(lines) + "\n")
 
 
 def _write_paraphrase_report(results: list[dict], council: str, sample: dict) -> None:
@@ -405,7 +408,7 @@ def _write_paraphrase_report(results: list[dict], council: str, sample: dict) ->
 
         lines.append("")
 
-    (VALIDATION_DIR / "paraphrase_report.txt").write_text("\n".join(lines) + "\n")
+    (validation_dir(council) / "paraphrase_report.txt").write_text("\n".join(lines) + "\n")
 
 
 def _wrap(text: str, width: int) -> list[str]:
@@ -442,9 +445,10 @@ def run(args) -> None:
 
     console.print(f"\n[bold]Level 3c: validating {len(files)} sample docs for council '{council}'[/bold]")
 
-    census = load_census()
+    census = load_census(council)
     conn = sqlite3.connect(str(DATA_DIR / "council.db"))
-    VALIDATION_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir = validation_dir(council)
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     results: list[dict] = []
     for filename in files:
@@ -452,7 +456,7 @@ def run(args) -> None:
         result = validate_doc(conn, council, filename, census, max_chars=max_chars)
         results.append(result)
         stem = Path(filename).stem
-        (VALIDATION_DIR / f"{stem}.json").write_text(json.dumps(result, indent=2))
+        (out_dir / f"{stem}.json").write_text(json.dumps(result, indent=2))
         status = result.get("status", "?")
         style = STATUS_STYLE.get(status, "white")
         console.print(f" [{style}]{status}[/{style}]")
@@ -467,15 +471,16 @@ def run(args) -> None:
     # Structured verdict, read back by `council extraction-refine`/
     # `extraction-loop` rather than parsing report.txt — same "read
     # structured state, not console output" pattern as
-    # data/inventory_quality/latest_<council>.json for the inventory loop.
-    (VALIDATION_DIR / "summary.json").write_text(
+    # data/<council>/inventory_quality/latest_<council>.json for the
+    # inventory loop.
+    (out_dir / "summary.json").write_text(
         json.dumps(compute_verdict(results), indent=2)
     )
 
-    console.print(f"\n[dim]Per-doc JSON:        {VALIDATION_DIR}/*.json[/dim]")
-    console.print(f"[dim]Summary:             {VALIDATION_DIR}/report.txt[/dim]")
-    console.print(f"[dim]Paraphrase detail:   {VALIDATION_DIR}/paraphrase_report.txt[/dim]")
-    console.print(f"[dim]Structured verdict:  {VALIDATION_DIR}/summary.json[/dim]")
+    console.print(f"\n[dim]Per-doc JSON:        {out_dir}/*.json[/dim]")
+    console.print(f"[dim]Summary:             {out_dir}/report.txt[/dim]")
+    console.print(f"[dim]Paraphrase detail:   {out_dir}/paraphrase_report.txt[/dim]")
+    console.print(f"[dim]Structured verdict:  {out_dir}/summary.json[/dim]")
 
 
 def main() -> None:

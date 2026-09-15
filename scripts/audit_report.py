@@ -26,9 +26,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
 SAMPLE_FILE = ROOT / "data" / "cambridge_sample.json"
-CENSUS_FILE = ROOT / "data" / "census.json"
+# Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4) — this
+# script is otherwise still Cambridge-only by construction (SAMPLE_FILE
+# above, no `council` parameter threaded through); not generalised further
+# here, just kept pointed at real data after the migration.
+CENSUS_FILE = ROOT / "data" / "cambridge" / "census.json"
 DB_FILE = ROOT / "data" / "council.db"
-VALIDATION_DIR = ROOT / "data" / "validation"
+VALIDATION_DIR = ROOT / "data" / "cambridge" / "validation"
 SELECTION_FILE = ROOT / "data" / "audit_selection.json"
 DEFAULT_OUTPUT = ROOT / "data" / "audit_report.md"
 

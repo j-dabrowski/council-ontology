@@ -77,16 +77,16 @@ def test_every_populated_metric_carries_its_own_source_and_generated_at(session)
     )
 
     assert record["coverage"]["census_total"] == {
-        "value": 2, "source": "data/census.json",
+        "value": 2, "source": str(FULL_FIXTURE / "census.json"),
         "generated_at": "2020-01-01T00:00:00+00:00", "n": 2,
     }
     metrics = record["validation"]["metrics"]
     assert metrics["quote_completeness"]["full_corpus"] == {
-        "value": 0.85, "source": "data/validation/summary.json",
+        "value": 0.85, "source": str(FULL_FIXTURE / "validation" / "summary.json"),
         "generated_at": "2020-01-04T00:00:00+00:00", "n": 2,
     }
     assert metrics["quote_completeness"]["sample"] == {
-        "value": 0.9, "source": "data/sample_validation/summary.json",
+        "value": 0.9, "source": str(FULL_FIXTURE / "sample_validation" / "summary.json"),
         "generated_at": "2020-01-03T00:00:00+00:00", "n": 2,
     }
     # Definition/target are report.txt's own words, parsed not retyped.
@@ -109,12 +109,12 @@ def test_no_number_is_written_in_jsx_every_figure_traces_to_a_file(session):
     assert record["coverage"]["type_mix"]["value"] == {"Ordinary Council Meeting": 2}
     assert record["validation"]["full_corpus_split"] == {
         "pass": 1, "review": 1, "fail": 0, "errors": 0,
-        "source": "data/validation/summary.json",
+        "source": str(FULL_FIXTURE / "validation" / "summary.json"),
         "generated_at": "2020-01-04T00:00:00+00:00", "n": 2,
     }
     assert record["validation"]["sample_split"] == {
         "pass": 2, "review": 0, "fail": 0, "converged": True,
-        "source": "data/sample_validation/summary.json",
+        "source": str(FULL_FIXTURE / "sample_validation" / "summary.json"),
         "generated_at": "2020-01-03T00:00:00+00:00", "n": 2,
     }
     assert record["validation"]["schema_flags"]["value"] == 1
@@ -175,7 +175,7 @@ def test_missing_source_file_is_null_with_reason_not_a_zero(session):
     )
 
     assert record["extraction_batch"] == {
-        "value": None, "source": "data/extraction_errors.json",
+        "value": None, "source": str(FULL_FIXTURE / "extraction_errors.json"),
         "generated_at": None, "n": None, "reason": "source_missing",
     }
 

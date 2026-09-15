@@ -103,15 +103,18 @@ _MIN_STRIPPED_LEN = 15  # skip stripped matching for very short quotes (false po
 # Data loaders
 # ---------------------------------------------------------------------------
 
-def load_census() -> dict[str, dict]:
-    path = DATA_DIR / "census.json"
+def load_census(council: str) -> dict[str, dict]:
+    # Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4) —
+    # a bare data/census.json silently served whichever council last ran
+    # census, corrupting /method's provenance guarantee for the others.
+    path = DATA_DIR / council / "census.json"
     if not path.exists():
         raise FileNotFoundError(f"Census not found at {path}. Run 'council census' first.")
     return {d["filename"]: d for d in json.loads(path.read_text())["documents"]}
 
 
-def load_inventory(stem: str) -> dict | None:
-    path = DATA_DIR / "inventories" / f"{stem}.json"
+def load_inventory(council: str, stem: str) -> dict | None:
+    path = DATA_DIR / council / "inventories" / f"{stem}.json"
     return json.loads(path.read_text()) if path.exists() else None
 
 
@@ -445,7 +448,7 @@ def validate_doc(
     meeting_id = meeting["id"]
     quotes = get_quotes(conn, meeting_id)
     entity_counts = get_entity_counts(conn, meeting_id)
-    l1_inventory = load_inventory(stem)
+    l1_inventory = load_inventory(council, stem)
 
     source_text = _strip_page_headers(extract_pdf_text(council, filename))
     classified = _classify_quotes(quotes, source_text)

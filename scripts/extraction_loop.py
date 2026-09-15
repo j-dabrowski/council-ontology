@@ -50,7 +50,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent.parent
-VALIDATION_DIR = ROOT / "data" / "sample_validation"
+sys.path.insert(0, str(ROOT))
 
 
 def _run(cmd: list[str], label: str) -> None:
@@ -68,8 +68,10 @@ def run_validate_sample(council: str) -> dict:
     state, don't parse console/report text" pattern as
     scripts/inventory_loop.py's run_typology().
     """
+    from scripts.validate_sample import validation_dir
+
     _run(["council", "validate-sample", council], f"council validate-sample {council}")
-    summary_path = VALIDATION_DIR / "summary.json"
+    summary_path = validation_dir(council) / "summary.json"
     if not summary_path.exists():
         raise RuntimeError(f"{summary_path} missing after `council validate-sample` — did it run?")
     return json.loads(summary_path.read_text())
@@ -80,6 +82,8 @@ def run_extraction_refine(council: str) -> None:
 
 
 def escalate(council: str, max_passes: int, verdict: dict) -> None:
+    from scripts.validate_sample import validation_dir
+
     print(f"\n{'=' * 70}")
     print(f"ESCALATING — pass cap ({max_passes}) reached, not yet converged.")
     print(f"completeness={verdict['avg_completeness']*100:.1f}% "
@@ -87,7 +91,7 @@ def escalate(council: str, max_passes: int, verdict: dict) -> None:
           f"coverage={verdict['avg_coverage']*100:.2f}% "
           f"keyword_gap={verdict['avg_keyword_gap']*100:.1f}% "
           f"({verdict['passes']} PASS / {verdict['reviews']} REVIEW / {verdict['fails']} FAIL)")
-    print(f"A human needs to look at {VALIDATION_DIR}/report.txt directly.")
+    print(f"A human needs to look at {validation_dir(council)}/report.txt directly.")
     print(f"{'=' * 70}\n")
 
 

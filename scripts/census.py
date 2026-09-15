@@ -2,9 +2,9 @@
 """
 Level 0 census: text extraction + keyword/section scan across all council PDFs.
 
-Produces:
-  data/census.json         — per-document metadata, keyword counts, flags
-  data/census_summary.txt  — aggregate stats and outlier list
+Produces (namespaced per council, docs/SECOND_COUNCIL_PLAN.md Phase 1.3):
+  data/<council>/census.json         — per-document metadata, keyword counts, flags
+  data/<council>/census_summary.txt  — aggregate stats and outlier list
 
 Incremental by default: existing census entries are preserved and only new
 or changed PDFs are scanned. Use --force to rescan everything.
@@ -38,12 +38,16 @@ from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn
 console = Console()
 
 # ---------------------------------------------------------------------------
-# Paths
+# Paths — namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4):
+# a second council's census used to silently overwrite the first's at these
+# same two flat paths, corrupting /method's provenance guarantee for
+# whichever council ran last.
 # ---------------------------------------------------------------------------
 
-CENSUS_DIR = Path("data")
-CENSUS_PATH = CENSUS_DIR / "census.json"
-SUMMARY_PATH = CENSUS_DIR / "census_summary.txt"
+
+def _census_paths(council_key: str) -> tuple[Path, Path]:
+    d = Path("data") / council_key
+    return d / "census.json", d / "census_summary.txt"
 
 # ---------------------------------------------------------------------------
 # Keyword groups: {group: {display_name: regex_pattern}}
@@ -408,11 +412,13 @@ def run(args) -> None:
         console.print(f"[yellow]No PDFs found in {raw_dir}.[/yellow]")
         return
 
+    census_path, summary_path = _census_paths(council_key)
+
     # Load existing census
     existing: dict[str, dict] = {}
-    if CENSUS_PATH.exists() and not force:
+    if census_path.exists() and not force:
         try:
-            raw = json.loads(CENSUS_PATH.read_text())
+            raw = json.loads(census_path.read_text())
             for record in raw.get("documents", []):
                 existing[record["filename"]] = record
         except Exception:
@@ -430,7 +436,7 @@ def run(args) -> None:
     if not to_scan:
         console.print("[green]Census is up-to-date. Use --force to rescan.[/green]")
         records = list(existing.values())
-        _write_outputs(records, quiet)
+        _write_outputs(records, quiet, census_path, summary_path)
         return
 
     # Scan PDFs in parallel
@@ -473,11 +479,11 @@ def run(args) -> None:
         f"({'0' if not n_errors else str(n_errors)} errors)"
     )
 
-    _write_outputs(records, quiet)
+    _write_outputs(records, quiet, census_path, summary_path)
 
 
-def _write_outputs(records: list[dict], quiet: bool) -> None:
-    CENSUS_DIR.mkdir(parents=True, exist_ok=True)
+def _write_outputs(records: list[dict], quiet: bool, census_path: Path, summary_path: Path) -> None:
+    census_path.parent.mkdir(parents=True, exist_ok=True)
 
     # census.json
     output = {
@@ -485,16 +491,16 @@ def _write_outputs(records: list[dict], quiet: bool) -> None:
         "total": len(records),
         "documents": records,
     }
-    CENSUS_PATH.write_text(json.dumps(output, indent=2), encoding="utf-8")
+    census_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
 
     # census_summary.txt
     summary = _build_summary(records)
-    SUMMARY_PATH.write_text(summary, encoding="utf-8")
+    summary_path.write_text(summary, encoding="utf-8")
 
     if not quiet:
         console.print(f"\n{summary}")
-        console.print(f"\n[dim]→ {CENSUS_PATH}[/dim]")
-        console.print(f"[dim]→ {SUMMARY_PATH}[/dim]")
+        console.print(f"\n[dim]→ {census_path}[/dim]")
+        console.print(f"[dim]→ {summary_path}[/dim]")
 
 
 # ---------------------------------------------------------------------------

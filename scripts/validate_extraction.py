@@ -49,7 +49,9 @@ from src.validation.core import (
 
 console = Console()
 
-VALIDATION_DIR = DATA_DIR / "validation"
+def _validation_dir(council_key: str) -> Path:
+    # Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4).
+    return DATA_DIR / council_key / "validation"
 
 STATUS_STYLE = {"PASS": "green", "REVIEW": "yellow", "FAIL": "red"}
 
@@ -188,16 +190,17 @@ def validate_files(
     Writes per-doc JSON to data/validation/{stem}.json.
     Skips docs that already have a report unless force=True.
     """
-    census = load_census()
+    census = load_census(council_key)
     conn = sqlite3.connect(str(DATA_DIR / "council.db"))
-    VALIDATION_DIR.mkdir(parents=True, exist_ok=True)
+    validation_dir = _validation_dir(council_key)
+    validation_dir.mkdir(parents=True, exist_ok=True)
 
     results: list[dict] = []
     counts: dict[str, int] = {"PASS": 0, "REVIEW": 0, "FAIL": 0}
 
     for filename in filenames:
         stem = Path(filename).stem
-        out_path = VALIDATION_DIR / f"{stem}.json"
+        out_path = validation_dir / f"{stem}.json"
 
         if not force and out_path.exists():
             result = json.loads(out_path.read_text())
@@ -368,7 +371,7 @@ def _write_summary(results: list[dict], council: str) -> None:
         schema_flagged = [r for r in valid if r.get("schema_completeness", {}).get("flags")]
         summary["schema_flags_count"] = len(schema_flagged)
         summary["schema_flagged_files"] = [r["filename"] for r in schema_flagged]
-    (VALIDATION_DIR / "summary.json").write_text(json.dumps(summary, indent=2))
+    (_validation_dir(council) / "summary.json").write_text(json.dumps(summary, indent=2))
 
 
 # ---------------------------------------------------------------------------
@@ -406,8 +409,9 @@ def run(args) -> None:
     _print_table(results)
     _write_summary(results, council)
 
-    console.print(f"\n[dim]Per-doc JSON: {VALIDATION_DIR}/*.json[/dim]")
-    console.print(f"[dim]Summary:      {VALIDATION_DIR}/summary.json[/dim]")
+    validation_dir = _validation_dir(council)
+    console.print(f"\n[dim]Per-doc JSON: {validation_dir}/*.json[/dim]")
+    console.print(f"[dim]Summary:      {validation_dir}/summary.json[/dim]")
 
 
 def main() -> None:

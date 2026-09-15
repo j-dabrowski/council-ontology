@@ -6,14 +6,15 @@ Should be run after Level 1 inventory is complete, before making Level 2 schema
 decisions. Surfaces what the corpus actually contains so schema gaps are identified
 before committing to a prompt revision and full extraction run.
 
-Reads all data/inventories/*.json files and produces a report covering:
+Reads all data/<council>/inventories/*.json files (docs/SECOND_COUNCIL_PLAN.md
+Phase 1.3) and produces a report covering:
   - Meeting type distribution and average entity counts per type
   - Entity counts by decade
   - Prevalence and content of the other_content free-text field
   - Section heading patterns (common + rare — rare ones are potential schema gaps)
   - Docs with cross-reference flags from census comparison
 
-Output: printed to stdout and written to data/typology_review.txt
+Output: printed to stdout and written to data/<council>/<council>_typology_review.txt
 
 Usage:
     python scripts/inventory_typology.py cambridge
@@ -32,10 +33,22 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-INVENTORIES_DIR = Path("data/inventories")
-OUTPUT_DIR = Path("data")
-QUALITY_DIR = Path("data/inventory_quality")
 DATA_ENRICHMENT_PATH = Path("docs/pipeline/DATA_ENRICHMENT.md")
+
+
+def _inventories_dir(council_key: str) -> Path:
+    # Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4) —
+    # matches scripts/inventory.py's own _inventories_dir().
+    return Path("data") / council_key / "inventories"
+
+
+def _output_dir(council_key: str) -> Path:
+    return Path("data") / council_key
+
+
+def _quality_dir(council_key: str) -> Path:
+    return Path("data") / council_key / "inventory_quality"
+
 
 # other_content rate at or below this → inventory is good enough; show extraction prompt
 QUALITY_THRESHOLD = 0.20
@@ -44,8 +57,9 @@ QUALITY_THRESHOLD = 0.20
 # Load
 # ---------------------------------------------------------------------------
 
-def load_inventories(limit: int | None = None) -> list[dict]:
-    paths = [p for p in INVENTORIES_DIR.glob("*.json") if p.name != "summary.json"]
+def load_inventories(council_key: str, limit: int | None = None) -> list[dict]:
+    inventories_dir = _inventories_dir(council_key)
+    paths = [p for p in inventories_dir.glob("*.json") if p.name != "summary.json"]
     if limit is not None:
         # Most recently modified first so --limit N matches the last --limit N inventory run
         paths = sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)[:limit]
@@ -491,21 +505,23 @@ def _compute_quality(ok: list[dict]) -> dict:
 
 
 def _save_quality(quality: dict, council_key: str) -> None:
-    QUALITY_DIR.mkdir(parents=True, exist_ok=True)
+    quality_dir = _quality_dir(council_key)
+    quality_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    (QUALITY_DIR / f"quality_{council_key}_{ts}.json").write_text(
+    (quality_dir / f"quality_{council_key}_{ts}.json").write_text(
         json.dumps(quality, indent=2), encoding="utf-8"
     )
-    (QUALITY_DIR / f"latest_{council_key}.json").write_text(
+    (quality_dir / f"latest_{council_key}.json").write_text(
         json.dumps(quality, indent=2), encoding="utf-8"
     )
 
 
 def _load_quality_history(council_key: str) -> list[dict]:
-    if not QUALITY_DIR.exists():
+    quality_dir = _quality_dir(council_key)
+    if not quality_dir.exists():
         return []
     records = []
-    for p in QUALITY_DIR.glob(f"quality_{council_key}_*.json"):
+    for p in quality_dir.glob(f"quality_{council_key}_*.json"):
         try:
             records.append(json.loads(p.read_text(encoding="utf-8")))
         except Exception:
@@ -685,15 +701,15 @@ def compute_improvement_prompt(council_key: str, limit: int | None = None) -> tu
     rather than parsing console output or the human-facing report file.
     Side-effect-free: does not write the quality file or the report.
     """
-    records = load_inventories(limit=limit)
+    records = load_inventories(council_key, limit=limit)
     ok = [r for r in records if r.get("status") == "ok"]
     if not ok:
         return {}, None
-    all_paths = [p for p in INVENTORIES_DIR.glob("*.json") if p.name != "summary.json"]
+    all_paths = [p for p in _inventories_dir(council_key).glob("*.json") if p.name != "summary.json"]
     quality = _compute_quality(ok)
     if quality["other_content_rate"] <= QUALITY_THRESHOLD:
         return quality, None
-    output_path = OUTPUT_DIR / f"{council_key}_typology_review.txt"
+    output_path = _output_dir(council_key) / f"{council_key}_typology_review.txt"
     prompt_text = _generate_schema_prompt(ok, output_path, corpus_size=len(all_paths))
     return quality, prompt_text
 
@@ -708,19 +724,22 @@ def run(args) -> None:
         _print_quality_history(council_key)
         return
 
+    inventories_dir = _inventories_dir(council_key)
+    output_dir = _output_dir(council_key)
+
     # Count full corpus size before applying limit (for correct threshold calculations)
-    all_paths = [p for p in INVENTORIES_DIR.glob("*.json") if p.name != "summary.json"]
+    all_paths = [p for p in inventories_dir.glob("*.json") if p.name != "summary.json"]
     full_corpus_size = len(all_paths)
 
-    records = load_inventories(limit=limit)
+    records = load_inventories(council_key, limit=limit)
     ok = [r for r in records if r.get("status") == "ok"]
     errors = [r for r in records if r.get("status") != "ok"]
 
     if not ok:
-        print(f"No inventory data found in {INVENTORIES_DIR}. Run 'council inventory {council_key}' first.")
+        print(f"No inventory data found in {inventories_dir}. Run 'council inventory {council_key}' first.")
         return
 
-    output_path = OUTPUT_DIR / f"{council_key}_typology_review.txt"
+    output_path = output_dir / f"{council_key}_typology_review.txt"
 
     quality = _compute_quality(ok)
     _save_quality(quality, council_key)
@@ -755,7 +774,7 @@ def run(args) -> None:
 
     # File gets the full report
     file_sections = header + common_sections + _section_other_content(ok, brief=False) + _section_schema_prompt(prompt_text)
-    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
     output_path.write_text("\n".join(file_sections), encoding="utf-8")
 
     # Console: status + quality score + next steps + prompt box

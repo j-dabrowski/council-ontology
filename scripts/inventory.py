@@ -11,9 +11,9 @@ chars, the full text is used. For longer documents, the middle section is omitte
 LLM responses are cached by document hash + prompt version in .cache/llm_responses/.
 Re-running with the same prompt version costs nothing for already-cached documents.
 
-Outputs:
-  data/inventories/{stem}.json   — per-document inventory
-  data/inventories/summary.json  — corpus-wide aggregate
+Outputs (namespaced per council, docs/SECOND_COUNCIL_PLAN.md Phase 1.3):
+  data/<council>/inventories/{stem}.json   — per-document inventory
+  data/<council>/inventories/summary.json  — corpus-wide aggregate
 
 Usage:
     python scripts/inventory.py cambridge
@@ -61,9 +61,18 @@ INVENTORY_MODEL = "claude-haiku-4-5-20251001"
 PROMPT_VERSION = "inventory-v3"
 MAX_CONCURRENT = 20
 
-INVENTORIES_DIR = Path("data/inventories")
 CACHE_DIR = Path(".cache/llm_responses")
-CENSUS_PATH = Path("data/census.json")
+
+
+def _inventories_dir(council_key: str) -> Path:
+    # Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4) —
+    # same reasoning as census.py's _census_paths().
+    return Path("data") / council_key / "inventories"
+
+
+def _census_path(council_key: str) -> Path:
+    return Path("data") / council_key / "census.json"
+
 
 _INVENTORY_PROMPT = (
     Path(__file__).parent.parent / "src" / "extraction" / "inventory_prompt.txt"
@@ -295,10 +304,10 @@ def _process_one(pdf_path: Path, census_record: dict | None) -> dict:
 # Summary
 # ---------------------------------------------------------------------------
 
-def _write_summary() -> None:
+def _write_summary(inventories_dir: Path) -> None:
     """Build summary from all inventory files on disk (not just the current run)."""
     all_records: list[dict] = []
-    for p in sorted(INVENTORIES_DIR.glob("*.json")):
+    for p in sorted(inventories_dir.glob("*.json")):
         if p.name == "summary.json":
             continue
         try:
@@ -340,8 +349,8 @@ def _write_summary() -> None:
         "flagged_documents": flagged,
     }
 
-    INVENTORIES_DIR.mkdir(parents=True, exist_ok=True)
-    (INVENTORIES_DIR / "summary.json").write_text(
+    inventories_dir.mkdir(parents=True, exist_ok=True)
+    (inventories_dir / "summary.json").write_text(
         json.dumps(summary, indent=2),
         encoding="utf-8",
     )
@@ -362,11 +371,14 @@ def run(args) -> None:
         console.print(f"[red]No raw directory for '{council_key}'. Run scrape first.[/red]")
         raise SystemExit(1)
 
+    inventories_dir = _inventories_dir(council_key)
+    census_path = _census_path(council_key)
+
     # Load census for cross-referencing
     census_by_filename: dict[str, dict] = {}
-    if CENSUS_PATH.exists():
+    if census_path.exists():
         try:
-            data = json.loads(CENSUS_PATH.read_text(encoding="utf-8"))
+            data = json.loads(census_path.read_text(encoding="utf-8"))
             for rec in data.get("documents", []):
                 census_by_filename[rec["filename"]] = rec
         except Exception:
@@ -385,7 +397,7 @@ def run(args) -> None:
     to_process: list[Path] = []
     already_done = 0
     for pdf in all_pdfs:
-        inv_path = INVENTORIES_DIR / f"{pdf.stem}.json"
+        inv_path = inventories_dir / f"{pdf.stem}.json"
         if not force and inv_path.exists():
             try:
                 if json.loads(inv_path.read_text(encoding="utf-8")).get("status") == "ok":
@@ -405,7 +417,7 @@ def run(args) -> None:
 
     if not to_process:
         console.print("[green]All inventories are up-to-date. Use --force to re-run.[/green]")
-        _write_summary()
+        _write_summary(inventories_dir)
         return
 
     # ── Pre-flight cost estimate ───────────────────────────────────────────
@@ -425,7 +437,7 @@ def run(args) -> None:
         f"[dim]Model: {INVENTORY_MODEL}  |  Prompt: {PROMPT_VERSION}  |  "
         f"Max concurrent: {MAX_CONCURRENT}[/dim]"
     )
-    INVENTORIES_DIR.mkdir(parents=True, exist_ok=True)
+    inventories_dir.mkdir(parents=True, exist_ok=True)
 
     n_ok = 0
     n_error = 0
@@ -463,7 +475,7 @@ def run(args) -> None:
                         "scanned_at": datetime.now(timezone.utc).isoformat(),
                     }
 
-                inv_path = INVENTORIES_DIR / f"{pdf.stem}.json"
+                inv_path = inventories_dir / f"{pdf.stem}.json"
                 inv_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
 
                 if record["status"] == "ok":
@@ -490,7 +502,7 @@ def run(args) -> None:
                     ),
                 )
 
-    _write_summary()
+    _write_summary(inventories_dir)
 
     api_calls = n_ok - n_cache
     console.print(
@@ -499,7 +511,7 @@ def run(args) -> None:
         + (f", [red]{n_error} errors[/red]" if n_error else "")
     )
     if not quiet:
-        console.print(f"[dim]→ {INVENTORIES_DIR}[/dim]")
+        console.print(f"[dim]→ {inventories_dir}[/dim]")
 
 
 # ---------------------------------------------------------------------------

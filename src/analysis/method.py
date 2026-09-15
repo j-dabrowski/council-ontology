@@ -49,12 +49,11 @@ from src.models import Meeting, Tender
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_DATA_DIR = _REPO_ROOT / "data"
 
-CENSUS_REL = "data/census.json"
-INVENTORIES_SUMMARY_REL = "data/inventories/summary.json"
-SAMPLE_VALIDATION_SUMMARY_REL = "data/sample_validation/summary.json"
-SAMPLE_VALIDATION_REPORT_REL = "data/sample_validation/report.txt"
-VALIDATION_SUMMARY_REL = "data/validation/summary.json"
-EXTRACTION_ERRORS_REL = "data/extraction_errors.json"
+# These five used to be module-level constants hardcoding "data/...", so
+# /method could cite a path it didn't actually read once `data_dir` was
+# overridden (docs/SECOND_COUNCIL_PLAN.md Phase 1.3, B4 — the exact failure
+# METHOD_PAGE_PLAN.md's provenance rule exists to prevent). Now derived from
+# the real `data_dir` each call actually reads, inside build_method_record().
 
 # Written once, here, per B.6 — the "what failure of this metric would mean"
 # sentence report.txt's own METRICS block doesn't carry.
@@ -270,6 +269,13 @@ def build_method_record(
 ) -> dict:
     data_dir = data_dir if data_dir is not None else DEFAULT_DATA_DIR
 
+    CENSUS_REL = str(data_dir / "census.json")
+    INVENTORIES_SUMMARY_REL = str(data_dir / "inventories" / "summary.json")
+    SAMPLE_VALIDATION_SUMMARY_REL = str(data_dir / "sample_validation" / "summary.json")
+    SAMPLE_VALIDATION_REPORT_REL = str(data_dir / "sample_validation" / "report.txt")
+    VALIDATION_SUMMARY_REL = str(data_dir / "validation" / "summary.json")
+    EXTRACTION_ERRORS_REL = str(data_dir / "extraction_errors.json")
+
     census = _load_json(data_dir / "census.json")
     inventories_summary = _load_json(data_dir / "inventories" / "summary.json")
     sample_summary = _load_json(data_dir / "sample_validation" / "summary.json")
@@ -281,15 +287,22 @@ def build_method_record(
     return {
         "council": council_key,
         "generated_at": generated_at,
-        "coverage": _build_coverage(session, council_id, census, inventories_summary),
-        "validation": _build_validation(sample_summary, report, validation_summary),
-        "extraction_batch": _build_extraction_batch(extraction_errors),
+        "coverage": _build_coverage(
+            session, council_id, census, inventories_summary,
+            CENSUS_REL, INVENTORIES_SUMMARY_REL,
+        ),
+        "validation": _build_validation(
+            sample_summary, report, validation_summary,
+            VALIDATION_SUMMARY_REL, SAMPLE_VALIDATION_SUMMARY_REL, SAMPLE_VALIDATION_REPORT_REL,
+        ),
+        "extraction_batch": _build_extraction_batch(extraction_errors, EXTRACTION_ERRORS_REL),
         "entity_resolution": _build_entity_resolution(session, council_id, generated_at),
     }
 
 
 def _build_coverage(
     session: Session, council_id: int, census: dict | None, inventories_summary: dict | None,
+    census_rel: str, inventories_summary_rel: str,
 ) -> dict:
     census_generated_at = census.get("generated_at") if census else None
     census_by_year = _census_year_counts(census)
@@ -307,20 +320,20 @@ def _build_coverage(
     ]
 
     census_total = (
-        {"value": census.get("total"), "source": CENSUS_REL,
+        {"value": census.get("total"), "source": census_rel,
          "generated_at": census_generated_at, "n": census.get("total")}
-        if census else _missing(CENSUS_REL)
+        if census else _missing(census_rel)
     )
 
     if inventories_summary:
         type_mix = {
             "value": inventories_summary.get("meeting_type_distribution"),
-            "source": INVENTORIES_SUMMARY_REL,
+            "source": inventories_summary_rel,
             "generated_at": inventories_summary.get("generated_at"),
             "n": inventories_summary.get("total_inventoried"),
         }
     else:
-        type_mix = _missing(INVENTORIES_SUMMARY_REL)
+        type_mix = _missing(inventories_summary_rel)
 
     if census:
         flag_tallies: dict[str, int] = {}
@@ -328,11 +341,11 @@ def _build_coverage(
             for flag in doc.get("flags", []):
                 flag_tallies[flag] = flag_tallies.get(flag, 0) + 1
         document_flags = {
-            "value": flag_tallies, "source": CENSUS_REL,
+            "value": flag_tallies, "source": census_rel,
             "generated_at": census_generated_at, "n": census.get("total"),
         }
     else:
-        document_flags = _missing(CENSUS_REL)
+        document_flags = _missing(census_rel)
 
     return {
         "census_total": census_total,
@@ -354,7 +367,11 @@ def _metric_value(source_dict: dict | None, field: str, source: str,
 
 def _build_validation(
     sample_summary: dict | None, report: dict | None, validation_summary: dict | None,
+    validation_summary_rel: str, sample_validation_summary_rel: str, sample_validation_report_rel: str,
 ) -> dict:
+    VALIDATION_SUMMARY_REL = validation_summary_rel
+    SAMPLE_VALIDATION_SUMMARY_REL = sample_validation_summary_rel
+    SAMPLE_VALIDATION_REPORT_REL = sample_validation_report_rel
     validation_generated_at = validation_summary.get("generated_at") if validation_summary else None
     validation_n = validation_summary.get("total_validated") if validation_summary else None
     sample_generated_at = report.get("generated_at") if report else None
@@ -446,16 +463,16 @@ def _build_validation(
     }
 
 
-def _build_extraction_batch(extraction_errors: dict | None) -> dict:
+def _build_extraction_batch(extraction_errors: dict | None, extraction_errors_rel: str) -> dict:
     if not extraction_errors:
-        return _missing(EXTRACTION_ERRORS_REL)
+        return _missing(extraction_errors_rel)
     return {
         "batch_id": extraction_errors.get("batch_id"),
         "attempted": extraction_errors.get("attempted"),
         "succeeded": extraction_errors.get("succeeded"),
         "failed": extraction_errors.get("failed"),
         "errors_by_class": extraction_errors.get("errors_by_class"),
-        "source": EXTRACTION_ERRORS_REL,
+        "source": extraction_errors_rel,
         "generated_at": extraction_errors.get("generated_at"),
         "n": extraction_errors.get("attempted"),
         "note": (

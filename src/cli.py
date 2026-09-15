@@ -3529,10 +3529,15 @@ def _generate_snapshots(
     from src.analysis.method import build_method_record
     from src.models import Council as _CouncilM
     _council_row = session.get(_CouncilM, council_id)
+    _method_council_key = _council_row.short_name if _council_row else str(council_id)
     _write("method", build_method_record(
         session, council_id,
-        _council_row.short_name if _council_row else str(council_id),
+        _method_council_key,
         generated_at,
+        # Namespaced per council (docs/SECOND_COUNCIL_PLAN.md Phase 1.3,
+        # B4) — without this, /method always cited data/'s flat files
+        # regardless of which council was actually drafted.
+        data_dir=Path("data") / _method_council_key.lower(),
     ))
 
     return written, battery
@@ -4549,8 +4554,8 @@ def main() -> None:
     def _cmd_extraction_refine(a):
         import json as _json
 
-        from scripts.validate_sample import VALIDATION_DIR
-        summary_path = VALIDATION_DIR / "summary.json"
+        from scripts.validate_sample import validation_dir
+        summary_path = validation_dir(a.council) / "summary.json"
         if not summary_path.exists():
             console.print(f"[red]No {summary_path} — run `council validate-sample {a.council}` first.[/red]")
             sys.exit(1)
