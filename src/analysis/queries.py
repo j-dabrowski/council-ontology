@@ -2986,10 +2986,16 @@ class TransparencyYear:
 @dataclass
 class TransparencyStats:
     years: list[TransparencyYear]
-    pre_era_pct: float          # avg confidential % 1995-2017
+    pre_era_pct: float          # avg confidential % in years before this council's era window
     peak_year: int
     peak_pct: float
     category_totals: dict[str, dict[str, int]]  # {tenders: {total, confidential}, ...}
+    # This council's configured scrutiny window (config/council_eras.json) —
+    # None when it has none, in which case pre_era_pct falls back to every
+    # year (SECOND_COUNCIL_PLAN.md Phase 3.4; same shape as RecusalTrendStats/
+    # PQResponsivenessStats's inquiry_window/era_label).
+    inquiry_window: list[int] | None = None
+    era_label: str | None = None
 
 
 def transparency_by_year(session: Session, council_id: int,
@@ -3089,8 +3095,13 @@ def transparency_by_year(session: Session, council_id: int,
         for yr, (tot, conf) in sorted(per_year.items())
     ]
 
-    # Pre-2018 baseline (the two-decade norm) vs the peak year
-    pre = [y for y in years if y.year <= 2017]
+    # Baseline (the norm before this council's own configured scrutiny
+    # window, if it has one) vs the peak year. A council with no window
+    # (`window is None`) has no "pre" era to isolate — the baseline falls
+    # back to every year on record, same "absent means no split" degrade as
+    # `_recusal_era` (1.2).
+    window = _council_era_window(session, council_id)
+    pre = [y for y in years if window is None or y.year < window.from_year]
     pre_tot = sum(y.total for y in pre)
     pre_conf = sum(y.confidential for y in pre)
     pre_pct = round(100 * pre_conf / pre_tot, 1) if pre_tot else 0.0
@@ -3107,6 +3118,8 @@ def transparency_by_year(session: Session, council_id: int,
         peak_year=peak.year if peak else 0,
         peak_pct=peak.confidential_pct if peak else 0.0,
         category_totals=dict(cat_totals),
+        inquiry_window=[window.from_year, window.to_year] if window else None,
+        era_label=window.label if window else None,
     )
 
 
@@ -3469,6 +3482,11 @@ class RecusalDriver:
 @dataclass
 class RecusalTrendStats:
     inquiry_window: list[int] | None
+    # config/council_eras.json's own label for this window ("Authorised
+    # Inquiry" for Cambridge) — None exactly when inquiry_window is None.
+    # Ships to recusal.json so the frontend never hardcodes a Cambridge-
+    # specific era name (SECOND_COUNCIL_PLAN.md Phase 3.4).
+    era_label: str | None
     # headline: must-leave recusal by era
     must_leave_pre_pct: float
     must_leave_pre_n: int
@@ -3650,6 +3668,7 @@ def recusal_compliance_trend(
 
     return RecusalTrendStats(
         inquiry_window=[window.from_year, window.to_year] if window else None,
+        era_label=window.label if window else None,
         must_leave_pre_pct=ml_pre_pct, must_leave_pre_n=ml_pre_n,
         must_leave_inquiry_pct=ml_inq_pct, must_leave_inquiry_n=ml_inq_n,
         must_leave_post_pct=ml_post_pct, must_leave_post_n=ml_post_n,
@@ -3741,6 +3760,9 @@ class PQYearPoint:
 @dataclass
 class PQResponsivenessStats:
     inquiry_window: list[int] | None
+    # config/council_eras.json's own label for this window — None exactly
+    # when inquiry_window is None (SECOND_COUNCIL_PLAN.md Phase 3.4).
+    era_label: str | None
     total: int
     answered: int
     on_notice: int
@@ -3896,6 +3918,7 @@ def public_question_responsiveness(
     ev = {e.era: e for e in by_era}
     return PQResponsivenessStats(
         inquiry_window=[window.from_year, window.to_year] if window else None,
+        era_label=window.label if window else None,
         total=len(rows), answered=tot[0], on_notice=tot[1], blank=tot[2],
         answered_pct=round(100 * tot[0] / len(rows), 1) if rows else 0.0,
         on_notice_pct=_pct(tot[0], tot[1]),

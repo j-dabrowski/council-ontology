@@ -11,11 +11,6 @@ import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
-const ERA_LABEL: Record<string, string> = {
-  pre: "Before Inquiry\n(pre-2018)",
-  inquiry: "Inquiry\n(2018–21)",
-  post: "After Inquiry\n(2022+)",
-};
 const TYPE_COLOR: Record<string, string> = {
   financial: "#f87171",    // must leave — mandatory
   proximity: "#fb923c",    // must leave — proximity
@@ -26,11 +21,28 @@ const TYPE_LABEL: Record<string, string> = {
   proximity: "Proximity (must leave)",
   impartiality: "Impartiality (may stay)",
 };
-const ERA_FULL: Record<string, string> = {
-  pre: "before the Inquiry (pre-2018)",
-  inquiry: "during the Inquiry (2018–21)",
-  post: "after the Inquiry (2022+)",
-};
+
+// Era labels built from this council's own window (data.inquiry_window /
+// data.era_label — config/council_eras.json, threaded through recusal.json)
+// rather than a hardcoded era name and year range (SECOND_COUNCIL_PLAN.md
+// Phase 3.4). Callers must check `data.inquiry_window` is non-null before
+// using these — a council with no configured window has nothing to build
+// them from.
+function eraLabels(inquiryWindow: [number, number], eraLabel: string) {
+  const [from, to] = inquiryWindow;
+  return {
+    short: {
+      pre: `Before ${eraLabel}\n(pre-${from})`,
+      inquiry: `${eraLabel}\n(${from}–${String(to).slice(-2)})`,
+      post: `After ${eraLabel}\n(${to + 1}+)`,
+    } as Record<string, string>,
+    full: {
+      pre: `before the ${eraLabel} (pre-${from})`,
+      inquiry: `during the ${eraLabel} (${from}–${String(to).slice(-2)})`,
+      post: `after the ${eraLabel} (${to + 1}+)`,
+    } as Record<string, string>,
+  };
+}
 
 // A by-type/by-era cell resting on <=3 declarations isn't a defensible basis
 // for naming the individual(s) behind it, regardless of placement behind a
@@ -136,6 +148,16 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
   // years don't dominate the axis.
   const yearData = data.by_year.filter((y) => y.year >= 2008);
 
+  // Every era-bucketed figure below (the hero row, the objection callout,
+  // the type×era bar chart) is meaningless without a configured scrutiny
+  // window — this council's `by_type_era` comes back empty and the pre/
+  // inquiry/post percentages are computed off zero rows. Render that whole
+  // section only when there's a real window to bucket by (SECOND_COUNCIL_
+  // PLAN.md Phase 3.4); the year-by-year chart below stays either way.
+  const hasEra = data.inquiry_window != null;
+  const window = hasEra ? (data.inquiry_window as [number, number]) : null;
+  const labels = hasEra ? eraLabels(window!, data.era_label ?? "scrutiny window") : null;
+
   // Confound-beater: recusal % by interest type within each era.
   const byTE: Record<string, Record<string, number>> = {
     pre: {}, inquiry: {}, post: {},
@@ -145,51 +167,57 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
     byTE[r.era][r.interest_type] = r.recusal_pct;
     byTE[r.era][`${r.interest_type}_n`] = r.declared;
   }
-  const typeEraData = ERA_ORDER.map((era) => ({
+  const typeEraData = labels ? ERA_ORDER.map((era) => ({
     era,
-    eraLabel: ERA_LABEL[era],
+    eraLabel: labels.short[era],
     financial: byTE[era].financial ?? null,
     proximity: byTE[era].proximity ?? null,
     impartiality: byTE[era].impartiality ?? null,
     financial_n: byTE[era].financial_n ?? 0,
     proximity_n: byTE[era].proximity_n ?? 0,
     impartiality_n: byTE[era].impartiality_n ?? 0,
-  }));
+  })) : [];
 
   return (
     <>
-      <div className="planning-hero-row">
-        <div className="planning-stat">
-          <span className="planning-stat-num planning-stat-recent">{data.must_leave_inquiry_pct}%</span>
-          <span className="planning-stat-label">stepped out during the Inquiry (2018–21)</span>
-        </div>
-        <div className="planning-stat-arrow">→</div>
-        <div className="planning-stat">
-          <span className="planning-stat-num planning-stat-peak">{data.must_leave_post_pct}%</span>
-          <span className="planning-stat-label">stepped out afterwards (2022+)</span>
-        </div>
-        <div className="planning-stat-divider" />
-        <div className="planning-stat">
-          <span className="planning-stat-num">{data.impartiality_post_recusal_pct}%</span>
-          <span className="planning-stat-label">
-            recusal on the {data.impartiality_post_declared} post-2022 "impartiality" declarations
-          </span>
-        </div>
-      </div>
+      {hasEra && (
+        <>
+          <div className="planning-hero-row">
+            <div className="planning-stat">
+              <span className="planning-stat-num planning-stat-recent">{data.must_leave_inquiry_pct}%</span>
+              <span className="planning-stat-label">stepped out during the {data.era_label} ({window![0]}–{window![1]})</span>
+            </div>
+            <div className="planning-stat-arrow">→</div>
+            <div className="planning-stat">
+              <span className="planning-stat-num planning-stat-peak">{data.must_leave_post_pct}%</span>
+              <span className="planning-stat-label">stepped out afterwards ({window![1] + 1}+)</span>
+            </div>
+            <div className="planning-stat-divider" />
+            <div className="planning-stat">
+              <span className="planning-stat-num">{data.impartiality_post_recusal_pct}%</span>
+              <span className="planning-stat-label">
+                recusal on the {data.impartiality_post_declared} post-{window![1] + 1} "impartiality" declarations
+              </span>
+            </div>
+          </div>
 
-      <div className="objection-callout">
-        <span className="objection-callout-diff">
-          {data.financial_inquiry_pct}%→{data.financial_post_pct}%
-        </span>
-        <span className="objection-callout-text">
-          Even on <strong>financial conflicts</strong> — where the law <em>requires</em> a member to
-          leave the room — recusal held at <strong>{data.financial_inquiry_pct}%</strong> during the
-          state-appointed Authorised Inquiry and <strong>{data.financial_post_pct}%</strong> after it.
-          The only post-2022 financial-conflict declaration on record was a compliant step-out
-          (n={data.financial_post_n}) — too few to assess a trend either way on financial conflicts
-          alone.
-        </span>
-      </div>
+          <div className="objection-callout">
+            <span className="objection-callout-diff">
+              {data.financial_inquiry_pct}%→{data.financial_post_pct}%
+            </span>
+            <span className="objection-callout-text">
+              Even on <strong>financial conflicts</strong> — where the law <em>requires</em> a member to
+              leave the room — recusal held at <strong>{data.financial_inquiry_pct}%</strong> during the
+              {" "}{data.era_label} and <strong>{data.financial_post_pct}%</strong> after it.
+              {data.financial_post_n <= 3 && (
+                <> The only post-{window![1] + 1} financial-conflict declaration(s) on record
+                  {" "}(n={data.financial_post_n}) are too few to assess a trend either way on
+                  financial conflicts alone.</>
+              )}
+            </span>
+          </div>
+        </>
+      )}
 
       <p className="section-heading">
         Stepping out vs. declaring, year by year — serious conflicts only
@@ -201,8 +229,10 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
           <YAxis yAxisId="L" unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} width={40} />
           <YAxis yAxisId="R" orientation="right" unit="%" domain={[0, 14]}
             tick={{ fontSize: 11 }} width={36} />
-          <ReferenceArea yAxisId="L" x1={2018} x2={2021} fill="#f59e0b" fillOpacity={0.08}
-            label={{ value: "Authorised Inquiry", position: "insideTop", fontSize: 10, fill: "#f59e0b" }} />
+          {hasEra && (
+            <ReferenceArea yAxisId="L" x1={window![0]} x2={window![1]} fill="#f59e0b" fillOpacity={0.08}
+              label={{ value: data.era_label ?? undefined, position: "insideTop", fontSize: 10, fill: "#f59e0b" }} />
+          )}
           <Tooltip content={<YearTooltip />} />
           <Line yAxisId="L" type="monotone" dataKey="must_leave_pct" stroke="#22c55e"
             strokeWidth={2.5} connectNulls={false} name="Stepped out %"
@@ -215,64 +245,66 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
       <p className="chart-note">
         Green (left axis) = share of <em>serious</em> (financial or proximity) declared conflicts where the
         councillor recorded ABSENT — i.e. left the room. Amber (right axis, dashed) = declared-interest
-        votes as a share of all votes. The two diverge sharply: declarations rose roughly five-fold while
-        stepping-out fell away. Years with fewer than 4 serious conflicts are left as gaps. 2026 is a
-        part-year.
+        votes as a share of all votes. Years with fewer than 4 serious conflicts are left as gaps.
       </p>
 
-      <p className="section-heading">
-        Beating the obvious objection: recusal fell <em>within</em> every interest type
-        <span className="section-hint"> · click a bar to see the declarations behind it</span>
-      </p>
-      <ResponsiveContainer width="100%" height={260}>
-        <BarChart data={typeEraData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
-          <XAxis dataKey="eraLabel" tick={{ fontSize: 10 }} interval={0} />
-          <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} width={40} />
-          <Tooltip content={<TypeEraTooltip />} cursor={{ fill: "var(--cursor)" }} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
-          <Bar dataKey="financial" name="financial" fill={TYPE_COLOR.financial} radius={[3, 3, 0, 0]}
-            cursor="pointer" onClick={(e) => pickCell(e, "financial")}>
-            {typeEraData.map((e, i) => <Cell key={i} fillOpacity={e.financial_n < 20 ? 0.45 : 1} />)}
-          </Bar>
-          <Bar dataKey="proximity" name="proximity" fill={TYPE_COLOR.proximity} radius={[3, 3, 0, 0]}
-            cursor="pointer" onClick={(e) => pickCell(e, "proximity")}>
-            {typeEraData.map((e, i) => <Cell key={i} fillOpacity={e.proximity_n < 20 ? 0.45 : 1} />)}
-          </Bar>
-          <Bar dataKey="impartiality" name="impartiality" fill={TYPE_COLOR.impartiality} radius={[3, 3, 0, 0]}
-            cursor="pointer" onClick={(e) => pickCell(e, "impartiality")} />
-        </BarChart>
-      </ResponsiveContainer>
+      {hasEra && (
+        <>
+          <p className="section-heading">
+            Beating the obvious objection: recusal fell <em>within</em> every interest type
+            <span className="section-hint"> · click a bar to see the declarations behind it</span>
+          </p>
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart data={typeEraData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
+              <XAxis dataKey="eraLabel" tick={{ fontSize: 10 }} interval={0} />
+              <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 11 }} width={40} />
+              <Tooltip content={<TypeEraTooltip />} cursor={{ fill: "var(--cursor)" }} />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="financial" name="financial" fill={TYPE_COLOR.financial} radius={[3, 3, 0, 0]}
+                cursor="pointer" onClick={(e) => pickCell(e, "financial")}>
+                {typeEraData.map((e, i) => <Cell key={i} fillOpacity={e.financial_n < 20 ? 0.45 : 1} />)}
+              </Bar>
+              <Bar dataKey="proximity" name="proximity" fill={TYPE_COLOR.proximity} radius={[3, 3, 0, 0]}
+                cursor="pointer" onClick={(e) => pickCell(e, "proximity")}>
+                {typeEraData.map((e, i) => <Cell key={i} fillOpacity={e.proximity_n < 20 ? 0.45 : 1} />)}
+              </Bar>
+              <Bar dataKey="impartiality" name="impartiality" fill={TYPE_COLOR.impartiality} radius={[3, 3, 0, 0]}
+                cursor="pointer" onClick={(e) => pickCell(e, "impartiality")} />
+            </BarChart>
+          </ResponsiveContainer>
 
-      {selectedCell && (
-        <DrillDown
-          title={`${TYPE_LABEL[selectedCell.interest_type] ?? selectedCell.interest_type} — ${ERA_FULL[selectedCell.era] ?? selectedCell.era}`}
-          subtitle={`stepped out on ${selectedCell.recused}/${selectedCell.declared} (${selectedCell.recusal_pct}%)${selectedCell.n_shown < selectedCell.declared ? ` · showing ${selectedCell.n_shown} most recent` : ""}`}
-          onClose={() => setSelected(null)}
-        >
-          {selectedCell.declarations.length === 0 && (
-            <p className="chart-note">No itemised declarations behind this cell.</p>
+          {selectedCell && (
+            <DrillDown
+              title={`${TYPE_LABEL[selectedCell.interest_type] ?? selectedCell.interest_type} — ${labels!.full[selectedCell.era] ?? selectedCell.era}`}
+              subtitle={`stepped out on ${selectedCell.recused}/${selectedCell.declared} (${selectedCell.recusal_pct}%)${selectedCell.n_shown < selectedCell.declared ? ` · showing ${selectedCell.n_shown} most recent` : ""}`}
+              onClose={() => setSelected(null)}
+            >
+              {selectedCell.declarations.length === 0 && (
+                <p className="chart-note">No itemised declarations behind this cell.</p>
+              )}
+              {selectedCell.declarations.length > 0 && selectedCell.declared <= SMALL_N_FLOOR && (
+                <p className="chart-note">
+                  n too small to name individual declarations — shown at aggregate level only
+                  ({selectedCell.declared} on record, {SMALL_N_FLOOR} or fewer).
+                </p>
+              )}
+              {selectedCell.declarations.length > 0 && selectedCell.declared > SMALL_N_FLOOR && (
+                selectedCell.declarations.map((d, i) => (
+                  <RecusalDeclRow key={i} d={d}
+                    evidence={d.entity_id != null ? evidenceById.get(d.entity_id) : undefined} />
+                ))
+              )}
+            </DrillDown>
           )}
-          {selectedCell.declarations.length > 0 && selectedCell.declared <= SMALL_N_FLOOR && (
-            <p className="chart-note">
-              n too small to name individual declarations — shown at aggregate level only
-              ({selectedCell.declared} on record, {SMALL_N_FLOOR} or fewer).
-            </p>
-          )}
-          {selectedCell.declarations.length > 0 && selectedCell.declared > SMALL_N_FLOOR && (
-            selectedCell.declarations.map((d, i) => (
-              <RecusalDeclRow key={i} d={d}
-                evidence={d.entity_id != null ? evidenceById.get(d.entity_id) : undefined} />
-            ))
-          )}
-        </DrillDown>
+
+          <p className="chart-note">
+            Faded bars are n&lt;20 (directional). Must-leave totals: pre {data.must_leave_pre_n},{" "}
+            {data.era_label} {data.must_leave_inquiry_n}, post {data.must_leave_post_n}.
+            Declaration→vote matched at item level (item reference ↔ agenda item).
+          </p>
+        </>
       )}
-
-      <p className="chart-note">
-        Faded bars are n&lt;20 (directional). Must-leave totals: pre {data.must_leave_pre_n}, Inquiry{" "}
-        {data.must_leave_inquiry_n}, post {data.must_leave_post_n}. Declaration→vote matched at item
-        level (item reference ↔ agenda item).
-      </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
         {" · "}{test.principles.join(" · ")}

@@ -90,12 +90,20 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
     }
   }
 
+  // This council's own configured scrutiny window (config/council_eras.json)
+  // — null when it has none, in which case pre_era_pct is an all-years
+  // average and there's no era band to draw (SECOND_COUNCIL_PLAN.md
+  // Phase 3.4).
+  const hasEra = data.inquiry_window != null;
+  const window = hasEra ? (data.inquiry_window as [number, number]) : null;
+  const baselineLabel = hasEra ? `confidential, pre-${window![0]} average` : "confidential, all-years average";
+
   return (
     <>
       <div className="planning-hero-row">
         <div className="planning-stat">
           <span className="planning-stat-num planning-stat-recent">{data.pre_era_pct}%</span>
-          <span className="planning-stat-label">confidential, 1995–2017 average</span>
+          <span className="planning-stat-label">{baselineLabel}</span>
         </div>
         <div className="planning-stat-arrow">→</div>
         <div className="planning-stat">
@@ -134,10 +142,12 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
           <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="year" tick={{ fontSize: 11 }} interval={3} />
           <YAxis unit="%" tick={{ fontSize: 11 }} width={40} />
-          <ReferenceArea x1={2018} x2={2021} fill="#f59e0b" fillOpacity={0.08}
-            label={{ value: "Authorised Inquiry era", position: "insideTop", fontSize: 10, fill: "#f59e0b" }} />
+          {hasEra && (
+            <ReferenceArea x1={window![0]} x2={window![1]} fill="#f59e0b" fillOpacity={0.08}
+              label={{ value: `${data.era_label} era`, position: "insideTop", fontSize: 10, fill: "#f59e0b" }} />
+          )}
           <ReferenceLine y={data.pre_era_pct} stroke="var(--text-faint)" strokeDasharray="4 4"
-            label={{ value: "two-decade norm", position: "insideBottomLeft", fontSize: 10, fill: "var(--text-dim)" }} />
+            label={{ value: "baseline", position: "insideBottomLeft", fontSize: 10, fill: "var(--text-dim)" }} />
           <Tooltip content={<CustomTooltip />} />
           <Area type="monotone" dataKey="confidential_pct" stroke="#f87171" strokeWidth={2.5}
             fill="url(#confFill)" name="Confidential %" />
@@ -166,10 +176,10 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
 
       <p className="chart-note">
         Pools four item types that carry a confidentiality flag — tenders, "other items", delegated
-        decisions and budget items — across meeting minutes. After holding at 1–4% for two decades,
-        the confidential share quadrupled to a {data.peak_pct}% peak in {data.peak_year}, coinciding
-        with the state-appointed Authorised Inquiry into the Town of Cambridge. Years with fewer than
-        50 recorded items excluded as too small to read.
+        decisions and budget items — across meeting minutes, against a {baselineLabel} of{" "}
+        {data.pre_era_pct}%. The confidential share reached a {data.peak_pct}% peak in {data.peak_year}
+        {hasEra && <> , within the {data.era_label} era ({window![0]}–{window![1]})</>}. Years with
+        fewer than 50 recorded items excluded as too small to read.
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
