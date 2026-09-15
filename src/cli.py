@@ -2932,8 +2932,23 @@ def _generate_snapshots(
         "mayoral": mayoral, "sponsorship": spon, "dose": dose, "divergence": pairs,
         "pq_responsiveness": pqr,
     })
+    # rating: the overall governance band (docs/frontend/MAP_PAGE_PLAN.md
+    # Phase 1) — one call, written to two destinations (its own snapshot and
+    # scorecard's summary) so they can never disagree. Reads battery
+    # metadata only (valence/grade/data_ok/test_id) — see
+    # src/analysis/rating.py's module docstring for why that's what keeps
+    # it safe at public tier regardless of scorecard's own claim-derived tier.
+    from src.analysis.rating import compute_rating
+    from src.rating_config import load_rating_config
+    from src.test_registry import load_test_registry
+    rating = compute_rating(
+        battery,
+        categories={row.id: row.category for row in load_test_registry()},
+        config=load_rating_config(),
+    )
+    _write("rating", asdict(rating))
     _write("scorecard", {
-        "summary": battery_summary(battery),
+        "summary": {**battery_summary(battery), "rating": asdict(rating)},
         "tests": [_dc(t) for t in battery],
     })
 
