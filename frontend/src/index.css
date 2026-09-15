@@ -84,6 +84,21 @@
   --br-bg: #fef2f2;  --br-t: #dc2626;
   --bb-bg: #eff6ff;  --bb-t: #2563eb;
 
+  /* Overall governance rating band (MAP_PAGE_PLAN.md Phase 2) — aliases onto
+     the existing theme-aware triplets rather than new hex values: green and
+     red reuse the valence tokens (--ok-t etc, --bad-t etc), insufficient
+     reuses the "not computable" grey (--nil-t etc). Yellow has no valence
+     equivalent (valence is only 3-way) so it borrows the declaration-
+     pecuniary amber (--dp-t etc), the one existing amber triplet already
+     tuned for both themes. Each is a var()-of-a-var(), so it stays correct
+     under the dark-mode block below without being redefined there. */
+  --rating-green-t:  var(--ok-t);   --rating-green-bg:  var(--ok-bg);   --rating-green-bd:  var(--ok-bd);
+  --rating-yellow-t: var(--dp-t);   --rating-yellow-bg: var(--dp-bg);   --rating-yellow-bd: var(--dp-bd);
+  --rating-red-t:    var(--bad-t);  --rating-red-bg:    var(--bad-bg);  --rating-red-bd:    var(--bad-bd);
+  --rating-insufficient-t:  var(--nil-t);
+  --rating-insufficient-bg: var(--nil-bg);
+  --rating-insufficient-bd: var(--nil-bd);
+
   /* Data-accent colours — adjusted for light-mode contrast */
   --note:   #92400e;   /* amber text (WCAG AA on white) */
   --stripe: #f59e0b;   /* amber decorative border stripe */
@@ -1847,6 +1862,81 @@ a:hover { text-decoration: underline; }
 .watch-pager button:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* ── overall rating band (Overview page, MAP_PAGE_PLAN.md Phase 2) ──────── */
+/* The colour + label carry the meaning across all four states; --rating-*-t
+   (text) is used for the label so it stays readable without colour alone —
+   the label text itself ("Broadly clean" / "Mixed record" / "Governance
+   concerns" / "Insufficient record") is what a colour-blind reader relies
+   on, not the swatch. */
+
+.rating-band {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 16px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--rating-bd, var(--border));
+  background: var(--rating-bg, var(--surface));
+}
+
+.rating-band-green  { --rating-bd: var(--rating-green-bd);  --rating-bg: var(--rating-green-bg); }
+.rating-band-yellow { --rating-bd: var(--rating-yellow-bd); --rating-bg: var(--rating-yellow-bg); }
+.rating-band-red     { --rating-bd: var(--rating-red-bd);    --rating-bg: var(--rating-red-bg); }
+.rating-band-insufficient {
+  --rating-bd: var(--rating-insufficient-bd);
+  --rating-bg: var(--rating-insufficient-bg);
+  border-style: dashed;
+}
+
+.rating-band-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-basis: 100%;
+}
+
+.rating-band-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--rating-green-t);
+}
+.rating-band-green  .rating-band-swatch { background: var(--rating-green-t); }
+.rating-band-yellow .rating-band-swatch { background: var(--rating-yellow-t); }
+.rating-band-red     .rating-band-swatch { background: var(--rating-red-t); }
+.rating-band-insufficient .rating-band-swatch { background: var(--rating-insufficient-t); }
+
+.rating-band-label {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.rating-band-green  .rating-band-label { color: var(--rating-green-t); }
+.rating-band-yellow .rating-band-label { color: var(--rating-yellow-t); }
+.rating-band-red     .rating-band-label { color: var(--rating-red-t); }
+.rating-band-insufficient .rating-band-label { color: var(--rating-insufficient-t); }
+
+.rating-band-reason {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.rating-band-counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+
+.rating-band-link {
+  margin-left: auto;
+  font-size: 0.82rem;
+  color: var(--link);
+  white-space: nowrap;
 }
 
 /* ── latest-meeting strip (Overview page) ────────────────────────────────── */
