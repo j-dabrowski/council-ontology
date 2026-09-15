@@ -3,14 +3,16 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid,
 } from "recharts";
 import {
-  api, ObjectionDoseBucket, ObjectionDoseData, ObjectionResponsivenessEvidence,
+  api, LookupSearchEntry, ObjectionDoseBucket, ObjectionDoseData, ObjectionResponsivenessEvidence,
   RecordCouncillor, RecordStreetsApplication, RecordStreetsStreet,
   TenureData, TenureEvidence, TransparencyData, TransparencyEvidence, TrendsData,
 } from "../api";
-import { useData } from "../hooks/useData";
+import { useData, useLazyData } from "../hooks/useData";
 import { LoadingCard, ErrorCard } from "../components/InterestsChart";
-import { Reveal, SourceQuote } from "../components/DrillDown";
+import { SourceQuote } from "../components/DrillDown";
+import { CouncilHeader } from "../components/CouncilHeader";
 import { REGISTRY_BY_ID } from "../registry";
+import { watchHref } from "../registry/anchors";
 
 // docs/frontend/RECORD_PAGE_PLAN.md — Steps 4-8: type-ahead street lookup
 // (feature 1), the objector calculator (feature 2), councillor cards
@@ -190,6 +192,127 @@ function StreetSearch({ streets }: { streets: RecordStreetsStreet[] }) {
   );
 }
 
+const LOOKUP_RESULT_CAP = 50;
+
+function lookupKindLabel(kind: LookupSearchEntry["kind"]): string {
+  if (kind === "motion") return "Motion";
+  if (kind === "tender") return "Tender award";
+  return "Agenda item";
+}
+
+function lookupSearchableText(entry: LookupSearchEntry): string {
+  const parts =
+    entry.kind === "motion" ? [entry.title, entry.description]
+    : entry.kind === "tender" ? [entry.awarded_to, entry.description]
+    : [entry.item_type, entry.description];
+  return parts.filter(Boolean).join(" ").toLowerCase();
+}
+
+function LookupResultRow({ entry }: { entry: LookupSearchEntry }) {
+  const date = formatDate(entry.meeting_date);
+  const isConfidential = entry.kind !== "motion" && entry.is_confidential;
+
+  let headline: string;
+  let desc: string | null;
+  if (entry.kind === "motion") {
+    headline = entry.title + (entry.outcome && entry.outcome !== "carried" ? ` (${entry.outcome})` : "");
+    desc = entry.description;
+  } else if (entry.kind === "tender") {
+    const amount = entry.amount != null ? ` — $${entry.amount.toLocaleString()}` : "";
+    headline = (entry.awarded_to ?? "recipient not recorded") + amount;
+    desc = entry.description;
+  } else {
+    headline = entry.item_type;
+    desc = entry.description;
+  }
+
+  return (
+    <li className="lookup-result">
+      <div className="lookup-result-head">
+        <span className="lookup-result-kind">{lookupKindLabel(entry.kind)}</span>
+        <span className="lookup-result-date">{date}</span>
+        {isConfidential && <span className="lookup-result-confidential">confidential</span>}
+      </div>
+      <a className="lookup-result-title" href={watchHref(entry.meeting_id)}>{headline}</a>
+      {desc && <p className="lookup-result-desc">{desc}</p>}
+    </li>
+  );
+}
+
+function LookupSearch() {
+  const { data, loading, error, trigger } = useLazyData(api.lookupSearch);
+  const [query, setQuery] = useState("");
+
+  const allEntries = useMemo<LookupSearchEntry[]>(() => {
+    if (!data) return [];
+    return [...data.motions, ...data.other_items, ...data.tenders];
+  }, [data]);
+
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return allEntries.filter((e) => lookupSearchableText(e).includes(q));
+  }, [query, allEntries]);
+
+  function clear() {
+    setQuery("");
+  }
+
+  const showPanel = query.trim().length > 0;
+
+  return (
+    <div className="rec-search">
+      <label className="rec-search-label" htmlFor="lookup-search-input">
+        Search motions, agenda items, and tender awards
+      </label>
+      <div className="rec-search-bar">
+        <input
+          id="lookup-search-input"
+          className="rec-search-input"
+          type="text"
+          value={query}
+          onFocus={trigger}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="e.g. St John of God Hospital, Fleetcare"
+          autoComplete="off"
+        />
+        {showPanel && (
+          <button
+            type="button"
+            className="rec-search-clear"
+            onClick={clear}
+            aria-label="Clear search"
+          >
+            ×
+          </button>
+        )}
+      </div>
+      {showPanel && (
+        <div className="rec-search-panel">
+          {loading && <p className="rec-no-match">Loading search index…</p>}
+          {error && <p className="rec-no-match">Failed to load search index: {error}</p>}
+          {data && matches.length === 0 && (
+            <p className="rec-no-match">No matches for "{query.trim()}".</p>
+          )}
+          {data && matches.length > 0 && (
+            <>
+              <p className="lookup-search-count">
+                {matches.length} {matches.length === 1 ? "result" : "results"}
+                {matches.length > LOOKUP_RESULT_CAP && ` — showing the first ${LOOKUP_RESULT_CAP}`}
+              </p>
+              <ul className="lookup-results">
+                {matches.slice(0, LOOKUP_RESULT_CAP).map((e, i) => (
+                  <LookupResultRow entry={e} key={i} />
+                ))}
+              </ul>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const OBJECTOR_BUCKET_LABELS: Record<string, string> = {
   "0": "no objections",
   "1": "1 objection",
@@ -321,6 +444,9 @@ function CouncillorCards({ councillors }: { councillors: RecordCouncillor[] }) {
     return years.length ? Math.min(...years) : null;
   }, [councillors]);
 
+  const [selectedName, setSelectedName] = useState(councillors[0]?.name ?? "");
+  const selected = councillors.find((c) => c.name === selectedName) ?? null;
+
   return (
     <section className="rec-cllrs">
       <h2 className="static-h2">Councillors on record</h2>
@@ -330,15 +456,17 @@ function CouncillorCards({ councillors }: { councillors: RecordCouncillor[] }) {
         cast, who most often seconded their motions, and how their contested
         votes split.
       </p>
-      <ul className="rec-cllr-list">
+      <select
+        className="rec-cllr-select"
+        value={selectedName}
+        onChange={(e) => setSelectedName(e.target.value)}
+        aria-label="Select a councillor"
+      >
         {councillors.map((c) => (
-          <li key={c.name} className="rec-cllr-row">
-            <Reveal label={c.name}>
-              <CouncillorCard c={c} />
-            </Reveal>
-          </li>
+          <option key={c.name} value={c.name}>{c.name}</option>
         ))}
-      </ul>
+      </select>
+      {selected && <CouncillorCard c={selected} />}
     </section>
   );
 }
@@ -602,10 +730,11 @@ export function RecordPage() {
 
   return (
     <div className="static-page">
+      <CouncilHeader />
       <div className="static-hero">
         <h1 className="static-h1">The record</h1>
         <p className="static-lead">
-          A place to look up what's on the public record for your street.
+          A place to look up what's on the public record — by street, motion, contractor, or councillor.
         </p>
       </div>
 
@@ -618,6 +747,10 @@ export function RecordPage() {
             <p className="rec-caveat">{streetsData.data.coverage.note}</p>
           </>
         )}
+      </section>
+
+      <section className="static-section">
+        <LookupSearch />
       </section>
 
       <section className="static-section">

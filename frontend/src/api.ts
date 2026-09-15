@@ -189,6 +189,58 @@ export interface RecordStreetsData {
   streets: RecordStreetsStreet[];
 }
 
+// lookup_search.json (RECORD_PAGE_PLAN.md follow-on, 2026-09-15) — a flat,
+// keyword-searchable index of motions/other agenda items/tender awards,
+// each redacted at build time (src/analysis/lookup_search.py). A
+// discriminated union on `kind` so each entry only carries the fields
+// that kind actually has.
+export interface LookupSearchMotion {
+  kind: "motion";
+  meeting_id: number;
+  meeting_date: string;
+  meeting_type: string;
+  item_number: string | null;
+  title: string;
+  description: string | null;
+  outcome: string | null;
+}
+
+export interface LookupSearchOtherItem {
+  kind: "other_item";
+  meeting_id: number;
+  meeting_date: string;
+  meeting_type: string;
+  item_number: string | null;
+  item_type: string;
+  description: string;
+  is_confidential: boolean;
+}
+
+export interface LookupSearchTender {
+  kind: "tender";
+  meeting_id: number;
+  meeting_date: string;
+  meeting_type: string;
+  reference_number: string | null;
+  awarded_to: string | null;
+  description: string | null;
+  amount: number | null;
+  is_confidential: boolean;
+}
+
+export type LookupSearchEntry = LookupSearchMotion | LookupSearchOtherItem | LookupSearchTender;
+
+export interface LookupSearchData {
+  generated_at: string;
+  source: string;
+  n_motions: number;
+  n_other_items: number;
+  n_tenders: number;
+  motions: LookupSearchMotion[];
+  other_items: LookupSearchOtherItem[];
+  tenders: LookupSearchTender[];
+}
+
 // docs/frontend/RECORD_PAGE_PLAN.md Step 6 / Part B.3
 // (src/analysis/record_councillors.py) — a REDUCED projection, not
 // CouncillorProfile/councillors.json: exactly these five fields, no
@@ -1178,6 +1230,7 @@ export const api = {
   // docs/frontend/RECORD_PAGE_PLAN.md Step 4 — public tier (src/cli.py
   // SNAPSHOT_TIER).
   recordStreets: () => getSnapshot<RecordStreetsData>("record_streets"),
+  lookupSearch:  () => getSnapshot<LookupSearchData>("lookup_search"),
   // docs/frontend/RECORD_PAGE_PLAN.md Step 6 — public tier; councillors.json
   // itself (the by_name cross-link profile) stays full-tier (B.3).
   recordCouncillors: () => getSnapshot<RecordCouncillorsData>("record_councillors"),

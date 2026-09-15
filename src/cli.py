@@ -1893,6 +1893,12 @@ SNAPSHOT_TIER: dict[str, str] = {
     # never carries applicant_name or a quote — see tests/test_record_streets.py.
     "planning": "public",
     "record_streets": "public",
+    # RECORD_PAGE_PLAN.md follow-on (2026-09-15) — public only because
+    # every free-text field (motion title/description, other_items[]
+    # description, tenders[] awarded_to/description) is redacted at build
+    # time (src/analysis/lookup_search.py), same guarantee as
+    # record_streets — see tests/test_lookup_search.py.
+    "lookup_search": "public",
     # Step 5 — public only because apps[].description, apps[].quote and
     # headline_examples are all redacted at export time (above), same
     # guarantee as record_streets — see tests/test_privacy.py's
@@ -2396,6 +2402,20 @@ def _generate_snapshots(
         _top_streets = sorted(record_streets["streets"], key=lambda s: -s["n_applications"])[:10]
         for _s in _top_streets:
             console.print(f"    {_s['n_applications']:4d} applications — {_s['name']}")
+
+    # lookup_search: keyword-searchable motions/other_items/tenders index
+    # for /record's "Search council records" (RECORD_PAGE_PLAN.md
+    # follow-on, 2026-09-15). Plain SQL joins, no resolve_evidence() call
+    # and no per-meeting test battery — cheap either way, gated on its own
+    # only so --only can skip the write like every other snapshot.
+    if only is None or "lookup_search" in only:
+        from src.analysis.lookup_search import build_lookup_search
+        lookup_search = build_lookup_search(session, council_id, generated_at)
+        _write("lookup_search", lookup_search)
+        console.print(
+            f"    {lookup_search['n_motions']} motions, {lookup_search['n_other_items']} other items, "
+            f"{lookup_search['n_tenders']} tenders indexed"
+        )
 
     # transparency: share of council business decided behind closed doors over time
     trans = transparency_by_year(session, council_id)

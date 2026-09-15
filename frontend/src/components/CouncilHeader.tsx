@@ -29,6 +29,7 @@ export function CouncilHeader() {
         <NavLink to="/" end className={cls}>Overview</NavLink>
         <NavLink to="/analysis" className={cls}>Analysis</NavLink>
         <NavLink to="/watch" className={cls}>History</NavLink>
+        <NavLink to="/record" className={cls}>Look Up</NavLink>
         <NavLink to="/method" className={cls}>Method</NavLink>
       </nav>
     </div>
