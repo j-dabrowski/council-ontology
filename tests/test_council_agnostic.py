@@ -240,7 +240,6 @@ DIRECTION_ALLOW: dict[str, str] = {
         "derived, not hardcoded — both fixture profiles land the same side "
         "of the blended stay-rate metric (see comment above)"
     ),
-    "governance.power_spread": "hardcoded: valence=CRITICAL always",
     "governance.unanimity_trend": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
     "governance.durable_faction": (
         "deeper than a valence hardcode — headline/verdict are static Cambridge "

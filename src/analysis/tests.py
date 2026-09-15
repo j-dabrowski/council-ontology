@@ -627,17 +627,32 @@ def _t_voting_power(session, council_id, pc) -> TestResult:
     p = pc.get("power") or voting_power(session, council_id)
     wins = [pr.win_rate for pr in p.profiles]
     lo, hi = (round(min(wins) * 100), round(max(wins) * 100)) if wins else (None, None)
+    # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): a hierarchy
+    # among long-servers' own term-by-term win rates (`p.over_time`) is
+    # only a live accountability concern if it's static — the same
+    # people always on top, term after term. Real term-to-term movement
+    # (>15pp swing for at least one long-server) is what "turns over at
+    # elections rather than ossifying" actually means; a hierarchy that
+    # exists but moves is an Observation, not a Concern.
+    term_ranges = [
+        max(pt.win_rate for pt in person.points) - min(pt.win_rate for pt in person.points)
+        for person in p.over_time if person.points
+    ]
+    has_turnover = any(r > 0.15 for r in term_ranges) if term_ranges else True
     return TestResult(
         test_id="governance.power_spread",
         title="Does consensus hide a power hierarchy?",
         genre="Governance / culture (3.2)",
         principle="CIPFA-B · Nolan Accountability",
         question="On contested votes, how unequal is who actually wins — and is it accountable?",
-        valence=CRITICAL,
-        grade=G_OBSERVATION,
+        valence=NEUTRAL if has_turnover else CRITICAL,
+        grade=G_OBSERVATION if has_turnover else G_CONCERN,
         headline=f"Contested-vote win rates span {lo}–{hi}% between councillors",
         verdict=("A real hidden hierarchy behind near-unanimous votes — but one that turns over at "
-                 "elections rather than ossifying, so it is electorally accountable."),
+                 "elections rather than ossifying, so it is electorally accountable."
+                 if has_turnover else
+                 "A real hidden hierarchy behind near-unanimous votes, and one that doesn't turn over "
+                 "term to term — the same members keep winning regardless of the election cycle."),
         n=p.n_contested,
         base_rate=f"{round(p.base_carry_rate * 100, 1)}% base carry rate",
         era="2003–2026 (contested motions)",
