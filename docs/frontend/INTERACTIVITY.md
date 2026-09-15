@@ -28,34 +28,52 @@ The recipe, end to end (see `[INTERACT]` in `../investigator/INVESTIGATIONS.md` 
    `<Cell>` / point (or a table row) sets a `selected` state; render `<DrillDown>`
    below the chart.
 
-### Hard rule: never hardcode a councillor name or a specific finding in component source
+### Hard rule: never hardcode a councillor name, a council identity, or a specific finding in component source
 
 **No `.tsx` file may contain a literal councillor name, a specific vote/dissent/
-recusal number, or a narrative claim about a named individual as a string
-constant.** Every name and every stat a panel renders must be computed from its
-`data` prop (ultimately: the snapshot JSON, ultimately: the database) at render
-time — e.g. "the councillor with the highest `dissent_n`," never `"Rod Bradley"`.
+recusal number, a narrative claim about a named individual, a council name
+(short or full — including a `council === "cambridge"` conditional gating
+otherwise-generic prose), a council-specific narrative conclusion, an era
+label, or a hardcoded corpus span, as a string constant.** Every name, every
+stat, and every claim about the council under analysis that a panel renders
+must be computed from its `data` prop (ultimately: the snapshot JSON,
+ultimately: the database) at render time — e.g. "the councillor with the
+highest `dissent_n`," never `"Rod Bradley"`; "this council's scrutiny window
+label," never `"Authorised Inquiry"`; the corpus span from `councils.json`,
+never `"1995–2026"`.
 
 **Why this is a hard rule, not a style preference:** it's easy for a panel to be
 written by turning a real investigation finding into an "illustrative" worked
-example, using the real answer (a real name, a real dissent rate) directly in
-JSX instead of computing it from data. Nothing catches that at build time —
-`tsc`/`eslint` don't know what a councillor name is — and the draft/publish
-gate (`docs/TESTING.md`) doesn't catch it either, because that gate controls
+example, using the real answer (a real name, a real dissent rate, a real
+council's own history) directly in JSX instead of computing it from data.
+Nothing catches that at build time — `tsc`/`eslint` don't know what a
+councillor name or a council name is — and the draft/publish gate
+(`docs/TESTING.md`) doesn't catch it either, because that gate controls
 *data reaching `frontend/public/data/`*, not strings baked into component
 source. A hardcoded name in a `.tsx` file ships in the compiled bundle on
 every deploy regardless of which data file is loaded — including a
 placeholder-data deploy explicitly built to contain zero real content. The
 two are separate holes; closing one does nothing for the other, which is why
-this needs to be an explicit, checked rule rather than an assumption.
+this needs to be an explicit, checked rule rather than an assumption. The
+council-identity/era/span extension carries a second reason beyond the
+councillor-name case: a hardcoded narrative *conclusion* is wrong for a
+different council even when every word of it is true for this one — gating
+it behind `council === "cambridge"` doesn't fix that, it just reproduces the
+same hardcoded claim with extra indirection (SECOND_COUNCIL_PLAN.md Phase 3.5).
 
 **How to apply:** when building or reviewing a panel (by hand or via an agent),
-every specific name/number in prose must trace to a `.sort()`/`.filter()`/`.find()`
-over the `data` prop, computed in the component body, not typed as a literal. If a
-narrative claim can't be derived from the fields the snapshot actually exposes
-(e.g. "when the two sat opposite each other, X's side won 83% of the time" — no
-such cross-reference exists in `PowerData`), drop the claim rather than hardcode
-it — don't invent a data field just to justify keeping the sentence.
+every specific name/number/council-fact in prose must trace to a
+`.sort()`/`.filter()`/`.find()` over the `data` prop or the council list
+(`frontend/src/councils.ts`), computed in the component body, not typed as a
+literal. If a narrative claim can't be derived from the fields the snapshot
+actually exposes (e.g. "when the two sat opposite each other, X's side won
+83% of the time" — no such cross-reference exists in `PowerData`), drop the
+claim rather than hardcode it — don't invent a data field just to justify
+keeping the sentence. `scripts/check_no_hardcoded_content.py`
+(SECOND_COUNCIL_PLAN.md Phase 0.3) is the mechanical check for the council-
+identity/era/span half of this rule — it can't see a councillor name (no
+fixed registry to check literals against), so that half still relies on
+review; run it before any deploy either way.
 
 ### A panel is body-only — the analysis page owns the shell
 
