@@ -761,6 +761,29 @@ export interface ScorecardTest {
   chart: TestChart | null;
 }
 
+// The overall governance rating (docs/frontend/MAP_PAGE_PLAN.md Phase 1) —
+// mirrors src/analysis/rating.py's `Rating` dataclass field for field.
+// `band`/`band_label`/`band_reason` are config-sourced strings arriving
+// through the snapshot (config/rating.json), never typed into a component —
+// see RatingBand.tsx's own note on the INTERACTIVITY.md hard rule.
+// `critical_share` is null when `band === "insufficient"`: the coverage
+// gate stops before a share is even computed.
+export type RatingBandId = "green" | "yellow" | "red" | "insufficient";
+
+export interface RatingData {
+  band: RatingBandId;
+  band_label: string;
+  band_reason: string;
+  critical_share: number | null;
+  n_supportive: number;
+  n_neutral: number;
+  n_critical: number;
+  n_not_computable: number;
+  n_decisive: number;
+  computable_share: number;
+  config_version: number;
+}
+
 export interface ScorecardData {
   summary: {
     n_tests: number;
@@ -768,6 +791,7 @@ export interface ScorecardData {
     n_neutral: number;
     n_critical: number;
     n_not_computable: number;
+    rating: RatingData;
   };
   tests: ScorecardTest[];
 }
@@ -1173,6 +1197,7 @@ export interface MethodData {
 
 export const api = {
   scorecard:  () => getSnapshot<ScorecardData>("scorecard"),
+  rating:     () => getSnapshot<RatingData>("rating"),
   interests:  () => getSnapshot<InterestSummary[]>("interests"),
   divergence: () => getSnapshot<DivergenceData>("divergence"),
   coMovers:   () => getSnapshot<CoMoverData>("co-movers"),
