@@ -1,6 +1,7 @@
 import { CouncilHeader } from "../components/CouncilHeader";
 import { LatestMeetingStrip } from "../components/LatestMeetingStrip";
 import { OverviewPanel } from "../components/OverviewPanel";
+import { RatingBand } from "../components/RatingBand";
 import { ScorecardPanel } from "../components/ScorecardPanel";
 
 export function OverviewPage() {
@@ -9,6 +10,9 @@ export function OverviewPage() {
       <CouncilHeader />
 
       <main className="main-grid">
+        <section className="grid-full">
+          <RatingBand />
+        </section>
         <section className="grid-full">
           <LatestMeetingStrip />
         </section>
