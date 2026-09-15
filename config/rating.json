@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "provisional": true,
+  "note": "One council is one data point. Every threshold below (the band edges, the floor triggers, the coverage gate) is a judgment call made against Cambridge alone and cannot be calibrated until a second council's battery exists to check it against — see docs/frontend/MAP_PAGE_PLAN.md Phase 1.1.",
+  "bands": [
+    { "id": "green",  "label": "Broadly clean",       "max_critical_share": 0.20 },
+    { "id": "yellow", "label": "Mixed record",        "max_critical_share": 0.45 },
+    { "id": "red",    "label": "Governance concerns", "max_critical_share": 1.00 }
+  ],
+  "floors": [
+    {
+      "when": "any_grade",
+      "grade": "Integrity flag",
+      "force_band": "red",
+      "reason": "one integrity flag"
+    },
+    {
+      "when": "grade_count_in_category",
+      "grade": "Governance concern",
+      "min": 2,
+      "force_band": "yellow",
+      "reason": "two or more concerns in one category"
+    }
+  ],
+  "coverage_gate": {
+    "min_computable_share": 0.60,
+    "min_decisive_tests": 8,
+    "band_id": "insufficient",
+    "label": "Insufficient record"
+  }
+}
