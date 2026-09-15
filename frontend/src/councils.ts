@@ -44,10 +44,20 @@ export interface CouncilListEntry {
   draft_run_id: string;
 }
 
+// Vite's dev server SPA-falls-back to index.html (200, text/html) for any
+// unmatched path rather than a real 404 — same gotcha getSnapshot() (api.ts)
+// already guards against. A freshly-cloned repo with nothing published yet
+// hits this on every load (no frontend/public/data/councils.json committed
+// until a first real publish), so this must degrade to an empty list, not
+// throw on `res.json()` parsing HTML.
+function isRealJson(res: Response): boolean {
+  return res.ok && (res.headers.get("content-type")?.includes("json") ?? false);
+}
+
 export async function fetchCouncilList(): Promise<CouncilListEntry[]> {
   if (getMode() === "draft") {
     const res = await fetch("/data/draft/councils.json");
-    if (!res.ok) return [];
+    if (!isRealJson(res)) return [];
     const rows: { key: string; run_id: string; generated_at: string }[] = await res.json();
     // Draft mode has no display-name/source-url registry to read (that
     // lives in src/cli.py's COUNCILS, a backend-only concept) — the raw key
@@ -63,7 +73,7 @@ export async function fetchCouncilList(): Promise<CouncilListEntry[]> {
     }));
   }
   const res = await fetch("/data/councils.json");
-  if (!res.ok) return [];
+  if (!isRealJson(res)) return [];
   return res.json();
 }
 
@@ -88,9 +98,9 @@ export function useCouncilList(): { list: CouncilListEntry[]; loading: boolean }
 
   useEffect(() => {
     let cancelled = false;
-    fetchCouncilList().then((rows) => {
-      if (!cancelled) { setList(rows); setLoading(false); }
-    });
+    fetchCouncilList()
+      .then((rows) => { if (!cancelled) { setList(rows); setLoading(false); } })
+      .catch(() => { if (!cancelled) { setList([]); setLoading(false); } });
     return () => { cancelled = true; };
   }, []);
 
