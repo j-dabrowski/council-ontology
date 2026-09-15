@@ -28,7 +28,13 @@ from sqlalchemy.orm import Session
 # Resolve DB path relative to project root
 _PROJECT_ROOT = Path(__file__).parent.parent
 DB_PATH = os.environ.get("DB_PATH", str(_PROJECT_ROOT / "data" / "council.db"))
-COUNCIL_SHORT_NAME = "Cambridge"
+# Per-request council parameter (SECOND_COUNCIL_PLAN.md Phase 3.7), not a
+# fixed constant — every endpoint below takes an optional `?council=`
+# query param and falls back to this env var when the caller doesn't pass
+# one. Not reachable from the published frontend today (see module
+# docstring) — this just stops the API itself being single-council-only
+# for the day it is wired up or used directly.
+DEFAULT_COUNCIL_SHORT_NAME = os.environ.get("COUNCIL_SHORT_NAME", "Cambridge")
 
 # ── DB session ─────────────────────────────────────────────────────────────────
 
@@ -72,12 +78,13 @@ app.add_middleware(
 
 # ── Helpers ─────────────────────────────────────────────────────────────────────
 
-def _get_council_id(session: Session) -> int:
+def _get_council_id(session: Session, council: str | None = None) -> int:
     from src.analysis.queries import get_council_by_name
-    council = get_council_by_name(session, COUNCIL_SHORT_NAME)
-    if not council:
-        raise HTTPException(status_code=404, detail="Council not found")
-    return council.id
+    short_name = council or DEFAULT_COUNCIL_SHORT_NAME
+    row = get_council_by_name(session, short_name)
+    if not row:
+        raise HTTPException(status_code=404, detail=f"Council {short_name!r} not found")
+    return row.id
 
 
 def _dc(obj) -> dict:
@@ -93,6 +100,7 @@ def _dc(obj) -> dict:
 
 @app.get("/api/interests")
 def interests(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> list[dict]:
@@ -100,7 +108,7 @@ def interests(
     from src.analysis.queries import interest_declarations_summary
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         summaries = interest_declarations_summary(session, council_id, from_year, to_year)
         return [_dc(s) for s in summaries]
     finally:
@@ -109,6 +117,7 @@ def interests(
 
 @app.get("/api/divergence")
 def divergence(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> dict:
@@ -116,7 +125,7 @@ def divergence(
     from src.analysis.divergence import officer_divergence
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         pairs = officer_divergence(session, council_id, from_year, to_year)
         diverged = [p for p in pairs if p.diverged]
         followed = [p for p in pairs if not p.diverged]
@@ -144,6 +153,7 @@ def divergence(
 
 @app.get("/api/co-movers")
 def co_movers(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     min_count: int = Query(default=5),
@@ -153,7 +163,7 @@ def co_movers(
     from src.analysis.queries import co_mover_pairs
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         pairs = co_mover_pairs(
             session, council_id, from_year, to_year,
             min_count=min_count, active_only=active_only,
@@ -177,6 +187,7 @@ def co_movers(
 
 @app.get("/api/alignment")
 def alignment(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     min_shared: int = Query(default=10),
@@ -187,7 +198,7 @@ def alignment(
     ALLY_THRESHOLD, OPPONENT_THRESHOLD = 0.85, 0.40
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         rows = voting_alignment_matrix(
             session, council_id,
             from_year=from_year, to_year=to_year,
@@ -212,6 +223,7 @@ def alignment(
 
 @app.get("/api/trends")
 def trends(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> dict:
@@ -219,7 +231,7 @@ def trends(
     from src.analysis.queries import contestation_by_year, topic_distribution_by_year
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         contestation = contestation_by_year(session, council_id, from_year, to_year)
         topics = topic_distribution_by_year(session, council_id, from_year, to_year)
         return {
@@ -241,6 +253,7 @@ def trends(
 
 @app.get("/api/engagement")
 def engagement(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
 ) -> list[dict]:
@@ -248,7 +261,7 @@ def engagement(
     from src.analysis.queries import public_engagement_by_year
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         rows = public_engagement_by_year(session, council_id, from_year, to_year)
         return [
             {
@@ -265,6 +278,7 @@ def engagement(
 
 @app.get("/api/activity")
 def activity(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     min_votes: int = Query(default=10),
@@ -273,7 +287,7 @@ def activity(
     from src.analysis.queries import councillor_activity_ranges
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         rows = councillor_activity_ranges(session, council_id, from_year, to_year, min_votes)
         return [_dc(r) for r in rows]
     finally:
@@ -282,6 +296,7 @@ def activity(
 
 @app.get("/api/planning")
 def planning(
+    council: str | None = Query(default=None),
     from_year: int | None = Query(default=None),
     to_year: int | None = Query(default=None),
     limit: int = Query(default=10),
@@ -290,7 +305,7 @@ def planning(
     from src.analysis.queries import planning_outcomes
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         o = planning_outcomes(session, council_id, from_year, to_year, limit)
         return {
             "total": o.total,
@@ -350,6 +365,7 @@ _EVIDENCE_SUPPORTED_FILTERS: dict[str, set[str]] = {
 @app.get("/api/evidence/{test_id}")
 def evidence(
     test_id: str,
+    council: str | None = Query(default=None),
     year: int | None = Query(default=None),
     councillor: str | None = Query(default=None),
     contractor: str | None = Query(default=None),
@@ -400,7 +416,7 @@ def evidence(
 
     session = get_session()
     try:
-        council_id = _get_council_id(session)
+        council_id = _get_council_id(session, council)
         # Only pass a filter the builder actually declared support for —
         # not every resolver takes a `year` kwarg (objection_dose_response's
         # doesn't take one at all yet).
