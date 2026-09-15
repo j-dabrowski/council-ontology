@@ -5010,6 +5010,35 @@ def main() -> None:
                            help="Show what would be geocoded without making API calls")
     p_geocode.set_defaults(func=lambda a: __import__("scripts.geocode_sites", fromlist=["run"]).run(a))
 
+    # boundary (docs/frontend/MAP_PAGE_PLAN.md Phase 3) — a council's
+    # boundary polygon, or (with --backdrop) the all-WA context layer.
+    p_boundary = sub.add_parser(
+        "boundary",
+        help="Build a council's boundary polygon, or the all-WA backdrop layer, for /map",
+    )
+    p_boundary.add_argument("council", nargs="?", choices=list(COUNCILS),
+                             help="Council key — omit when using --backdrop")
+    p_boundary.add_argument("--backdrop", action="store_true",
+                             help="Build config/wa_lga_backdrop.geojson (every WA LGA) "
+                                  "instead of one council's boundary")
+    p_boundary.add_argument("--source",
+                             help="Local path or URL to use instead of the live ABS ASGS query "
+                                  "(offline/testing)")
+    p_boundary.add_argument("--lga-name", dest="lga_name",
+                             help="ABS LGA name to match, if it differs from the council key")
+
+    def _cmd_boundary(a):
+        if not a.backdrop and not a.council:
+            console.print("[red]Pass a council key, or --backdrop.[/red]")
+            sys.exit(1)
+        if a.backdrop and a.council:
+            console.print("[red]--backdrop doesn't take a council key.[/red]")
+            sys.exit(1)
+        from scripts.build_boundaries import run as _run_boundary
+        _run_boundary(a)
+
+    p_boundary.set_defaults(func=_cmd_boundary)
+
     # merge-pdfs
     p_merge = sub.add_parser(
         "merge-pdfs",
