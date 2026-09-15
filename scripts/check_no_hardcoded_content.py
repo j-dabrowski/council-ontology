@@ -72,9 +72,6 @@ _CHECKS: list[tuple[str, re.Pattern]] = [
 # empty this file by file — shrink it as each hardcode is fixed, never widen
 # a pattern to stop matching instead.
 ALLOWLIST: dict[tuple[str, str], str] = {
-    ("frontend/src/components/CouncilHeader.tsx", "<option value=\"cambridge\">Cambridge</option>"): "B6: hardcoded council name/identity",
-    ("frontend/src/components/CouncilHeader.tsx", "Analysis of meeting minutes \u00b7 1995\u20132026 \u00b7{\" \"}"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/CouncilHeader.tsx", "<span className=\"data-note\">Full 30-year corpus</span>"): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("frontend/src/components/OverviewPanel.tsx", "<>Four independent panels pivot on the 2018\u201321 Authorised Inquiry. Stepping out"): "B6: hardcoded Authorised-Inquiry era label",
     ("frontend/src/components/OverviewPanel.tsx", "statLabel: \"confidential business across two decades (1995\u20132017) \u2014 a genuinely open baseline\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("frontend/src/components/OverviewPanel.tsx", "title=\"What 30 Years of Minutes Say \u2014 the Big Picture\""): "B6: hardcoded corpus span (1995-2026 / 30-year)",
