@@ -211,7 +211,7 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
 
       {/* ── Part 2 — the 2000s old-guard network ── */}
       <p className="section-heading" style={{ marginTop: 20 }}>
-        2 · The 2000s "old guard" — Cambridge's most entrenched sponsorship web ({data.oldguard_label})
+        2 · This council's most entrenched sponsorship web ({data.oldguard_label})
       </p>
       <OldGuardNetwork nodes={data.oldguard_nodes} edges={data.oldguard_edges} />
       <div className="spon-legend">
@@ -221,10 +221,11 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
         <span className="spon-legend-note">node size = how active · line weight = sponsorship lift</span>
       </div>
       <p className="chart-note">
-        Through 2000–2007 a stable group of long-servers preferentially backed each other's motions. It is the
-        densest sponsorship cluster in 30 years. But it is <em>not</em> a single voting bloc: several of the
-        strongest ties are <span style={{ color: KIND_COLOR.procedural }}>procedural</span> — members who
-        sponsored deep into the network yet voted against those same colleagues on divisive items.
+        Through {data.oldguard_label} a stable group of long-servers preferentially backed each
+        other's motions — the densest sponsorship cluster on record. But it is <em>not</em> a single
+        voting bloc: several of the strongest ties are{" "}
+        <span style={{ color: KIND_COLOR.procedural }}>procedural</span> — members who sponsored
+        deep into the network yet voted against those same colleagues on divisive items.
         "Old guard" describes a working establishment, not a unified faction.
       </p>
 

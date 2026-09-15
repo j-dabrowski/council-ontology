@@ -91,7 +91,7 @@ export function TenurePanel({ test }: { test: ResolvedTest }) {
           {top && (
             <Reveal label="who has served longest">
               <CouncillorLink name={top.name} /> has been voting on
-              Cambridge matters for over <strong>{Math.floor(top?.years ?? 0)} years</strong>.
+              council matters for over <strong>{Math.floor(top?.years ?? 0)} years</strong>.
             </Reveal>
           )}
         </span>

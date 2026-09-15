@@ -105,8 +105,8 @@ export function ScorecardPanel() {
         the council passes — a clean result ("no threshold-gaming found") is shown, not hidden.
         The battery is built to run <strong>unmodified on any Western Australian council</strong>{" "}
         whose minutes yield the required schema, with the same test id on every one, so a result
-        here lines up <strong>test by test</strong> against any other council's, not just
-        Cambridge's. A "not computable" row is part of that comparison too: it says this corpus's
+        here lines up <strong>test by test</strong> against any other council's on the platform.
+        A "not computable" row is part of that comparison too: it says this corpus's
         records don't carry what the test needs — a statement about record-keeping, not a finding
         about the council's conduct.
       </p>
