@@ -751,6 +751,13 @@ export interface WatchProvenance {
   coverage_ratio: number | null;
 }
 
+export interface WatchMeetingMotion {
+  item_number: string | null;
+  title: string;
+  outcome: string | null;
+  description: string | null;
+}
+
 export interface WatchMeeting {
   meeting_id: number;
   meeting_date: string;
@@ -760,6 +767,7 @@ export interface WatchMeeting {
   tests: { run: number; exceptions: number; within_baseline: number };
   exceptions: WatchException[];
   exceptions_withheld: number;
+  motions: WatchMeetingMotion[];
   provenance: WatchProvenance;
 }
 

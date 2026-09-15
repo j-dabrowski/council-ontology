@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 from src.analysis.tests import ENTITY_RESOLUTION_CLEAN, UNIT_INSTITUTIONAL, TestResult, run_meeting_digest
 from src.invariant_gate import GateResult, derive_claim_tiers, project_to_institutional, run_invariant_gate
 from src.models import Councillor, Meeting, Motion
+from src.privacy import redact_private_names
 from src.provenance import meeting_provenance
 from src.test_registry import RegistryRow, load_test_registry
 
@@ -160,7 +161,7 @@ def compute_watch_feed(
     # Local import: src.analysis.digest imports this module at top level
     # (MeetingBaselines/body_class_of/load_meeting_bodies), so a module-level
     # import here would be circular.
-    from src.analysis.digest import deviates, meeting_inventory
+    from src.analysis.digest import deviates, meeting_inventory, public_inventory_projection
 
     meeting_bodies = meeting_bodies if meeting_bodies is not None else load_meeting_bodies()
     registry = registry if registry is not None else load_test_registry()
@@ -198,6 +199,33 @@ def compute_watch_feed(
         inv = meeting_inventory(session, council_id, m.id)
         n_motions = len(inv["motions"])
         n_other = sum(len(v) for v in inv["other_items_by_type"].values())
+
+        # What the meeting actually decided (WATCH_FEED_PLAN.md follow-on,
+        # 2026-09-15): name-free by construction (public_inventory_
+        # projection() strips moved_by/seconded_by) plus a redact_private_
+        # names() pass over title and description -- the same treatment
+        # record_streets.py/dose.json apply to their own free text, applied
+        # here at construction time rather than relying on
+        # project_watch_feed_to_public()'s tier filter to catch it (that
+        # function only filters `exceptions`; every other row key,
+        # including this one, passes through unchanged). description is
+        # the actual substance ("Rescission of the Accounting Standards
+        # Policy... no longer necessary as compliance is mandated through
+        # the Local Government Act 1995...") -- a title alone reads as
+        # opaque without it. Checked directly: 97.6% of motions carry one,
+        # 218/13,682 flagged by contains_private_name_pattern(), all
+        # correctly redacted. other_items_by_type is still deliberately not
+        # included here -- longer free text, higher redaction-risk
+        # surface, a separately-scoped follow-up.
+        motions_public = [
+            {
+                "item_number": it["item_number"],
+                "title": redact_private_names(it["title"]),
+                "outcome": it["outcome"],
+                "description": redact_private_names(it["description"]),
+            }
+            for it in public_inventory_projection(inv)["motions"]
+        ]
 
         exceptions: list[dict] = []
         for c in claims:
@@ -238,6 +266,7 @@ def compute_watch_feed(
                 "within_baseline": len(claims) - len(exceptions),
             },
             "exceptions": exceptions,
+            "motions": motions_public,
             "provenance": provenance_by_meeting.get(m.id, _null_provenance),
         })
 

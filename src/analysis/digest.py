@@ -192,6 +192,7 @@ def meeting_inventory(session: Session, council_id: int, meeting_id: int) -> dic
             "item_id": f"{meeting_id}:motion:{m.item_number or idx}",
             "item_number": m.item_number,
             "title": m.title,
+            "description": m.description,
             "outcome": m.outcome.value if m.outcome else None,
             "votes_for": m.votes_for,
             "votes_against": m.votes_against,

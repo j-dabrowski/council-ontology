@@ -82,6 +82,30 @@ function ProvenanceFooter({ provenance: p }: { provenance: WatchMeeting["provena
   );
 }
 
+function MotionsSection({ motions }: { motions: WatchMeeting["motions"] }) {
+  return (
+    <div className="watch-motions-section">
+      <h4 className="watch-motions-heading">What was decided</h4>
+      {motions.length === 0 ? (
+        <p className="watch-motions-empty">No items extracted for this meeting.</p>
+      ) : (
+        <ul className="watch-motions">
+          {motions.map((m, i) => (
+            <li className="watch-motion" key={i}>
+              <div className="watch-motion-head">
+                {m.item_number && <span className="watch-motion-number">{m.item_number}</span>}
+                <span className="watch-motion-title">{m.title}</span>
+                {m.outcome && <span className="watch-motion-outcome">{m.outcome}</span>}
+              </div>
+              {m.description && <p className="watch-motion-desc">{m.description}</p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function WatchRow({
   row, cllrData, open, onToggle,
 }: {
@@ -104,6 +128,7 @@ function WatchRow({
       </button>
       {open && (
         <div className="watch-row-detail">
+          <MotionsSection motions={row.motions} />
           {row.exceptions.map((exc) => {
             const resolved = resolveException(exc);
             if (!resolved) return null;

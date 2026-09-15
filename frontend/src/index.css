@@ -1711,6 +1711,73 @@ a:hover { text-decoration: underline; }
   border-top: 1px solid var(--border-muted);
 }
 
+.watch-motions-section {
+  margin-top: 16px;
+}
+
+.watch-motions-heading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 8px;
+}
+
+.watch-motions-empty {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.watch-motions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.watch-motion {
+  padding: 6px 12px;
+  border-top: 1px solid var(--border-muted);
+}
+
+.watch-motion:first-child {
+  border-top: none;
+}
+
+.watch-motion-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  align-items: baseline;
+  font-size: 0.8rem;
+}
+
+.watch-motion-number {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.watch-motion-title {
+  color: var(--text-hi);
+  flex: 1;
+}
+
+.watch-motion-outcome {
+  color: var(--text-dim);
+  font-size: 0.75rem;
+}
+
+.watch-motion-desc {
+  margin: 3px 0 0;
+  color: var(--text-lo);
+  line-height: 1.4;
+  font-size: 0.78rem;
+}
+
 .watch-exception {
   margin-top: 16px;
 }
@@ -1824,6 +1891,12 @@ a:hover { text-decoration: underline; }
   flex-basis: 100%;
   font-size: 0.78rem;
   color: var(--text-faint);
+}
+
+.latest-meeting-motions {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--text-lo);
 }
 
 .latest-meeting-link {

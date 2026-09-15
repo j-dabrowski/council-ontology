@@ -97,6 +97,52 @@ def test_meeting_with_no_motions_still_gets_a_row(session):
     assert row["tests"]["run"] == 14
 
 
+def test_motions_are_present_and_name_free_and_redacted(session):
+    # WATCH_FEED_PLAN.md follow-on (2026-09-15): the feed now carries what
+    # a meeting actually decided, not just counts. moved_by/seconded_by
+    # must never appear (public_inventory_projection() strips them before
+    # this even reaches redact_private_names()); a real private-individual
+    # shape in the title itself must come back redacted, matching
+    # record_streets.py's own treatment of free text.
+    council_id = _council(session)
+    meeting = Meeting(
+        council_id=council_id, meeting_date=date(2026, 5, 12),
+        meeting_type="Ordinary Council Meeting", document_type="minutes",
+    )
+    session.add(meeting)
+    session.flush()
+    session.add(Motion(
+        meeting_id=meeting.id, item_number="9.1", title="Adoption of Annual Budget",
+        description="Adopts the budget as tabled, per s6.2 of the Local Government Act.",
+        outcome="carried",
+    ))
+    session.add(Motion(
+        meeting_id=meeting.id, item_number="9.2",
+        title="Legal Proceedings - Mr M Congerton, 18 Joseph Street",
+        description="Application submitted by Mr M Congerton for legal costs recovery.",
+        outcome="carried",
+    ))
+    session.flush()
+
+    feed = compute_watch_feed(session, council_id, "test", "2026-09-06T00:00:00+00:00",
+                              _baselines(), min_n=3,
+                              validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR)
+    row = feed["meetings"][0]
+    assert len(row["motions"]) == 2
+    plain = next(m for m in row["motions"] if m["item_number"] == "9.1")
+    assert plain == {
+        "item_number": "9.1", "title": "Adoption of Annual Budget", "outcome": "carried",
+        "description": "Adopts the budget as tabled, per s6.2 of the Local Government Act.",
+    }
+    flagged = next(m for m in row["motions"] if m["item_number"] == "9.2")
+    assert "Congerton" not in flagged["title"]
+    assert "[private individual" in flagged["title"]
+    assert "Congerton" not in flagged["description"]
+    assert "[private individual" in flagged["description"]
+    for m in row["motions"]:
+        assert "moved_by" not in m and "seconded_by" not in m
+
+
 def test_tests_run_exceptions_and_within_baseline_always_sum_to_run(session):
     council_id = _council(session)
     meeting_id = Meeting(
