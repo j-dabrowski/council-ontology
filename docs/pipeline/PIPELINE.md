@@ -250,7 +250,7 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
   and valences make sense for a different council type (metro vs regional, WA vs other
   state). Only after this review is complete should the pipeline be pointed at a new council.
 
-- **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0**
+- **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0, and `council boundary <key>` for its map boundary**
 
 - **Corpus onboarding order — first corpus vs subsequent (design sketch, not
   built as an automated chain — see `docs/DISCOVERY_LOOP_DESIGN.md`).** The
@@ -280,7 +280,7 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
      big one.
   6. Full extraction (Level 4+) — the single biggest cost in the pipeline;
      only spent after step 5 passes.
-  7. dedup / build-relationships / geocode / archive.
+  7. dedup / build-relationships / geocode / `council boundary` / archive.
   8. **Explorer** — no frozen battery exists yet for a genuinely first
      corpus, so hypothesis generation has to happen here. Every structural
      kill now writes to `DATA_ENRICHMENT.md` (`Explorer_prompt.txt` v2.4),
@@ -897,6 +897,30 @@ Each state's electoral commission publishes results differently:
 - **QLD**: ECQ publishes by-election and general election results per council
 
 In all cases, the target is the same CSV format above, imported via `council import-terms`.
+
+---
+
+## Council Setup: Boundary (run once per council)
+
+Adding a council should mean sourcing its boundary the same way it means sourcing its
+terms (`docs/frontend/MAP_PAGE_PLAN.md` Phase 3). Without this, the council has no
+`config/council_boundaries/<key>.geojson` and simply doesn't appear on `/map` — not an
+error, just missing, so it's easy to forget.
+
+```bash
+council boundary <key>
+```
+
+Fetches the council's polygon from the ABS ASGS WA-LGA layer, validates it against that
+council's already-geocoded `sites` rows (refuses to write below a 90% inside-boundary
+floor — the failure mode this catches is a polygon keyed to the wrong LGA, which
+otherwise looks fine on screen), and writes the boundary file. `council boundary
+--backdrop` (run once, not per council) rebuilds the shared all-WA context layer.
+
+`--lga-name` overrides the ABS name to match when it differs from the council key
+(`scripts/build_boundaries.py`). Geocoding (`council geocode`) is what the validation
+step reads — run it first if the council's sites aren't geocoded yet, or the check is
+skipped rather than silently passed.
 
 ---
 
