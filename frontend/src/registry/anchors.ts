@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
+import { currentCouncil } from "../councils";
 
 // The one place either cross-page deep-link direction is expressed
 // (docs/frontend/SURFACE_PROJECTION_PLAN.md B.2). App.tsx uses HashRouter,
@@ -15,12 +16,17 @@ import { useSearchParams } from "react-router-dom";
 // `querySelector("#a.b")` parses the dot as a class, and any escaping
 // scheme is a second identifier namespace to keep in step with the first.
 
+// Every href here carries the active council (currentCouncil(), read from
+// the route the same way api.ts does — App.tsx's Phase 2/3.2 "/c/:council"
+// routing means a bare "#/analysis" no longer resolves to anything, it
+// falls through to the catch-all redirect and loses the deep link entirely).
+
 export function analysisHref(testId: string): string {
-  return `#/analysis?test=${encodeURIComponent(testId)}`;
+  return `#/c/${currentCouncil()}/analysis?test=${encodeURIComponent(testId)}`;
 }
 
 export function scorecardHref(testId: string): string {
-  return `#/?test=${encodeURIComponent(testId)}`;
+  return `#/c/${currentCouncil()}?test=${encodeURIComponent(testId)}`;
 }
 
 // docs/frontend/WATCH_FEED_PLAN.md Step 7 — the latest-meeting strip's link
@@ -28,7 +34,7 @@ export function scorecardHref(testId: string): string {
 // test anchors above; `data-meeting-id` is the matching attribute (already
 // carried by every WatchPage row for exactly this).
 export function watchHref(meetingId: number): string {
-  return `#/watch?meeting=${encodeURIComponent(meetingId)}`;
+  return `#/c/${currentCouncil()}/watch?meeting=${encodeURIComponent(meetingId)}`;
 }
 
 const HIGHLIGHT_CLASS = "test-target";

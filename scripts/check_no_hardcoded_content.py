@@ -72,9 +72,6 @@ _CHECKS: list[tuple[str, re.Pattern]] = [
 # empty this file by file — shrink it as each hardcode is fixed, never widen
 # a pattern to stop matching instead.
 ALLOWLIST: dict[tuple[str, str], str] = {
-    ("frontend/src/pages/MapPage.tsx", "\"Cambridge\": \"cambridge\","): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/MapPage.tsx", "// Score \u2192 fill colour.  Amber for Cambridge's current 6 supportive / 5 critical."): "B6: hardcoded council name/identity",
-    ("frontend/src/pages/MapPage.tsx", "label: \"Town of Cambridge\","): "B6: hardcoded council name/identity",
     ("src/analysis/tests.py", "era=\"1995\u20132026\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("src/analysis/tests.py", "# rather than assuming Cambridge's own rose-then-fell shape. A \u00b15pp"): "B6: hardcoded council name/identity",
     ("src/analysis/tests.py", "title=\"Did recusal compliance track the Authorised Inquiry?\","): "B6: hardcoded Authorised-Inquiry era label",

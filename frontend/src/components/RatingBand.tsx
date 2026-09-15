@@ -1,3 +1,4 @@
+import { useParams } from "react-router-dom";
 import { useData } from "../hooks/useData";
 import { api, RatingData, ScorecardData } from "../api";
 
@@ -41,6 +42,7 @@ function checkAgreesWithScorecard(rating: RatingData, scorecard: ScorecardData |
 export function RatingBand() {
   const { data } = useData<RatingData>(() => api.rating());
   const { data: scorecard } = useData<ScorecardData>(() => api.scorecard());
+  const { council } = useParams<{ council: string }>();
   // No LoadingCard/ErrorCard here, same call LatestMeetingStrip makes: a
   // full-width band failing to load shouldn't deface the page above
   // everything else on it — it just doesn't render.
@@ -68,7 +70,7 @@ export function RatingBand() {
           {data.n_not_computable} not computable
         </span>
       </div>
-      <a className="rating-band-link" href="#/analysis">How this is calculated →</a>
+      <a className="rating-band-link" href={`#/c/${council}/analysis`}>How this is calculated →</a>
     </div>
   );
 }
