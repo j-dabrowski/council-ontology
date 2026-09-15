@@ -463,11 +463,15 @@ def _same_body_meeting_types(session, meeting_id: int) -> list[str]:
     degrade-thin-rather-than-crash rule.
     """
     from src.analysis.meeting_baselines import body_class_of, load_meeting_bodies
+    from src.models import Council
 
     m = session.query(Meeting).filter(Meeting.id == meeting_id).first()
     if m is None or not m.meeting_type:
         return []
-    bodies = load_meeting_bodies()
+    council = session.query(Council).filter(Council.id == m.council_id).first()
+    if council is None:
+        return [m.meeting_type]
+    bodies = load_meeting_bodies(council.short_name)
     cls = body_class_of(m.meeting_type, bodies)
     peers = [mt for mt, c in bodies.items() if c == cls]
     return peers or [m.meeting_type]

@@ -1453,6 +1453,13 @@ def cmd_profile(args) -> None:
     rq = profile.record_quality
     console.print(f"[dim]vote choice distribution: {rq.vote_choice_distribution}[/dim]")
 
+    if profile.unmapped_meeting_types:
+        console.print(
+            f"[yellow]{len(profile.unmapped_meeting_types)} meeting_type(s) not in "
+            f"config/meeting_bodies.json for '{key}' — digest baselines for these "
+            f"will degrade to UNKNOWN_BODY_CLASS: {profile.unmapped_meeting_types}[/yellow]"
+        )
+
 
 def cmd_meeting_baselines(args) -> None:
     """Per-meeting digest salience baselines (digest design plan §3 item 6):

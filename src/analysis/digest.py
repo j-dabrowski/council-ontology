@@ -310,7 +310,10 @@ def compose_period_digest(
     if interval not in VALID_INTERVALS:
         raise ValueError(f"interval must be one of {VALID_INTERVALS}, got {interval!r}")
 
-    meeting_bodies = load_meeting_bodies()
+    # baselines.council carries the same council_key compute_meeting_baselines()
+    # was built with (MeetingBaselines.council) — reused here rather than adding
+    # a parameter, since a baselines file is always for exactly one council.
+    meeting_bodies = load_meeting_bodies(baselines.council)
     known_names = {
         (c.given_name, c.family_name) for c in session.query(Councillor).all()
     }

@@ -42,10 +42,17 @@ DEFAULT_MEETING_BODIES_PATH = Path(__file__).resolve().parent.parent.parent / "c
 UNKNOWN_BODY_CLASS = "unknown"
 
 
-def load_meeting_bodies(path: Path = DEFAULT_MEETING_BODIES_PATH) -> dict[str, str]:
+def load_meeting_bodies(
+    council_key: str, path: Path = DEFAULT_MEETING_BODIES_PATH,
+) -> dict[str, str]:
+    """A council absent from the config gets `{}` — every meeting_type then
+    degrades to UNKNOWN_BODY_CLASS via `body_class_of()` rather than
+    crashing, the same "absent means no config" pattern `council_eras.json`
+    established for the recusal/question-responsiveness era window."""
     if not path.exists():
         raise FileNotFoundError(f"No meeting_bodies config at {path}")
-    return json.loads(path.read_text())
+    all_bodies = json.loads(path.read_text())
+    return all_bodies.get(council_key.lower(), {})
 
 
 def body_class_of(meeting_type: str, meeting_bodies: dict[str, str]) -> str:
@@ -94,7 +101,7 @@ def compute_meeting_baselines(
     session: Session, council_id: int, council_key: str, generated_at: str,
     meeting_bodies: dict[str, str] | None = None,
 ) -> MeetingBaselines:
-    meeting_bodies = meeting_bodies if meeting_bodies is not None else load_meeting_bodies()
+    meeting_bodies = meeting_bodies if meeting_bodies is not None else load_meeting_bodies(council_key)
     meetings = _content_bearing_minutes_meetings(session, council_id)
 
     raw: dict[str, dict[str, list[float]]] = {}
@@ -163,7 +170,7 @@ def compute_watch_feed(
     # import here would be circular.
     from src.analysis.digest import deviates, meeting_inventory, public_inventory_projection
 
-    meeting_bodies = meeting_bodies if meeting_bodies is not None else load_meeting_bodies()
+    meeting_bodies = meeting_bodies if meeting_bodies is not None else load_meeting_bodies(council_key)
     registry = registry if registry is not None else load_test_registry()
     registry_by_id = {row.id: row for row in registry if row.meeting_scope}
 

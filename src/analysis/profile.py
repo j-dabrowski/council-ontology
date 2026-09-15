@@ -118,6 +118,12 @@ class CorpusProfile:
     entity_counts: EntityCounts
     record_quality: RecordQuality
     identity_resolution: IdentityResolution
+    # Every `meeting_type` this council's corpus actually contains but that
+    # `config/meeting_bodies.json` has no entry for — SECOND_COUNCIL_PLAN.md
+    # Phase 1.4's "loud diagnostic": these meetings silently degrade to
+    # UNKNOWN_BODY_CLASS (thin/empty digest baseline) rather than crashing,
+    # so this is the only place that gap becomes visible.
+    unmapped_meeting_types: list[str]
 
 
 def _count_via_meeting(session: Session, model, council_id: int) -> int:
@@ -345,6 +351,18 @@ def _identity_resolution(session: Session, council_id: int) -> IdentityResolutio
     )
 
 
+def _unmapped_meeting_types(session: Session, council_id: int, council_key: str) -> list[str]:
+    from src.analysis.meeting_baselines import load_meeting_bodies
+
+    bodies = load_meeting_bodies(council_key)
+    present = {
+        mt for (mt,) in session.query(Meeting.meeting_type)
+        .filter(Meeting.council_id == council_id, Meeting.meeting_type.isnot(None))
+        .distinct()
+    }
+    return sorted(present - set(bodies))
+
+
 def compute_corpus_profile(session: Session, council_id: int, council_key: str, generated_at: str) -> CorpusProfile:
     """The whole S2 pass: one machine-readable document over an
     already-extracted corpus. Read-only; makes no judgement about whether a
@@ -358,6 +376,7 @@ def compute_corpus_profile(session: Session, council_id: int, council_key: str, 
         entity_counts=_entity_counts(session, council_id),
         record_quality=_record_quality(session, council_id),
         identity_resolution=_identity_resolution(session, council_id),
+        unmapped_meeting_types=_unmapped_meeting_types(session, council_id, council_key),
     )
 
 

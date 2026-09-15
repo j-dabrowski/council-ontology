@@ -98,8 +98,10 @@ _DEFAULT_POLICY = {
 
 
 def _baselines(entries: dict | None = None) -> MeetingBaselines:
+    # council="cambridge" so compose_period_digest's load_meeting_bodies(baselines.council)
+    # resolves the real config/meeting_bodies.json entries, not the empty per-council default.
     return MeetingBaselines(
-        council="test", generated_at="x", n_meetings_considered=0, baselines=entries or {},
+        council="cambridge", generated_at="x", n_meetings_considered=0, baselines=entries or {},
     )
 
 

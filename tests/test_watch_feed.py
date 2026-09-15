@@ -70,7 +70,7 @@ def test_row_count_equals_minutes_meeting_count(session):
     ))
     session.flush()
 
-    feed = compute_watch_feed(session, council_id, "test", "2026-09-06T00:00:00+00:00",
+    feed = compute_watch_feed(session, council_id, "cambridge", "2026-09-06T00:00:00+00:00",
                               _baselines(), min_n=3,
                               validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR)
     assert feed["n_meetings"] == 3
@@ -88,7 +88,7 @@ def test_meeting_with_no_motions_still_gets_a_row(session):
     ))
     session.flush()
 
-    feed = compute_watch_feed(session, council_id, "test", "2026-09-06T00:00:00+00:00",
+    feed = compute_watch_feed(session, council_id, "cambridge", "2026-09-06T00:00:00+00:00",
                               _baselines(), min_n=3,
                               validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR)
     assert feed["n_meetings"] == 1
@@ -124,7 +124,7 @@ def test_motions_are_present_and_name_free_and_redacted(session):
     ))
     session.flush()
 
-    feed = compute_watch_feed(session, council_id, "test", "2026-09-06T00:00:00+00:00",
+    feed = compute_watch_feed(session, council_id, "cambridge", "2026-09-06T00:00:00+00:00",
                               _baselines(), min_n=3,
                               validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR)
     row = feed["meetings"][0]
@@ -156,7 +156,7 @@ def test_tests_run_exceptions_and_within_baseline_always_sum_to_run(session):
                        awarded_to="Acme Constructions", is_confidential=False))
     session.flush()
 
-    feed = compute_watch_feed(session, council_id, "test", "2026-09-06T00:00:00+00:00",
+    feed = compute_watch_feed(session, council_id, "cambridge", "2026-09-06T00:00:00+00:00",
                               _baselines(), min_n=3,
                               validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR)
     row = feed["meetings"][0]
@@ -180,7 +180,7 @@ def test_any_occurrence_tender_award_is_an_exception_with_both_views(session):
 
     tb = TestBaseline(n_meetings=20, values=[0.0] * 20)
     feed = compute_watch_feed(
-        session, council_id, "test", "2026-09-06T00:00:00+00:00",
+        session, council_id, "cambridge", "2026-09-06T00:00:00+00:00",
         _baselines({"procurement.concentration": {"full_council": tb}}), min_n=3,
         validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR,
     )
@@ -205,7 +205,7 @@ def test_quiet_meeting_has_no_exceptions(session):
     session.add(Motion(meeting_id=meeting.id, title="A motion", item_number="1"))
     session.flush()
 
-    feed = compute_watch_feed(session, council_id, "test", "2026-09-06T00:00:00+00:00",
+    feed = compute_watch_feed(session, council_id, "cambridge", "2026-09-06T00:00:00+00:00",
                               _baselines(), min_n=3,
                               validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR)
     row = feed["meetings"][0]
@@ -223,7 +223,7 @@ def test_provenance_is_null_for_a_meeting_with_no_recorded_pdf(session):
     ))
     session.flush()
 
-    feed = compute_watch_feed(session, council_id, "test", "2026-09-06T00:00:00+00:00",
+    feed = compute_watch_feed(session, council_id, "cambridge", "2026-09-06T00:00:00+00:00",
                               _baselines(), min_n=3,
                               validation_dir=_NO_SUCH_DIR, batch_jobs_dir=_NO_SUCH_DIR)
     prov = feed["meetings"][0]["provenance"]

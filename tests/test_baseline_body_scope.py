@@ -48,7 +48,7 @@ def _meeting(session, council_id, d, meeting_type, items, confidential):
 
 @pytest.fixture
 def corpus(session):
-    c = Council(name="Test", short_name="Test", state="WA")
+    c = Council(name="Cambridge", short_name="Cambridge", state="WA")
     session.add(c)
     session.flush()
     # Full council: 10 meetings, 10 items each, none confidential.
