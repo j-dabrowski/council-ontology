@@ -16,6 +16,7 @@ from src.publish_gate import (
     check_clearance,
     check_not_synthetic,
     load_draft_manifest,
+    publish_snapshots,
     snapshot_hash,
     verify_draft_integrity,
 )
@@ -290,3 +291,99 @@ def test_method_snapshot_is_public_tier():
 def test_unlisted_non_claim_snapshot_defaults_to_full_tier():
     from src.cli import _tier_of
     assert _tier_of("some_snapshot_nobody_has_listed") == "full"
+
+
+# ---------------------------------------------------------------------------
+# publish_snapshots (SECOND_COUNCIL_PLAN.md Phase 2.1/2.2) — the testable
+# core cmd_publish delegates to. Two-council isolation is the actual point
+# of Phase 2.1: council-segmenting the publish path so publishing council B
+# never touches council A's files.
+# ---------------------------------------------------------------------------
+
+def _draft(tmp_path, council, run_id):
+    draft_dir = tmp_path / "draft" / council / run_id
+    draft_dir.mkdir(parents=True)
+    (draft_dir / "overview.json").write_text(json.dumps(
+        {"published_at": "2026-09-16T00:00:00Z", "data": {"span": f"{council} span"}}
+    ))
+    (draft_dir / "scorecard.json").write_text(json.dumps(
+        {"published_at": "2026-09-16T00:00:00Z", "data": {"council": council}}
+    ))
+    manifest = DraftManifest(
+        run_id=run_id, council=council, generated_at="2026-09-16T00:00:00Z",
+        snapshots=["overview", "scorecard"],
+        file_hashes={
+            "overview": snapshot_hash(draft_dir / "overview.json"),
+            "scorecard": snapshot_hash(draft_dir / "scorecard.json"),
+        },
+        tiers={"overview": "public", "scorecard": "public"},
+    )
+    return draft_dir, manifest
+
+
+def test_publishing_second_council_leaves_first_councils_files_untouched(tmp_path):
+    public_dir = tmp_path / "public"
+    full_root = tmp_path / "full"
+
+    draft_a, manifest_a = _draft(tmp_path, "cambridge", "run_a")
+    publish_snapshots(
+        draft_dir=draft_a, public_dir=public_dir, full_root=full_root, key="cambridge",
+        manifest=manifest_a, registry_entry={"short_name": "Cambridge", "display_name": "Town of Cambridge"},
+        published_at="2026-09-16T00:00:00Z", authorization={"gate_profile": "interactive"},
+    )
+    cambridge_scorecard_before = (public_dir / "cambridge" / "scorecard.json").read_text()
+
+    draft_b, manifest_b = _draft(tmp_path, "fremantle", "run_b")
+    publish_snapshots(
+        draft_dir=draft_b, public_dir=public_dir, full_root=full_root, key="fremantle",
+        manifest=manifest_b, registry_entry={"short_name": "Fremantle", "display_name": "City of Fremantle"},
+        published_at="2026-09-16T00:01:00Z", authorization={"gate_profile": "interactive"},
+    )
+
+    # Cambridge's own files are byte-identical to before Fremantle published.
+    assert (public_dir / "cambridge" / "scorecard.json").read_text() == cambridge_scorecard_before
+    assert json.loads((public_dir / "cambridge" / "overview.json").read_text())["data"]["span"] == "cambridge span"
+    # Fremantle's files exist alongside, in their own subdirectory.
+    assert json.loads((public_dir / "fremantle" / "overview.json").read_text())["data"]["span"] == "fremantle span"
+    # Each council's own manifest.json names only itself.
+    assert json.loads((public_dir / "cambridge" / "manifest.json").read_text())["council"] == "cambridge"
+    assert json.loads((public_dir / "fremantle" / "manifest.json").read_text())["council"] == "fremantle"
+    # councils.json lists both, each with its own corpus_span, neither entry
+    # clobbered by the other's publish.
+    councils = {c["key"]: c for c in json.loads((public_dir / "councils.json").read_text())}
+    assert set(councils) == {"cambridge", "fremantle"}
+    assert councils["cambridge"]["corpus_span"] == "cambridge span"
+    assert councils["fremantle"]["corpus_span"] == "fremantle span"
+    assert councils["cambridge"]["display_name"] == "Town of Cambridge"
+    assert councils["fremantle"]["display_name"] == "City of Fremantle"
+
+
+def test_republishing_same_council_updates_only_its_own_councils_json_entry(tmp_path):
+    public_dir = tmp_path / "public"
+    full_root = tmp_path / "full"
+
+    draft_a, manifest_a = _draft(tmp_path, "cambridge", "run_a")
+    publish_snapshots(
+        draft_dir=draft_a, public_dir=public_dir, full_root=full_root, key="cambridge",
+        manifest=manifest_a, registry_entry={"short_name": "Cambridge", "display_name": "Town of Cambridge"},
+        published_at="2026-09-16T00:00:00Z", authorization={"gate_profile": "interactive"},
+    )
+    draft_b, manifest_b = _draft(tmp_path, "fremantle", "run_b")
+    publish_snapshots(
+        draft_dir=draft_b, public_dir=public_dir, full_root=full_root, key="fremantle",
+        manifest=manifest_b, registry_entry={"short_name": "Fremantle", "display_name": "City of Fremantle"},
+        published_at="2026-09-16T00:01:00Z", authorization={"gate_profile": "interactive"},
+    )
+
+    # Re-publish Cambridge under a new run_id.
+    draft_a2, manifest_a2 = _draft(tmp_path, "cambridge", "run_a2")
+    publish_snapshots(
+        draft_dir=draft_a2, public_dir=public_dir, full_root=full_root, key="cambridge",
+        manifest=manifest_a2, registry_entry={"short_name": "Cambridge", "display_name": "Town of Cambridge"},
+        published_at="2026-09-16T01:00:00Z", authorization={"gate_profile": "interactive"},
+    )
+
+    councils = {c["key"]: c for c in json.loads((public_dir / "councils.json").read_text())}
+    assert set(councils) == {"cambridge", "fremantle"}  # still exactly two, not duplicated
+    assert councils["cambridge"]["draft_run_id"] == "run_a2"  # Cambridge's own entry updated
+    assert councils["fremantle"]["draft_run_id"] == "run_b"  # Fremantle's entry untouched

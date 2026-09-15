@@ -82,6 +82,11 @@ def _parse_max_chars(value: str) -> "int | None":
 COUNCILS = {
     "cambridge": {
         "short_name": "Cambridge",
+        # Full display name (SECOND_COUNCIL_PLAN.md Phase 2.2) — what
+        # councils.json and every frontend page render; "Cambridge" alone is
+        # the internal key/short_name, not what a reader sees.
+        "display_name": "Town of Cambridge",
+        "source_url": "https://www.cambridge.wa.gov.au",
         "scraper": "src.scraper.cambridge:CambridgeScraper",
     },
     # Synthetic — no scraper, never real data. `synthetic: True` (not the
@@ -92,6 +97,8 @@ COUNCILS = {
     # (src/fixtures/testville.py) — never via `council scrape`.
     "testville": {
         "short_name": "Testville",
+        "display_name": "Testville",
+        "source_url": None,
         "synthetic": True,
     },
 }
@@ -2566,6 +2573,8 @@ def _generate_snapshots(
         "pre_era_pct": trans.pre_era_pct,
         "peak_year": trans.peak_year,
         "peak_pct": trans.peak_pct,
+        "inquiry_window": trans.inquiry_window,
+        "era_label": trans.era_label,
         "category_totals": trans.category_totals,
         "years": [
             {
@@ -2765,6 +2774,7 @@ def _generate_snapshots(
     rct = recusal_compliance_trend(session, council_id)
     _write("recusal", {
         "inquiry_window": rct.inquiry_window,
+        "era_label": rct.era_label,
         "must_leave_pre_pct": rct.must_leave_pre_pct,
         "must_leave_pre_n": rct.must_leave_pre_n,
         "must_leave_inquiry_pct": rct.must_leave_inquiry_pct,
@@ -2803,6 +2813,7 @@ def _generate_snapshots(
     pqr = public_question_responsiveness(session, council_id)
     _write("question-responsiveness", {
         "inquiry_window": pqr.inquiry_window,
+        "era_label": pqr.era_label,
         "total": pqr.total,
         "answered": pqr.answered,
         "on_notice": pqr.on_notice,
@@ -4176,6 +4187,7 @@ def cmd_publish(args) -> None:
         check_clearance,
         check_not_synthetic,
         load_draft_manifest,
+        publish_snapshots,
         verify_draft_integrity,
     )
 
@@ -4231,24 +4243,31 @@ def cmd_publish(args) -> None:
         console.print(f"[red]Not cleared to publish: {clearance.reason}[/red]")
         sys.exit(1)
 
-    public_names = [n for n in manifest.snapshots if manifest.tiers.get(n, "full") == "public"]
-    full_names = [n for n in manifest.snapshots if manifest.tiers.get(n, "full") != "public"]
-
+    # Council-segmented (SECOND_COUNCIL_PLAN.md Phase 2.1): every council's
+    # public snapshots live under their own subdirectory (publish_snapshots(),
+    # src/publish_gate.py) so publishing council B never touches council A's
+    # files. `public_dir` (no `key`) stays reserved for cross-council indexes
+    # (councils.json, the boundary layers below) — never a council's own
+    # snapshot.
     public_dir = Path("frontend/public/data")
-    public_dir.mkdir(parents=True, exist_ok=True)
-    for name in public_names:
-        dest = public_dir / f"{name}.json"
-        dest.parent.mkdir(parents=True, exist_ok=True)  # name may nest (e.g. "evidence/<test_id>")
-        shutil.copyfile(draft_dir / f"{name}.json", dest)
-
-    full_dir = None
-    if full_names:
-        full_dir = Path("data/published_full") / key / manifest.run_id
-        full_dir.mkdir(parents=True, exist_ok=True)
-        for name in full_names:
-            dest = full_dir / f"{name}.json"
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(draft_dir / f"{name}.json", dest)
+    published_at = datetime.now(timezone.utc).isoformat()
+    result = publish_snapshots(
+        draft_dir=draft_dir,
+        public_dir=public_dir,
+        full_root=Path("data/published_full"),
+        key=key,
+        manifest=manifest,
+        registry_entry=COUNCILS[key],
+        published_at=published_at,
+        authorization={
+            "gate_profile": args.gate_profile,
+            "confirm_note": args.confirm if args.gate_profile == "interactive" else None,
+            "clearance_source": (
+                clearance.reason if args.gate_profile == "auto" else None
+            ),
+            "reason": clearance.reason,
+        },
+    )
 
     # Boundary files (docs/frontend/MAP_PAGE_PLAN.md Phase 3.3) — config-
     # sourced, not draft-sourced, so they sit OUTSIDE the draft manifest's
@@ -4272,28 +4291,12 @@ def cmd_publish(args) -> None:
     if backdrop_path.exists():
         shutil.copyfile(backdrop_path, public_dir / "wa_lga_backdrop.geojson")
 
-    published_at = datetime.now(timezone.utc).isoformat()
-    (public_dir / "manifest.json").write_text(_json.dumps({
-        "published_at": published_at,
-        "council": key,
-        "draft_run_id": manifest.run_id,
-        "authorization": {
-            "gate_profile": args.gate_profile,
-            "confirm_note": args.confirm if args.gate_profile == "interactive" else None,
-            "clearance_source": (
-                clearance.reason if args.gate_profile == "auto" else None
-            ),
-            "reason": clearance.reason,
-        },
-        "snapshots": public_names,
-    }, indent=2))
-
     summary = (
-        f"[green]✓[/green] {len(public_names)} public snapshots → {public_dir}\n"
+        f"[green]✓[/green] {len(result.public_names)} public snapshots → {result.council_public_dir}\n"
     )
-    if full_dir:
+    if result.full_dir:
         summary += (
-            f"[dim]{len(full_names)} full-tier snapshots → {full_dir} "
+            f"[dim]{len(result.full_names)} full-tier snapshots → {result.full_dir} "
             f"(private — no public serving layer yet)[/dim]\n"
         )
     summary += (

@@ -1,3 +1,4 @@
+import { currentCouncil } from "./councils";
 import { getMode } from "./devMode";
 
 // Reserved for future interactive API endpoints (councillor drill-downs etc.)
@@ -15,16 +16,18 @@ export async function get<T>(path: string, params?: Record<string, string | numb
   return res.json();
 }
 
-// Read a pre-computed snapshot. In Publish mode (the default, and the only
-// mode possible in a production build — see devMode.ts) this is
-// frontend/public/data/{name}.json, the static files `council publish`
-// writes — the site only reflects data from the last publish run. In Draft
-// mode (dev server only, via the corner switch) this instead reads
-// /data/draft/{name}.json, served live from the newest `council draft` run
-// by vite.config.ts's draftOverlay() plugin.
+// Read a pre-computed snapshot for the active council (currentCouncil()).
+// In Publish mode (the default, and the only mode possible in a production
+// build — see devMode.ts) this is frontend/public/data/{council}/{name}.json,
+// the static files `council publish` writes — the site only reflects data
+// from that council's last publish run. In Draft mode (dev server only, via
+// the corner switch) this instead reads /data/draft/{council}/{name}.json,
+// served live from that council's newest `council draft` run by
+// vite.config.ts's draftOverlay() plugin.
 async function getSnapshot<T>(name: string): Promise<T> {
   const draftMode = getMode() === "draft";
-  const res = await fetch(`${draftMode ? "/data/draft" : "/data"}/${name}.json`);
+  const council = currentCouncil();
+  const res = await fetch(`${draftMode ? "/data/draft" : "/data"}/${council}/${name}.json`);
   // Vite's dev server SPA-falls-back to index.html (200, text/html) for any
   // unmatched path rather than a real 404 — so a missing snapshot (e.g. no
   // `council draft` has ever been run yet) would otherwise surface as a
@@ -32,8 +35,8 @@ async function getSnapshot<T>(name: string): Promise<T> {
   if (!res.ok || !res.headers.get("content-type")?.includes("json")) {
     throw new Error(
       draftMode
-        ? `Snapshot not found: ${name}.json — run 'council draft' first`
-        : `Snapshot not found: ${name}.json — run 'council publish' first`
+        ? `Snapshot not found: ${council}/${name}.json — run 'council draft ${council}' first`
+        : `Snapshot not found: ${council}/${name}.json — run 'council publish ${council}' first`
     );
   }
   const json = await res.json();
@@ -421,6 +424,11 @@ export interface TransparencyData {
   pre_era_pct: number;
   peak_year: number;
   peak_pct: number;
+  // This council's configured scrutiny window (config/council_eras.json) —
+  // null when it has none, in which case pre_era_pct is an all-years
+  // average, not a "before" baseline (SECOND_COUNCIL_PLAN.md Phase 3.4).
+  inquiry_window: number[] | null;
+  era_label: string | null;
   category_totals: Record<string, { total: number; confidential: number }>;
   years: TransparencyYear[];
 }
@@ -550,7 +558,12 @@ export interface RecusalDriver {
 }
 
 export interface RecusalData {
-  inquiry_window: number[];
+  inquiry_window: number[] | null;
+  // config/council_eras.json's own label for this council's window — null
+  // exactly when inquiry_window is null. Render the era band/labels from
+  // this, never a hardcoded name
+  // (SECOND_COUNCIL_PLAN.md Phase 3.4).
+  era_label: string | null;
   must_leave_pre_pct: number;
   must_leave_pre_n: number;
   must_leave_inquiry_pct: number;
@@ -597,7 +610,10 @@ export interface PQYearPoint {
 }
 
 export interface QuestionResponsivenessData {
-  inquiry_window: number[];
+  inquiry_window: number[] | null;
+  // config/council_eras.json's own label for this window — null exactly
+  // when inquiry_window is null (SECOND_COUNCIL_PLAN.md Phase 3.4).
+  era_label: string | null;
   total: number;
   answered: number;
   on_notice: number;

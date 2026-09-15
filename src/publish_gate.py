@@ -45,6 +45,14 @@ class ClearanceResult:
     reason: str
 
 
+@dataclass
+class PublishResult:
+    council_public_dir: Path
+    public_names: list[str]
+    full_dir: Path | None
+    full_names: list[str]
+
+
 def snapshot_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -197,4 +205,84 @@ def check_clearance(
     return ClearanceResult(
         cleared=True,
         reason=f"auto-cleared — {latest.name}: Editor pass {record.get('pass')} PASS",
+    )
+
+
+def publish_snapshots(
+    draft_dir: Path,
+    public_dir: Path,
+    full_root: Path,
+    key: str,
+    manifest: DraftManifest,
+    registry_entry: dict,
+    published_at: str,
+    authorization: dict,
+) -> PublishResult:
+    """The testable core of `council publish` (src/cli.py `cmd_publish`):
+    copy a cleared draft's snapshots into `public_dir/<key>/` (public tier)
+    and `full_root/<key>/<run_id>/` (full tier), write that council's own
+    `manifest.json` alongside its public snapshots, and upsert its entry in
+    `public_dir/councils.json` (SECOND_COUNCIL_PLAN.md Phase 2.1/2.2).
+
+    Council-segmented by construction: every path this function writes to
+    is rooted at `<public_dir>/<key>/` or `<full_root>/<key>/`, so publishing
+    council B can never touch council A's files — the two-council isolation
+    the plan's Phase 2.1 gate asks for. `public_dir` itself (no `key`) is
+    reserved for cross-council indexes (`councils.json`, the boundary
+    layers `cmd_publish` writes separately) and is only ever read from here,
+    never written to except via the `councils.json` upsert below, which
+    only ever replaces this one council's own entry.
+    """
+    import shutil
+
+    public_names = [n for n in manifest.snapshots if manifest.tiers.get(n, "full") == "public"]
+    full_names = [n for n in manifest.snapshots if manifest.tiers.get(n, "full") != "public"]
+
+    council_public_dir = public_dir / key
+    council_public_dir.mkdir(parents=True, exist_ok=True)
+    for name in public_names:
+        dest = council_public_dir / f"{name}.json"
+        dest.parent.mkdir(parents=True, exist_ok=True)  # name may nest (e.g. "evidence/<test_id>")
+        shutil.copyfile(draft_dir / f"{name}.json", dest)
+
+    full_dir = None
+    if full_names:
+        full_dir = full_root / key / manifest.run_id
+        full_dir.mkdir(parents=True, exist_ok=True)
+        for name in full_names:
+            dest = full_dir / f"{name}.json"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(draft_dir / f"{name}.json", dest)
+
+    (council_public_dir / "manifest.json").write_text(json.dumps({
+        "published_at": published_at,
+        "council": key,
+        "draft_run_id": manifest.run_id,
+        "authorization": authorization,
+        "snapshots": public_names,
+    }, indent=2))
+
+    councils_path = public_dir / "councils.json"
+    councils_list = json.loads(councils_path.read_text()) if councils_path.exists() else []
+    corpus_span = None
+    overview_path = draft_dir / "overview.json"
+    if overview_path.exists():
+        corpus_span = json.loads(overview_path.read_text())["data"].get("span")
+    new_entry = {
+        "key": key,
+        "display_name": registry_entry.get("display_name", registry_entry["short_name"]),
+        "source_url": registry_entry.get("source_url"),
+        "corpus_span": corpus_span,
+        "published_at": published_at,
+        "draft_run_id": manifest.run_id,
+    }
+    councils_list = [c for c in councils_list if c.get("key") != key] + [new_entry]
+    councils_list.sort(key=lambda c: c["key"])
+    councils_path.write_text(json.dumps(councils_list, indent=2))
+
+    return PublishResult(
+        council_public_dir=council_public_dir,
+        public_names=public_names,
+        full_dir=full_dir,
+        full_names=full_names,
     )

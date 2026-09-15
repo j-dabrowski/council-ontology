@@ -3,11 +3,12 @@ import { resolve } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Dev-only: overlay a `council draft` run's snapshots at /data/draft/<name>.json,
-// alongside the committed Publish snapshots at /data/<name>.json (plain static
-// files, unaffected by this plugin). frontend/src/api.ts's getSnapshot() picks
-// the prefix at fetch time from frontend/src/devMode.ts's persisted mode, so
-// the frontend/src/components/DevModeSwitch.tsx corner switch can flip between
+// Dev-only: overlay a `council draft` run's snapshots at
+// /data/draft/<council>/<name>.json, alongside the committed Publish
+// snapshots at /data/<council>/<name>.json (plain static files, unaffected
+// by this plugin). frontend/src/api.ts's getSnapshot() picks the prefix at
+// fetch time from frontend/src/devMode.ts's persisted mode, so the
+// frontend/src/components/DevModeSwitch.tsx corner switch can flip between
 // them with a page reload — no env var, no dev-server restart. No-op under
 // `vite build` (configureServer only runs under `vite dev`), so it can't leak
 // into a production bundle. See docs/TESTING.md "Draft & publish workflow".
@@ -19,8 +20,15 @@ import react from '@vitejs/plugin-react'
 function findLatestDraftDir(council: string): string | null {
   // Pin to a specific run when set — useful for reviewing the run Editor
   // actually flagged, which stops being "latest" the instant you re-draft.
+  // A pin is global (not per-council): whichever council that run's own
+  // manifest.json names is the only one Draft mode will resolve while pinned.
   const pinned = process.env.VITE_DRAFT_DIR
-  if (pinned) return resolve(process.cwd(), pinned)
+  if (pinned) {
+    const dir = resolve(process.cwd(), pinned)
+    if (!existsSync(resolve(dir, 'manifest.json'))) return null
+    const manifest = JSON.parse(readFileSync(resolve(dir, 'manifest.json'), 'utf-8'))
+    return manifest.council === council ? dir : null
+  }
 
   const base = resolve(process.cwd(), `../data/draft/${council}`)
   if (!existsSync(base)) return null
@@ -33,11 +41,46 @@ function findLatestDraftDir(council: string): string | null {
   return runs.length ? resolve(base, runs[runs.length - 1]) : null
 }
 
+// The mode-dependent council list's Draft-mode source (SECOND_COUNCIL_PLAN.md
+// Phase 2.5) — every council under data/draft/ with at least one
+// gate-passing run, Testville included (this is the one place Testville is
+// meant to be selectable: a dev-only middleware `vite build` never runs).
+// Served at the fixed path /data/draft/councils.json, which the per-council
+// `([\w.-]+)/([\w./-]+)\.json` pattern below can't ever match (no "/" in
+// "councils" itself), so the two routes can't collide.
+function listDraftCouncils(): { key: string; run_id: string; generated_at: string }[] {
+  const pinned = process.env.VITE_DRAFT_DIR
+  if (pinned) {
+    const dir = resolve(process.cwd(), pinned)
+    const manifestPath = resolve(dir, 'manifest.json')
+    if (!existsSync(manifestPath)) return []
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+    return [{ key: manifest.council, run_id: manifest.run_id, generated_at: manifest.generated_at }]
+  }
+
+  const draftRoot = resolve(process.cwd(), '../data/draft')
+  if (!existsSync(draftRoot)) return []
+  return readdirSync(draftRoot)
+    .map(council => ({ council, dir: findLatestDraftDir(council) }))
+    .filter((x): x is { council: string; dir: string } => x.dir !== null)
+    .map(({ council, dir }) => {
+      const manifest = JSON.parse(readFileSync(resolve(dir, 'manifest.json'), 'utf-8'))
+      return { key: council, run_id: manifest.run_id, generated_at: manifest.generated_at }
+    })
+}
+
 function draftOverlay(): Plugin {
   return {
     name: 'draft-overlay',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
+        if (req.url === '/data/draft/councils.json') {
+          res.setHeader('Content-Type', 'application/json')
+          res.setHeader('Cache-Control', 'no-store')
+          res.end(JSON.stringify(listDraftCouncils()))
+          return
+        }
+
         // [\w./-]+ (not [\w-]+) — an evidence/*.json snapshot name has both
         // a "/" and a "." in it before the extension (e.g.
         // "evidence/governance.incumbency"); the narrower class silently
@@ -49,11 +92,11 @@ function draftOverlay(): Plugin {
         // RECORD_PAGE_PLAN.md Step 8 in Draft mode — every evidence-chain
         // drill-down built so far (DivergencePanel included) was hitting
         // this same gap in local dev, just unnoticed until now.
-        const match = req.url?.match(/^\/data\/draft\/([\w./-]+)\.json(?:\?.*)?$/)
+        const match = req.url?.match(/^\/data\/draft\/([\w.-]+)\/([\w./-]+)\.json(?:\?.*)?$/)
         if (!match) return next()
-        const dir = findLatestDraftDir('cambridge') // single council today, matches CouncilHeader's hardcoded <select>
+        const [, council, name] = match
+        const dir = findLatestDraftDir(council)
         if (!dir) return next()
-        const name = match[1]
         // The digest lands in a local/ subdirectory (src/cli.py's cmd_draft),
         // deliberately outside manifest.snapshots and Editor's *.json scope —
         // see docs/review/editor/Editor_prompt.txt's `local/` exclusion.

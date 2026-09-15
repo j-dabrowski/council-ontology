@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { currentCouncil } from "../councils";
 import { getMode, setMode } from "../devMode";
 
 // Only ever rendered when import.meta.env.DEV is true (see App.tsx) — dead
@@ -12,17 +13,30 @@ import { getMode, setMode } from "../devMode";
 // mistake, so Draft mode should be impossible to miss.
 export function DevModeSwitch() {
   const mode = getMode();
+  // Rendered above <Routes> (so the corner switch and DRAFT banner appear
+  // on every page), which puts it above the "/c/:council" route match too
+  // — react-router's useParams() would see nothing here. currentCouncil()
+  // reads location.hash directly instead (see councils.ts); the hashchange
+  // listener keeps the displayed run id in step when the council changes
+  // via CouncilHeader's selector without a full page reload.
+  const [council, setCouncil] = useState(currentCouncil());
   const [runId, setRunId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onHashChange = () => setCouncil(currentCouncil());
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   useEffect(() => {
     if (mode !== "draft") return;
     let cancelled = false;
-    fetch("/data/draft/manifest.json")
+    fetch(`/data/draft/${council}/manifest.json`)
       .then((r) => (r.ok ? r.json() : null))
       .then((m) => { if (!cancelled) setRunId(m?.run_id ?? null); })
       .catch(() => { if (!cancelled) setRunId(null); });
     return () => { cancelled = true; };
-  }, [mode]);
+  }, [mode, council]);
 
   const tooltip = "Local dev only. Switches every panel between the published snapshots and the latest `council draft` run. Never present in a build.";
 
