@@ -40,8 +40,11 @@ standard*," not "here is a chart I found interesting."
 **Read PART 0 first.** Parts 1–5 are the lens; Part 0 is the evidence locker —
 the actual corpus, database schema, query tools, and (critically) the data
 caveats you must carry through every query. A finding built on a
-misunderstood column is worse than no finding. Everything below assumes you are
-working the Town of Cambridge (WA) corpus described in Part 0.
+misunderstood column is worse than no finding. Everything below assumes a
+corpus already extracted into this schema — confirm which council you're
+querying (`council profile <council>`, or the `--council` argument on
+whatever command set up your task) rather than assuming Cambridge, the
+project's first corpus, is the only one loaded.
 
 ---
 
@@ -59,90 +62,112 @@ what you have.
 or read the latest `data/<council>_profile.json` if one already exists.**
 It's a scripted, no-LLM pass over the DB that computes document/date spans,
 a zero-meeting-month gap detector, entity counts, NULL/coverage rates, and
-identity-resolution signals fresh, every run — the corpus-metric numbers in
-this section and in 0.4 below are a snapshot as of when this file was last
-edited by hand, not a live source. Where the two disagree, the profile is
-right; treat the prose here as orientation (what the fields mean, why a
-number matters) and the profile as the number itself.
+identity-resolution signals fresh, every run, for whichever council you point
+it at — the corpus-metric numbers named below are Cambridge's own as a rough
+orientation, never a live source. Where a number here and the profile
+disagree, the profile is right; treat the prose below as what a field means
+and why a caveat matters, not as the number itself.
 
-- **One council: the Town of Cambridge, Western Australia.** A small inner-Perth
-  metropolitan council (~13 elected members at any time). The full architecture
-  supports more councils, but only Cambridge is loaded.
-- **Span: 1995–2026** (31 years of meeting records; current exact range and
-  by-year breakdown: `profile.span`).
-- **580 documents extracted** into the DB: **506 minutes**, 66 agendas, 4 addenda,
-  4 unknown (current counts: `profile.span.total_documents` /
-  `by_document_type`). Minutes are the authoritative political record (votes,
-  outcomes); agendas carry officer *recommendations* but no vote outcomes (the
-  meeting hadn't happened yet).
-- **Known corpus gaps** (not recoverable online, confirmed 2026-06-22): 2022
-  Jan–Apr + Jun, and 2023 Jan–Apr + Jun–Jul are missing (a council CMS migration
-  dropped them). Cambridge also holds no ordinary meeting in January. Treat any
-  per-year trend touching 2022–2023 as undercounted, not as a real decline.
-  `profile.span.zero_meeting_months_in_span` reproduces this same shape from
-  the data directly (every zero-meeting month in range, not just these two
-  windows) — check it on a re-extraction or a second council instead of
-  assuming this exact list still applies.
+**Also read `docs/investigator/notes/<council>.md` if one exists** —
+non-computable per-council facts (a known CMS-migration gap, a council's own
+meeting-calendar quirk) live there, one file per council, not hardcoded into
+this shared layer. `docs/investigator/notes/cambridge.md` is the first one.
+
+- **Cambridge (Town of Cambridge, Western Australia)** was this project's
+  first corpus. The full architecture supports more councils; check
+  `profile.council` for which one you're actually querying, and that
+  council's notes file for anything about its own size or structure that
+  matters for interpreting base rates.
+- **Span, document counts, and gaps: `profile.span`** —
+  `total_documents`/`by_document_type` for corpus size and document-type mix
+  (minutes are the authoritative political record — votes, outcomes; agendas
+  carry officer *recommendations* but no vote outcomes, since the meeting
+  hadn't happened yet), `zero_meeting_months_in_span` for every month with no
+  meeting on record. A zero-meeting month can be a real extraction gap or a
+  real recess (e.g. Cambridge's own January pattern) — check the per-council
+  notes file before reading one as either. Never read a year with a known gap
+  as reduced council activity without flagging the gap.
 
 ### 0.2 The database — `data/council.db` (SQLite)
 
-Three ontological layers. Approximate row counts (as of 2026-06-24):
+Three ontological layers. Row counts for whichever council you're querying:
+`profile.entity_counts` (below, "→ entity_counts.<field>" pointers to it
+directly) — Cambridge's own approximate counts as of 2026-06-24 are given in
+a few spots below purely as a sense of scale, never as the number to cite.
 
 **Semantic layer** (entities):
-- `councils` — the council registry (Cambridge).
-- `councillors` (~400 raw rows) — every person seen in a vote. **Deduplicated**
-  (was 405, merged to ~400 via `scripts/dedup_councillors.py`); see caveat 0.4.
-  Note this raw table count is *not* the same number as
-  `profile.identity_resolution.councillor_count` — the profile scopes to
-  councillors reachable via a vote or a term on *this* council (currently
-  ~198), which is the more useful "how many real people served here" figure;
-  the ~400 is closer to "how many name-rows exist in the shared table."
-- `councillor_terms` — ward / role / term dates from Elections WA results.
-  **Sparsely populated** — only councillors with imported electoral records have
-  terms (1999–2023; 2017 missing; pre-1999 absent). Many councillors have *no*
-  term row. Never assume a missing term means a person didn't serve. Current
-  coverage rate (share of active councillors with ≥1 term row):
-  `profile.record_quality.councillor_term_coverage_rate`.
+- `councils` — the council registry, one row per onboarded council.
+- `councillors` (→ `entity_counts.councillors`; Cambridge: ~400 raw rows) —
+  every person seen in a vote. **Deduplicated** per-corpus
+  (`scripts/dedup_councillors.py`); see caveat 0.4. This raw table count is
+  *not* the same number as `profile.identity_resolution.councillor_count` —
+  the profile scopes to councillors reachable via a vote or a term on *this*
+  council, which is the more useful "how many real people served here"
+  figure; the raw table count is closer to "how many name-rows exist in the
+  shared table" (which spans every council, since the table isn't
+  council-scoped by ownership, only by activity).
+- `councillor_terms` — ward / role / term dates from an electoral-results
+  import (Elections WA, for a WA council). **Sparsely populated** — only
+  councillors with imported electoral records have terms; many councillors
+  have *no* term row. Never assume a missing term means a person didn't
+  serve. Current coverage rate (share of active councillors with ≥1 term
+  row): `profile.record_quality.councillor_term_coverage_rate`.
 - `sites` — physical addresses from planning applications (some geocoded to
   lat/lng via `council geocode`).
 
 **Kinetic layer** (actions/events):
-- `meetings` (580) — one row per document. Key fields: `meeting_date`,
-  `meeting_type`, `document_type` (`minutes`/`agenda`/`addendum`/`unknown`),
-  `minutes_pdf_path`, `minutes_pdf_url`.
-- `motions` (~14,000) — `title`, `motion_text`, `outcome`, `moved_by_id`,
-  `seconded_by_id`, `votes_for`/`votes_against`, `tags` (comma-separated LLM
-  tags), `officer_recommendation` (agendas only), `item_number`.
-- `votes` (~16,250) — one row per councillor per motion. Fields: `choice`,
-  `declared_interest` (bool), `interest_description`. `UNIQUE(motion_id,
-  councillor_id)`.
-- `planning_applications` (~3,100) — `reference_number`, `status`,
-  `estimated_value`, `site_id`, applicant. **`application_date` and
-  `decision_date` are 100% NULL** (current rates:
-  `profile.record_quality.planning_application_date_null_rate` /
-  `_decision_date_null_rate`) — processing-latency analysis is impossible on
-  this corpus; do not attempt it.
-- `community_submissions` — public submissions on DAs (`position` = object/support);
-  `submitter_name` is mostly generic placeholders ("Adjoining neighbour"), so
-  repeat-submitter identity analysis is unsupportable.
-- `interest_declarations` (~2,000) — `interest_type`
-  (financial/impartiality/proximity/other), `item_reference`, `councillor_id`.
-  The legal distinction matters: **financial and proximity interests legally
-  require leaving the room; impartiality interests permit staying and voting.**
-- `tenders` (~840) — `awarded_to`, `amount`, `is_confidential`. ~1/3 of dollars
-  are awarded under redacted "Respondent N" placeholders.
-- `budget_items` (~4,000), `deputations`, `petitions`, `public_questions`,
-  `appointments`, `committee_reports`, `delegated_decisions`, `building_permits`,
-  `other_items` — supporting entity tables, several with an `is_confidential` flag.
-- `extraction_evidence` (~71,000) — **your provenance layer.** One row per source
-  quote per extracted entity (`entity_table`, `entity_id`, `quote_text`,
-  `char_offset`). Every fact traces back to verbatim minute text. Use this to
-  spot-check any finding before you ship it (see 0.6).
+- `meetings` (→ `profile.span.total_documents`) — one row per document. Key
+  fields: `meeting_date`, `meeting_type`, `document_type`
+  (`minutes`/`agenda`/`addendum`/`unknown`), `minutes_pdf_path`,
+  `minutes_pdf_url`.
+- `motions` (→ `entity_counts.motions`) — `title`, `motion_text`, `outcome`,
+  `moved_by_id`, `seconded_by_id`, `votes_for`/`votes_against`, `tags`
+  (comma-separated LLM tags), `officer_recommendation` (agendas only),
+  `item_number`.
+- `votes` (→ `entity_counts.votes`) — one row per councillor per motion.
+  Fields: `choice`, `declared_interest` (bool), `interest_description`.
+  `UNIQUE(motion_id, councillor_id)`. Distribution across FOR/AGAINST/ABSENT:
+  `profile.record_quality.vote_choice_distribution`.
+- `planning_applications` (→ `entity_counts.planning_applications`) —
+  `reference_number`, `status`, `estimated_value`, `site_id`, applicant.
+  Check `profile.record_quality.planning_application_date_null_rate` /
+  `_decision_date_null_rate` before attempting any processing-latency
+  analysis — on Cambridge both are 100% NULL, making that analysis
+  impossible on this corpus specifically; a different council may not share
+  this gap.
+- `community_submissions` (→ `entity_counts.community_submissions`) — public
+  submissions on DAs (`position` = object/support). Check
+  `profile.record_quality.community_submission_distinct_submitter_ratio`
+  before attempting repeat-submitter identity analysis — a low ratio means
+  `submitter_name` is mostly generic placeholders ("Adjoining neighbour"),
+  making that analysis unsupportable.
+- `interest_declarations` (→ `entity_counts.interest_declarations`) —
+  `interest_type` (financial/impartiality/proximity/other), `item_reference`,
+  `councillor_id`. The legal distinction matters: **financial and proximity
+  interests legally require leaving the room; impartiality interests permit
+  staying and voting.** Rate of declared interests among votes:
+  `profile.record_quality.vote_declared_interest_rate`.
+- `tenders` (→ `entity_counts.tenders`) — `awarded_to`, `amount`,
+  `is_confidential`. Check `profile.record_quality.tender_confidential_rate`
+  / `_amount_null_rate` before trusting an awarded-dollars total — on
+  Cambridge roughly a third of dollars are awarded under redacted
+  "Respondent N" placeholders.
+- `budget_items`, `deputations`, `petitions`, `public_questions`,
+  `appointments`, `committee_reports`, `delegated_decisions`,
+  `building_permits`, `other_items` — supporting entity tables (all in
+  `entity_counts`), several with an `is_confidential` flag.
+- `extraction_evidence` (→ `entity_counts.extraction_evidence`) — **your
+  provenance layer.** One row per source quote per extracted entity
+  (`entity_table`, `entity_id`, `quote_text`, `char_offset`). Every fact
+  traces back to verbatim minute text. Use this to spot-check any finding
+  before you ship it (see 0.6).
 
 **Dynamic layer** (emergent patterns):
-- `relationships` (~158) — typed edges (`ALLY`/`OPPONENT`/…) computed from voting
-  alignment by `council build-relationships`. Cambridge votes near-unanimously,
-  so almost all edges are ALLY; OPPONENT pairs are rare.
+- `relationships` — typed edges (`ALLY`/`OPPONENT`/…) computed from voting
+  alignment by `council build-relationships` (no `profile` field yet; count
+  varies by corpus and by how contested its votes are). On Cambridge, which
+  votes near-unanimously, almost all edges are ALLY and OPPONENT pairs are
+  rare — a different council's split could look very different.
 
 ### 0.3 How to query it
 
@@ -150,7 +175,7 @@ Two routes. Prefer the second for anything non-trivial.
 
 1. **Direct SQL** — `sqlite3 data/council.db "SELECT …"`. Fastest for counts and
    ad-hoc shape-checking.
-2. **The analysis layer** — `council analyse cambridge <query>` (CLI), backed by
+2. **The analysis layer** — `council analyse <council> <query>` (CLI), backed by
    `src/analysis/queries.py` and `src/analysis/divergence.py`. These functions
    already handle the joins, the year filtering, and (importantly) the dedup and
    minutes-only filtering correctly. Available queries: `councillors`,
@@ -171,23 +196,26 @@ These have already produced wrong answers. They are not optional reading.
 - **Enums are stored UPPERCASE.** `outcome='CARRIED'`, `choice='FOR'`,
   `status='APPROVED'`. Lowercase comparisons silently return nothing.
 - **There is no ABSTAIN.** `votes.choice` is only `FOR` / `AGAINST` / `ABSENT`.
-  Recusal (stepping out) shows up as `ABSENT`, *not* abstain. ~197 ABSENT vs
-  ~11,900 FOR / ~4,100 AGAINST.
-- **`outcome` has blanks and a long tail.** ~12,300 CARRIED, but ~827 motions
-  have an empty outcome, plus LOST/DEFERRED/WITHDRAWN/LAPSED. Filter explicitly;
-  don't assume non-CARRIED = LOST.
-- **Mix document types deliberately.** 66 agenda docs leak into the corpus.
-  Agendas have officer recommendations but *no* vote outcomes. **Year-trend and
-  voting queries should filter to `document_type='minutes'`** or they will be
-  contaminated. (The `council analyse` functions already do this; raw SQL won't.)
-- **Vote coverage is uneven by year.** Sparse 1995–2003 (tens–hundreds/yr), dense
-  2016–2026 (1,000+/yr). The 2022–2023 dip is the *corpus gap* (0.1), not reduced
-  council activity. Never read a raw count trend as behaviour without
-  normalising or flagging coverage. `profile.span.meetings_by_year` gives a
-  current per-year meeting count (a coarser proxy than a true per-year vote
-  count, which the profile doesn't compute yet) to sanity-check against.
-- **`declared_interest=1` is rare (~600 votes; current rate:
-  `profile.record_quality.vote_declared_interest_rate`)** and splits by legal
+  Recusal (stepping out) shows up as `ABSENT`, *not* abstain — current split:
+  `profile.record_quality.vote_choice_distribution`.
+- **`outcome` has blanks and a long tail.** Most motions are CARRIED, but a
+  real share have an empty outcome (`profile.record_quality.
+  motion_outcome_null_rate`), plus LOST/DEFERRED/WITHDRAWN/LAPSED. Filter
+  explicitly; don't assume non-CARRIED = LOST.
+- **Mix document types deliberately.** Agenda documents leak into the corpus
+  (`profile.span.by_document_type`). Agendas have officer recommendations but
+  *no* vote outcomes. **Year-trend and voting queries should filter to
+  `document_type='minutes'`** or they will be contaminated. (The `council
+  analyse` functions already do this; raw SQL won't.)
+- **Vote coverage can be uneven by year** — early years sparse, recent years
+  dense is common as record-keeping matures, and a known corpus gap (per-
+  council notes file, 0.1) can look like a real dip if you don't check it
+  first. Never read a raw count trend as behaviour without normalising or
+  flagging coverage. `profile.span.meetings_by_year` gives a current
+  per-year meeting count (a coarser proxy than a true per-year vote count,
+  which the profile doesn't compute yet) to sanity-check against.
+- **`declared_interest=1` is rare** (current rate:
+  `profile.record_quality.vote_declared_interest_rate`) and splits by legal
   type — a declared *impartiality* interest legally permits voting; a
   *financial* one does not. Always split by `interest_type` before drawing a
   recusal conclusion.
@@ -296,10 +324,14 @@ hypothesis that's already a documented null or a built panel.
   *surprising* (and so silently buried every reassuring and every normal result)
   is retired — see the two-tier bar below. Don't silently re-test a logged null;
   if you revisit, say why the prior result might be wrong.
-- A recurring real-world anchor: the **state-appointed Authorised Inquiry into the
-  Town of Cambridge (~2018–2021)**. Several findings track behaviour tightening
-  under that scrutiny and relaxing after. This is the Part 2.1 "inquiry" frame
-  made concrete and datable in your own corpus — lean on it.
+- **Check `config/council_eras.json` for an external-scrutiny window on this
+  council** — an "absent means no window" config (`src/council_eras.py`), not
+  every council has one. Cambridge's is the state-appointed Authorised Inquiry
+  (~2018–2021, `docs/investigator/notes/cambridge.md`): several Cambridge
+  findings track behaviour tightening under that scrutiny and relaxing after —
+  the Part 2.1 "inquiry" frame made concrete and datable. If this council has
+  a window, it's worth the same lean-on-it treatment; if it doesn't, don't
+  invent a before/during/after narrative it has no basis for.
 - **The two-tier bar (novelty governs depth, not existence).** There are now two
   outputs, and a result is judged differently depending on which it is for:
   1. **The Standard Test Battery → the Scorecard.** A fixed, council-agnostic

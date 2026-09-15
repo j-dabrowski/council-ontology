@@ -194,7 +194,7 @@ corpus finding.
 **Also draft the matching `DATA_ENRICHMENT.md` Pattern entry, in the same
 pass.** The Data-signature row above already implies a concrete capture
 suggestion — write it out in `DATA_ENRICHMENT.md`'s existing format (Pattern
-only; there is no Cambridge-specific Instance to write, since this pattern
+only; there is no council-specific Instance to write, since this pattern
 comes from external research, not from a corpus investigation hitting a
 wall). This is what lets typology's read side (`council typology
 <council>`, Component C) act on your research proactively, on the very next
@@ -223,8 +223,9 @@ human's inbox:
    queried against a schema shape a minutes-extraction pipeline would
    produce?
 4. **Defamation safety** — re-read Failure-mode and Data-signature rows as
-   if a hostile reader were looking for a claim about Cambridge. If either
-   row reads that way, rewrite before proceeding, per Principle 0.
+   if a hostile reader were looking for a claim about any council actually
+   in this project's scope. If either row reads that way, rewrite before
+   proceeding, per Principle 0.
 
 If a draft fails any of these under your own review, fix it or drop it —
 there is no later checkpoint to catch a draft you knew was weak.

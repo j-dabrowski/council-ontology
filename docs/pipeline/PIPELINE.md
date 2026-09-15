@@ -250,6 +250,41 @@ Pipeline steps (dedup, build-relationships, geocode) must be run separately befo
   and valences make sense for a different council type (metro vs regional, WA vs other
   state). Only after this review is complete should the pipeline be pointed at a new council.
 
+  **Review run 2026-09-15** (SECOND_COUNCIL_PLAN.md Phase 4), read-through not grep:
+  - `system_prompt.txt` / `agenda_system_prompt.txt`: already fully generic — no
+    Cambridge references, no CMS-layout assumptions in headings or item-numbering
+    examples. Nothing changed.
+  - `inventory_prompt.txt`: one committee-name example list read as anchored to
+    Cambridge's own committee names; generalised to describe committee *subject
+    matter* (planning, community services, infrastructure, governance, audit)
+    instead of naming specific committees.
+  - `Investigator_prompt.txt` Part 0: this was the real concentration. Finished
+    the "prefer `council profile` over prose" move Part 0 already gestured at —
+    every corpus-specific number (document/entity counts, vote-choice split,
+    outcome-null rate) now points at a `profile.<path>` instead of being
+    hardcoded, and the genuinely non-computable Cambridge facts (the CMS-gap
+    reason, the January recess, council size, the Authorised Inquiry window)
+    moved to a new per-council notes file,
+    `docs/investigator/notes/<council>.md` (Cambridge's is the first). Part 0
+    now tells the reader to check `profile.council` rather than assume
+    Cambridge is the only corpus loaded.
+  - `Explorer_prompt.txt`: "working from a 30-year corpus" and "the 2020 Inquiry
+    as a shock" ranked #1 identification lever were both stated as if every
+    corpus has Cambridge's span and Cambridge's inquiry; generalised to check
+    `profile.span` / `config/council_eras.json` first, with Cambridge named as
+    the concrete instance. The session log and the Pattern/Instance mechanism
+    were already correctly council-agnostic — no change needed there.
+  - `Researcher_prompt.txt`: of four Cambridge references, two were legitimate
+    "this project's first corpus" orientation (Principle 0's own scope
+    definition, the calibration-log history) and left as-is; two read as
+    scope leaks ("no Cambridge-specific Instance", the defamation self-check
+    naming Cambridge specifically) and were generalised to "council-specific"
+    / "any council actually in this project's scope".
+  - Not touched: `Refiner_prompt.txt` (its era-window paragraph was already
+    generalised in Phase 1.2 of the same plan) and the session-log/history
+    sections of every prompt above, which are records of what happened, not
+    operative instructions — per the plan, history stays.
+
 - **Second council**: add 2 lines to `COUNCILS` dict in `cli.py` + new `src/scraper/<council>.py` subclass; all pipeline commands work automatically; **also run Council Setup (see below) for terms seeding before Level 0, and `council boundary <key>` for its map boundary**
 
 - **Corpus onboarding order — first corpus vs subsequent (design sketch, not
