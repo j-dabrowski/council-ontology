@@ -20,12 +20,6 @@ dist-ssr
 # structurally-valid placeholder data (scripts/generate_placeholder_data.py)
 # — no real council data is committed here until a draft has actually
 # cleared the gate.
-
-# WA LGA boundary geojson (fetched via scripts/download_wa_lga.sh) — not
-# council-analysis data, just a large (7MB+) static map fixture. Kept out of
-# git to keep pushes small; MapPage.tsx already falls back to a "run the
-# download script" message when it's missing locally.
-public/data/wa_lga.geojson
 *.local
 
 # Editor directories and files
