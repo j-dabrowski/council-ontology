@@ -62,11 +62,22 @@ them. An implementing session should build them, not re-open them:
   not just the first time. Symbols move; this was written against `70b80ee`.
 - **Stop and ask at every point marked `STOP:`.** Each is a place where this
   plan would widen, or depend on, a rule another doc owns.
-- **Stop on any plan-vs-codebase contradiction** applies here too, per the
-  standing rule on executing a written plan one step at a time: raise it
-  every time, not once.
-- **No commits without an explicit go-ahead**, and no `Co-Authored-By`
-  trailer in this repo.
+- **Commit after each numbered step** — 1.1, then 1.2, and so on — once that
+  step's acceptance check passes. Standing authorization for this plan only;
+  it does not extend to `council publish`, to a push, or to any other work.
+  Rules for those commits:
+  - **Never a `Co-Authored-By` trailer, and no mention of Claude, an agent or
+    an AI anywhere in the message** (`docs/TESTING.md`, "Commit conventions").
+    Write the message as the person who made the change.
+  - **Stage only the files that step touched.** `git add -A` is wrong here:
+    another agent is working the second-council plan in the same tree and has
+    uncommitted changes of its own. Check `git status` before every commit and
+    stage by path.
+  - Match the repo's message style — a short subject line, then a body saying
+    what changed and *why*, with the acceptance-check result where there is
+    one. Read a recent `git log` entry before writing the first one.
+  - A step that ends blocked at a `STOP:`, or that fails its acceptance check,
+    **does not get committed**. Leave the tree dirty and ask.
 - Before any deploy, **grep component source** for hardcoded council names,
   claims, era labels and corpus spans. The data-layer publish gate does not
   cover component source — that is the standing lesson of the 2026-08-06
@@ -662,9 +673,10 @@ the draft hash check does not cover (3.3).
 **6.5 — `CICD_DECISIONS.md`.** A dated entry only if publishing the two new
 served files changes how `publish.yml` works.
 
-**6.6 — Before committing anything in this plan**, read the prose back for
-stock phrasing that diverges from this project's doc voice, per the standing
-note on AI voice tells.
+**6.6 — Read the prose back before committing each doc change** in this phase
+(and any prose written in earlier phases) for stock phrasing that diverges
+from this project's doc voice, per the standing note on AI voice tells. The
+same applies to the commit messages themselves.
 
 ---
 
