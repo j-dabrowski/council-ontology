@@ -4,6 +4,7 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api } from "../api";
+import { useCorpusSpan } from "../councils";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 
 const CustomTooltip = ({ active, payload, label }: {
@@ -25,6 +26,7 @@ const CustomTooltip = ({ active, payload, label }: {
 
 export function PlanningTrendChart() {
   const { data, loading, error } = useData(() => api.planning());
+  const span = useCorpusSpan();
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -42,11 +44,19 @@ export function PlanningTrendChart() {
   const eligible = data.trend.filter((r) => r.decided >= 10);
   const peak = eligible.reduce((best, r) => r.approval_pct > best.approval_pct ? r : best, eligible[0]);
   const recent = [...eligible].sort((a, b) => b.year - a.year)[0];
+  // Direction described from the data itself (peak vs. most recent eligible
+  // year), never asserted as a fixed narrative — SECOND_COUNCIL_PLAN.md
+  // Phase 3.5's "don't keep the prose behind a council conditional" applies
+  // just as much to a claim baked in unconditionally as one gated on a name.
+  const directionDelta = recent.approval_pct - peak.approval_pct;
+  const direction = Math.abs(directionDelta) < 3
+    ? "held close to its peak"
+    : directionDelta < 0 ? "eased from its peak" : "risen above its earlier peak";
 
   return (
     <Card
-      title="Planning Approval Rate, 1995–2026"
-      subtitle="Cambridge's shift from permissive to restrictive planning"
+      title="Planning Approval Rate"
+      subtitle={`Approval rate over time${span ? ` (${span})` : ""}`}
       valence="neutral"
     >
       <div className="planning-hero-row">
@@ -62,7 +72,7 @@ export function PlanningTrendChart() {
         <div className="planning-stat-divider" />
         <div className="planning-stat">
           <span className="planning-stat-num">{data.trend.reduce((s, r) => s + r.n_applications, 0).toLocaleString()}</span>
-          <span className="planning-stat-label">applications across 30 years</span>
+          <span className="planning-stat-label">applications on record{span ? ` (${span})` : ""}</span>
         </div>
       </div>
 
@@ -85,10 +95,10 @@ export function PlanningTrendChart() {
           />
           <ReferenceLine
             yAxisId="rate"
-            y={80}
+            y={peak.approval_pct}
             stroke="var(--border)"
             strokeDasharray="4 4"
-            label={{ value: "80%", position: "insideRight", fontSize: 10, fill: "#475569" }}
+            label={{ value: `${peak.approval_pct}% peak`, position: "insideRight", fontSize: 10, fill: "#475569" }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
@@ -114,9 +124,9 @@ export function PlanningTrendChart() {
         </ComposedChart>
       </ResponsiveContainer>
       <p className="chart-note">
-        Approval rate = decided applications (approved ÷ approved+refused). The 80% dashed line marks the 2000–2013 norm.
-        Years with fewer than 10 decided applications excluded. The 2003–2013 era of 85–93% approval
-        contrasts sharply with the post-2018 decline toward 60–72%.
+        Approval rate = decided applications (approved ÷ approved+refused). The dashed line marks
+        the {peak.year} peak ({peak.approval_pct}%); the most recent eligible year has {direction}
+        ({recent.approval_pct}% in {recent.year}). Years with fewer than 10 decided applications excluded.
       </p>
     </Card>
   );

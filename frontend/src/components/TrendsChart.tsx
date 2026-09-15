@@ -3,6 +3,7 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api, CouncillorsData } from "../api";
+import { useCorpusSpan } from "../councils";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
 import { RedactedText } from "../guardrail";
@@ -10,6 +11,7 @@ import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
 export function ContestationChart({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.trends());
+  const span = useCorpusSpan();
   // most_contested is a motion title — free text, computed per run, not a
   // registry-authored string — so it goes through the same guardrail every
   // other computed claim field does (ScorecardPanel/BatteryTestPanel):
@@ -60,7 +62,7 @@ export function ContestationChart({ test }: { test: ResolvedTest }) {
         </LineChart>
       </ResponsiveContainer>
       <p className="chart-note">
-        Contestation rate across the full 30-year corpus (1995–2026).
+        Contestation rate across the full corpus{span ? ` (${span})` : ""}.
       </p>
       <Reveal label="see the most contested motion per year">
         <h3 className="section-heading" style={{ marginTop: 12 }}>Most contested motion per year</h3>

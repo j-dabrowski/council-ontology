@@ -1,5 +1,6 @@
 import { useData } from "../hooks/useData";
 import { api } from "../api";
+import { useCorpusSpan } from "../councils";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 
 function CompareBar({ pct, color }: { pct: number; color: string }) {
@@ -13,6 +14,7 @@ function CompareBar({ pct, color }: { pct: number; color: string }) {
 
 export function PlanningObjectionsPanel() {
   const { data, loading, error } = useData(() => api.planning());
+  const span = useCorpusSpan();
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -23,7 +25,7 @@ export function PlanningObjectionsPanel() {
   return (
     <Card
       title="Does Public Objection Change Outcomes?"
-      subtitle="Community submissions vs planning decisions, 1995–2026"
+      subtitle={`Community submissions vs planning decisions${span ? `, ${span}` : ""}`}
       valence="neutral"
     >
       <div className="objection-grid">

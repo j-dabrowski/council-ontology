@@ -1,5 +1,6 @@
 import { useData } from "../hooks/useData";
 import { api, AlignmentPair } from "../api";
+import { useCorpusSpan } from "../councils";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
 import { surname } from "../surname";
@@ -19,6 +20,7 @@ function textColor(rate: number) {
 
 export function AlignmentHeatmap() {
   const { data, loading, error } = useData(() => api.alignment());
+  const span = useCorpusSpan();
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -46,7 +48,7 @@ export function AlignmentHeatmap() {
   });
 
   return (
-    <Card title="Voting Alignment Heatmap" subtitle="Agreement rate on shared votes, 1995–2026" valence="neutral">
+    <Card title="Voting Alignment Heatmap" subtitle={`Agreement rate on shared votes${span ? `, ${span}` : ""}`} valence="neutral">
       <div className="heatmap-scroll">
         <table className="heatmap-table">
           <thead>

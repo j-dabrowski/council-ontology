@@ -4,6 +4,7 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api, EvidenceEntry } from "../api";
+import { useCorpusSpan } from "../councils";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -35,6 +36,7 @@ export function EngagementChart({ test }: { test: ResolvedTest }) {
   // a bar does nothing, rather than blocking the chart itself.
   const { data: evidence } = useData(() => api.evidenceParticipation());
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const span = useCorpusSpan();
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -81,7 +83,7 @@ export function EngagementChart({ test }: { test: ResolvedTest }) {
         </BarChart>
       </ResponsiveContainer>
       <p className="chart-note">
-        Public engagement across the full 30-year corpus (1995–2026).
+        Public engagement across the full corpus{span ? ` (${span})` : ""}.
         <span className="section-hint"> · click a bar to see that year's questions, deputations and petitions</span>
       </p>
 

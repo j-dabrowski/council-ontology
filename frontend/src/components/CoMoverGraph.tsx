@@ -2,11 +2,13 @@ import ForceGraph2D from "react-force-graph-2d";
 import { useRef, useEffect, useState, useCallback } from "react";
 import { useData } from "../hooks/useData";
 import { api } from "../api";
+import { useCorpusSpan } from "../councils";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { surname } from "../surname";
 
 export function CoMoverGraph() {
   const { data, loading, error } = useData(() => api.coMovers());
+  const span = useCorpusSpan();
   const containerRef = useRef<HTMLDivElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const fgRef = useRef<any>(null);
@@ -30,7 +32,7 @@ export function CoMoverGraph() {
 
   if (!data.nodes.length) {
     return (
-      <Card title="Co-Mover Network" subtitle="1995–2026" valence="neutral">
+      <Card title="Co-Mover Network" subtitle={span ?? undefined} valence="neutral">
         <p className="chart-note">No co-mover pairs found with current filters.</p>
       </Card>
     );
@@ -58,7 +60,7 @@ export function CoMoverGraph() {
   };
 
   return (
-    <Card title="Co-Mover Network" subtitle="Active councillors, 1995–2026" valence="neutral">
+    <Card title="Co-Mover Network" subtitle={`Active councillors${span ? `, ${span}` : ""}`} valence="neutral">
       <div ref={containerRef} style={{ width: "100%", height: 420, borderRadius: 8, overflow: "hidden", background: "#0f172a" }}>
         <ForceGraph2D
           ref={fgRef}

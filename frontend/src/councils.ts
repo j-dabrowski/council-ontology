@@ -67,6 +67,17 @@ export async function fetchCouncilList(): Promise<CouncilListEntry[]> {
   return res.json();
 }
 
+// This council's own corpus_span, straight from councils.json's entry for
+// it — the shared source every chart/panel that used to hardcode a fixed
+// year range now reads instead (SECOND_COUNCIL_PLAN.md Phase 3.3). Null
+// while the list is loading or if this council has no entry yet (e.g. Draft
+// mode, which carries no corpus_span at all — see fetchCouncilList()).
+export function useCorpusSpan(): string | null {
+  const { list } = useCouncilList();
+  const council = currentCouncil();
+  return list.find((c) => c.key === council)?.corpus_span ?? null;
+}
+
 // Shared loading state for the two places that need to know the whole list
 // before rendering anything useful: the bare-"/" / invalid-council redirect
 // in App.tsx, and CouncilHeader's selector (which also needs `loading` to

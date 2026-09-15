@@ -3,6 +3,7 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api } from "../api";
+import { useCorpusSpan } from "../councils";
 import { ValenceChip } from "./ValenceChip";
 import { Reveal } from "./DrillDown";
 import { CouncillorTick } from "./CouncillorModal";
@@ -34,6 +35,7 @@ interface HistBucket { label: string; lo: number; hi: number; count: number }
 
 export function InterestsChart() {
   const { data, loading, error } = useData(() => api.interests());
+  const span = useCorpusSpan();
 
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
@@ -90,7 +92,7 @@ export function InterestsChart() {
   }));
 
   return (
-    <Card title="Interest Declarations by Councillor" subtitle="1995–2026" valence="neutral">
+    <Card title="Interest Declarations by Councillor" subtitle={span ?? undefined} valence="neutral">
       <p className="section-heading">
         How financial/proximity ("must-leave") declarations are distributed across the chamber
       </p>
