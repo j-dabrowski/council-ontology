@@ -1,214 +1,116 @@
 import { useData } from "../hooks/useData";
-import { api, OverviewData } from "../api";
+import { api, OverviewData, ScorecardData } from "../api";
+import { useCorpusSpan } from "../councils";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
-import { ObjectionResponse } from "./ObjectionResponse";
 
-interface Insight {
+// SECOND_COUNCIL_PLAN.md Phase 3.5: this panel used to be a hand-written
+// synthesis for this project's first corpus — a thesis paragraph, a
+// one-liner, and eight interpretive "insight" bodies asserting conclusions
+// that were true of that one council but not computed, and would render
+// unchanged and wrong for any other. The plan's preferred fix — rendering a
+// real synthesis
+// field from the Renderer role (docs/render/synthesis_mode.txt) — isn't
+// available yet: Renderer has never been run and has no calibration data,
+// so that's a real dependency, not a free win here. This is the plan's
+// fallback: reduce to what's actually computable per council — the same
+// stat tiles, stripped of the narrative that connected them, plus the
+// valence mix scorecard.json already carries.
+interface StatTile {
   n: number;
-  title: string;
   stat: string;
-  statLabel: string;
-  body: React.ReactNode;
+  label: string;
   principle: string;
 }
 
 export function OverviewPanel() {
   const { data, loading, error } = useData<OverviewData>(() => api.overview());
+  const { data: scorecard } = useData<ScorecardData>(() => api.scorecard());
+  const span = useCorpusSpan();
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
   const d = data;
 
-  const insights: Insight[] = [
+  const tiles: StatTile[] = [
     {
       n: 1,
-      title: "The Inquiry is the hinge — and no improvement outlasted it",
       stat: `${d.recusal_inquiry_pct}% → ${d.recusal_post_pct}%`,
-      statLabel: "recusal on serious conflicts, during vs after the Inquiry — the clearest reversion",
-      body: (
-        <>Four independent panels pivot on the 2018–21 Authorised Inquiry. Stepping out
-        of serious conflicts rose to {d.recusal_inquiry_pct}% under scrutiny then
-        collapsed to {d.recusal_post_pct}% afterwards; confidential business
-        spiked from {d.confidential_pre_pct}% to {d.confidential_peak_pct}% in{" "}
-        {d.confidential_peak_year} then receded; and public questions "taken on notice"
-        rather than answered live tripled from {d.pq_pre_pct}% to {d.pq_inquiry_pct}%,
-        only partly easing to {d.pq_post_pct}% — still well above baseline. A systematic
-        durable-improvement sweep found <strong>no</strong> domain that tightened under
-        scrutiny and held: the one clear improvement (recusal) fully reverted, while the
-        defensive habits the Inquiry provoked partly stuck. Conduct changed while someone
-        was watching; nothing changed for keeps.</>
-      ),
+      label: "recusal on serious conflicts, during vs after this council's scrutiny window",
       principle: "Nolan · Accountability, Openness",
     },
     {
       n: 2,
-      title: "Consensus hides a power hierarchy",
       stat: `${d.win_min_pct}–${d.win_max_pct}%`,
-      statLabel: "spread in contested-vote win rates between councillors",
-      body: (
-        <>The chamber carries {d.base_carry_pct}% of motions, most unanimously — but
-        win rates on the {d.n_contested.toLocaleString()} contested votes span{" "}
-        {d.win_min_pct}–{d.win_max_pct}%, and a councillor's influence is unrelated
-        to how loudly they dissent. Even in an era that was{" "}
-        {d.oldguard_unanimous_pct}% unanimous, who <em>seconds</em> whom exposes the
-        blocs the vote can't (heavy sponsors agree {d.sponsor_conv_high}% vs a{" "}
-        {d.sponsor_conv_low}% base rate).</>
-      ),
+      label: `spread in contested-vote win rates between councillors (${d.n_contested.toLocaleString()} contested votes; ${d.base_carry_pct}% of all motions carry)`,
       principle: "CIPFA · principle B",
     },
     {
       n: 3,
-      title: "Declaring a conflict became a ritual",
       stat: `${d.declared_stay_pct}%`,
-      statLabel: "of declared conflicts, the councillor stays and votes anyway",
-      body: (
-        <>Declaring an interest lifts recusal ~80× — yet {d.declared_stay_pct}% of the
-        time the member stays and votes, leaning toward letting the matter through.
-        After the Inquiry, "impartiality" declarations ballooned to{" "}
-        {d.impartiality_post_declared} declared votes at{" "}
-        {d.impartiality_post_recusal_pct}% recusal: near-meaningless boilerplate.
-        Declare more, recuse less.</>
-      ),
+      label: "of declared conflicts, the councillor stays and votes anyway",
       principle: "Nolan · Integrity, Objectivity",
     },
     {
       n: 4,
-      title: "Long service is common — not one self-renewing dynasty",
       stat: `${d.tenure_top_years} yrs`,
-      statLabel: "longest-serving councillor",
-      body: (
-        <>Median service is {d.tenure_median_years} years and{" "}
-        {d.tenure_15plus} councillors served 15+. The 2000s "old guard" sponsorship
-        cluster (see the sponsorship panel below) overlaps with only a minority of
-        the councillors who went on to dominate tenure and influence over the next
-        two decades — a partial, descriptive pattern, not a proven succession
-        pipeline, and the cluster itself fragmented by 2008 with no comparably
-        durable bloc forming since.</>
-      ),
+      label: `longest-serving councillor (median ${d.tenure_median_years} yrs; ${d.tenure_15plus} served 15+)`,
       principle: "CIPFA · principle A",
     },
     {
       n: 5,
-      title: "Officers decide; the chamber ratifies",
       stat: `${d.officer_compliance_pct}%`,
-      statLabel: "of officer recommendations are adopted unchanged",
-      body: (
-        <>Council followed the officer recommendation in{" "}
-        {d.officer_matched - d.officer_diverged} of {d.officer_matched} matched items
-        ({d.officer_compliance_pct}%). The visible debate is largely theatre — the
-        substantive decision is made upstream, in who writes the recommendation. The
-        most important caveat on everything else here.</>
-      ),
+      label: `of officer recommendations adopted unchanged (${d.officer_matched - d.officer_diverged} of ${d.officer_matched} matched items)`,
       principle: "CIPFA · principle F",
     },
     {
       n: 6,
-      title: "Residents move outcomes only in numbers",
       stat: `${d.dose_0_refusal_pct}% → ${d.dose_5plus_refusal_pct}%`,
-      statLabel: "refusal rate: no objectors vs 5+ coordinated objectors",
-      body: (
-        <>A lone objector is statistical noise ({d.dose_0_refusal_pct}% refusal,
-        barely above baseline). But once five or more neighbours object together the
-        refusal rate jumps to {d.dose_5plus_refusal_pct}%. The act of objecting hardly
-        matters; coordinated numbers do.</>
-      ),
+      label: "planning refusal rate: no objectors vs 5+ coordinated objectors",
       principle: "CIPFA · principle B",
     },
     {
       n: 7,
-      title: "The money: concentrated, opaque — not captured",
       stat: `$${d.tender_redacted_m}M`,
-      statLabel: `of $${d.tender_total_m}M in tenders is redacted (${d.tender_top10_share_pct}% to top-10 firms)`,
-      body: (
-        <>${d.tender_total_m}M of awarded work, with the top-10 firms taking{" "}
-        {d.tender_top10_share_pct}% and a third of all dollars (${d.tender_redacted_m}M)
-        hidden behind "Respondent N" placeholders. Yet every integrity test —
-        threshold-gaming, entrenched incumbents, big-dollar leniency,
-        repeat-applicant advantage — comes back <strong>null</strong>. The issue is
-        transparency, not detectable capture.</>
-      ),
+      label: `of $${d.tender_total_m}M in tenders redacted (${d.tender_top10_share_pct}% to top-10 firms)`,
       principle: "CIPFA · principles F, G",
     },
     {
       n: 8,
-      title: "And the record that earns the council credit",
       stat: `${d.confidential_pre_pct}%`,
-      statLabel: "confidential business across two decades (1995–2017) — a genuinely open baseline",
-      body: (
-        <>Read the same data through the council's defender and a real
-        good-governance record stands up. For two decades barely{" "}
-        {d.confidential_pre_pct}% of business was closed — and even where
-        confidentiality <em>is</em> used it tracks lawful grounds, not controversy:
-        the most contentious category, named developments, is the <em>least</em> closed
-        ({d.conf_dev_pct}% vs a {d.conf_base_pct}% base), so closure is not used to bury
-        difficult planning. The tender record passes <strong>every</strong> integrity
-        test thrown at it — no threshold-gaming, no entrenched incumbent, no
-        repeat-player edge, no decider-tied supplier. The chamber does <em>not</em>{" "}
-        rubber-stamp its own Mayor — mayoral motions drew dissent{" "}
-        {d.mayor_contest_pct}% of the time vs {d.other_contest_pct}% for backbench
-        motions — and contested-vote power turns over at elections rather than
-        sticking. The faults above are real, but they are exceptions in an
-        otherwise sound record — which is exactly why they stand out.</>
-      ),
+      label: "confidential business before this council's scrutiny window",
       principle: "Nolan · Openness, Accountability · CIPFA · F, G",
     },
   ];
 
+  const s = scorecard?.summary;
+
   return (
     <Card
-      title="What 30 Years of Minutes Say — the Big Picture"
-      subtitle={`A synthesis across every panel below · Town of Cambridge · ${d.span} · ${d.n_minutes} minutes`}
+      title="Governance at a Glance"
+      subtitle={`Key figures across the battery${span ? ` · ${span}` : ""} · ${d.n_minutes} minutes`}
     >
-      <div className="overview-thesis">
-        <p>
-          On the evidence, Cambridge is a <strong>broadly sound council with specific,
-          nameable weaknesses</strong> — not a failing one. Every integrity test on the
-          dollars comes back null, the tender record is clean, the chamber does not
-          rubber-stamp its Mayor, and for two decades its business was overwhelmingly
-          open. Against that baseline the genuine concerns stand out: a consensus chamber
-          that conceals real power inequality, and an accountability safeguard
-          (conflict-of-interest recusal) that decayed into a formality once external
-          scrutiny lifted.
-        </p>
-        <p className="overview-oneliner">
-          A council that governs by consensus and runs a clean-tested money record, but
-          conceals an uneven power structure behind near-unanimous votes, lets
-          conflict-declaration decay into formality — and behaved best only while someone
-          was watching.
-        </p>
-      </div>
+      {s && (
+        <div className="overview-valence-mix">
+          <span className="valence-chip valence-supportive">{s.n_supportive} supportive</span>
+          <span className="valence-chip valence-neutral">{s.n_neutral} neutral</span>
+          <span className="valence-chip valence-critical">{s.n_critical} critical</span>
+          {s.n_not_computable > 0 && (
+            <span className="valence-chip">{s.n_not_computable} not computable</span>
+          )}
+          <span className="chart-note" style={{ marginLeft: 8 }}>
+            of {s.n_tests} standard governance tests — see the full scorecard below
+          </span>
+        </div>
+      )}
 
       <div className="overview-grid">
-        {insights.map((it) => (
+        {tiles.map((it) => (
           <div key={it.n} className="overview-insight">
-            <div className="overview-insight-head">
-              <span className="overview-insight-num">{it.n}</span>
-              <span className="overview-insight-title">{it.title}</span>
-            </div>
             <div className="overview-insight-stat">{it.stat}</div>
-            <div className="overview-insight-statlabel">{it.statLabel}</div>
-            <p className="overview-insight-body">{it.body}</p>
+            <div className="overview-insight-statlabel">{it.label}</div>
             <span className="overview-insight-principle">{it.principle}</span>
           </div>
         ))}
       </div>
-
-      <ObjectionResponse
-        objection={
-          "A synthesis this evenly balanced — crediting the council on several fronts while " +
-          "also naming concerns — looks like it could be padding out the good news to soften " +
-          "the bad, rather than reporting what the evidence actually supports."
-        }
-        response={
-          "The nulls are load-bearing here, not padding: the absence of a financial-corruption " +
-          "signature is itself a finding, arrived at through independent integrity tests on the " +
-          "tender record, not silence because nothing was checked. The grading is deliberately " +
-          "even-handed in both directions — a strength is placed on its ladder only as high as " +
-          "the evidence supports, and a concern sits at Observation or Governance-concern " +
-          "altitude, never higher, without amplifying it into an assertion of wrongdoing or " +
-          "intent. Every figure above links to a panel below where the number, its sample size, " +
-          "and its caveats are laid out in full for a reader to check."
-        }
-      />
     </Card>
   );
 }

@@ -72,11 +72,6 @@ _CHECKS: list[tuple[str, re.Pattern]] = [
 # empty this file by file — shrink it as each hardcode is fixed, never widen
 # a pattern to stop matching instead.
 ALLOWLIST: dict[tuple[str, str], str] = {
-    ("frontend/src/components/OverviewPanel.tsx", "<>Four independent panels pivot on the 2018\u201321 Authorised Inquiry. Stepping out"): "B6: hardcoded Authorised-Inquiry era label",
-    ("frontend/src/components/OverviewPanel.tsx", "statLabel: \"confidential business across two decades (1995\u20132017) \u2014 a genuinely open baseline\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/OverviewPanel.tsx", "title=\"What 30 Years of Minutes Say \u2014 the Big Picture\""): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("frontend/src/components/OverviewPanel.tsx", "subtitle={`A synthesis across every panel below \u00b7 Town of Cambridge \u00b7 ${d.span} \u00b7 ${d.n_minutes} minutes`}"): "B6: hardcoded council name/identity",
-    ("frontend/src/components/OverviewPanel.tsx", "On the evidence, Cambridge is a <strong>broadly sound council with specific,"): "B6: hardcoded council name/identity",
     ("frontend/src/pages/MapPage.tsx", "\"Cambridge\": \"cambridge\","): "B6: hardcoded council name/identity",
     ("frontend/src/pages/MapPage.tsx", "// Score \u2192 fill colour.  Amber for Cambridge's current 6 supportive / 5 critical."): "B6: hardcoded council name/identity",
     ("frontend/src/pages/MapPage.tsx", "label: \"Town of Cambridge\","): "B6: hardcoded council name/identity",
