@@ -168,6 +168,13 @@ class Site(Base):
     zoning: Mapped[Optional[str]] = mapped_column(String(100))
     latitude: Mapped[Optional[float]] = mapped_column(Float)
     longitude: Mapped[Optional[float]] = mapped_column(Float)
+    # Geocode provenance (MAP_PAGE_PLAN.md Phase 4.4) — added via the
+    # ad-hoc ALTER-on-startup scripts/geocode_sites.py runs (same pattern
+    # scripts/import_terms.py's _ensure_columns() already uses for
+    # councillor_terms; there's no migration framework here).
+    latitude_source: Mapped[Optional[str]] = mapped_column(String(20))  # nominatim | manual | suburb_centroid
+    geocoded_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    geocode_note: Mapped[Optional[str]] = mapped_column(String(200))
 
     council: Mapped["Council"] = relationship(back_populates="sites")
     planning_applications: Mapped[list["PlanningApplication"]] = relationship(

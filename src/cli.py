@@ -5037,6 +5037,8 @@ def main() -> None:
                            help="Re-geocode sites that already have coordinates")
     p_geocode.add_argument("--dry-run", action="store_true", dest="dry_run",
                            help="Show what would be geocoded without making API calls")
+    p_geocode.add_argument("--report", action="store_true",
+                           help="Write data/<council>/geocode_report.json after the run (Phase 4.6)")
     p_geocode.set_defaults(func=lambda a: __import__("scripts.geocode_sites", fromlist=["run"]).run(a))
 
     # boundary (docs/frontend/MAP_PAGE_PLAN.md Phase 3) — a council's
