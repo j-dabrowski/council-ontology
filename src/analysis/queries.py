@@ -3385,16 +3385,30 @@ def mayoral_agenda_setting(
 # sharing one item_number — see `LinkedDeclaredVote`'s docstring for the concrete
 # fabricated-claim case (naming a real councillor) this replaced.
 
-_RECUSAL_ERAS = [
-    ("pre", "Before Inquiry (pre-2018)", None, 2017),
-    ("inquiry", "Authorised Inquiry (2018–2021)", 2018, 2021),
-    ("post", "After Inquiry (2022+)", 2022, None),
-]
+def _council_era_window(session: Session, council_id: int):
+    """This council's configured external-scrutiny window
+    (`config/council_eras.json`, docs/SECOND_COUNCIL_PLAN.md Phase 1.2), or
+    `None` if it has none. Used by `recusal_compliance_trend` and
+    `public_question_responsiveness` — both used to hardcode Cambridge's
+    own 2018-2021 Authorised Inquiry window directly in `_recusal_era`
+    below, meaningless for any other council."""
+    from src.council_eras import era_window_for
 
-def _recusal_era(year: int) -> str:
-    if year < 2018:
+    short_name = session.query(Council.short_name).filter(Council.id == council_id).scalar()
+    if not short_name:
+        return None
+    return era_window_for(short_name)
+
+
+def _recusal_era(year: int, window) -> str | None:
+    """"pre" / "inquiry" / "post" relative to `window` (an `EraWindow`), or
+    `None` when this council has no configured window at all — the caller
+    must treat `None` as "don't bucket this row by era," not as "pre.\""""
+    if window is None:
+        return None
+    if year < window.from_year:
         return "pre"
-    if year <= 2021:
+    if year <= window.to_year:
         return "inquiry"
     return "post"
 
@@ -3454,7 +3468,7 @@ class RecusalDriver:
 
 @dataclass
 class RecusalTrendStats:
-    inquiry_window: list[int]
+    inquiry_window: list[int] | None
     # headline: must-leave recusal by era
     must_leave_pre_pct: float
     must_leave_pre_n: int
@@ -3504,13 +3518,14 @@ def recusal_compliance_trend(
     """
     from sqlalchemy import text
 
+    window = _council_era_window(session, council_id)
     linked = _linked_declared_votes(session, council_id)
 
     # by type x era
     te: dict[tuple[str, str], list[int]] = defaultdict(lambda: [0, 0])  # [declared, recused]
     # must-leave by year
     ml_year: dict[int, list[int]] = defaultdict(lambda: [0, 0])
-    # post-2022 must-leave drivers (stayed and voted, excluding s.5.69
+    # post-window must-leave drivers (stayed and voted, excluding s.5.69
     # Ministerial-approved participation — see `_ministerial_approved`)
     drv: dict[str, list[int]] = defaultdict(lambda: [0, 0])  # [stayed, total]
     ministerial_approved_post_n = 0
@@ -3520,8 +3535,14 @@ def recusal_compliance_trend(
     for row in linked:
         if row.year is None:
             continue
+        era = _recusal_era(row.year, window)
+        if era is None:
+            # No configured scrutiny window for this council — nothing to
+            # bucket by era (docs/SECOND_COUNCIL_PLAN.md 1.2). by_year's
+            # declared-share trend below is computed independently of era
+            # and stays meaningful either way.
+            continue
         t = row.interest_type or "other"
-        era = _recusal_era(row.year)
         rec = _actually_stepped_out(row.choice, row.quote)
         te[(t, era)][0] += 1
         if rec:
@@ -3531,7 +3552,7 @@ def recusal_compliance_trend(
             ml_year[row.year][0] += 1
             if rec:
                 ml_year[row.year][1] += 1
-            if row.year >= 2022:
+            if era == "post":
                 if _ministerial_approved(row.what, row.quote):
                     ministerial_approved_post_n += 1
                 else:
@@ -3628,7 +3649,7 @@ def recusal_compliance_trend(
     ][:8]
 
     return RecusalTrendStats(
-        inquiry_window=[2018, 2021],
+        inquiry_window=[window.from_year, window.to_year] if window else None,
         must_leave_pre_pct=ml_pre_pct, must_leave_pre_n=ml_pre_n,
         must_leave_inquiry_pct=ml_inq_pct, must_leave_inquiry_n=ml_inq_n,
         must_leave_post_pct=ml_post_pct, must_leave_post_n=ml_post_n,
@@ -3719,7 +3740,7 @@ class PQYearPoint:
 
 @dataclass
 class PQResponsivenessStats:
-    inquiry_window: list[int]
+    inquiry_window: list[int] | None
     total: int
     answered: int
     on_notice: int
@@ -3757,6 +3778,7 @@ def public_question_responsiveness(
     """
     from sqlalchemy import text
 
+    window = _council_era_window(session, council_id)
     params: dict = {"cid": council_id, "mid": meeting_id}
     bt = _meeting_type_clause(meeting_types, "mt", params)
     rows = session.execute(text(f"""
@@ -3772,7 +3794,13 @@ def public_question_responsiveness(
           AND (:mid IS NULL OR mt.id = :mid){bt}
     """), params).all()
 
-    # overall + era + year tallies
+    # overall + era + year tallies. `era_ct`/`era_rows` are keyed "pre"/
+    # "inquiry"/"post" only when this council has a configured scrutiny
+    # window (docs/SECOND_COUNCIL_PLAN.md 1.2) — everything falls into a
+    # single "none" bucket otherwise, so `by_era`/`pre_pct` etc. below come
+    # back honestly empty (via `inquiry_window=None`) rather than a
+    # meaningless split. `tot`/`yr_ct` (the overall and year-level stats)
+    # are unaffected either way.
     era_ct: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0])  # [answered, on_notice, blank]
     yr_ct: dict[int, list[int]] = defaultdict(lambda: [0, 0])      # [answered, on_notice] (non-blank)
     era_rows: dict[str, list[tuple]] = defaultdict(list)
@@ -3780,7 +3808,10 @@ def public_question_responsiveness(
 
     for pid, yr, mdate, questioner, question, response in rows:
         cls = _pqr_classify(response)
-        era = _recusal_era(yr) if yr is not None else "pre"
+        if window is None:
+            era = "none"
+        else:
+            era = _recusal_era(yr, window) if yr is not None else "pre"
         if cls == "answered":
             era_ct[era][0] += 1
             tot[0] += 1
@@ -3864,7 +3895,7 @@ def public_question_responsiveness(
 
     ev = {e.era: e for e in by_era}
     return PQResponsivenessStats(
-        inquiry_window=[2018, 2021],
+        inquiry_window=[window.from_year, window.to_year] if window else None,
         total=len(rows), answered=tot[0], on_notice=tot[1], blank=tot[2],
         answered_pct=round(100 * tot[0] / len(rows), 1) if rows else 0.0,
         on_notice_pct=_pct(tot[0], tot[1]),

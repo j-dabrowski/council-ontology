@@ -190,19 +190,24 @@ depend on earlier ones holding:
    only `council_id: int` plus generic `from_year`/`to_year` — no other
    council-specific parameter. Grep your own function for: a hardcoded
    `council_id` value, a hardcoded councillor or entity name, a
-   corpus-tuned threshold with no comment explaining the number, and —
-   the concrete precedent — a hardcoded era/shock boundary (the 2018–2021
-   Authorised Inquiry window is hardcoded in two places today,
-   `_recusal_era`/`_RECUSAL_ERAS` and `public_question_responsiveness`; this
-   is a known, unfixed dimension-4 failure, not a hypothetical one to
-   watch for). Any council-specific "shock" window your test depends on
-   should be a parameter with a documented default, and the test should
-   degrade gracefully (`data_ok=False`, or an era-neutral computation) when
-   a second council has no equivalent. A full second-council check (run
-   unchanged against a different `council_id`) isn't possible yet — no
-   second council DB is loaded — so this half of dimension 4 stays
-   `data_ok=False` for now; don't block on it, but don't skip the static
-   grep either.
+   corpus-tuned threshold with no comment explaining the number, and a
+   hardcoded era/shock boundary. Any council-specific "shock" window your
+   test depends on should be a parameter with a documented default
+   (`config/council_eras.json`/`src/council_eras.py`, docs/
+   SECOND_COUNCIL_PLAN.md 1.2 — `_recusal_era`'s own boundary used to be
+   the concrete example of this failure, hardcoded to Cambridge's
+   2018-2021 Authorised Inquiry directly in `queries.py`; it's now read
+   per-council from that config, absent meaning no window), and the test
+   should degrade gracefully (`data_ok=False`, or an era-neutral
+   computation) when a council has no equivalent. Run the check for real,
+   not just statically: `tests/test_council_agnostic.py`'s synthetic
+   Testville fixture (`src/fixtures/testville.py`, no `council_eras.json`
+   entry) IS the second-council check dimension 4 used to wait on — run
+   your generator against it (`seed_profile(session, "testville")`) and
+   confirm it degrades honestly instead of erroring or inventing a split.
+   This half of dimension 4 is no longer `data_ok=False` by default; only
+   leave it unchecked if Testville's corpus genuinely can't exercise your
+   generator's logic at all, and say why.
 
 5. **Write or update the `TestResult` entry.** `title`, `genre`, `principle`,
    `question`, `valence` (supportive/neutral/critical), `grade`, `headline`,

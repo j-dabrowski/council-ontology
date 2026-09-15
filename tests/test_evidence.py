@@ -1684,7 +1684,11 @@ def test_recusal_management_skips_votes_with_no_matched_declaration(session):
 
 
 def test_recusal_trend_resolves_matched_declarations(session):
-    council_id = _council(session)
+    # recusal_compliance_trend() only buckets by era for a council with a
+    # configured external-scrutiny window (config/council_eras.json,
+    # docs/SECOND_COUNCIL_PLAN.md 1.2) — "Cambridge" has one; the generic
+    # "TestCouncil" default doesn't, and legitimately resolves nothing.
+    council_id = _council(session, short_name="Cambridge")
     cllr_id = _councillor(session, "Financial", "Interest")
     quote_text = "Cr Financial Interest declared a financial interest and left the meeting."
     meeting_id = _meeting(session, council_id, date(2020, 3, 1), minutes_text=quote_text)
@@ -1770,7 +1774,11 @@ def test_power_spread_excludes_uncontested_motions(session):
 
 
 def test_question_responsiveness_resolves_on_notice_and_answered(session):
-    council_id = _council(session)
+    # public_question_responsiveness() only buckets by era for a council
+    # with a configured external-scrutiny window (config/council_eras.json,
+    # docs/SECOND_COUNCIL_PLAN.md 1.2) — "Cambridge" has one; the generic
+    # "TestCouncil" default doesn't, and legitimately resolves nothing.
+    council_id = _council(session, short_name="Cambridge")
     on_notice_text = "This question has been taken on notice."
     meeting_on = _meeting(session, council_id, date(2020, 1, 1), minutes_text=on_notice_text)
     pq_on = PublicQuestion(meeting_id=meeting_on, questioner_name="A Resident",

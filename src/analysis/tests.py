@@ -306,6 +306,16 @@ def _t_recusal_overall_meeting(session, council_id, meeting_id) -> TestResult:
 
 def _t_recusal_trend(session, council_id, pc) -> TestResult:
     r = pc.get("recusal_trend") or recusal_compliance_trend(session, council_id)
+    if r.inquiry_window is None:
+        # No configured external-scrutiny window for this council
+        # (docs/SECOND_COUNCIL_PLAN.md 1.2, config/council_eras.json) —
+        # degrade to data_ok=False rather than inventing a split or
+        # reporting a misleading "0% before, 0% after."
+        return _nodata("conflict.recusal_trend",
+                       "Did recusal compliance track an external-scrutiny event?",
+                       "Integrity / conflict (3.3)", "Nolan Accountability · CIPFA-A",
+                       "Did stepping out of serious conflicts change around external scrutiny?",
+                       scope=[SCOPE_WHOLE_CORPUS])
     # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): whether
     # must-leave recusal actually rose or fell across the scrutiny window,
     # rather than assuming Cambridge's own rose-then-fell shape. A ±5pp
@@ -2093,12 +2103,43 @@ def _t_confidential_topics_meeting(session, council_id, meeting_id) -> TestResul
 
 def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> TestResult:
     """[37] Public-question responsiveness — answered in the room, or 'taken on
-    notice'? Deferral share by era, tracking the 2018–21 Inquiry shock."""
+    notice'? Deferral share by era, tracking this council's configured
+    external-scrutiny window if it has one (config/council_eras.json,
+    docs/SECOND_COUNCIL_PLAN.md 1.2) — an era-neutral overall rate otherwise."""
     if meeting_id is not None:
         return _t_question_responsiveness_meeting(session, council_id, meeting_id, pc)
     r = pc.get("pq_responsiveness") or public_question_responsiveness(session, council_id)
     series = [{"x": y.year, "y": y.on_notice_pct}
               for y in r.by_year if y.on_notice_pct is not None]
+    if r.inquiry_window is None:
+        # No configured external-scrutiny window (docs/SECOND_COUNCIL_PLAN.md
+        # 1.2) — era-neutral computation, not an invented split: the overall
+        # deferral rate is still real data, just not a before/after story.
+        if r.total == 0:
+            return _nodata("engagement.question_responsiveness",
+                           "Are residents' questions answered, or quietly 'taken on notice'?",
+                           "Process / engagement (3.4)",
+                           "CIPFA-B — openness & stakeholder engagement · Nolan Accountability",
+                           "What share of public questions are deferred rather than answered "
+                           "in the meeting?", scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING])
+        return TestResult(
+            test_id="engagement.question_responsiveness",
+            title="Are residents' questions answered, or quietly 'taken on notice'?",
+            genre="Process / engagement (3.4)",
+            principle="CIPFA-B — openness & stakeholder engagement · Nolan Accountability",
+            question="What share of public questions are deferred rather than answered in the meeting?",
+            valence=NEUTRAL,
+            grade=G_OBSERVATION,
+            headline=f"{r.on_notice_pct}% of public questions are taken on notice rather than "
+                     "answered live",
+            verdict="No configured external-scrutiny window for this council, so this is reported "
+                    "as an overall rate rather than a before/during/after trend.",
+            n=r.answered + r.on_notice,
+            base_rate=f"{r.answered_pct}% answered live",
+            detail_panel="question-responsiveness",
+            chart=_line(series, unit="%"),
+            scope=[SCOPE_WHOLE_CORPUS, SCOPE_SINGLE_MEETING],
+        )
     # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): whether
     # deferral actually rose or fell across the scrutiny window, rather
     # than an assumed "tripled, then held" shape — and no council named in

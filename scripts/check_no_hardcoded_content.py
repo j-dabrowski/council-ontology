@@ -139,7 +139,6 @@ ALLOWLIST: dict[tuple[str, str], str] = {
     ("src/analysis/tests.py", "era=\"1996\u20132023 (electoral terms)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("src/analysis/tests.py", "era=\"1995\u20132026 (years with \u226530 carried motions)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
     ("src/analysis/tests.py", "era=\"1995\u20132026 \u00b7 DIRECTIONAL (n<30)\","): "B6: hardcoded corpus span (1995-2026 / 30-year)",
-    ("src/analysis/tests.py", "notice'? Deferral share by era, tracking the 2018\u201321 Inquiry shock.\"\"\""): "docstring/comment prose, not rendered text \u2014 not a real leak, just this line-based scanner's lack of AST awareness",
     ("src/analysis/tests.py", "# unconditional text were Cambridge-specific statistics this function"): "docstring/comment prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
     ("src/analysis/tests.py", "# the verdict, which used to name Cambridge and its Authorised Inquiry"): "docstring/comment prose, not rendered text — not a real leak, just this line-based scanner's lack of AST awareness",
 }

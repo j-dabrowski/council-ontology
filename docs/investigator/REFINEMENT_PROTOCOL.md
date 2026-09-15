@@ -175,6 +175,20 @@ flagship ([18]) than the one this session was scoped to.
 
 ## Changelog
 
+- v0.7 (2026-09-15) — The "second-council validation" open question above
+  is resolved for the *static* half (still true for the *runtime* half,
+  see the note it replaces): `config/council_eras.json` +
+  `src/council_eras.py` (docs/SECOND_COUNCIL_PLAN.md Phase 1.2) replace
+  the hardcoded 2018-2021 Authorised Inquiry window this doc's own
+  calibration log flagged as a confirmed dimension-4 violation —
+  `_recusal_era`/`public_question_responsiveness` now read a per-council
+  window, absent meaning no window, and both degrade honestly
+  (`data_ok=False` / an era-neutral computation) rather than inventing a
+  split. Testville (`src/fixtures/testville.py`, Phase 0) now stands in
+  for the "second council DB" this section said didn't exist yet — a
+  real synthetic council with no `council_eras.json` entry, so a
+  generator's degradation path is checkable today, not blocked on a real
+  second corpus. `Refiner_prompt.txt` Step 4 updated to point at it.
 - v0.6 (2026-08-27) — Dimension 7 closes the gap `scope` left open at v0.5:
   a `single_meeting` scope tag proved nothing on its own — nothing checked
   whether the matching `_meeting` function existed. Now requires it exist
