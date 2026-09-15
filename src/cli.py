@@ -1936,6 +1936,18 @@ def cmd_analyse(args) -> None:
 SNAPSHOT_TIER: dict[str, str] = {
     "watch": "public",
     "method": "public",
+    # rating.json (docs/frontend/MAP_PAGE_PLAN.md Phase 1) is a projection of
+    # claim *metadata* (valence/grade/data_ok) with no name, no quote and no
+    # prose in it by construction (src/analysis/rating.py) — so unlike
+    # scorecard it does not need to drop to full tier when one claim turns
+    # out to be individual-unit. This is deliberate, not an oversight:
+    # scorecard's tier is derived per run (CLAIM_DERIVED_SNAPSHOTS below), so
+    # a future battery emitting one named claim would pull the entire
+    # scorecard — and with it every council's map colour, if the map read
+    # scorecard directly — off the public site. The map must not be able to
+    # go grey for that reason. Same per-claim-rather-than-whole-batch
+    # carve-out watch.json already makes, with the same justification.
+    "rating": "public",
     # docs/frontend/RECORD_PAGE_PLAN.md Step 4 (B.4) — `planning` is a pure
     # aggregate (year trend + with/no-objection groups, no names, no
     # quotes); `record_streets` is public only because its description
