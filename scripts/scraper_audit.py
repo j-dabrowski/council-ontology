@@ -23,9 +23,27 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from src.scraper.base import classify_document_type, is_meeting_document
+from src.scraper.base import classify_document_type as _classify_document_type
+from src.scraper.base import is_meeting_document as _is_meeting_document
+from src.scraper.cambridge import CambridgeScraper
 
 RAW_DIR = ROOT / "data" / "raw"
+
+
+def classify_document_type(url: str) -> str:
+    return _classify_document_type(
+        url, CambridgeScraper.MINUTES_SHORTHAND_RE, CambridgeScraper.AGENDA_SHORTHAND_RE,
+    )
+
+
+def is_meeting_document(url: str) -> bool:
+    return _is_meeting_document(
+        url,
+        noise_re=CambridgeScraper.NOISE_PATTERNS_RE,
+        keyword_re=CambridgeScraper.MEETING_KEYWORD_RE,
+        minutes_re=CambridgeScraper.MINUTES_SHORTHAND_RE,
+        agenda_re=CambridgeScraper.AGENDA_SHORTHAND_RE,
+    )
 
 # Cambridge is required to hold ≥1 ordinary council meeting per month.
 # January is traditionally skipped. So the floor is 11 months × 1 meeting

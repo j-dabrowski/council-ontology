@@ -55,7 +55,8 @@ from xml.etree import ElementTree
 import httpx
 from bs4 import BeautifulSoup
 
-from .base import BaseCouncilScraper, MinutesDocument, is_meeting_document
+from .base import BaseCouncilScraper, MinutesDocument
+from .base import is_meeting_document as _is_meeting_document
 
 logger = logging.getLogger(__name__)
 
@@ -321,7 +322,13 @@ def _collect_from_playwright(
                             link["href"]
                             for link in ajax_soup.find_all("a", href=True)
                             if link["href"].lower().endswith(".pdf")
-                            and is_meeting_document(link["href"])
+                            and _is_meeting_document(
+                                link["href"],
+                                noise_re=CambridgeScraper.NOISE_PATTERNS_RE,
+                                keyword_re=CambridgeScraper.MEETING_KEYWORD_RE,
+                                minutes_re=CambridgeScraper.MINUTES_SHORTHAND_RE,
+                                agenda_re=CambridgeScraper.AGENDA_SHORTHAND_RE,
+                            )
                         ]
 
                     except PWTimeout:
@@ -578,6 +585,32 @@ class CambridgeScraper(BaseCouncilScraper):
     """
 
     BASE_URL = BASE_URL
+
+    # Cambridge's own filename shorthand (Phase 1.5, SECOND_COUNCIL_PLAN.md) —
+    # moved off BaseCouncilScraper, which now defaults to no shorthand at all.
+    # Minutes shorthand: YYYY_MM_DD followed by optional suffix letter(s) then 'm'.
+    MINUTES_SHORTHAND_RE = re.compile(r"\d{4}_\d{2}_\d{2}[a-z]*m\.pdf$")
+    # Agenda shorthand: ends in 'a' (but not 'dva' which is a DA-variance attachment).
+    # Explicit list of safe suffixes to avoid false-positives:
+    #   a   = agenda
+    #   cra = committee-report agenda
+    #   scma = special council meeting agenda
+    AGENDA_SHORTHAND_RE = re.compile(r"\d{4}_\d{2}_\d{2}(cra|scma?|a)\.pdf$")
+    # Known non-meeting support documents downloaded alongside the main
+    # meeting PDFs but that are individual DA reports, item attachments, or
+    # public notices — not meeting records.
+    NOISE_PATTERNS_RE = re.compile(
+        r"^dv\d{2}_"               # individual development-application reports
+        r"|attachment.to.item"      # item attachment PDFs
+        r"|cr-item-attachment"      # committee-report item attachments
+        r"|-dva\.pdf$"              # development-variance agenda (standalone DA doc)
+        r"|_dva\.pdf$"
+        r"|public.notice"           # public notices (not meeting minutes)
+        r"|question.register"       # public question registers
+    )
+    MEETING_KEYWORD_RE = re.compile(
+        r"\b(council|ordinary|special|electors?|agm|committee|briefing|scm|sca|scma)\b"
+    )
 
     def __init__(
         self,

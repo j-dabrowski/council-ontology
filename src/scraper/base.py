@@ -17,36 +17,33 @@ logger = logging.getLogger(__name__)
 
 import re as _re
 
-# Filename patterns that confirm a PDF is a meeting minute.
-# Cambridge shorthand: YYYY_MM_DD followed by optional suffix letter(s) then 'm'.
-_MINUTES_SHORTHAND = _re.compile(r"\d{4}_\d{2}_\d{2}[a-z]*m\.pdf$")
-# Agenda shorthand: ends in 'a' (but not 'dva' which is a DA-variance attachment).
-# Explicit list of safe suffixes to avoid false-positives:
-#   a   = agenda
-#   cra = committee-report agenda
-#   scma = special council meeting agenda
-_AGENDA_SHORTHAND = _re.compile(r"\d{4}_\d{2}_\d{2}(cra|scma?|a)\.pdf$")
-
-# Filename patterns that identify known non-meeting support documents.
-# These are downloaded alongside the main meeting PDFs but are individual DA
-# reports, item attachments, or public notices — not meeting records.
-_NOISE_PATTERNS = _re.compile(
-    r"^dv\d{2}_"               # individual development-application reports
-    r"|attachment.to.item"      # item attachment PDFs
-    r"|cr-item-attachment"      # committee-report item attachments
-    r"|-dva\.pdf$"              # development-variance agenda (standalone DA doc)
-    r"|_dva\.pdf$"
-    r"|public.notice"           # public notices (not meeting minutes)
-    r"|question.register"       # public question registers
+# Generic keyword set every council's filenames can reasonably be expected to
+# use somewhere (English words for meeting types, not any one council's own
+# shorthand). A council with its own filename shorthand — Cambridge's
+# YYYY_MM_DD-plus-suffix convention, its own attachment-code prefixes — sets
+# `MINUTES_SHORTHAND_RE`/`AGENDA_SHORTHAND_RE`/`NOISE_PATTERNS_RE`/
+# `MEETING_KEYWORD_RE` on its own `BaseCouncilScraper` subclass (see
+# `CambridgeScraper` in `cambridge.py`) rather than here.
+_GENERIC_MEETING_KEYWORD_RE = _re.compile(
+    r"\b(council|ordinary|special|electors?|agm|committee|briefing)\b"
 )
 
 
-def classify_document_type(url: str) -> str:
+def classify_document_type(
+    url: str,
+    minutes_re: "_re.Pattern | None" = None,
+    agenda_re: "_re.Pattern | None" = None,
+) -> str:
     """
     Infer document type from the PDF filename portion of a URL.
 
     Checks only the filename (last path segment), not the directory path,
     to avoid false matches from folder names like 'aaa-agenda-and-minutes'.
+
+    `minutes_re`/`agenda_re` are a scraper's own filename-shorthand patterns
+    (e.g. `CambridgeScraper.MINUTES_SHORTHAND_RE`) checked only after the
+    generic "minutes"/"agenda"-in-filename rules below; omit them for a
+    council with no shorthand convention of its own.
 
     Returns one of: 'minutes', 'agenda', 'addendum', 'briefing_notes', 'unknown'.
     """
@@ -60,37 +57,42 @@ def classify_document_type(url: str) -> str:
     if "briefing-forum" in fname or "briefing-notes" in fname or \
        "briefing_forum" in fname or "briefing_notes" in fname:
         return "briefing_notes"
-    # Shorthand filename conventions used by Cambridge before the CMS migration.
-    if _MINUTES_SHORTHAND.search(fname):
+    if minutes_re is not None and minutes_re.search(fname):
         return "minutes"
-    if _AGENDA_SHORTHAND.search(fname):
+    if agenda_re is not None and agenda_re.search(fname):
         return "agenda"
     return "unknown"
 
 
-_MEETING_KEYWORD_RE = _re.compile(
-    r"\b(council|ordinary|special|electors?|agm|committee|briefing|scm|sca|scma)\b"
-)
-
-def is_meeting_document(url: str) -> bool:
+def is_meeting_document(
+    url: str,
+    *,
+    noise_re: "_re.Pattern | None" = None,
+    keyword_re: "_re.Pattern" = _GENERIC_MEETING_KEYWORD_RE,
+    minutes_re: "_re.Pattern | None" = None,
+    agenda_re: "_re.Pattern | None" = None,
+) -> bool:
     """
     Return True if the PDF URL looks like a meeting document (minutes, agenda,
     addendum, briefing notes) rather than a support attachment.
 
     Used by scrapers to filter out individual DA reports, item attachments,
     and other non-meeting PDFs that are linked from the same accordion.
+    `noise_re`/`keyword_re`/`minutes_re`/`agenda_re` are a scraper's own
+    filename patterns; omitted, this falls back to no noise filter and the
+    generic meeting-keyword set above.
     """
     fname = url.rstrip("/").rsplit("/", 1)[-1].lower()
-    if _NOISE_PATTERNS.search(fname):
+    if noise_re is not None and noise_re.search(fname):
         return False
-    doc_type = classify_document_type(url)
+    doc_type = classify_document_type(url, minutes_re, agenda_re)
     # Accept anything the classifier can positively identify.
     if doc_type != "unknown":
         return True
     # For unknown filenames: accept if the name contains council/meeting keywords
-    # or a date-like component in any of the naming conventions Cambridge has used.
+    # or a date-like component in any of the naming conventions this council uses.
     # Only reject files with no such signal — those are purely descriptive support docs.
-    has_keyword = bool(_MEETING_KEYWORD_RE.search(fname))
+    has_keyword = bool(keyword_re.search(fname))
     has_date = bool(
         _re.search(r"\d{4}[_-]\d{1,2}[_-]\d{1,2}", fname)   # YYYY-M-D or YYYY-MM-DD
         or _re.search(r"\d{1,2}[_-]\d{1,2}[_-]\d{4}", fname)  # D-M-YYYY or DD-MM-YYYY
@@ -131,6 +133,15 @@ class BaseCouncilScraper(ABC):
     The `run()` method calls discover() then downloads each PDF.
     """
 
+    # Filename-shorthand patterns (Phase 1.5, SECOND_COUNCIL_PLAN.md): generic
+    # by default — a council whose filenames don't spell out "minutes"/
+    # "agenda" needs its own subclass to set these, same "absent means no
+    # override" degrade already used for meeting_bodies.json/council_eras.json.
+    MINUTES_SHORTHAND_RE: "_re.Pattern | None" = None
+    AGENDA_SHORTHAND_RE: "_re.Pattern | None" = None
+    NOISE_PATTERNS_RE: "_re.Pattern | None" = None
+    MEETING_KEYWORD_RE: "_re.Pattern" = _GENERIC_MEETING_KEYWORD_RE
+
     def __init__(
         self,
         raw_dir: Path = RAW_DIR,
@@ -166,6 +177,18 @@ class BaseCouncilScraper(ABC):
     # ------------------------------------------------------------------
     # Concrete helpers
     # ------------------------------------------------------------------
+
+    def classify_document_type(self, url: str) -> str:
+        return classify_document_type(url, self.MINUTES_SHORTHAND_RE, self.AGENDA_SHORTHAND_RE)
+
+    def is_meeting_document(self, url: str) -> bool:
+        return is_meeting_document(
+            url,
+            noise_re=self.NOISE_PATTERNS_RE,
+            keyword_re=self.MEETING_KEYWORD_RE,
+            minutes_re=self.MINUTES_SHORTHAND_RE,
+            agenda_re=self.AGENDA_SHORTHAND_RE,
+        )
 
     def _dest_dir(self) -> Path:
         d = self.raw_dir / self.council_short_name.lower().replace(" ", "_")
@@ -223,7 +246,7 @@ class BaseCouncilScraper(ABC):
                 "meeting_date": doc.meeting_date.isoformat(),
                 "meeting_type": doc.meeting_type,
                 "source_url": doc.source_url,
-                "document_type": classify_document_type(doc.source_url),
+                "document_type": self.classify_document_type(doc.source_url),
             }
             if manifest is not None:
                 manifest[dest.name] = entry
