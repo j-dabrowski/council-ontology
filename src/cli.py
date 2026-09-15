@@ -4243,6 +4243,28 @@ def cmd_publish(args) -> None:
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(draft_dir / f"{name}.json", dest)
 
+    # Boundary files (docs/frontend/MAP_PAGE_PLAN.md Phase 3.3) — config-
+    # sourced, not draft-sourced, so they sit OUTSIDE the draft manifest's
+    # hash check above: that check verifies published snapshot bytes match
+    # what a human reviewed, and says nothing about these two files.
+    # Cross-council indexes, not this council's own data, so every publish
+    # (of any council) refreshes them from whatever boundary files exist in
+    # config/ right now. A council appears on the map iff it has a
+    # config/council_boundaries/<key>.geojson — same signal 3.4 relies on
+    # for a synthetic council (no file → no feature → doesn't appear), so
+    # no separate registry of "which councils are live" is needed here.
+    boundary_dir = Path("config/council_boundaries")
+    council_features = [
+        _json.loads(p.read_text()) for p in sorted(boundary_dir.glob("*.geojson"))
+    ] if boundary_dir.is_dir() else []
+    (public_dir / "councils.geojson").write_text(_json.dumps(
+        {"type": "FeatureCollection", "features": council_features},
+        separators=(",", ":"),
+    ))
+    backdrop_path = Path("config/wa_lga_backdrop.geojson")
+    if backdrop_path.exists():
+        shutil.copyfile(backdrop_path, public_dir / "wa_lga_backdrop.geojson")
+
     published_at = datetime.now(timezone.utc).isoformat()
     (public_dir / "manifest.json").write_text(_json.dumps({
         "published_at": published_at,
