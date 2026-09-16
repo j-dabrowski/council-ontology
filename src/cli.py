@@ -2016,25 +2016,34 @@ SNAPSHOT_TIER: dict[str, str] = {
     "evidence/governance.incumbency": "public",
     "evidence/transparency.confidential_share": "public",
     "evidence/planning.objection_responsiveness": "public",
-    # 2026-09-16 — the only two of the nine bespoke-panel snapshots that
-    # were still full-tier (found live: their panels 404'd on the public
-    # site) that need no redaction review at all before promotion:
-    # `divergence`'s exceptions carry meeting_date/item_number/title/
-    # officer_recommendation/council_outcome/match_confidence, no name of
-    # any kind; `engagement` is a pure year x {public_questions,
-    # deputations, petitions} count grid, same shape as `trends`'
-    # `topics`. The other seven (declared, recusal, tenders, power,
-    # sponsorship, mayoral, question-responsiveness) all carry a
-    # councillor/mayor name deliberately (that's the accountability
-    # subject, same as every other named-councillor panel) but also carry
-    # free-text quotes or, in question-responsiveness's case, a real
-    # member-of-the-public's name in `questioner` -- neither has been
-    # through a redaction pass, and redact_private_names() (used below)
-    # only catches Mr/Mrs/Ms/Dr-prefixed names and Owner:/Applicant:-
-    # labelled fields, not a bare "Firstname Lastname" value, which is
-    # exactly questioner's shape. Not promoted here.
+    # 2026-09-16 — of the nine bespoke-panel snapshots that were still
+    # full-tier (found live: their panels 404'd on the public site), three
+    # need no redaction review at all before promotion: `divergence`'s
+    # exceptions carry meeting_date/item_number/title/officer_recommendation/
+    # council_outcome/match_confidence, no name of any kind; `engagement`
+    # is a pure year x {public_questions, deputations, petitions} count
+    # grid, same shape as `trends`' `topics`; `sponsorship` carries only
+    # councillor names (the accountability subject, same as every other
+    # named-councillor panel), counts and fixed backend-authored era
+    # labels (`_STRUCT` in src/analysis/queries.py) -- no free text field
+    # anywhere in it to redact.
     "divergence": "public",
     "engagement": "public",
+    "sponsorship": "public",
+    # The remaining six also carry a councillor/mayor name deliberately
+    # (the accountability subject), but each also carried a free-text
+    # quote/title/description never checked for an incidentally-mentioned
+    # private name -- redacted at each one's _write() call below (search
+    # "redact_private_names"/"_dc_redacted") before this promotion.
+    # question-responsiveness additionally carried a real member-of-the-
+    # public's name in `questioner`, which redact_private_names() can't
+    # catch (see that call site) -- blanked outright instead.
+    "declared": "public",
+    "recusal": "public",
+    "tenders": "public",
+    "power": "public",
+    "mayoral": "public",
+    "question-responsiveness": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
@@ -2108,6 +2117,23 @@ def _generate_snapshots(
         for k, v in d.items():
             if hasattr(v, "isoformat"):
                 d[k] = v.isoformat()
+        return d
+
+    # 2026-09-16 (SNAPSHOT_TIER's own comment above) — the shared redaction
+    # step for the six bespoke-panel snapshots (declared, recusal, tenders,
+    # power, mayoral, question-responsiveness) promoted to public tier
+    # alongside this pass: strips Mr/Mrs/Ms/Dr-prefixed names and Owner:/
+    # Applicant:-labelled fields from each named free-text field, same
+    # guarantee dose.json/record_streets.json/the evidence/*.json files
+    # already carry (src/privacy.py's redact_private_names(), not a new
+    # mechanism). `fields` names which keys of the dict `_dc()` just
+    # produced are free text — every other key passes through unchanged.
+    def _dc_redacted(obj, fields: tuple[str, ...]) -> dict:
+        from src.privacy import redact_private_names
+        d = _dc(obj)
+        for f in fields:
+            if f in d:
+                d[f] = redact_private_names(d[f])
         return d
 
     written: list[str] = []
@@ -2325,8 +2351,10 @@ def _generate_snapshots(
                 "must_leave_declared": p.must_leave_declared,
                 "must_leave_recused": p.must_leave_recused,
                 "must_leave_recusal_rate": p.must_leave_recusal_rate,
-                # inline drill-down detail — each declared-interest vote expanded
-                "declarations": [_dc(d) for d in p.declarations],
+                # inline drill-down detail — each declared-interest vote expanded.
+                # `what`/`quote` are free text (interest description, verbatim
+                # minute text) — redacted for the public-tier promotion above.
+                "declarations": [_dc_redacted(d, ("what", "quote")) for d in p.declarations],
             }
             for p in recusal.profiles
         ],
@@ -2349,8 +2377,10 @@ def _generate_snapshots(
                 "name": c.name,
                 "n_awards": c.n_awards,
                 "total_amount": c.total_amount,
-                # inline drill-down detail — each award to this firm
-                "awards": [_dc(a) for a in c.awards],
+                # inline drill-down detail — each award to this firm.
+                # `description`/`quote` are free text — redacted for the
+                # public-tier promotion above.
+                "awards": [_dc_redacted(a, ("description", "quote")) for a in c.awards],
             }
             for c in tenders.contractors
         ],
@@ -2737,6 +2767,14 @@ def _generate_snapshots(
             eid = m.pop("id")
             m["entity_id"] = eid
             m["quote"] = _mayoral_quote.get(eid)
+            # `title`/`quote` are free text (motion title, verbatim minute
+            # text) — redacted for the public-tier promotion (SNAPSHOT_TIER's
+            # comment above): a motion title can name a private individual
+            # ("Legal Proceedings - Mr M Congerton, 18 Joseph Street" is this
+            # project's own real example, TrendsChart.tsx's RedactedText fix).
+            from src.privacy import redact_private_names as _rpn_mayor
+            m["title"] = _rpn_mayor(m["title"])
+            m["quote"] = _rpn_mayor(m["quote"])
     _write("mayoral", {
         "mayor_moved": mayoral.mayor_moved,
         "mayor_carried_pct": mayoral.mayor_carried_pct,
@@ -2787,9 +2825,11 @@ def _generate_snapshots(
              "dissent_rate": p.dissent_rate, "dissent_n": p.dissent_n,
              "dissent_effectiveness": p.dissent_effectiveness,
              "is_active": p.is_active,
-             # inline drill-down detail — their contested votes (capped most-recent)
+             # inline drill-down detail — their contested votes (capped most-
+             # recent). `title`/`quote` are free text — redacted for the
+             # public-tier promotion above.
              "n_shown": p.n_shown,
-             "votes": [_dc(v) for v in p.votes]}
+             "votes": [_dc_redacted(v, ("title", "quote")) for v in p.votes]}
             for p in power.profiles
         ],
         "over_time": [
@@ -2821,9 +2861,11 @@ def _generate_snapshots(
         "by_type_era": [
             {"interest_type": t.interest_type, "era": t.era,
              "declared": t.declared, "recused": t.recused, "recusal_pct": t.recusal_pct,
-             # inline drill-down detail — the declarations behind this cell (capped)
+             # inline drill-down detail — the declarations behind this cell
+             # (capped). `what`/`quote` are free text — redacted for the
+             # public-tier promotion above.
              "n_shown": t.n_shown,
-             "declarations": [_dc(d) for d in t.declarations]}
+             "declarations": [_dc_redacted(d, ("what", "quote")) for d in t.declarations]}
             for t in rct.by_type_era
         ],
         "by_year": [
@@ -2859,7 +2901,21 @@ def _generate_snapshots(
             {"era": e.era, "answered": e.answered, "on_notice": e.on_notice,
              "blank": e.blank, "on_notice_pct": e.on_notice_pct,
              "n_shown": e.n_shown,
-             "questions": [_dc(q) for q in e.questions]}
+             # `questioner` is a real member-of-the-public's name (not a
+             # councillor) — a bare "Firstname Lastname" value,
+             # structurally unlike the free-text fields _dc_redacted()
+             # handles: redact_private_names() only strips Mr/Mrs/Ms/Dr-
+             # prefixed names and Owner:/Applicant:-labelled fields, so it
+             # would pass a bare name through untouched. Blanked entirely
+             # for the public-tier promotion above instead — the frontend
+             # (QuestionResponsivenessPanel's PQRow) already falls back to
+             # "public questioner" whenever this is null, so nothing else
+             # has to change. `question`/`quote`/`fielded_by` are ordinary
+             # free text and go through the same redaction as elsewhere.
+             "questions": [
+                 {**_dc_redacted(q, ("question", "quote", "fielded_by")), "questioner": None}
+                 for q in e.questions
+             ]}
             for e in pqr.by_era
         ],
         "by_year": [
