@@ -229,6 +229,11 @@ on-demand — see `RESEARCH_PROTOCOL.md`'s open cadence question).
 The React/Vite dashboard that renders findings with drill-down to source quotes.
 - `frontend/INTERACTIVITY.md` — the panel-interactivity recipe and per-panel drill-down backlog.
 - `frontend/PRODUCT_ROADMAP.md` — forward-looking surfaces (council boundary map, digest feed).
+- `frontend/MAP_PAGE_PLAN.md` — the `/map` page: the overall governance rating (a severity
+  floor over a stable base, gated on data coverage — never an average), council boundaries
+  as a per-council onboarding artifact, and the map itself. Phases 1–3 and 5 built
+  2026-09-15/16; Phase 4 (geocode repair) landed partially — see the plan's own status notes
+  before treating any of it as finished.
 - **Loop:** a finding becomes a panel via the INTERACTIVITY recipe; `council publish` exports
   the snapshots the panels read.
 
@@ -306,6 +311,7 @@ The non-obvious edges, spelled out:
 | running an exploration session (new hypotheses) | `council explore` (`investigator/Explorer_prompt.txt` underneath) → `investigator/INVESTIGATIONS.md` (record) |
 | codifying a finding into the test battery | `council refine` (`investigator/Refiner_prompt.txt` underneath) → `src/analysis/tests.py` + `queries.py` |
 | adding a governance test, or re-wording its public-facing copy | `config/test_registry.json` — the registry row (id/category/title/question/principles/etc.); `src/analysis/tests.py` still owns the computation |
+| changing what the overall `/map`/Overview-band governance rating means | `config/rating.json` — the bands, floors and coverage gate; `src/analysis/rating.py` still owns the computation (`frontend/MAP_PAGE_PLAN.md` Phase 1) — same split as `test_registry.json` vs `tests.py` |
 | tuning what counts as an exception for a meeting on `/watch` | `config/test_registry.json`'s `digest_threshold` on that row — not code (`frontend/WATCH_FEED_PLAN.md` B.2) |
 | running the frozen battery in production | `council draft <council>` — scripted; Runner is archived, this was always its whole job under the hood |
 | improving the exploration prompt | `investigator/EXPLORATION_PROTOCOL.md` (benchmark) → bump `Explorer_prompt.txt` |
@@ -324,6 +330,8 @@ The non-obvious edges, spelled out:
 | planning for many-council, recurring/scheduled operation (after onboarding) | `pipeline/PIPELINE.md` ("Longer term → Production scale") — design sketch, not built; cross-referenced from `review/CONDUCTOR.md` |
 | implementing (or revising) the 2026-08-23 top-down redesign — claim object, invariant gate, tier products, role changes | `INFORMATION_ARCHITECTURE.md` (the flow) + `AGENT_DESIGN.md` (owners, file deltas, §6 build order) — read the coverage audit row above them first |
 | building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX; a panel is registered in `frontend/src/registry/components.tsx` and renders body-only — the analysis page's shell owns the card, severity chip and Objection/Response |
+| building or changing the `/map` page | `frontend/MAP_PAGE_PLAN.md` |
+| adding or replacing a council's boundary polygon | `council boundary <key>` → `config/council_boundaries/<key>.geojson`; `council boundary --backdrop` rebuilds the shared all-WA context layer — documented as a Council Setup step in `pipeline/PIPELINE.md`, same footing as terms seeding |
 | adding a new extraction-quality metric to the public record (`/method`) | `src/analysis/method.py`'s `build_method_record()` — every figure must trace to one of the five files under `data/` it already reads (or the live database), each carrying its own `generated_at`; a missing/unparseable source is `null` with a `reason`, never a zero (`docs/frontend/METHOD_PAGE_PLAN.md` B.6) |
 | adding or changing an entity-resolution demonstration on `/method` | `src/analysis/method.py`'s `_build_entity_resolution()` — computed live from `data/council.db`, not a `data/` file; must reuse the analysis's own `_normalise_contractor()`, `_is_redacted_recipient()` and `decider_supplier_conflict()` (`src/analysis/queries.py`) rather than re-deriving them, and must drop `councillor_name`/`councillor_id` at the boundary — no councillor's name reaches the payload (`docs/frontend/ENTITY_RESOLUTION_SECTION_PLAN.md` B.1–B.3) |
 | planning a new product surface | `frontend/PRODUCT_ROADMAP.md` |
