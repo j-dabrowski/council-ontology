@@ -25,15 +25,20 @@ Rendering approach: D3.js or equivalent — project GeoJSON boundary into a fixe
 overlay DB-sourced points. Outputs a deterministic image from the current data; re-renders
 when data changes.
 
-**Surface B — Map page (interactive aggregate view)**
-The existing Leaflet map on `/map` overlays all council boundary polygons simultaneously,
-covering WA or the Perth metro area. Each polygon is coloured or annotated with summary
-data (e.g. transparency score, number of tenders, recusal rate). Users can zoom and pan
-freely; clicking a council boundary opens a summary card linking to that council's report.
-
-This gives the Map page a clear purpose: "see how councils compare geographically." As more
-councils are added, the map fills in and becomes the product's discovery surface — readers
-find their council on the map and drill into its report.
+**Surface B — Map page (interactive aggregate view) — built, `docs/frontend/
+MAP_PAGE_PLAN.md`.** The pre-2026-09 Leaflet map on `/map` never actually worked: it read a
+flat `/data/scorecard.json` whose shape didn't match what the page expected, so the
+property access threw, the catch swallowed it, and every polygon rendered grey, Cambridge
+included — undetected until the plan's B.1 audit measured it. The rebuilt page reads each
+analysed council's own `rating.json` (the overall governance band, `MAP_PAGE_PLAN.md`
+Phase 1 — a severity floor over a stable base, not an average, gated on data coverage) and
+colours its boundary polygon by that band, reusing `RatingBand.tsx`'s own green/yellow/red/
+insufficient tokens so the map and each council's Overview page can never show a different
+verdict for the same council. Hover/tap shows the band, the counts, and a scripted reason;
+click navigates to that council's report. A keyboard-navigable list below the map covers
+readers a Leaflet polygon can't reach. As more councils are onboarded (`council boundary
+<key>`, `docs/pipeline/PIPELINE.md`) the map fills in and becomes the product's discovery
+surface — readers find their council on the map and drill into its report.
 
 **Data needed:**
 - Council boundary GeoJSON for each council (publicly available from data.wa.gov.au)
