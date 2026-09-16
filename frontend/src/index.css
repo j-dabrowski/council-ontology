@@ -2003,12 +2003,15 @@ a:hover { text-decoration: underline; }
   height: 14px;
   border-radius: 999px;
   flex: none;
-  background: var(--rating-green-t);
+  background: var(--rating-green-swatch);
 }
-.rating-band-green  .rating-band-swatch { background: var(--rating-green-t); }
-.rating-band-yellow .rating-band-swatch { background: var(--rating-yellow-t); }
-.rating-band-red     .rating-band-swatch { background: var(--rating-red-t); }
-.rating-band-insufficient .rating-band-swatch { background: var(--rating-insufficient-t); }
+/* Fill, not text — the fixed --rating-*-swatch tokens (same as the map's
+   polygon/dots), not --rating-*-t, so this dot doesn't visibly darken in
+   light mode the way MapPage.tsx's fills used to before that was fixed. */
+.rating-band-green  .rating-band-swatch { background: var(--rating-green-swatch); }
+.rating-band-yellow .rating-band-swatch { background: var(--rating-yellow-swatch); }
+.rating-band-red     .rating-band-swatch { background: var(--rating-red-swatch); }
+.rating-band-insufficient .rating-band-swatch { background: var(--rating-insufficient-swatch); }
 
 .rating-band-label {
   font-size: 1.05rem;
