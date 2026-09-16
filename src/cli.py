@@ -3868,9 +3868,19 @@ def cmd_draft(args) -> None:
     }
     tiers = {name: _tier_of(name, battery) for name in written}
 
+    # display_name/source_url (SECOND_COUNCIL_PLAN.md Phase 2.5): a Draft-mode
+    # council listing has no other way to read COUNCILS' registry facts —
+    # vite.config.ts's draftOverlay() is plain Node/TS, it can't import this
+    # Python dict directly — so the manifest carries them instead of the
+    # frontend falling back to the raw key ("cambridge" instead of "Town of
+    # Cambridge"). load_draft_manifest() (src/publish_gate.py) ignores keys
+    # it doesn't declare, so this is additive, not a breaking manifest change.
+    _registry_entry = COUNCILS.get(key, {})
     (output_dir / "manifest.json").write_text(_json.dumps({
         "run_id": run_id,
         "council": key,
+        "display_name": _registry_entry.get("display_name", _registry_entry.get("short_name", key)),
+        "source_url": _registry_entry.get("source_url"),
         "generated_at": generated_at,
         "snapshots": written,
         "file_hashes": file_hashes,

@@ -48,14 +48,31 @@ function findLatestDraftDir(council: string): string | null {
 // Served at the fixed path /data/draft/councils.json, which the per-council
 // `([\w.-]+)/([\w./-]+)\.json` pattern below can't ever match (no "/" in
 // "councils" itself), so the two routes can't collide.
-function listDraftCouncils(): { key: string; run_id: string; generated_at: string }[] {
+interface DraftCouncilEntry {
+  key: string
+  run_id: string
+  generated_at: string
+  // From manifest.json's own display_name/source_url (src/cli.py's cmd_draft,
+  // sourced from the COUNCILS registry) — this plugin is plain Node/TS, it
+  // can't import that Python dict directly, so the manifest carries them
+  // instead of the frontend selector falling back to the raw key ("cambridge"
+  // instead of "Town of Cambridge"). Optional: a manifest written before this
+  // field existed just falls back to the key on the frontend side.
+  display_name?: string
+  source_url?: string | null
+}
+
+function listDraftCouncils(): DraftCouncilEntry[] {
   const pinned = process.env.VITE_DRAFT_DIR
   if (pinned) {
     const dir = resolve(process.cwd(), pinned)
     const manifestPath = resolve(dir, 'manifest.json')
     if (!existsSync(manifestPath)) return []
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
-    return [{ key: manifest.council, run_id: manifest.run_id, generated_at: manifest.generated_at }]
+    return [{
+      key: manifest.council, run_id: manifest.run_id, generated_at: manifest.generated_at,
+      display_name: manifest.display_name, source_url: manifest.source_url,
+    }]
   }
 
   const draftRoot = resolve(process.cwd(), '../data/draft')
@@ -65,7 +82,10 @@ function listDraftCouncils(): { key: string; run_id: string; generated_at: strin
     .filter((x): x is { council: string; dir: string } => x.dir !== null)
     .map(({ council, dir }) => {
       const manifest = JSON.parse(readFileSync(resolve(dir, 'manifest.json'), 'utf-8'))
-      return { key: council, run_id: manifest.run_id, generated_at: manifest.generated_at }
+      return {
+        key: council, run_id: manifest.run_id, generated_at: manifest.generated_at,
+        display_name: manifest.display_name, source_url: manifest.source_url,
+      }
     })
 }
 

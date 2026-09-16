@@ -58,15 +58,18 @@ export async function fetchCouncilList(): Promise<CouncilListEntry[]> {
   if (getMode() === "draft") {
     const res = await fetch("/data/draft/councils.json");
     if (!isRealJson(res)) return [];
-    const rows: { key: string; run_id: string; generated_at: string }[] = await res.json();
-    // Draft mode has no display-name/source-url registry to read (that
-    // lives in src/cli.py's COUNCILS, a backend-only concept) — the raw key
-    // is enough for a dev-only selector; a real display name only exists
-    // once that council has actually been published.
+    const rows: {
+      key: string; run_id: string; generated_at: string;
+      display_name?: string; source_url?: string | null;
+    }[] = await res.json();
+    // display_name/source_url come from the draft's own manifest.json
+    // (src/cli.py's cmd_draft, sourced from the COUNCILS registry) via
+    // vite.config.ts's draftOverlay() plugin — falls back to the raw key
+    // only for a manifest written before that field existed.
     return rows.map((r) => ({
       key: r.key,
-      display_name: r.key,
-      source_url: null,
+      display_name: r.display_name ?? r.key,
+      source_url: r.source_url ?? null,
       corpus_span: null,
       published_at: r.generated_at,
       draft_run_id: r.run_id,
