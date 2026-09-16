@@ -1,0 +1,1902 @@
+{
+  "published_at": "2026-09-16T13:05:32.574687+00:00",
+  "data": {
+    "inquiry_window": [
+      2018,
+      2021
+    ],
+    "era_label": "Authorised Inquiry",
+    "total": 3198,
+    "answered": 2904,
+    "on_notice": 234,
+    "blank": 60,
+    "answered_pct": 90.8,
+    "on_notice_pct": 7.5,
+    "pre_pct": 4.3,
+    "pre_n": 2149,
+    "inquiry_pct": 15.7,
+    "inquiry_n": 676,
+    "post_pct": 11.2,
+    "post_n": 313,
+    "peak_year": 2020,
+    "peak_pct": 26.8,
+    "by_era": [
+      {
+        "era": "pre",
+        "answered": 2056,
+        "on_notice": 93,
+        "blank": 52,
+        "on_notice_pct": 4.3,
+        "n_shown": 60,
+        "questions": [
+          {
+            "date": "2017-09-26",
+            "questioner": null,
+            "question": "Can an explanation be provided for the large discrepancy between the 3,529 dwellings achieved figure mentioned in Council Minutes and the 1,065 dwellings figure provided by Administration regarding infill targets?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "With regard to the Local Planning Strategy, for 3 months I have tried to establish, based on the preferred scenario, our achieved targets to date. We have a proposal to achieve infill targets of 6,900 dwellings and in the Council Minutes 27 June 2017 Item DV17.74 it says we have already achieved 3,529. I received a reply from the Administration which tells me only 1,065 dwellings are achieved. Can an explanation for this large discrepancy be provided?",
+            "entity_id": 6352
+          },
+          {
+            "date": "2017-08-16",
+            "questioner": null,
+            "question": "In the current review process, will the issue of duplication of services and which services are core versus non-core be considered before consulting the community?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 2\n\nIn the c ourse of the review process that is currently under way, will the issue of duplication of services be considered and will the i ssue of which services and facilities that are provided are core services and those which are not core services be considered, so that when the community is consulted, it can make comment on the proposed strategic direction of the Council from an informed position?",
+            "entity_id": 6409
+          },
+          {
+            "date": "2017-06-27",
+            "questioner": null,
+            "question": "Do calculations applying same ratio to West Leederville Activity Centre result in 4400 dwellings - is this what Council wants",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Question 2: My calculations, applying the same ratio you are using for these local centres to the West Leederville Activity Centre would result in 4400. Is this what Council wants for West Leederville?",
+            "entity_id": 6302
+          },
+          {
+            "date": "2017-06-27",
+            "questioner": null,
+            "question": "If Floreat Forum cannot achieve density target in existing commercial land, why not acknowledge this and consider more equitable distribution of growth",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Question 3: If Floreat Forum cannot achieve a reasonable contribution to the Town's density target, I am not saying that it can't, in the existing commercially zoned land and the transitional interfacing properties along Floreat Avenue then doesn't this tell you that Floreat Forum alone cannot carry the burden of delivering the Town's new dwellings and that a more equitable distribution of future growth is required?",
+            "entity_id": 6309
+          },
+          {
+            "date": "2017-06-27",
+            "questioner": null,
+            "question": "If West Leederville ACP density exceeded or cannot be increased, why not state that or give reasons",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Development advised if CPP endorsed to go out for advertising",
+            "quote": "Question 3: If the West Leederville Activity Centre Plan is such that density has been exceeded or the density cannot be increased, why not state that or give the reasons why?",
+            "entity_id": 6331
+          },
+          {
+            "date": "2017-04-26",
+            "questioner": null,
+            "question": "With reference to feedback received on Amendment 33, I note that the carpark zonings currently in place existed historically as protection to the adjacent residents after residential land was used illegally against its z",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "With refere nce to feedback received on Amendment 33, I note that the carpark zonings currently in place existed historically as protection to the adjacent residents after residential land was used illegally against its zoning by the owners of the land at the time. Why wasn't this disclosed in the Town's report and can the report be updated to include this fact and does Council feel that this fact should have been considered prior to now?",
+            "entity_id": 7493
+          },
+          {
+            "date": "2017-04-26",
+            "questioner": null,
+            "question": "In the Community Survey Outcomes report, only 46% of respondents agreed to a seven storey limit for the site. Does Council acknowledge that this statement is misleading and does Council acknowledge that a seven storey he",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "In the Community Survey Outcomes report, only 46% of respondents agreed to a seven storey limit for the site. The report noted that Council had adopted a seven storey height limit based on the outcomes of community engagement on the Draft Wembley Activity Centre Plan, which generally indicated overall support for a maximum building height of seven storeys. Does Council now agree that this statement is misleading",
+            "entity_id": 7495
+          },
+          {
+            "date": "2017-03-01",
+            "questioner": null,
+            "question": "Supplementary question from No Towers Near Schools group: request for meeting with Council regarding monopole tower approval process and clarification of position given Vodaphone's statement about inability to get approv",
+            "status": "Taken on notice",
+            "fielded_by": "CEO",
+            "quote": "Pete Hollywell, 7 Oceanic Drive, Floreat Question 1 I'm part of the No Towers Near Schools community group and have a supplementary question to one asked by Leanne.",
+            "entity_id": 5618
+          },
+          {
+            "date": "2017-03-01",
+            "questioner": null,
+            "question": "Two questions: (1) who authorized MMJ Real Estate advertisement of Lot 501 stating 'previous development application not approved got close to approving 32 units' and whether this statement was false or misleading; (2) r",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Frank Yujnovich, 8 Kinta St, City Beach Re: Item DV17.22 - Lot 501 (No.15) Omaroo Terrace, City Beach Question 1 Who in the Town of Cambridge authorised the advertisement by MMJ Real Estate of Lot 501 for $4.2m during 2014?",
+            "entity_id": 5621
+          },
+          {
+            "date": "2017-03-01",
+            "questioner": null,
+            "question": "Seven questions regarding Wembley Activity Centre Plan: (1) why Town did not respond to all feedback with assessment; (2) what action on comments not incorporated; (3) if community feedback and survey on heights seriousl",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Celia Dufall, 13 Alexander Street, Wembley Question 1 It was very pleasing to see that some of the feedback provided by the community was incorporated into the proposed amendments for the Wembley Activity Centre Plan.",
+            "entity_id": 5622
+          },
+          {
+            "date": "2017-03-01",
+            "questioner": null,
+            "question": "Whether Councillors aware that development access out of or into Balandi Way is against guidelines when street only 100 metres long and unable to deal with excessive traffic",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Robert Hawthorn, 3 Balandi Way Ocean Mia Question 1 It is against the guidelines to have access to this new development out of or into Balandi Way, which is only about 100 metres long",
+            "entity_id": 5623
+          },
+          {
+            "date": "2016-11-22",
+            "questioner": null,
+            "question": "Is CEO comfortable groundwater analysis report on old quarry site is fulsome and accurate?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "In respect of the recent report to Council on the old quarry site and ground water analysis, is the CEO comfortable that the report is fulsome, discloses all relevant facts and is an accurate reflection of the whole story on the Quarry site?",
+            "entity_id": 7246
+          },
+          {
+            "date": "2016-11-22",
+            "questioner": null,
+            "question": "If CWRA obtained FOI correspondence with Department of Environment, would CEO still say report is fulsome and accurate?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "If I advised you that CWRA had FOI'd correspondence and records at the Department of Environment and Regulation between the Town and the Department would the CEO still say the report to council is fulsome and accurate?",
+            "entity_id": 7248
+          },
+          {
+            "date": "2016-10-25",
+            "questioner": null,
+            "question": "What is intended by recommendation in DV16.153 that Town can secure multi-deck carpark on Wembley Hotel site; is Council considering multi-storey carpark",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Regarding the Development Committee minutes of 18/10/16 Item DV 16.153 - Access and Parking Strategy Update. The study recommends (last dot point) that the Town can secure a multi-deck carpark on the Wembley Hotel site. What is intended by this? Is the council considering a multi-storey carpark for the site?",
+            "entity_id": 8246
+          },
+          {
+            "date": "2016-10-25",
+            "questioner": null,
+            "question": "In original Amendment 33 report, discussion of rezoning from parking/residential with intention never to be developed; how was that information communicated",
+            "status": "Taken on notice",
+            "fielded_by": "Director Development and Sustainability advised not aware of reference being referred to",
+            "quote": "In the original report regarding Amendment 33, there was discussion around the fact that at the time they were rezoned parking/residential.   At that time there was every intention that they should never be developed. How was that information found or communicated in that report?",
+            "entity_id": 8298
+          },
+          {
+            "date": "2016-10-25",
+            "questioner": null,
+            "question": "Regarding DV16.145 - in Compliance assessment that number of residents increased, was assessment objective or subjective",
+            "status": "Taken on notice",
+            "fielded_by": "Director Development and Sustainability advised would take on notice as did not inspect site himself and would have to refer to Compliance Staff who attended",
+            "quote": "The report considered by Committee last week makes reference to the fact that Compliance Services have investigated the premises and the number of people residing at the premises has increased. Can anybody tell me,  in reaching that conclusion; was there an objective or subjective assessment?",
+            "entity_id": 8313
+          },
+          {
+            "date": "2016-10-25",
+            "questioner": null,
+            "question": "At time of DV16.145 inspection, how many people resided at 17 Harborne Street premises",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "At the time of the inspection how many people resided at the premises?",
+            "entity_id": 8314
+          },
+          {
+            "date": "2016-10-25",
+            "questioner": null,
+            "question": "How many times Compliance Officers have visited 17 Harborne Street premises since first came to Council attention in 2009",
+            "status": "Taken on notice",
+            "fielded_by": "Director Development and Sustainability advised would take on notice",
+            "quote": "Can I also ask, how many times Compliance Officers have visited the premises since it first became to the attention of the Council in 2009.",
+            "entity_id": 8315
+          },
+          {
+            "date": "2016-09-27",
+            "questioner": null,
+            "question": "What is the detailed breakdown of all specific project costs, including advertising, consultants, temporary staff, printing and production of materials?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 2\n\nWhat is the detailed breakdown of all specific pr oject costs, including advertising, consultants, temporary staff, printing of a misleading brochure, production of offensive T Shirts and a realistic estimate of the dollar value of the hours the CEO and other Administration staff spent on that defence throughout?",
+            "entity_id": 7857
+          },
+          {
+            "date": "2016-09-27",
+            "questioner": null,
+            "question": "What was the final cost of Amendment 31-related legal fees since its 2010 inception?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 3\n\nWhat was the final cost of A31-related legal fees since its 2010 inception?",
+            "entity_id": 7858
+          },
+          {
+            "date": "2016-09-27",
+            "questioner": null,
+            "question": "Were costs incurred in each of budget years 2014/15, 2015/16 and the current budget year in excess of the related budget, and if so, by how much in each budget year?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 4\n\nWere costs incurred in each of budget years 2014/15, 2015/16 and the current budget year in excess of the related budget \u2013 and, if so, by how much in each budget year?",
+            "entity_id": 7859
+          },
+          {
+            "date": "2016-09-27",
+            "questioner": null,
+            "question": "The Boulevard Quarry site has been classified as possibly contaminated - did the Town of Cambridge approach the DER regarding this site or did the DER classify it off its own initiative?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 1\n\nThe Boulevard Quarry site which has been classified as possibly contaminated - I'd like to know if the TOC approached the DER regarding this site or if the DER classified the Quarry site as potentially contaminated off its own initiative?",
+            "entity_id": 7862
+          },
+          {
+            "date": "2016-09-27",
+            "questioner": null,
+            "question": "Why is the target in the centre so much higher than what is required or the government would like us to do, so R80 versus a desirable R30, but an acceptable R20?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 1\n\nWhy is the target in the centre so much higher than what is required or the government would like us to do, so R80 verses a desirable R30, but an acceptable R20. So why would we as a city look at having such an intense development strategy in that area which is residential?",
+            "entity_id": 7871
+          },
+          {
+            "date": "2016-08-23",
+            "questioner": null,
+            "question": "What is Town doing to make Finbar find alternative off street parking along Railway Parade? Why greater consideration to Finbar than businesses been in area long time? Is current parking use realistic? Why not trial park",
+            "status": "Taken on notice",
+            "fielded_by": "Director Development and Sustainability advised situation with tradespersons parking improved recently",
+            "quote": "What is the T own doing to make Finbar find alternative off street parking along the Railway Parade area? Why is greater consideration given to Finbar and not to businesses who have been in the area a considerable length of time as ratepayers?",
+            "entity_id": 6101
+          },
+          {
+            "date": "2016-05-24",
+            "questioner": null,
+            "question": "Question 2: Is the detailed plan for Phase 1 only or the full plan including Stages 2 and 3?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Last month you agreed that no works could commence until Coastcare submitted a detailed design of the final area. Is the detailed plan just regarding Phase 1 or the full plan which includes Stages 2 and 3?",
+            "entity_id": 6636
+          },
+          {
+            "date": "2016-04-26",
+            "questioner": null,
+            "question": "Does Council feel obligated to support the new amendment to Amendment 31 proposed by the Minister as opposed to simply meeting statutory obligations?",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Does the Council feel in any way obligated to support the new amendment to Amendment 31 proposed by the Minister , as opposed to simply meeting its statutory obligations to initiate advertising (providing the Minister has not gone beyond power)?",
+            "entity_id": 7797
+          },
+          {
+            "date": "2016-04-26",
+            "questioner": null,
+            "question": "Do local centres and surrounding residents deserve the same careful pre-planning and consultation processes as centres in the Town before recoding of this magnitude?",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Does Council believe these local centres and surrounding residents deserve the same careful pre-planning and consultation processes which would otherwise apply to centres in the Town - before recodings of this magnitude were even contemplated?",
+            "entity_id": 7798
+          },
+          {
+            "date": "2016-04-26",
+            "questioner": null,
+            "question": "Will Council consider dropping its opposition to the litigation as the litigation simply defends the Minister's position which is clearly at odds with the original proposal?",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "In light of the above, and the points made in the Officers report, will Council consider dropping its opposition to the litigation, as it would simply be defending the Ministers position which is clearly at odds with the original proposal?",
+            "entity_id": 7799
+          },
+          {
+            "date": "2016-04-26",
+            "questioner": null,
+            "question": "On what basis does Council justify committing $150,000 of ratepayers money to the BioLINC project when the majority voted against it in 2013 Special Electors Meeting? Is this decision against wishes of electors and there",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "On what basis does Council believe it is justified in committing $150,000 of ratepayers money to the BioLINC project when the majority voted against it as a Special Electors Meeting in 2013",
+            "entity_id": 7800
+          },
+          {
+            "date": "2016-02-23",
+            "questioner": null,
+            "question": "Why was public only given 1.5 hours notice by email of Special Council Meeting in January 2016",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 9: Why was the public only give 1.5 hours notice by E Mail of the Special Council Meeting in Jan 2016?",
+            "entity_id": 7664
+          },
+          {
+            "date": "2016-01-28",
+            "questioner": null,
+            "question": "Will the Town outline a set of issues it has identified with both proposed secondary school sites in City Beach so that residents may consider them during community consultation?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Kerry Smith, 8 Asten Road, City Beach Re: Item 4.2 - Further Report - New Secondary School in City Beach - Site Options and Proposed Community Engagement Approach",
+            "entity_id": 7817
+          },
+          {
+            "date": "2015-11-24",
+            "questioner": null,
+            "question": "Question 7: Request for electronic copy of Town of Cambridge presentation given to Statutory Planning Committee of 13 October 2015.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "As a ratepayer, I request an electronic copy of the Town of Cambridge presentation given to the Statutory Planning Committee of 13 October 2015 so that I am able to inform myself of the information and facts presented.",
+            "entity_id": 5954
+          },
+          {
+            "date": "2015-09-22",
+            "questioner": null,
+            "question": "Question 2: How much did the Amendment 31 advert cost?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "How much did it cost?",
+            "entity_id": 7567
+          },
+          {
+            "date": "2015-09-22",
+            "questioner": null,
+            "question": "Question 2: Has anyone from the Town of Cambridge met with the Department of Planning or the West Australian Planning Commission in the last month regarding Amendment 31?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Has anyone from the Town of Cambridge met with the Department of Planning or the West Australian Planning Commission in the last month in relation to Amendment 31?",
+            "entity_id": 7571
+          },
+          {
+            "date": "2015-08-25",
+            "questioner": null,
+            "question": "Why only encourage the contractors to use the Matthews Centre or other designated locations? Why not make it mandatory?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Jim Putt, 165 Jersey Street, Wembley Question: Why only encourage the contractors to use the Matthews Centre or for that matter any other designated location. Why not make it mandatory?",
+            "entity_id": 7353
+          },
+          {
+            "date": "2015-07-28",
+            "questioner": null,
+            "question": "What consideration has Council given to parking of contractor vehicles with more development planned; can contractors park at Mathews Netball Centre?",
+            "status": "Taken on notice",
+            "fielded_by": "Director advised there is construction and traffic management plan for Cambridge Street development but not aware of precise arrangements",
+            "quote": "With more development planned within the Town and Wembley in particular, what consideration has the Council given to the parking of vehicles used by contractors?",
+            "entity_id": 8165
+          },
+          {
+            "date": "2015-02-24",
+            "questioner": null,
+            "question": "On page 31 of the survey, 1 in 3 investors say they probably or definitely would build a Maisonette. Isn't it more appropriate to identify that 2 in 3 investors either definitely, probably or may not build a maisonette?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "On page 31 of the survey results of 4 April 2014 it states 1 in 3 investors say they probably or definitely would build a Maisonette.",
+            "entity_id": 7154
+          },
+          {
+            "date": "2014-12-16",
+            "questioner": null,
+            "question": "Town's contingency plan to reach those without internet access",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "What is the Town's contingency plan to reach those who do not have such access?",
+            "entity_id": 6538
+          },
+          {
+            "date": "2014-05-27",
+            "questioner": null,
+            "question": "Question regarding Item DV14.69 - Cambridge Housing Survey - regarding clauses (iii) and (iv) of the report recommendation about the CATALYSE Survey Report being made available on the Town's website and insert in Cambrid",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Clauses (iii) and (iv) of the report recommendation says that the CATALYSE Survey Report will be made available on the Town's website and an insert be added in Cambridge News. How much information will be provided to the public?",
+            "entity_id": 5583
+          },
+          {
+            "date": "2013-11-26",
+            "questioner": null,
+            "question": "Timeline for consideration of development application at 30 Berkeley Crescent, Floreat",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Tim Boden, 32 Berkeley Crescent, Floreat\n\nQuestion\n\nWhen will the development application for 30 Berkeley Crescent, Floreat be considered by Council?",
+            "entity_id": 8076
+          },
+          {
+            "date": "2013-11-26",
+            "questioner": null,
+            "question": "South City Beach dog exercise area extension proposal including parking impacts, timeframe for decision, and community opposition",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Kylie Chamberlain, 17 Frinton Avenue, City Beach\nRe: Proposed Extension of the South City Beach Dog Exercise Area north to Swanage Avenue",
+            "entity_id": 8079
+          },
+          {
+            "date": "2013-06-25",
+            "questioner": null,
+            "question": "Does Council understand that the correct wording of the petition submitted by Karyn Hodby is 'We highly value the environmental, sporting and social aspects of the Perry Lakes and Alderbury Reserve. We do not support any",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Yvonne Stokes, 136 Alderbury Street, Floreat\n\nQuestion\n\nDoes Council understand that the correct wording of the petition submitted by Karyn Hodby of 138 Alderbury Street is \"We highly value the environmental, sporting and social aspects of the Perry Lakes and Alderbury Reserve. We do not support any redevelopment of the change rooms that exceeds the existing footprint\" and that signature on the petition does not necessarily imply endorsement of a smaller men's shed at Perry Lakes?",
+            "entity_id": 7442
+          },
+          {
+            "date": "2013-04-23",
+            "questioner": null,
+            "question": "Questions regarding drainage, sewer lines and restrictions on Lots 430 and 431 (Former Lot 200) Harding Lane",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Anne Same, 41 The Grove, Wembley\nRe: Lots 430 and 431 (Former Lot 200) Harding Lane\n\nQuestion 1: 1. Drain/Soakwell... 1.1.1 Will there be a problem with drainage of that area?\nResponse: Water may still accumulate on that land in that particular location.",
+            "entity_id": 6438
+          },
+          {
+            "date": "2013-02-26",
+            "questioner": null,
+            "question": "Question regarding why Council uses the words 'safe' and 'safely' in responses when WA Pesticides guidelines and APBMA Act recommend those words not be used.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "I have been listening to your responses to [private individual \u2014 name withheld] questions and on a number of occasions I have heard the words 'safe' and 'safely'. Why does Council use the word 'safe' in its responses to [private individual \u2014 name withheld] questions when the WA Pesticides guidelines and the APBMA Act recommend that those words not be used.",
+            "entity_id": 6776
+          },
+          {
+            "date": "2011-06-28",
+            "questioner": null,
+            "question": "Has any consideration been given to Halesworth Road, namely our property at No. 36 which was near flooded last March? Could some consideration be given to widening the crossover and incorporating a drain on our property?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 1: Has any consideration been given to Halesworth Road, namely our property at No. 36 which was near flooded last March.  Could some consideration be given to the fact that we have two drains outside of our driveway, one bordering the neighbour's property and one bordering our property.",
+            "entity_id": 5526
+          },
+          {
+            "date": "2011-03-22",
+            "questioner": null,
+            "question": "Uncertainty about parking availability: will there be 200 bays or 400 bays on oval?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "There appears to be a lot of uncertainly as to the availability of parking. Will there be 200 bays or 400 bays on the oval?",
+            "entity_id": 6180
+          },
+          {
+            "date": "2010-08-24",
+            "questioner": null,
+            "question": "Multiple questions in relation to proposed developments at Lots 240 and 250 Oceanic Drive, City Beach on the boundary of Tumut Road and Oceanic Drive",
+            "status": "Taken on notice",
+            "fielded_by": "Chief Executive Officer advised a response will be provided in writing",
+            "quote": "[private individual \u2014 name withheld] ms and [private individual \u2014 name withheld], 236 Oceanic Drive, City Beach. Re: Lots 240 and 250 Oceanic Dri ve, City Beach",
+            "entity_id": 6124
+          },
+          {
+            "date": "2010-05-25",
+            "questioner": null,
+            "question": "Clarification on Jersey Street between Salvado Road and Hay Street: whether marked cycleway is a parking area or cycleway, as cars continually park there",
+            "status": "Taken on notice",
+            "fielded_by": "Director Infrastructure advised that the question would be taken on notice and a written response provided",
+            "quote": "When cycling to Daglish Railway Station, along Jersey Street between Salvado Road and Hay Streeet, the road is clearly marked as a cycleway yet cars are continually parked there. Is it a parking area or is it a cycleway?",
+            "entity_id": 7400
+          },
+          {
+            "date": "2010-05-25",
+            "questioner": null,
+            "question": "Enquiry about the status and future plans for the former nursery land in Salvado Road, which the Mayor previously indicated would be addressed.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "My recollection of the Council's last AGM was that the Mayor acknowledged that for too long the future of the former nursery land in Salvado Road had been unresolved and action could be expected. The land has been cleared so has there been agreement and are there any plans?",
+            "entity_id": 7402
+          },
+          {
+            "date": "2010-03-23",
+            "questioner": null,
+            "question": "Clarification regarding paragraph 11 on page 29 of report regarding objection letter and support for proposed amalgamation of Harding Lane. Bond queries whether the majority of The Grove landowners support the amalgamati",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Jennie Bond, 25 The Grove, Wembley",
+            "entity_id": 6818
+          },
+          {
+            "date": "2010-03-23",
+            "questioner": null,
+            "question": "Clarification of statements on pages 28 and 31 of report regarding petition support for closure and amalgamation of Harding Lane. Bond notes the petition premise was conditional on Harding Lane closure and opportunity to",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Could the following two statements in the report agenda contained in tonight's agenda please be clarified:- Page 31 of the report states that \"it is clear from the petition tabled at the Council meeting in November 2009 that the residents/owners of The Grove support the closure and amalgamation\".",
+            "entity_id": 6819
+          },
+          {
+            "date": "2010-03-23",
+            "questioner": null,
+            "question": "Request for correction of paragraph 9 on page 29 regarding date of Town's offer to purchase Lot 200 to adjacent owners. Bond states the offer was made in 2008, not 2006.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Could paragraph 9 on page 29 be corrected?  It currently says that in 2006 the Town decided to offer Lot 200 for purchase to adjacent owners of Lake Monger Drive, St Colombus Ave, and Gregory Street. This offer was in fact made in 2008.",
+            "entity_id": 6820
+          },
+          {
+            "date": "2010-03-23",
+            "questioner": null,
+            "question": "Query whether Council has arranged personal visits to elderly residents who wish to keep Harding Lane open to resolve their access issues, noting one resident's need for backyard access and long-term residency in area.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Michael Ryan, 25 The Grove, Wembley",
+            "entity_id": 6821
+          },
+          {
+            "date": "2010-03-23",
+            "questioner": null,
+            "question": "Query regarding legal right to lock gates and charge fees for laneway use when landowners have prescriptive easements, noting concerns about fairness given 70 years of use and asking if other laneways have similar restri",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "What right is there to lock the gates and charge a fee for use when the landowners have prescriptive easements?  It seems, at the least, very unfair to introduce the current regime given the landowners have been using the laneway for over 70 years.  We are not aware of any other such restrictions being placed on laneways in the Town.",
+            "entity_id": 6822
+          },
+          {
+            "date": "2009-11-24",
+            "questioner": null,
+            "question": "Question 1 Part 2: Within what timeframe can response to proposals be expected?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Can council advise me of within what time frame I can expect a considered response to the proposals in light of the fact that they are developed with a history of consultation with community members and groups and present a probable cheaper option for council with respect to the cost of treatments proposed.",
+            "entity_id": 8006
+          },
+          {
+            "date": "2009-11-24",
+            "questioner": null,
+            "question": "Question 1: Would Committee reconsider how Lot 200 is to be amalgamated and offer it for purchase by equally splitting between opposite properties adjoining lane from The Grove, St Columbas Ave, Lake Monger Drive and Rui",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Marcia Edgley, 19 The Grove, Wembley",
+            "entity_id": 8020
+          },
+          {
+            "date": "2008-08-26",
+            "questioner": null,
+            "question": "A number of questions were submitted in relation to Item DV08.107 - Lot 623 (No. 294) Cambridge Street, Wembley - Change of Use from 'Shop' to 'Small Bar'",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "A number of questions were submitted in relation to Lot 623 (No. 294) Cambridge Street, Wembley - Change of Use from 'Shop' to 'Small Bar'. As the questions are quite complex and were received at tonight's meeting, the Chief Executive Officer advised that the questions would be taken on notice.",
+            "entity_id": 8102
+          },
+          {
+            "date": "2008-03-25",
+            "questioner": null,
+            "question": "Perry Lakes tree removal - concern that Council proposes to remove 351 trees around Perry Lakes Reserve including mature poplars and willows, contradicting Perry Lakes Management Plan, and asking whether proper considera",
+            "status": "Taken on notice",
+            "fielded_by": "Director of Infrastructure took the question on notice and indicated a response would be provided at a later date",
+            "quote": "Virginia Rimes, 5 McClemans Road, Mt Claremont: I understand that the Council in the near future is proposing to remove 351 trees around Perry Lakes Reserve. These include all t he mature poplars and willows that currently surround the lakes. This plan does appear to be in contradiction of the word and spirit of the existing Perry Lakes Management Plan.",
+            "entity_id": 8004
+          },
+          {
+            "date": "2008-02-26",
+            "questioner": null,
+            "question": "Town of Cambridge herbicide and pesticide spraying practice - has the Town investigated other means of weed control and alternative weed control practices used by other councils?",
+            "status": "Taken on notice",
+            "fielded_by": "Director Infrastructure advised that Council considered a report in May 2003 addressing similar issues and agreed to take the questions on notice and provide a response at a later date",
+            "quote": "Stella Hondros, 254 Salvado Road, Floreat\nRe: Town of Cambridge Herbicide and Pesticide Spraying Practice\n\nQuestion 1\n\nHas the Town of Cambridge investigated other means of weed control?",
+            "entity_id": 8363
+          },
+          {
+            "date": "2008-02-26",
+            "questioner": null,
+            "question": "Environmental issues - will Council reconsider use of chemicals for weed control and consider changes to spraying notification practices; adoption of precautionary principle and chemical-free weed control methods; and tr",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Wayne Monks, 21 Bushey Road, Wembley Downs\nRe: Environmental Issues\n\nQuestion 1\n\nWill this Council re-consider the use of chemic als for weed control in public areas when world's best practice is moving away from chemical usage and are Councillors aware of the potential legal liability of Council's spraying chemicals?",
+            "entity_id": 8364
+          }
+        ]
+      },
+      {
+        "era": "inquiry",
+        "answered": 570,
+        "on_notice": 106,
+        "blank": 4,
+        "on_notice_pct": 15.7,
+        "n_shown": 60,
+        "questions": [
+          {
+            "date": "2021-08-24",
+            "questioner": null,
+            "question": "Question 1: Hypothetical question about whether Town of Cambridge would assist in laundering title of defective land. Question 2: Question regarding Swan Location 1911, Crown Grant conditions requiring Governor approval ",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Adrian Griffin, 15 Barnsley Road, Mt Claremont. If the Town of Cambridge was aware that: firstly, a particular piece of land has a defective title; secondly, transfer of that land would rectify the title defect, thus laundering the title, and thirdly, payment for the laundered title would allow funds to flow from the purchaser of that title to the party that that should not have had the right to sell that land in the first place, would the Town of Cambridge act in a way that might assist the laundering of the said title",
+            "entity_id": 5715
+          },
+          {
+            "date": "2021-08-24",
+            "questioner": null,
+            "question": "Question 1: Given pending reviews of WA Bush Fire response and framework, is it adequate and safe for ratepayers to be told extreme bush fire risk will be assessed under current policy when current policy is likely to be",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Emma Scott, Barnsley Road, Mt Claremont. Question 1: Given the information you have just heard from Andrew Bath regarding significant pending reviews of WA Bush Fire response and framework I would like to ask the Councillors 2 questions: Is it adequate and safe for the ratepayers of the Town of Cambridge to be told the extreme bush fire risk will be assessed under current policy, when current policy is likely to be past policy by the end of this year when the reviews are completed and the current policy will be overridden and updated with the new one specifically undertaken because the old policy was dangerously inadequate?",
+            "entity_id": 5719
+          },
+          {
+            "date": "2021-08-24",
+            "questioner": null,
+            "question": "Question 1: Are Councillors aware that Sydney local government councils like Ku-ring-gi, due to earlier short-sighted development decisions removing green open space, now expend ratepayer funds acquiring privately owned ",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Nick Mitaros, Barnsley Road, Mt Claremont. Once limited recreation space is developed for residential uses it is with us forever. Question 1: Are Councillors aware that in a number of Sydney local government councils, Ku-ring-gi being once such council, the profound lack of green open space as a result of earlier short sighted development decisions now sees those very same Councils expending ratepayer funds on acquiring privately owned land at open market Sydney values, in order to ensure a reasonable standard of neighbourhood well-being",
+            "entity_id": 5721
+          },
+          {
+            "date": "2021-08-24",
+            "questioner": null,
+            "question": "Since October 2017, have any councillors had meetings or contact with the current and/or former Director of Planning that were individually organised by a councillor and where an invitation was not extended to all counci",
+            "status": "Taken on notice",
+            "fielded_by": "Chief Executive Officer advised that a response will be provided at the next meeting of Council",
+            "quote": "Since October 2017, have any councillors had meetings or contact with the current and/or former Director of Planning in addition to normal council meetings, committee meetings and EM Forum meetings which were individually organised by the councillor and where an invitation was not extended to all councillors? If so what was the date of those meetings, who was present, and what was the topic of those meetings.",
+            "entity_id": 5728
+          },
+          {
+            "date": "2021-07-27",
+            "questioner": null,
+            "question": "Council's use of confidential information specifically relating to the planning process",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services took question on notice regarding release of confidential information",
+            "quote": "How does the Council use confidential information specifically relating to the planning process, I certainly understand about contractual?",
+            "entity_id": 7535
+          },
+          {
+            "date": "2021-07-27",
+            "questioner": null,
+            "question": "Process for releasing confidential information once decision is made and information no longer confidential",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services took question on notice regarding process for release",
+            "quote": "Then what is the process once the decision is made for releasing that information when it is no longer confidential?",
+            "entity_id": 7536
+          },
+          {
+            "date": "2021-07-27",
+            "questioner": null,
+            "question": "Contact between councillors and developer Greg Rowe or representatives regarding Brookdale Street median strip extension approval",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Amber Stanton, 318 Salvado Road, Floreat",
+            "entity_id": 7537
+          },
+          {
+            "date": "2021-04-27",
+            "questioner": null,
+            "question": "How many houses received letter regarding Roscommon Reserve fencing and how many responses received",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Mareena Aitken, 35 Roscommon Road, Floreat\nRe: Proposed fencing for Roscommon Reserve\n\nQuestion 1\n\nHow many houses received the letter and how many responses did the Council receive?\n\nResponse provided by Director Infrastructure and Works\n\nI will have to take that one on notice and get the specific number of letters. I have not seen any responses as yet.",
+            "entity_id": 6728
+          },
+          {
+            "date": "2021-04-27",
+            "questioner": null,
+            "question": "What protections are there for residents in older parts of suburbs who live in old properties that give character but are not heritage listed",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 6\n\nWith houses that are not heritage listed but are old and give character to the suburbs, what protections are there for residents who live in the older parts of the suburbs because, in my experience, there is considerable pressure to sell to developers to knock over an art deco home to put up a Kentucky Fried McMansion?\n\nResponse by Presiding Member, Cr Everett\n\nI think there is a lot of sympathy amongst Elected Members for that. I don't think most residents want their home heritage listed because there are some other constraints that go with it. I think if we monitor the Streetscape Policy and change to respond to circumstances that arise, I think you will find even tonight that there is an understanding that there is a need to try and provide incentives to encourage retention of beautiful houses like your own. I note your house is up for approval tonight so I think that probably demonstrates the feeling and passion the officers and the councillors have to retain that character.",
+            "entity_id": 6745
+          },
+          {
+            "date": "2021-04-27",
+            "questioner": null,
+            "question": "Question regarding opposition to parking changes on Newry Street East, requesting explanation of what the parking issue is and who is driving this change, noting it has been deferred to the May meeting.",
+            "status": "Taken on notice",
+            "fielded_by": "Director Infrastructure and Works indicated that detail will be provided at the next month's Council meeting",
+            "quote": "I do not support any changes to parking on Newry Street East, which I understand have been deferred until the May meeting. My question is, it is unclear what the parking issue is and who is driving this and can this be explained?",
+            "entity_id": 6747
+          },
+          {
+            "date": "2020-10-27",
+            "questioner": null,
+            "question": "Number of responses for and against golf course mountain bike facility option",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "It is not clear how many responses were received either in the survey or outside the survey with respect to the golf course. How many responses were received by the Council negative for the golf course?",
+            "entity_id": 8026
+          },
+          {
+            "date": "2020-10-27",
+            "questioner": null,
+            "question": "Mayor's engagement with Botanic Gardens and Parks Authority on mountain bike trails",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Mayor, have you at any time engaged in discussion with anyone from the Botanic Gardens and Parks Authority on any matter relating to mountain bike trails or bike facilities. If so, will you please now confirm the exact dates of these contacts and what outcomes eventuated?",
+            "entity_id": 8032
+          },
+          {
+            "date": "2020-09-22",
+            "questioner": null,
+            "question": "Has the Town considered whether a pump/jump track is a suitable facility for organised cycling activities, such as coaching, to support creation of recreational cycling facilities in the Western Suburbs?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Goal 1 of ToC's Strategic Community Plan 2018-2028 is a sense of community, pride and belonging. A group of cyclists are forming a cycling club with the vision of creating recreational cycling facilities in the Western Suburbs suitable for club activities. We believe a club is the best way to create a cycling community. To what extent has the Town considered whether a pump/jump track is a suitable facility for organised cycling activities, such as coaching?",
+            "entity_id": 7835
+          },
+          {
+            "date": "2020-06-23",
+            "questioner": null,
+            "question": "Request for confirmation that Minutes of 9 April 2020 Special Council Meeting accurately reflect the Motion approved 7-1 directing the CEO to commence employee cost reductions of 20% of budgeted employee costs.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "As the Minutes of the 9 April, 2020 Special Council Meeting clearly show, by a 7-1 majority, Council Approved a Motion of which the key part is: \"DIRECTS THE CEO to immediately commence employee cost reductions of 20% of the Town's budgeted employee costs...\"",
+            "entity_id": 6021
+          },
+          {
+            "date": "2020-06-23",
+            "questioner": null,
+            "question": "Request to confirm whether Council intends the 20% employee cost reduction approved at 9 April SCM to still be achieved by the CEO, and if not, why.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Will the Mayor also confirm if it remains Council's intention that the Approved 20% cost reduction be achieved by the CEO - and, if not, why; given the significant reduction in our Town's revenue stream?",
+            "entity_id": 6022
+          },
+          {
+            "date": "2020-06-23",
+            "questioner": null,
+            "question": "Request for confirmation of the quantified amount or realistic estimate of the significant reduction in the Town's revenue stream mentioned by the Mayor.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Since that OCM, has an accurate total of this reduction been completed by Administration, and if so, will the CEO and/or the Mayor now confirm either that amount, or a realistic estimate?",
+            "entity_id": 6023
+          },
+          {
+            "date": "2020-06-23",
+            "questioner": null,
+            "question": "Request for explanation of justification for employment of a Staff Lawyer at a time when Town revenues have considerably reduced and Council approved 20% employee cost reductions.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Given this ongoing concern, the SCM Approval for that 20% reduction of employee costs and particularly given the truly enormous expenditure on Legal Expenses that Council has Approved in this Financial Year - including nearly $70,000 in May alone and much more likely before 30 June - can the Mayor clearly explain the justification behind the employment of a Staff Lawyer, at the very time when Town revenues have considerably reduced?",
+            "entity_id": 6024
+          },
+          {
+            "date": "2020-06-23",
+            "questioner": null,
+            "question": "Request for employee turnover numbers and percentages for years 2011/12 to 2016/17 inclusive, and whether WorkSafe WA has contacted the Town in the last 12 months.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "(a) Could the CEO please provide the employee turnover numbers and percentages for the years 2011/12 to 2016/17 inclusive; and (b) Has WorkSafe WA contacted the Town of Cambridge in relation to workplace matters in the last 12 months?",
+            "entity_id": 6028
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "Code of Conduct - Review and adoption status. Why was no review undertaken within three months as stipulated by the Code of Conduct?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "[private individual \u2014 name withheld], 91 Empire Avenue, City Beach\n(Received by on line submission dated Sunday 26 April 2020 @ 12:51PM AWST; Receipt No QT100214)\n\nRe: Code of Conduct\n\nQuestion 1: Given the particular current relevance and significance of this Code that details the behaviours and responsibilities of all parties to which it pertains, can the CEO clearly explain why it appears that no review was undertaken within the three months stipulated?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6590
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "Code of Conduct - Clarification on timing and reasons for failure to conduct required review within three-month deadline.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 2: If this indeed due to another oversight, administrative, or printer's error, can the CEO now confirm both the reason and exactly when the required review will happen?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6591
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "CEO Performance Indicators and Public Question Time Policy - Confirmation that KRA1 and Policy 1.2(a) apply regarding delivery of responsive services and responses to questions.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 3: Will the CEO confirm that both his KRA1 and PQT Policy 1.2(a) are as present ed above, apply and are ongoing?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6592
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "Public Question Time Policy - Clarification on discrepancy between 'considered' and 'presented' language used in policy regarding online questions.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 4: Can the CEO explain clearly as to why PQT Policy Item 3.1 states that those whose questions are submitted online to OCMs \"will have their questions considered at that Meeting\", when the auto-response to such questions states that these will \"be presented to the Meeting.\"?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6593
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "Public Question Time Policy - Explanation of discrepancy between policy language ('considered' and 'presented') and practice (questions taken on notice).",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 5: In explaining this difference, can the CEO also clearly explain why the words \"considered\" and \"presented\" continue to be used - when all such questions are taken on notice and thus, neither actually \"considered\" or \"presented\" at OCMs?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6594
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "Breach of s5.53(2)(g) Local Government Act - Accountability and responsibility for printing error in 2018-19 Annual Report.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 7: Given his Breach of s5.53(2)(G) of the Act will the CEO now fully confirm both that the ultimate accountability and responsibility for the printing of our Town's 2018-19 Annual Report was his as CEO?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6595
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "Breach of s5.53(2)(g) Local Government Act - Explanation of circumstances of 'printing error' responsible for omission of key report.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 8: Towards concluding this Breach-related matter - and as requested at two successive OCMs - will the CEO now fully explain the exact circumstances of the \"printing error\" that he earlier claimed was responsible for the omission of a key report, as the Act requires be included?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6596
+          },
+          {
+            "date": "2020-04-28",
+            "questioner": null,
+            "question": "COVID-19 Staff Redeployment - Has the Town of Cambridge considered redeploying staff from closed business operations to undertake revegetation activities in parks and coastal areas?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "[private individual \u2014 name withheld], Chair, Cambridge Coastcare\n(Received by email dated Thursday 16 April 2020 @ 5:50PM AWST.\n\nRe: Consideration by Community and Resources Committee\n\nQuestion: Has the Town of Cambridge considered undertaking this approach during the COVID19 restriction period?\n\nResponse: Question to be taken on notice.",
+            "entity_id": 6597
+          },
+          {
+            "date": "2020-03-26",
+            "questioner": null,
+            "question": "Landscaping of iconic roads within the Town of Cambridge - details of programme of works and timeline for implementation of Treescape Plan 2010-20",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Please advise details of the programme of works (including estimates of cost) for all \"iconic roads and Town gateways\" as listed in the Treescape Plan 2010-2020?",
+            "entity_id": 5999
+          },
+          {
+            "date": "2020-03-26",
+            "questioner": null,
+            "question": "CEO accountability for Annual Report omission due to claimed printing error",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Can the CEO confirm that he has that same full accountability and responsibility for our Town's Annual Report?",
+            "entity_id": 6000
+          },
+          {
+            "date": "2020-03-26",
+            "questioner": null,
+            "question": "Alleged breach of Council Policy 1.2.6 regarding use of Town logo by Councillor Mack on LinkedIn",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "If indeed, this Elected Member has continued to use the logo contrary to Policy 1.2.6 - and this certainly could have been very easily checked and confirmed by the CEO prior to providing me with his written response of 18 December, 2019 - can the CEO now clearly and fully explain exactly why he gave me that response?",
+            "entity_id": 6001
+          },
+          {
+            "date": "2020-03-26",
+            "questioner": null,
+            "question": "Financial reserves and potential impact of restaurant closures at City Beach Precinct on Town revenue",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Despite the enormous expenditures on both Legal Advice and Unbudgeted Expenditure throughout this financial year, the recent claim by the Mayor that our Town's financial reserves are strong enough to fund her projects like Beach Lookouts, is it admitted that potential restaurant closures, or reduced operating hours, will seriously impact on the revenue that our Town receives from these businesses?",
+            "entity_id": 6002
+          },
+          {
+            "date": "2020-03-26",
+            "questioner": null,
+            "question": "Parking at Ocean Mia Estate - why residents at Nos 2 to 24 are not receiving same attention as Nos 30 to 40, with concerns about on-road and crossover parking issues",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Frank Yujnovich, 8 Kinta Street, City Beach\nRe: Parking at Ocean Mia",
+            "entity_id": 6012
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 6: Can ratepayers expect a rate increase for FY 20-21",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "In the strong probability that this enormous total will continue to grow for the remaining five months of FY19-20, can Ratepayers already realistically expect a rate increase for FY 20-21 from the \"good financial managers\" who are Elected Members?",
+            "entity_id": 8085
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 7: Why has CEO failed to deliver Customer Request Management System close off",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Can the CEO clearly and fully explain as to why, since the Mayor appointed him first as ACEO and then as CEO, he has failed to deliver the introduction of a close off component for what represent valuable Ratepayer-to-Town communications and Community Relations tools?",
+            "entity_id": 8086
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 8: Can CEO confirm close off component can be introduced early in 2020",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Given that the majority of Local Government entities in the Greater Metropolitan Area have introduced and make effective use of close off systems and given the claim that our Town's IT capabilities and systems are leading edge, can the CEO also confirm that, if indeed the genuine intent and will is there, the close off component can very easily be introduced early in 2020?",
+            "entity_id": 8087
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 9: Are CEO failures to deliver on transparency and accountability a Council-approved policy",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Can the CEO clearly and fully explain if his failures to deliver his responses in accordance with the commitment on the website are a Council -approved policy, or if these have been entirely his decision?",
+            "entity_id": 8088
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 10: Will CEO commit to fully complying with website transparency commitment",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Will the CEO now commit to fully complying with the website wording in delivering complete answers to all questions asked at, or submitted to, future Ordinary Council Meetings?",
+            "entity_id": 8089
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 1: Why was Mayor's allowance increased by 1.50% when tribunal only approved 1%",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Why was the Mayor's allowance increased by 1.50% when the tribunal only approved 1%, which is clearly stated in the SAT determination as shown above?",
+            "entity_id": 8090
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 2: Was a further increase approved by Council for Mayor's allowance",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Was a further increase approved by Council, if so, when was it approved and at which meeting?",
+            "entity_id": 8091
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 3: Why was $80.00 Nomination Fee refund included in Elected Members Allowance payment",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Why was $80.00 Nomination Fee refund included in Elected Members Allowance payment?",
+            "entity_id": 8092
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 4: Who authorised refund to be included in Allowance payment",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "This refund has nothing to do with Elected Members Allowances. It should have been refunded as a separate payment. Who authorised this refund to be included in the Allowance payment?",
+            "entity_id": 8093
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 5: Why did CEO fail to sign letter to ratepayer",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Why did you fail to sign the letter i.e. no signature?",
+            "entity_id": 8094
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 6: Does CEO make a habit of sending unsigned letters to ratepayers",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Do you make a habit of sending out unsigned letters to ratepayers?",
+            "entity_id": 8095
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 7: Date error in CEO's letter regarding council meeting date",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Questions that I submitted were for the Ordinary Council meeting 17th December NOT 174 December 2019 as shown in subject header.  Do you not proof read your letters, signed or unsigned by you?",
+            "entity_id": 8096
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 8: Why did CEO fail to provide answer to ratepayer's valid questions",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Why did you fail to provide an answer to a ratepayer's valid questions?",
+            "entity_id": 8097
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 9: Will CEO now provide response to previously submitted questions",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Will you now provide a response to questions as previously submitted below?",
+            "entity_id": 8098
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 10: When did Cr Gary Mack seek approval to use Town's Logo on LinkedIn",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "When did Cr Gary Mack seek your approval to use the Town's Logo on his Linkedin page?",
+            "entity_id": 8099
+          },
+          {
+            "date": "2020-02-05",
+            "questioner": null,
+            "question": "Question 11: Date of written authority to Cr Gary Mack for use of Town's logo",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "What is the date of your written authority to Cr Gary Mack allowing him to use the Town's logo on his Linkedin page?",
+            "entity_id": 8100
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Questioned the purpose and use of missing boards at Odyssea Restaurant and whether ratepayers should pay for replacements that benefit a business.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "I refer to the Payment of Accounts November CR19.125 for the following expenditure: Ervin Infrastructure - replace missing boards Odyssea Restaurant: $938.48",
+            "entity_id": 6055
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked about total first-year operating costs for a 12-seater bus including insurance, maintenance, and staffing.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Given known additional operating costs, such as Insurance, Maintenance and staff, or temporary hire, wages and benefits for a licensed driver, what is a fair and realistic estimate of the total cost to Ratepayers for this bus in its first year of operation alone?",
+            "entity_id": 6056
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Requested clarification and transparency regarding the intended purpose and utilisation of the 12-seater bus.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "In the absence of any full explanation and transparency as to the intended purpose for and utilisation of, this bus - other than the Mayor's related Notices of Motion - will this now be clearly declared and explained to all Ratepayers",
+            "entity_id": 6057
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked when Cr Mack sought CEO approval to use the Town's Logo on his LinkedIn page.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "On what date did Cr Mack seek your approval to use the Town's Logo on his Linkedin page?",
+            "entity_id": 6058
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked about the date of written authority issued to Cr Mack to use the Town's logo on LinkedIn.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "On what date did you issue your written authority to Cr. Mack, allowing him to use the Town's logo on his Linkedin page?",
+            "entity_id": 6059
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Questioned whether the CEO disputes the Deputy Director General's finding of a technical breach of the Local Government Act.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Will the CEO now confirm that, given his responses to reasonable questions from a Ratepayer seeking clarity and transparency, he actually disputes the stated Breach finding by that Deputy Director General?",
+            "entity_id": 6060
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked for the CEO's explanation regarding his dispute of the breach finding.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "If so, what is the CEO's explanation?",
+            "entity_id": 6061
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Requested an apology from the CEO for the breach and for not providing reasonable responses to questions.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Given that this is understood to be The Season of Goodwill, will the CEO have the good grace to offer an apology - even one insincere - to me, not only as the Ratepayer upon whom his Breach was occasioned, but also as the Ratepayer whose reasonable questions have yet to receive reasonable responses?",
+            "entity_id": 6062
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked why the Mayor is being paid more than disclosed on the register and whether the register is incorrect.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "This monthly payment of $8,169.00 over 12 months equates to $98,028.00 per annum and not $95,800.00 as disclosed on the register. Why is the Mayor being paid more than what is disclosed on the register?",
+            "entity_id": 6063
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked when the Mayor was granted the $2,228 annual increase and who approved it.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "If yes, when was the Mayor granted an increase of $2,228.00 per annum?",
+            "entity_id": 6064
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked about the specific WALGA training courses attended in October 2019 and by whom.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "What were the various training courses?",
+            "entity_id": 6065
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked who attended the AIM training course in October 2019 and what it was for.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "What was the training course for?",
+            "entity_id": 6066
+          },
+          {
+            "date": "2019-12-17",
+            "questioner": null,
+            "question": "Asked where commuters and workers will park when parking restrictions are implemented and whether parking permits and a petition are the correct procedure.",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Can the Council tell me where the commuters and Birkdale Street workers are going to park, when the new parking restrictions are implemented",
+            "entity_id": 6068
+          }
+        ]
+      },
+      {
+        "era": "post",
+        "answered": 278,
+        "on_notice": 35,
+        "blank": 4,
+        "on_notice_pct": 11.2,
+        "n_shown": 60,
+        "questions": [
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Would the Town measure the emissions from diesel generators at Ocean Village Park, not just noise levels?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "I would like to know: would the Town measure the emissions that are coming from the diesel on these generators, please?",
+            "entity_id": 1834
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "Did the Town pay Malcolm Mackay and/or Ian Everett for advice in relation to Floreat Forum during 2016 to 2018, and if so, was it shared with APIL?",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services took the question on notice",
+            "quote": "Question 2: Did the Town pay Malcolm Mackay and/or Ian Everett for any advice in relation to Floreat Forum during the period 2016 to 2018? And if so, was the advice shared with APIL?",
+            "entity_id": 2070
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "Will the Council consider a determination under the Legal Representation for Elected Members policy requiring Kerri Shannon to repay legal representation costs paid by the Town?",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Question 2: will the Council consider such a determination under clause 6.5 of the policy? And thereby require [private individual \u2014 name withheld] to repay these legal representation costs under clause 8 of the policy?",
+            "entity_id": 2092
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "Was the Town aware of or did it approve the clearing of native vegetation on Town land along the stone wall on Hale Road associated with Ocean Village signage?",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services took the question on notice and advised they would investigate the clearing and provide a response",
+            "quote": "Question 1: was the Town aware of or did it approve the clearing of native vegetation on Town land along the stone wall on Hale Rd associated with signage for the proposed Ocean Village development?",
+            "entity_id": 2093
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "What was the Administration's reasoning and justification for applying the 10 per cent assumption in the Porters Report to the unique circumstances of Jersey and adjacent streets?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "My third question is about the validity of applying the assumption in the Porters Report. Jersey Street has a long history of being the through-road for north-south and south-north traffic passing through Wembley from Herdsman Parade to Cambridge, with traffic spilling into streets adjacent streets during busy times. What was the Administration's reasoning \u2013 the justification - for applying the 10 per cent assumption in the Porters Report to the unique circumstances of Jersey and adjacent streets?",
+            "entity_id": 2106
+          },
+          {
+            "date": "2026-02-24",
+            "questioner": null,
+            "question": "In relation to the Local Planning Scheme 2 and the FOI initiated by Deputy Mayor Ben Mayes, what does Deputy Mayor Mayes propose as the next step?",
+            "status": "Taken on notice",
+            "fielded_by": "Deputy Mayor",
+            "quote": "Adrian Corp, Floreat",
+            "entity_id": 2136
+          },
+          {
+            "date": "2025-12-16",
+            "questioner": null,
+            "question": "Can the Town advise the revised timeframe for the three planned policies for revision (asset, fraud, and tree canopy) due by December 2025, and reschedule Item 12.2.3 until April 2026 to allow for resident review?",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services took the component about the three policies on notice and noted that Council could defer Item 12",
+            "quote": "Can you please advise the revised time frame for the three planned policies for revision and also re-schedule Item 12.2.3 until April 2026 to allow for proper review and input by residents to their Elected Members?",
+            "entity_id": 2158
+          },
+          {
+            "date": "2025-12-16",
+            "questioner": null,
+            "question": "How many parcels of freehold land does the Town own and what is the aggregate area?",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services responded that excluding land serving as roads",
+            "quote": "How many parcels of freehold land does the Town own and what is the aggregate area?",
+            "entity_id": 2181
+          },
+          {
+            "date": "2025-11-25",
+            "questioner": null,
+            "question": "Who is paying the Consultant's salary for Whadjuk Cultural Liaison Services, and why is this prioritized over community safety issues like a wombat crossing?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 1: Who is paying the Consultant's salary, especially since the Town has no immediate finances available to install a Wombat crossing for Lake Monger Primary School and Council verges in Jukes Way and Herdsman Parade, a very high fire risk?",
+            "entity_id": 1936
+          },
+          {
+            "date": "2025-11-25",
+            "questioner": null,
+            "question": "What is the permitted purpose and rental of the bowling club lease?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 1: What is the permitted purpose and rental of the bowling club lease?",
+            "entity_id": 1942
+          },
+          {
+            "date": "2025-11-25",
+            "questioner": null,
+            "question": "As the bowling club cannot sublease land to a commercial floorball entity, what is the proposed rental to be paid by Revolution Sports?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 2: The bowling club cannot sublease the land to a commercial floorball entity as the use of the land is inconsistent with the Minister for Lands approval. As Revolution Sports is a commercial business, what is the proposed rental to be paid by Revolution Sports?",
+            "entity_id": 1943
+          },
+          {
+            "date": "2025-11-25",
+            "questioner": null,
+            "question": "Will the Council instruct the CEO to provide ratepayers with the details of the calculation of the rate refund to demonstrate its correctness?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 1: Will the Council, in compliance with openness and transparency, instruct the CEO, [private individual \u2014 name withheld], to provide the rate payers with the details of the calculation of the rate refund to demonstrate its correctness?",
+            "entity_id": 1944
+          },
+          {
+            "date": "2025-10-28",
+            "questioner": null,
+            "question": "Why Town cannot be proactive and pay for fencing now to protect bushland rather than relying on proponent",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services stated fencing will be provided by developer as required and Town will vet type and location to protect open space",
+            "quote": "As the Town no doubt has access to the construction plans and will have very considerable financial benefit from selling Lots 701 and 702, why can it not be proactive and pay to erect appropriate fencing now to protect our bush land and not rely upon the proponent to provide the cost of the fencing or make decisions regarding the placement?",
+            "entity_id": 1801
+          },
+          {
+            "date": "2025-10-28",
+            "questioner": null,
+            "question": "Parameters and details of community input used for designating park areas for no dogs, dogs on leash, or off-leash exercising",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Can you list the parametres including the details of community input used for deciding where the park areas are designated an area for no dogs, an area for dogs on leash only, or an area for off leash exercising of dogs?",
+            "entity_id": 1805
+          },
+          {
+            "date": "2025-10-28",
+            "questioner": null,
+            "question": "Request for written findings and reasons regarding Division 3 complaint against Elected Members for Code of Conduct breach",
+            "status": "Taken on notice",
+            "fielded_by": "CEO",
+            "quote": "My question is: in accordance with clause 12, sub-clause 7 of the Code of Conduct, may I have in writing the Town's finding and the reasons for its finding? And if its finding is that the alleged breach has occurred, its decision under sub-clause 4?",
+            "entity_id": 1809
+          },
+          {
+            "date": "2025-10-28",
+            "questioner": null,
+            "question": "How Town will ensure responsible party addresses rubbish accumulation around Ocean Village demolition site and clears area",
+            "status": "Taken on notice",
+            "fielded_by": "Director Infrastructure and Works took question on notice",
+            "quote": "How will the Town take action to ensure that whoever is responsible for this matter is called to address it immediately and the area is cleared of rubbish?",
+            "entity_id": 1816
+          },
+          {
+            "date": "2025-10-28",
+            "questioner": null,
+            "question": "What provision has been made for installation of firebreaks around proposed Ocean Village development",
+            "status": "Taken on notice",
+            "fielded_by": "Director Planning and Community Services advised issue may be covered by development approval conditions",
+            "quote": "My question is what provision has been made for installation of firebreaks around the proposed development?",
+            "entity_id": 1817
+          },
+          {
+            "date": "2025-09-30",
+            "questioner": null,
+            "question": "Floreat Bowling Club membership decline and sublease of land to Revolution Sports commercial entity",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "In 2006 the floreat Bowling club had 700 members - in 2015 the club had 400 members - now in 2025 the club has 200 members. The club lease expires in 2031. Will the club be allowed under its lease to sublease land to a commercial floorball entity Revolution Sports. What is the term and use of the lease proposed by Revolution Sports?",
+            "entity_id": 1992
+          },
+          {
+            "date": "2025-03-01",
+            "questioner": null,
+            "question": "Question regarding provision of legal advice on Cambridge Endowment Lands Act 1920 to Council members",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Has that advice been provided to all Council members?",
+            "entity_id": 1895
+          },
+          {
+            "date": "2025-03-01",
+            "questioner": null,
+            "question": "Questions regarding environmental consultant report on Tuart Woodlands threatened ecological community status at Ocean Village Park, disclosure to Town, Council decision-making process on carpark sale, and TEC informatio",
+            "status": "Taken on notice",
+            "fielded_by": "Director took first question on notice",
+            "quote": "My first question is were the Town of Cambridge and staff privy to that report written by the contractor of the proponent?",
+            "entity_id": 1897
+          },
+          {
+            "date": "2024-12-10",
+            "questioner": null,
+            "question": "The Community Working Group was elected on the 7 of May or thereabouts, can Council explain why the contract with GHD was amended on around the 20 of May with the Community Working Group being written into the contract?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "The Community Working Group was elected on the 7 of May or thereabouts, can Council explain why the contract with GHD was amended on around the 20 of May with the Community Working Group being written into the contract?",
+            "entity_id": 2050
+          },
+          {
+            "date": "2024-11-26",
+            "questioner": null,
+            "question": "With traffic data showing approximately 1100-1300 vehicles per day on Simper Street with peak congestion 3-6pm (200+ cars per hour), would it be possible for children to play in their front yard during this time?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "The question is, would it be possible for kids to be playing on their front yard whether it is supervised or not when you have an average of 200 over cars per hour travelling down the street from 3pm \u2013 6pm?",
+            "entity_id": 2679
+          },
+          {
+            "date": "2024-10-22",
+            "questioner": null,
+            "question": "Why did the Council find it necessary to install six speed bumps, double the usual amount if there wasn't a speeding problem?",
+            "status": "Taken on notice",
+            "fielded_by": "Acting Director Infrastructure and Works took the question on notice",
+            "quote": "Question 2\nThank you. Second question, why did the Council find it fit and find it necessary to install six speed bumps, double the usual amount if there wasn't a speeding problem?",
+            "entity_id": 2033
+          },
+          {
+            "date": "2024-10-22",
+            "questioner": null,
+            "question": "Reasons for not taking immediate action under the Planning and Development Act 2005 and Building Act for non-compliant garage at 27 Evandale Street Floreat",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "What reasons exist today for action not to be taken immediately under the Planning and Development Act 2005 and the Building Act for the non-compliant garage at 27 Evandale Street Floreat?",
+            "entity_id": 2038
+          },
+          {
+            "date": "2024-10-22",
+            "questioner": null,
+            "question": "Why has the Town taken opposite approach to compliance and prosecution at 27 Evandale Street Floreat compared to 69 Lake Monger Drive, Wembley, both involving non-compliant garages from around the same time",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "What are the reasons the Town of Cambridge has taken the opposite approach to compliance and prosecution with 27 Evandale Street Floreat compared to 69 Lake Monger Drive, Wembley? Both were from around the same time and involved non-compliant garages.",
+            "entity_id": 2039
+          },
+          {
+            "date": "2024-04-17",
+            "questioner": null,
+            "question": "Can you clarify the actual density targets and any concrete numbers for the Floreat Precinct?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Could you clarify the actual targets? Density targets, any numbers anything concrete that you can comment on?",
+            "entity_id": 1777
+          },
+          {
+            "date": "2023-12-11",
+            "questioner": null,
+            "question": "Question suggesting that planning decisions are administrative decisions rather than judicial decisions, referencing a SAT decision in Paspaley Pearls Company. Questioner asked the town to reconsider the use of the term ",
+            "status": "Taken on notice",
+            "fielded_by": "Mayor",
+            "quote": "Would the Administration and Elected Members consider using a different expression because in the recent SAT decision Paspaley Pearls Company and Department of Primary Industries and Regional Development reported in 2023 WASAT 116. There's a discussion that refers to a judgment by the Chief Justice of the High Court, indicating very clearly that planning decisions are administrative decisions. They are not judicial decisions. They are administrative because they are inferring new rights on people. They are not adjudicating about past rights. I would just ask if the Town could really have a good look at quasi judicial and see whether in fact all that's being done is that you are making an administrative decision. If that's what it is, call it that.",
+            "entity_id": 7548
+          },
+          {
+            "date": "2022-12-20",
+            "questioner": null,
+            "question": "Why is the Town proposing a traffic treatments trial at Jersey/Grantham Streets intersection before developing full understanding of accident causes and without involving community through inclusive workshop process?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Martyn Cavanagh, 77 Pangbourne Street, Wembley Re: CR22.117 Jersey Street and Grantham Street Intersection Blackspot Application",
+            "entity_id": 6937
+          },
+          {
+            "date": "2022-12-20",
+            "questioner": null,
+            "question": "What relevance does Council Policy 12 dealing with CEO leave have where a CEO has resigned and their contract has ended rather than gone on leave?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 2 Council report 6.1 of 21 July 2022 meeting - Appointment of Acting CEO refers to Town Policy 12. Town Policy 12 applies where a CEO is on leave. Perhaps a question for yourself, Madam Mayor as author of the report or Councillor Haddon- Casey who moved the motion, w hat relevance, if any, does Council Policy 12 dealing with when a CEO is on leave have where a CEO has resigned ending their contract instead of going on leave, where the contract would remain in force?",
+            "entity_id": 6938
+          },
+          {
+            "date": "2022-12-20",
+            "questioner": null,
+            "question": "Has the Town validly appointed a CEO since 21 July 2022 by appointing [private individual \u2014 name withheld] as acting CEO when there was no CEO position?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 3 On 21 July 2022, Council resolved to accept [private individual \u2014 name withheld] resignation from the position of CEO. Item 6.1 of the 21 July meeting confirms that [private individual \u2014 name withheld] contract of employment ceased to exist. Council resolved to appoint [private individual \u2014 name withheld] as acting Chief executive Officer from 22 July to 30 September instead of temporarily employing [private individual \u2014 name withheld] as the Town's CEO. By appointing [private individual \u2014 name withheld] as acting CEO, when the Town had no CEO position, has the Town in fact, and in law not had a validly appointed CEO since 21 July 2022.",
+            "entity_id": 6939
+          },
+          {
+            "date": "2022-12-20",
+            "questioner": null,
+            "question": "Can Council confirm the measures of success for the trial of Option 4 multi-intersection treatment and residents' rights if deemed unsuccessful?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 3 Our street supports the trial of Option 4, the multi-intersection treatment but can the Council confirm what the measures of success will be for the trial - including our rights as the residents of the street in question, and if it is deemed not successful - what will be the next option to be to trialed?",
+            "entity_id": 6947
+          },
+          {
+            "date": "2022-12-20",
+            "questioner": null,
+            "question": "Can you clarify if cameras were installed at Jersey and Grantham intersection and what do they capture?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "Question 2 Can I just clarify. I understood there were cameras installed at Jersey and Grantham, is that correct? What do the cameras actually capture?",
+            "entity_id": 6950
+          },
+          {
+            "date": "2022-12-12",
+            "questioner": null,
+            "question": "Question 1: Request for factual basis and reasons for statements in the report regarding community preference for traffic signals at Jersey/Grantham Street intersection. Question 2: Request for measured and collaborative",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "So what please are the reasons and facts on which those reasons are based that are the basis for these statements in the report?",
+            "entity_id": 7441
+          },
+          {
+            "date": "2022-10-25",
+            "questioner": null,
+            "question": "Council's Policy 031 allows the Presiding Member to determine questions 'on notice' or treat as correspondence. Does this conflict with the Town's Meeting Procedures Local Law 2019 which states questions must be answered",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "My question is about Public Question Time.  The Council's Policy 031 \u2013 Managing Public Question Time paragraph 6.1 says that the Presiding Member at his or her discretion can determine that the question is to be taken 'on notice' or treat questions as correspondence. Given that the Town's Meeting Procedures Local Law 2019 states that a public question time question is to either be answered or rejected on specified grounds or determined to be both complex and requiring research, are those parts of Council's Policy 031 that I referred to in clause 6.1 invalid with no effect or beyond the power of Council to make?",
+            "entity_id": 6043
+          },
+          {
+            "date": "2022-10-25",
+            "questioner": null,
+            "question": "If you are taking that question 'on notice' have you in the past years taken questions 'on notice' without knowing whether the policy conflicts with the local law?",
+            "status": "Taken on notice",
+            "fielded_by": null,
+            "quote": "If you are taking that question 'on notice' Madam Mayor have you, in the past years, taken questions 'on notice' without knowing whether the policy conflicts with the local law?",
+            "entity_id": 6045
+          },
+          {
+            "date": "2026-05-26",
+            "questioner": null,
+            "question": "What types of contamination exist in recycling at 25% rate and what measures are being taken to eliminate it?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Item 11.2.1 \u2013 Elected Member Information Bulletin - Page 17 of Attachment 1 There is currently 25% contamination in the recycling. What are the current types of contamination, what are we doing about eliminating contamination and how effective is it?",
+            "entity_id": 2706
+          },
+          {
+            "date": "2026-05-26",
+            "questioner": null,
+            "question": "What causes the doubling of FOGO contamination and what measures are being taken to address it?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Item 11.2.1 \u2013 Elected Member Information Bulletin \u2013 Page 17 of Attachment 1 The same question for the doubling of FOGO contamination. What is it and what are we doing to elimination the contamination?",
+            "entity_id": 2707
+          },
+          {
+            "date": "2026-05-26",
+            "questioner": null,
+            "question": "How many FTE vacancies exist versus budget and what is the current employee turnover rate?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Item 11.3.1 \u2013 Monthly Financial Statements Employee costs are down by 5% versus budget. How many FTE are we down versus budget and what is the employee turnover rate? Is it improving?",
+            "entity_id": 2708
+          },
+          {
+            "date": "2026-05-26",
+            "questioner": null,
+            "question": "Regarding the ELA reserve account budgeted transfer, is this the car park sale at Ocean Village and is the timing still June?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Item 11.3.1 \u2013 Monthly Financial Statements Regarding the reserve account ELA and the budgeted transfer in, is it the car park sale at Ocean Village? Is the timing still in June?",
+            "entity_id": 2709
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Does the Town consider that a strategy should precede a plan, and has the Leisure Assets Master Plan (LAMP) development been approved or endorsed by Council?",
+            "status": "Answered in meeting",
+            "fielded_by": "Mayor",
+            "quote": "Do you support the generally accepted and Town stated view that a strategy precedes a plan?",
+            "entity_id": 1823
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "What position will the Town take in its Responsible Authority Report on DA26-005 (childcare premises at 3 Oban Road)? Will the Town note that the application breaches planning framework on seven counts?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "What position will the Town of Cambridge be taking in its Responsible Authority Report to the Inner West DAP on DA26-005 \u2013 specifically, will the Town be recommending refusal of this application?",
+            "entity_id": 1824
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Is the Council aware that the proposal at 3 Oban Road will remove a registered tree against arborist recommendation, and that the building bulk and scale exceed policy site coverage limits?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Is the Council aware that the [3 Oban Road] proposal will remove a registered tree that is just inside the building envelope against the arborist report to save it?",
+            "entity_id": 1825
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Why does Cambridge refuse to hold combined Citizenship Ceremony and Australia Day events on 26 January, the nationally gazetted date?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Given that our Town also marks ANZAC Day on each 25 April and that Australia Day has been the gazette nationwide date each 26 January since 1994, why does Cambridge continue to refuse to hold the long-standing combined Citizenship Ceremony and Australia Day events on 26 January?",
+            "entity_id": 1826
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Why does Cambridge not hold Australia Day events on 26 January, as the Prime Minister does?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "As the Prime Minister does in fact hold a Citizenship Ceremony on January 26 as part of Australia Day, why again does Cambridge not respect and celebrate our national day at the same time?",
+            "entity_id": 1827
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "What are the Town's records relating to enforcement of the Restrictive Covenant at 20 Norbury Crescent? What are the practical benefits of the covenant to the Town, ratepayers, and landowner?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Can the Town provide its system records for the past 25 years relating to the recording, review and enforcement of the Covenant; and communications records with the landowner regarding ensuring the day-to-day occupancy of 20 Norbury Crescent, City Beach?",
+            "entity_id": 1828
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Will the Council mandate that mechanical plant and compressors for the proposed childcare centre be located behind the lift-well structure as a sound barrier? Will conditions require non-openable, double-glazed windows f",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Given that a 72-place centre requires industrial-scale air-conditioning systems far louder than domestic units, will the Council mandate that all mechanical plant and compressors be located behind the 8.1-metre lift-well structure to use that wall as a permanent sound barrier?",
+            "entity_id": 1829
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Since motor generators at Ocean Village Park are operating illegally (exceeding noise limits), will the Council shut them down? When will residents expect mitigation strategies to be implemented and the towers removed?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Since these motor generators have been shown to be operating illegally, will the Council act on behalf of the affected residents to ensure that these large polluting machines are shut down forthwith?",
+            "entity_id": 1830
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "How many residential parking permits are issued annually and what is the prescribed fee? How many visitor and commercial parking permits are issued?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "In relation to residential parking permits, how many are issued/reissued on expiry each year for the three-year period, and what is the prescribed fee?",
+            "entity_id": 1831
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Is the $70k in the agenda for analysis of the Ruislip Safe Active Street survey? When will findings be published? Did the Town collect statistics on seniors who lost access to services at Wembley Community Centre?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "The $70,000 budget identified in this month's agenda relates to works supporting the overall evaluation of the Ruislip Safe Active Street project, including the analysis of the Community Perception Survey that was undertaken in June\u2013July 2025.",
+            "entity_id": 1832
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Do NDIS statistics account for households with elderly people or families with multiple young children? Are 114 survey responses sufficient for demographic assessment? What would community consultation on waste managemen",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Would the NDIS statistics (or any other metrics included in the agenda response) account for households with elderly people that require incontinence products and/or families with multiple young children in a household?",
+            "entity_id": 1833
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Was the Town aware of or did it approve the clearing of native vegetation on Town land along the stone wall on Hale Rd associated with signage for the proposed Ocean Village development?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "The first question is, was the Town aware of or did it approve the clearing of native vegetation on Town land along the stone wall on Hale Rd associated with signage for the proposed Ocean Village development?",
+            "entity_id": 1835
+          },
+          {
+            "date": "2026-04-28",
+            "questioner": null,
+            "question": "Did the Town pay Malcolm Mackay and/or Ian Everett for any advice in relation to Floreat Forum during the period 2016 to 2018? And if so, was the advice shared with APIL?",
+            "status": "Answered in meeting",
+            "fielded_by": null,
+            "quote": "Did the Town pay Malcolm Mackay and/or Ian Everett for any advice in relation to Floreat Forum during the period 2016 to 2018? And if so, was the advice shared with APIL?",
+            "entity_id": 1836
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "Regarding the upcoming Council report on Floreat PSP, what is the formal title, aim, and scope?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Planning and Community Services advised it will be a report to enable Council to consider potential next steps associated with the Statutory Planning Committee's November 2025 refusal of the Town-led PSP",
+            "quote": "Question 1: Regarding the \"upcoming Council report\" mentioned in Item 5.1, what is the formal title, aim, and scope of this report?",
+            "entity_id": 2069
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "Given Policy 33 Developer Contact Policy requires disclosure of all developer contact on a register, how are Design Review Panel meeting attendees considered exempt personal information?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Planning and Community Services explained the Developer Contact Register captures Town staff and developer meetings",
+            "quote": "Question 3: Given that Policy 33 Developer Contact Policy indicated all contact from developers must be disclosed on a register, can Council explain how the names of attendees at Design Review Panel meetings are considered exempt personal information?",
+            "entity_id": 2071
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "What work scope is involved with the proposed 'semi-permanent treatment' for Wembley Sports Park grass car park, recognising a budget of only $29,500 is allocated?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Infrastructure and Works advised the treatment will address failed sections through placement of compacted granular material within traffic aisles",
+            "quote": "Question 1: Can Council explain what work scope is involved with the proposed 'semi-permanent treatment', recognising a budget of only $29,500 is allocated?",
+            "entity_id": 2072
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "What work elements are required to implement a permanent solution to rectify car park construction defects, and what is the estimated budget required?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Infrastructure and Works advised that a formal assessment has not yet been completed",
+            "quote": "Question 2: What work elements are required to implement a permanent solution to rectify the car park construction defects associated with the grass car park, and what is the estimated budget required to implement the permanent solution?",
+            "entity_id": 2073
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "In the Budget Review report, how is the $205,144 in minor variances determined when no adopted budget or year end estimate figures are provided?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Corporate and Commercial Services explained the amount represents minor variances for contracts and materials across nearly 1",
+            "quote": "Question 3: In the Budget Review report 13.2.6 at page 443 of 514, a line item in the middle of the page identifies \"Various minor variances for $205,144\". Can information be provided in relation to how the $205,144 is determined?",
+            "entity_id": 2074
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "The expected proceeds from the sale of car parks is $8.9 million with a forecast settlement date of 30 June 2026. Do these remain probable and why has the process taken over three years to finalise?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Planning and Community Services advised the time-frame is principally associated with the partial closure of Kilpa Court",
+            "quote": "Question 1: Director Gibson recently confirmed that the expected proceeds from the sale of these car parks is $8.9 million, with a forecast settlement date of 30 June 2026. Do these remain probable and please can it be explained to ratepayers why this process has already taken over three years to finalise?",
+            "entity_id": 2075
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "If Blackburne's proposed new access road from Hale Road crosses Town-owned verge, how much will Blackburne pay for use of that natural asset?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Planning and Community Services explained the agreed contract includes an access easement",
+            "quote": "Question 2: Since this new road clearly would cross a large Town-owned verge, as is in play with compensation for the car parks, if it goes ahead, how much will Blackburne pay our Town for use of that natural asset?",
+            "entity_id": 2076
+          },
+          {
+            "date": "2026-03-24",
+            "questioner": null,
+            "question": "Has Administration conducted traffic projections with Main Roads to determine if Drabble Road can safely handle increased traffic from the mega redevelopment?",
+            "status": "Answered in meeting",
+            "fielded_by": "Director Planning and Community Services advised Main Roads WA had no objection to the proposal but recommended additional information be included in the traffic impact assessment",
+            "quote": "Question 3: Has Administration, in conjunction with Main Roads, conducted traffic projections towards determining if Drabble can safely handle the inevitably increased traffic?",
+            "entity_id": 2077
+          }
+        ]
+      }
+    ],
+    "by_year": [
+      {
+        "year": 1995,
+        "answered": 4,
+        "on_notice": 0,
+        "n_nonblank": 4,
+        "on_notice_pct": null
+      },
+      {
+        "year": 1996,
+        "answered": 34,
+        "on_notice": 0,
+        "n_nonblank": 34,
+        "on_notice_pct": 0.0
+      },
+      {
+        "year": 1997,
+        "answered": 30,
+        "on_notice": 2,
+        "n_nonblank": 32,
+        "on_notice_pct": 6.2
+      },
+      {
+        "year": 1998,
+        "answered": 20,
+        "on_notice": 3,
+        "n_nonblank": 23,
+        "on_notice_pct": 13.0
+      },
+      {
+        "year": 1999,
+        "answered": 24,
+        "on_notice": 0,
+        "n_nonblank": 24,
+        "on_notice_pct": 0.0
+      },
+      {
+        "year": 2000,
+        "answered": 85,
+        "on_notice": 4,
+        "n_nonblank": 89,
+        "on_notice_pct": 4.5
+      },
+      {
+        "year": 2001,
+        "answered": 38,
+        "on_notice": 3,
+        "n_nonblank": 41,
+        "on_notice_pct": 7.3
+      },
+      {
+        "year": 2002,
+        "answered": 45,
+        "on_notice": 2,
+        "n_nonblank": 47,
+        "on_notice_pct": 4.3
+      },
+      {
+        "year": 2003,
+        "answered": 33,
+        "on_notice": 2,
+        "n_nonblank": 35,
+        "on_notice_pct": 5.7
+      },
+      {
+        "year": 2004,
+        "answered": 21,
+        "on_notice": 1,
+        "n_nonblank": 22,
+        "on_notice_pct": 4.5
+      },
+      {
+        "year": 2005,
+        "answered": 101,
+        "on_notice": 5,
+        "n_nonblank": 106,
+        "on_notice_pct": 4.7
+      },
+      {
+        "year": 2006,
+        "answered": 55,
+        "on_notice": 3,
+        "n_nonblank": 58,
+        "on_notice_pct": 5.2
+      },
+      {
+        "year": 2007,
+        "answered": 48,
+        "on_notice": 7,
+        "n_nonblank": 55,
+        "on_notice_pct": 12.7
+      },
+      {
+        "year": 2008,
+        "answered": 54,
+        "on_notice": 5,
+        "n_nonblank": 59,
+        "on_notice_pct": 8.5
+      },
+      {
+        "year": 2009,
+        "answered": 69,
+        "on_notice": 2,
+        "n_nonblank": 71,
+        "on_notice_pct": 2.8
+      },
+      {
+        "year": 2010,
+        "answered": 38,
+        "on_notice": 8,
+        "n_nonblank": 46,
+        "on_notice_pct": 17.4
+      },
+      {
+        "year": 2011,
+        "answered": 96,
+        "on_notice": 2,
+        "n_nonblank": 98,
+        "on_notice_pct": 2.0
+      },
+      {
+        "year": 2012,
+        "answered": 88,
+        "on_notice": 0,
+        "n_nonblank": 88,
+        "on_notice_pct": 0.0
+      },
+      {
+        "year": 2013,
+        "answered": 66,
+        "on_notice": 5,
+        "n_nonblank": 71,
+        "on_notice_pct": 7.0
+      },
+      {
+        "year": 2014,
+        "answered": 96,
+        "on_notice": 2,
+        "n_nonblank": 98,
+        "on_notice_pct": 2.0
+      },
+      {
+        "year": 2015,
+        "answered": 323,
+        "on_notice": 6,
+        "n_nonblank": 329,
+        "on_notice_pct": 1.8
+      },
+      {
+        "year": 2016,
+        "answered": 514,
+        "on_notice": 20,
+        "n_nonblank": 534,
+        "on_notice_pct": 3.7
+      },
+      {
+        "year": 2017,
+        "answered": 174,
+        "on_notice": 11,
+        "n_nonblank": 185,
+        "on_notice_pct": 5.9
+      },
+      {
+        "year": 2018,
+        "answered": 154,
+        "on_notice": 25,
+        "n_nonblank": 179,
+        "on_notice_pct": 14.0
+      },
+      {
+        "year": 2019,
+        "answered": 163,
+        "on_notice": 34,
+        "n_nonblank": 197,
+        "on_notice_pct": 17.3
+      },
+      {
+        "year": 2020,
+        "answered": 101,
+        "on_notice": 37,
+        "n_nonblank": 138,
+        "on_notice_pct": 26.8
+      },
+      {
+        "year": 2021,
+        "answered": 152,
+        "on_notice": 10,
+        "n_nonblank": 162,
+        "on_notice_pct": 6.2
+      },
+      {
+        "year": 2022,
+        "answered": 31,
+        "on_notice": 8,
+        "n_nonblank": 39,
+        "on_notice_pct": 20.5
+      },
+      {
+        "year": 2023,
+        "answered": 1,
+        "on_notice": 1,
+        "n_nonblank": 2,
+        "on_notice_pct": null
+      },
+      {
+        "year": 2024,
+        "answered": 42,
+        "on_notice": 6,
+        "n_nonblank": 48,
+        "on_notice_pct": 12.5
+      },
+      {
+        "year": 2025,
+        "answered": 122,
+        "on_notice": 14,
+        "n_nonblank": 136,
+        "on_notice_pct": 10.3
+      },
+      {
+        "year": 2026,
+        "answered": 82,
+        "on_notice": 6,
+        "n_nonblank": 88,
+        "on_notice_pct": 6.8
+      }
+    ]
+  }
+}

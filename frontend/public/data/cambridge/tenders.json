@@ -1,0 +1,328 @@
+{
+  "published_at": "2026-09-16T13:05:32.574687+00:00",
+  "data": {
+    "total_awards": 328,
+    "total_amount": 119586654,
+    "named_awards": 272,
+    "named_amount": 92219044,
+    "redacted_awards": 56,
+    "redacted_amount": 27367610,
+    "distinct_named": 214,
+    "top10_amount": 42919681,
+    "top10_share": 0.4654,
+    "contractors": [
+      {
+        "name": "Doric",
+        "n_awards": 1,
+        "total_amount": 10846296,
+        "awards": [
+          {
+            "date": "2014-08-26",
+            "description": "Bold Park Aquatic Centre Redevelopment Main Works",
+            "amount": 10846296,
+            "reference": "RFT 10-13",
+            "is_confidential": false,
+            "quote": "tender RFT 10-13 \"Bold Park Aquatic Centre Redevelopment Main Works\" be awarded to Doric at a tender sum of $10,846,296 plus GST",
+            "entity_id": 1767
+          }
+        ]
+      },
+      {
+        "name": "R J Vincent",
+        "n_awards": 3,
+        "total_amount": 7170003,
+        "awards": [
+          {
+            "date": "2016-04-26",
+            "description": "Neerabup Road Phase 2 and Stage 14B Civil Works - Civil and Infrastructure Works for Tamala Park Regional Council",
+            "amount": 1770003,
+            "reference": "08/2015",
+            "is_confidential": false,
+            "quote": "At the February 2016 meeting TPRG decided to award the tender submission for Civil and Infrastructure Works in accordance with Tender 08/2015 to RJ Vincent for the lump sum value of $1,770,003.39, excluding GST.",
+            "entity_id": 1893
+          },
+          {
+            "date": "2013-06-25",
+            "description": "Bulk earthworks for stage 8",
+            "amount": 2600000,
+            "reference": null,
+            "is_confidential": false,
+            "quote": "The appointment of RJ Vincent to undertake the bulk earthworks for stage 8 valued at $2.6 million.",
+            "entity_id": 1825
+          },
+          {
+            "date": "2012-03-27",
+            "description": "Catalina Stage 2 Civil Works - construction of stage 2 civil works",
+            "amount": 2800000,
+            "reference": null,
+            "is_confidential": false,
+            "quote": "The TPRC considered pricing on the construction of stage 2 civil works and decided to accept the Catalina Stage 2 Civil works pricing submitted by R J Vincent for the lump sum value of $2.8 million.",
+            "entity_id": 1723
+          }
+        ]
+      },
+      {
+        "name": "Downer EDI Works Pty Ltd",
+        "n_awards": 3,
+        "total_amount": 4776000,
+        "awards": [
+          {
+            "date": "2016-10-25",
+            "description": "Asphalt Surfacing and Associated Works supply, laying, road profiling and related services",
+            "amount": 1926000,
+            "reference": "RFQ44-16",
+            "is_confidential": false,
+            "quote": "RFQ 44- 16 \"Asphalt Surfacing and Associated Services\" was advertised through the WALGA Vendor Panel on 9 September 2016.",
+            "entity_id": 2017
+          },
+          {
+            "date": "2009-08-25",
+            "description": "Supply and Laying of Asphalt Road Surfacing for one year commencing 1 September 2009",
+            "amount": 1450000,
+            "reference": "T10-09",
+            "is_confidential": false,
+            "quote": "Tender No. T10-09 \"Supply and Laying of Asphalt Road Surfacing\" was advertised in the West Australian on 4 July 2009 and closed on 21 July 2009.",
+            "entity_id": 1725
+          },
+          {
+            "date": "2008-08-26",
+            "description": "Supply and Laying of Asphalt Road Surfacing",
+            "amount": 1400000,
+            "reference": "T09-08",
+            "is_confidential": false,
+            "quote": "The tender T09-08 'Supply and Laying of Asphalt Road Surfacing' was advertised in the West Australian on 12 July 2008 and closed on 29 July 2008.",
+            "entity_id": 1986
+          }
+        ]
+      },
+      {
+        "name": "Cooper and Oxley Builders Pty Ltd",
+        "n_awards": 1,
+        "total_amount": 4615000,
+        "awards": [
+          {
+            "date": "2001-09-04",
+            "description": "Construction of Cambridge Library and Community Amenities facility",
+            "amount": 4615000,
+            "reference": "17-2001/2002",
+            "is_confidential": false,
+            "quote": "Tender No. 17-2001/2002 \u2013 Construction of the Cambridge Library and Community Amenities facility be awarded to Cooper and Oxley Builders Pty Ltd to undertake the full scope of works provided in Option 1 of the tender at a price of $4,615,000",
+            "entity_id": 1929
+          }
+        ]
+      },
+      {
+        "name": "CECK Pty Ltd",
+        "n_awards": 1,
+        "total_amount": 3382016,
+        "awards": [
+          {
+            "date": "2009-09-22",
+            "description": "Stage 2 Phase 3 Liner Works - construction of base liner works associated with the last (Phase 3) developable area at Tamala Park",
+            "amount": 3382016,
+            "reference": "13/100",
+            "is_confidential": false,
+            "quote": "A tender was accepted for construction of the base liner works associated with the last (Phase 3) developable area at Tamala Park. Tender 13/100 was awarded to CECK Pty Ltd for $3,382,016.07.",
+            "entity_id": 181
+          }
+        ]
+      },
+      {
+        "name": "Horizon West",
+        "n_awards": 1,
+        "total_amount": 2835876,
+        "awards": [
+          {
+            "date": "2016-03-22",
+            "description": "Construction of miniature golf, playground and landscaping at Wembley Golf Course",
+            "amount": 2835876,
+            "reference": "RFT43-15",
+            "is_confidential": false,
+            "quote": "Horizon West has been identified as being suitable based on qualitative assessment. Their tender offer was $2,835,876 plus GST. Accordingly, they are deemed as providing the best value for money offer.",
+            "entity_id": 1356
+          }
+        ]
+      },
+      {
+        "name": "Ertec",
+        "n_awards": 1,
+        "total_amount": 2500000,
+        "awards": [
+          {
+            "date": "2013-06-25",
+            "description": "Marmion Avenue intersection construction",
+            "amount": 2500000,
+            "reference": null,
+            "is_confidential": false,
+            "quote": "The appointment of Ertec to construct the Marmion Avenue intersection valued at $2.5 million",
+            "entity_id": 1824
+          }
+        ]
+      },
+      {
+        "name": "Classic Tree Services",
+        "n_awards": 1,
+        "total_amount": 2346000,
+        "awards": [
+          {
+            "date": "2016-08-23",
+            "description": "Provision of Tree Pruning Services for three years commencing 1 September 2016. Services include tree pruning, tree removal and tree assessment in Parks and Road Reserves.",
+            "amount": 2346000,
+            "reference": "RFT 03-16",
+            "is_confidential": false,
+            "quote": "That the tender, submitted by Classic Tree Services, as detailed on Tender No. RFT 03-16, be accepted for a three year term commencing 1 September  2016 and expiring 31 August 2019.",
+            "entity_id": 1492
+          }
+        ]
+      },
+      {
+        "name": "Badge",
+        "n_awards": 1,
+        "total_amount": 2338350,
+        "awards": [
+          {
+            "date": "2012-11-27",
+            "description": "Construction of new Perth Netball Association Building and associated works at Wembley Sports Park",
+            "amount": 2338350,
+            "reference": "RFT34-12",
+            "is_confidential": false,
+            "quote": "tender RFT34-12 for the new Perth Netball Association Building and Associated Works be awarded to Badge at a cost of $2,338,350 ex GST",
+            "entity_id": 1843
+          }
+        ]
+      },
+      {
+        "name": "Curnow Group Ltd",
+        "n_awards": 1,
+        "total_amount": 2110140,
+        "awards": [
+          {
+            "date": "2013-08-27",
+            "description": "West Leederville Centre Streetscape and associated works including resurfacing of Cambridge Street and drainage improvements",
+            "amount": 2110140,
+            "reference": "RFT10-13",
+            "is_confidential": false,
+            "quote": "It is recommended that Curnow Group be awarded the tender at a tender price of $2,110,140 plus GST.",
+            "entity_id": 160
+          }
+        ]
+      },
+      {
+        "name": "Kilmore Group Pty Ltd",
+        "n_awards": 1,
+        "total_amount": 2080941,
+        "awards": [
+          {
+            "date": "2025-03-01",
+            "description": "Wembley Golf Course \u2013 Driving Range Steel Rectification and Fa\u00e7ade Upgrade including surface cleaning and recoating of steel elements, fabrication and installation of replacement steel elements, fa\u00e7ade and drainage upgrade, staircase and balustrade replacement, custom fa\u00e7ade panels, and additional staircases design and construction",
+            "amount": 2080941,
+            "reference": "RFT 2025-01",
+            "is_confidential": false,
+            "quote": "Request for Tender 2025-01 Wembley Golf Course \u2013 Driving Range Steel Rectification and Fa\u00e7ade Upgrade",
+            "entity_id": 483
+          }
+        ]
+      },
+      {
+        "name": "Leo Heaney Pty Ltd",
+        "n_awards": 4,
+        "total_amount": 1866000,
+        "awards": [
+          {
+            "date": "2016-08-23",
+            "description": "Provision of Tree Watering Services for three years commencing 1 September 2016. Services include watering trees, performing maintenance on new trees, labour, minor tree pruning and tree planting in Parks and Road Reserves.",
+            "amount": 960000,
+            "reference": "RFT 04-16",
+            "is_confidential": false,
+            "quote": "That the tender, submitted by Leo Heaney Pty Ltd, as detailed on Tender No. RFT 04- 16 be accepted for a three year term commencing 1 September 2016 and expiring 31 August 2019.",
+            "entity_id": 1493
+          },
+          {
+            "date": "2013-08-27",
+            "description": "Tree Watering Services for Parks and Road Reserves throughout the Town of Cambridge for three years",
+            "amount": 646000,
+            "reference": "RFT 06-13",
+            "is_confidential": false,
+            "quote": "The value of works, exclusive of GST, required under this contract based on tendered rates is estimated at:- \u2022 Year 1 - 2013/2014  $209,000 \u2022 Year 2 - 2014/2015  $215,000 \u2022 Year 3 - 2015/2016  $222,000 Total $646,000 over three years",
+            "entity_id": 159
+          },
+          {
+            "date": "2010-06-22",
+            "description": "Tree Watering, Tree Planting and Removal of Prunings for a period of 3 years commencing 1 July 2010 and ending 30 June 2013",
+            "amount": 150000,
+            "reference": "T05-10",
+            "is_confidential": false,
+            "quote": "The tender was advertised in the West Australian newspaper on Saturday, 10 April 2010. The tender closed at 2:00pm on Tuesday, 4 May 2010 with tenders received from the following organisations:- Leo Heaney Pty Ltd; Kastee Nominees Pty Ltd (trading as Maxwell Robinson and Phelps).",
+            "entity_id": 1400
+          },
+          {
+            "date": "2007-06-26",
+            "description": "Tree Watering, Tree Planting and Removal of Prunings Services",
+            "amount": 110000,
+            "reference": "20-06",
+            "is_confidential": false,
+            "quote": "The Town requires tree watering, tree planting and removal of pruning works to be undertaken as required within the Town's Road Reserves and Parks.",
+            "entity_id": 1711
+          }
+        ]
+      },
+      {
+        "name": "Golf Carts Rentals Pty Ltd trading as Golf Cart World",
+        "n_awards": 2,
+        "total_amount": 1848305,
+        "awards": [
+          {
+            "date": "2017-06-27",
+            "description": "Supply and Maintenance of Electric Golf Carts for the Wembley Golf Course including 70 electric golf carts with GPS system and lithium batteries, 2 marshal carts (petrol) and a range collection cart",
+            "amount": 1045163,
+            "reference": "RFT 02-17",
+            "is_confidential": false,
+            "quote": "Tender RFT 02-17, Supply and Maintenance of Electric Golf Carts for the Wembley Golf Course be awarded to Golf Carts Rentals Pty Ltd trading as Golf Car World for 70 Electric Golf Carts (including the Textron TFM EX10 GPS system and lithium batteries), 2 Marshal Carts (petrol) and a Range Collection Cart (Petrol), as outlined in their alternative tender submission for a five (5) year period",
+            "entity_id": 1567
+          },
+          {
+            "date": "2013-04-23",
+            "description": "Supply and maintenance of electric golf carts for Wembley Golf Course for a four-year period, including up to 70 electric golf carts, 2 marshalling carts, 1 food and beverage cart, 1 golf range ball collection cart, 1 eight-seat electric group cart and trailer (optional items), and GPS Golf Solutions (optional). Three tender submissions received: ADH Golf and Utility vehicles, Yamaha, and Golf Cart World.",
+            "amount": 803142,
+            "reference": "RFT 05-13",
+            "is_confidential": false,
+            "quote": "Tender RFT 05-13 was advertised state wide on 2 March 2013 with submissions closing on 26 March 2013.",
+            "entity_id": 1603
+          }
+        ]
+      },
+      {
+        "name": "SUEZ Recycling and Recovery Pty Ltd",
+        "n_awards": 1,
+        "total_amount": 1500000,
+        "awards": [
+          {
+            "date": "2016-09-27",
+            "description": "Waste Collection and Processing Contract for general waste, recyclable and green/organic collection and processing for a three year term with two year extension option commencing 28 November 2016.",
+            "amount": 1500000,
+            "reference": "RFQ 27-16",
+            "is_confidential": true,
+            "quote": "SUEZ Recycling and Recovery Pty Ltd be selected as the successful respondent for RFQ 27-16 based on the Schedule of Rates presented in accordance with the RFQ 27-16 documentation for a 3 year period and 2 year optin commencing 28 November 2016 subject to satisfactory negotiations",
+            "entity_id": 1912
+          }
+        ]
+      },
+      {
+        "name": "Various contractors: Total Eden Watering Systems, Elliotts Irrigation Pty Ltd, Malua Reticulation, Hugall and Hoile Ltd",
+        "n_awards": 1,
+        "total_amount": 1166000,
+        "awards": [
+          {
+            "date": "1998-12-21",
+            "description": "Supply and installation of automatic irrigation systems for 16 park projects",
+            "amount": 1166000,
+            "reference": null,
+            "is_confidential": false,
+            "quote": "the most appropriate organisations being:- (a) Total Eden Watering Systems; (b) Elliotts Irrigation Pty Ltd; (c)  Malua Reticulation; (d) Hugall and Hoile Ltd; be selected to submit detailed tender pr ices for the supply and installation of automatic irrigation systems",
+            "entity_id": 1510
+          }
+        ]
+      }
+    ]
+  }
+}

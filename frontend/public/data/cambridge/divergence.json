@@ -1,0 +1,73 @@
+{
+  "published_at": "2026-09-16T13:05:32.574687+00:00",
+  "data": {
+    "total_matched": 203,
+    "diverged_count": 6,
+    "followed_count": 197,
+    "compliance_rate": 0.9704,
+    "year_min": 2022,
+    "year_max": 2026,
+    "exceptions": [
+      {
+        "meeting_date": "2022-10-25",
+        "item_number": "DV22.91",
+        "title": "Lot 5 (No.33A) Marlow Street, Wembley \u2013 Proposed Alterations and Additions to Existing Single House \u2013 S31 Reconsideration",
+        "officer_recommendation": "While the proposal has not been amended, Administration considers that the applicant has provided sufficient technical support to warrant a reconsidered recommendation of approval. Accordingly, it is recommended that the application be approved, subject to conditions.",
+        "council_outcome": "deferred",
+        "match_confidence": 1.0,
+        "motion_text": "The Council DEFERS the item relating to Lot 5 (No. 33A) Marlow Street, Wembley to the November 2022 Council meeting to enable further information to be obtained.",
+        "quote": "Moved by Mayor Shannon, seconded by Cr Barlow The Council DEFERS the item relating to Lot 5 (No. 33A) Marlow Street, Wembley to the November 2022 Council meeting to enable further information to be obtained."
+      },
+      {
+        "meeting_date": "2022-10-25",
+        "item_number": "DV22.91",
+        "title": "Lot 7 (No. 33) Marlow Street, Wembley \u2013 Alterations and Additions to Existing Single House \u2013 S31 Reconsideration",
+        "officer_recommendation": "Based on all of the above, it is recommended that the application be approved",
+        "council_outcome": "deferred",
+        "match_confidence": 1.0,
+        "motion_text": "The Council DEFERS the item relating to Lot 5 (No. 33A) Marlow Street, Wembley to the November 2022 Council meeting to enable further information to be obtained.",
+        "quote": "Moved by Mayor Shannon, seconded by Cr Barlow The Council DEFERS the item relating to Lot 5 (No. 33A) Marlow Street, Wembley to the November 2022 Council meeting to enable further information to be obtained."
+      },
+      {
+        "meeting_date": "2024-09-16",
+        "item_number": "6.1",
+        "title": "CEO Recruitment - Appointment of HR Consultant",
+        "officer_recommendation": "That Council: 1. NOTES the submissions received in relation to RFQ 2024-17 CEO Recruitment Consultant. 2. APPOINTS Consultant D as the successful submitter for RFQ 2024-17 CEO Recruitment Consultant.",
+        "council_outcome": "deferred",
+        "match_confidence": 1.0,
+        "motion_text": "That the Committee DEFERS this item to a future CEO Recruitment Committee meeting to allow the Committee to meet with the Administrations recommended consultant to seek further information.",
+        "quote": "Moved by Cr Cutler, seconded by Cr Mayes\n\nThat the Committee DEFERS this item to a future CEO Recruitment Committee meeting to allow the Committee to meet with the Administrations recommended consultant to seek further information.\n\nMotion put and CARRIED    (4/0)"
+      },
+      {
+        "meeting_date": "2025-11-18",
+        "item_number": "7.1",
+        "title": "Annual Financial Statements 2024-25",
+        "officer_recommendation": "That the Audit, Risk and Improvement Committee 1. Receive the 2024/25 draft Annual Financial Report including the Auditor's Closing Report as presented in Attachments A and B 2. NOTES the Town of Cambridge response to the findings (draft Management Letter Points) as presented in Attachment C, and NOTES that the Audit, Risk and Improvement Committee will receive updates on any required actions in the Management Response. 3. Recommends Council ENDORSE the draft Annual Financial Report and Auditor's Closing Report for the 2024/25 financial year, subject to any final amendments from the Office of the Auditor General.",
+        "council_outcome": "deferred",
+        "match_confidence": 1.0,
+        "motion_text": "That the Audit, Risk and Improvement Committee: 1. NOTES the presentation at the Audit exit meeting provided by the OAG and RSM including the Draft Auditor's Closing Report. 2. DEFERS the consideration of the 2024/25 draft Annual Financial Report including the Auditor's Closing Report as presented in Attachments A and B until the final version of the documents have been updated and submitted for consideration. 3. NOTES that the Audit, Risk and Improvement Committee will reconvene to consider the final documents prior to submission and the Committee recommending the documents to Council.",
+        "quote": "Moved by Cr Mayes, seconded by Mayor Mack. That the Audit, Risk and Improvement Committee: 1. NOTES the presentation at the Audit exit meeting provided by the OAG and RSM including the Draft Auditor's Closing Report. 2. DEFERS the consideration of the 2024/25 draft Annual Financial Report including the Auditor's Closing Report as presented in Attachments A and B until the final version of the documents have been updated and submitted for consideration. 3. NOTES that the Audit, Risk and Improvement Committee will reconvene to consider the final documents prior to submission and the Committee recommending the documents to Council."
+      },
+      {
+        "meeting_date": "2026-02-24",
+        "item_number": "6.4",
+        "title": "Review of Elected Member Entitlements Policy",
+        "officer_recommendation": "That the Committee recommends that Council: 1. ADOPT the amended Council Policy \u2013 Elected Member and Independent Committee Member Entitlements, as contained in Attachment 2. 2. DETERMINE the sitting fees payable to Independent Members of the Audit, Risk and Improvement Committee as follows: a) Presiding Member (Chair): $1,215 per meeting b) Deputy Presiding Member: $1093.50 per meeting c) Independent Member: $972 per meeting.",
+        "council_outcome": "deferred",
+        "match_confidence": 1.0,
+        "motion_text": "That the Committee recommends that Council: 2. DEFER determining the sitting fees payable to Independent Members of the Audit, Risk and Improvement Committee as follows: a) Presiding Member (Chair): $1,215 per meeting b) Deputy Presiding Member: $1093.50 per meeting c) Independent Member: $972 per meeting. to the next Policy and Legislation Committee meeting.",
+        "quote": "That the Committee recommends that Council: 2. DEFER determining the sitting fees payable to Independent Members of the Audit, Risk and Improvement Committee as follows: a) Presiding Member (Chair): $1,215 per meeting b) Deputy Presiding Member: $1093.50 per meeting c) Independent Member: $972 per meeting. to the next Policy and Legislation Committee meeting."
+      },
+      {
+        "meeting_date": "2026-04-28",
+        "item_number": null,
+        "title": "General Waste Bin Service Review and Community Consultation",
+        "officer_recommendation": "it is recommended that as per the Notice of Motion, the Town undertake community consultation to obtain an understanding of current waste needs and service gaps. The outcomes of this consultation can then be reported back to Council for consideration. Based on the findings, Council may consider the options available such as a new Waste Assistance Policy and/or supporting guidelines to address any identified needs. This staged approach ensures that any future approach is evidence-based, responsive to community feedback, equitable, and aligned with the Town's broader waste management and sustainability objectives.",
+        "council_outcome": "lost",
+        "match_confidence": 0.53,
+        "motion_text": "That Council REQUESTS the Chief Executive Officer to: 1. Undertake a review of the Town's waste service levels, including red-lid general waste bin collection frequencies and options for opt-in weekly collection in defined circumstances; 2. Consider associated fees and charges implications; 3. Undertake community consultation on waste service preferences; and 4. Report back to Council.",
+        "quote": "There have been a number of changes in the waste management landscape over the past few years. The Town's Waste Management Strategy came to an end in 2025."
+      }
+    ]
+  }
+}

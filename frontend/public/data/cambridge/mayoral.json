@@ -1,0 +1,498 @@
+{
+  "published_at": "2026-09-16T13:05:32.574687+00:00",
+  "data": {
+    "mayor_moved": 622,
+    "mayor_carried_pct": 91.3,
+    "mayor_contest_pct": 21.8,
+    "other_moved": 11537,
+    "other_carried_pct": 96.4,
+    "other_contest_pct": 8.3,
+    "contest_factor": 2.6,
+    "per_mayor": [
+      {
+        "name": "Marlene Anderton",
+        "carried": 39,
+        "contested": 10,
+        "contest_pct": 25.6,
+        "n_shown": 10,
+        "motions": [
+          {
+            "title": "Memorandum of Understanding with Greens WA",
+            "date": "2005-11-24",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 18764,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Bradley\n\nThat Council:- (i) gives in-principle support to the draft Memorandum of Understanding provided to the Greens WA. This Memorandum of Understanding is indicative of the processes that should occur between the Council and the Minister; (ii) approves the action of the Mayor in her providing the Greens WA with the draft Memorandum of Understanding, in view of the imminent debate about to take place on the 'urgent Bill' in the Legislative Council."
+          },
+          {
+            "title": "Perry Lakes Redevelopment Bill 2005 \u2013 Referral to Special Meeting",
+            "date": "2005-11-22",
+            "votes_for": 6,
+            "votes_against": 2,
+            "entity_id": 29833,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Gow"
+          },
+          {
+            "title": "CEO Recruitment Process and Acting CEO Appointment",
+            "date": "2005-11-22",
+            "votes_for": 6,
+            "votes_against": 2,
+            "entity_id": 29834,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Barlow That the motion be amended to read as follows:- That:- (i) an external Recruitment Consultant be contracted to co-ordinate the recruitment process and the Manager Human Resources to assist the Consultant as required; (ii) a CEO Recruitment Sub-Committee be formed consisting of the Mayor, a Coast Ward Councillor and a Wembley Ward Councillor with the Manager Human Resources"
+          },
+          {
+            "title": "Financial Assistance to Community Organisations Disbursement",
+            "date": "2005-10-25",
+            "votes_for": 7,
+            "votes_against": 1,
+            "entity_id": 22193,
+            "quote": "Amendment carried 8/0"
+          },
+          {
+            "title": "Home Occupation Photographic Services Refusal - Carried",
+            "date": "2005-10-25",
+            "votes_for": 7,
+            "votes_against": 1,
+            "entity_id": 22202,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Langer\n\nThat in accordance with the provisions of Part 4 of the Town of Cambridge Town Planning Scheme No. 1 and matters required to be considered under this Scheme generally, and in particular, as the proposal would be contrary to the orderly and proper planning of the locality, the Council REFUSES the application submitted by Nha Mai Tiet Ho for a Home Occupation (Photographic Services) at Lot 1 (No. 5) Wollaston Road, Mt Claremont (within the residential unit located above the kitchen and dining room facilities) as shown on plans and detailed in the letter, dated 30 August 2005 for the following reason:- \n\n(i) the residential use is ancillary to the college purposes and the proposed home occupation is not considered to be in keeping with this original intent.\n\nCarried 7/1"
+          },
+          {
+            "title": "Revoke 22 March 2005 decision regarding unauthorised front fence",
+            "date": "2005-07-26",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 24047,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Huxtable\n\nThat:- (i) the following Council decision made at its meeting held on 22 March 2005 in relation to the unauthorised front fence constructed at 134 Alderbury Street, Floreat:- \"(iii) in the event of the property owners failing to accept Council's requirements, legal proceedings against the owners will continue.\" be revoked by an ABSOLUTE MAJORITY; (ii) no further action be taken by the Council in relation to this matter."
+          },
+          {
+            "title": "Amendment to Perry Lakes Stadium motion - clauses (iii) and (iv)(a)",
+            "date": "2005-05-31",
+            "votes_for": 7,
+            "votes_against": 2,
+            "entity_id": 28781,
+            "quote": "Amendment Moved by Mayor Anderton, seconded by Cr Langer That clauses (iii) and (iv)(a) of the motion be amended as follows:- (iii) adding the words 'and Council's capital contribution capped at $20 million (and indexed to Rawlinsons Australian Construction Handbook Building Price Indices for Perth) in the second dot point; (iv) (a) deleting the words 'as originally proposed in the Business Plan (dated March 2005)'. Amendment carried 7/2"
+          },
+          {
+            "title": "Refer Business Plan to May Council Meeting",
+            "date": "2005-05-18",
+            "votes_for": 5,
+            "votes_against": 4,
+            "entity_id": 21149,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Bradley. That the item relating to the Business Plan for the Redevelopment of the Perry Lakes Stadium Site be referred to the May Council meeting."
+          },
+          {
+            "title": "Refer Perry Lakes Stadium Business Plan to May Council Meetings",
+            "date": "2005-04-26",
+            "votes_for": 5,
+            "votes_against": 4,
+            "entity_id": 26049,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Bradley\n\nThat the item relating to the Business Plan for the Redevelopment of the Perry Lakes Stadium Site be referred to the May Council meetings."
+          },
+          {
+            "title": "Perry Lakes Stadium - Protection of Riding for the Disabled",
+            "date": "2004-07-27",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 26807,
+            "quote": "Moved by Mayor Anderton, seconded by Cr Barlow\n\nThat a further clause be added to the motion as follows:- (ii) Council does not support the displacement of the Riding for the Disabled facility without adequate replacement land for the facility being provided, or obtained by the Association."
+          }
+        ]
+      },
+      {
+        "name": "Keri Shannon",
+        "carried": 411,
+        "contested": 98,
+        "contest_pct": 23.8,
+        "n_shown": 30,
+        "motions": [
+          {
+            "title": "DV22.109 Boulevard roofing - approval motion (council)",
+            "date": "2022-12-20",
+            "votes_for": 5,
+            "votes_against": 2,
+            "entity_id": 24822,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Anklesaria"
+          },
+          {
+            "title": "Alterations and Additions - Dunkeld Street, Floreat",
+            "date": "2022-12-13",
+            "votes_for": 4,
+            "votes_against": 1,
+            "entity_id": 22241,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Haddon-Casey\n\nThat, in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council REFUSES the application for proposed alterations and additions and to the existing frontage at Lot 1140 (No. 3) Dunkeld Street, Floreat, as shown on the attached plans stamped received 19 November 2022, the 27 November 2022 & the 30th November the following reasons: 1. The proposal is a non-conforming application under Clause 26(1)(a) of Local Planning Scheme No. 1, as the carport addition and excavation works will be located within the 9m primary street setback area; 2. The proposal does not satisfy Clause 67(m) and (n) of the Planning and Development (Local Planning Schemes) Regulations 2015, as the proposed reduced street boundary setback will have an adverse impact on the local amenity due to the increased bulk of the carport within the street setback area, and will not be aligned with the Desired Future Character of the Floreat precinct under Local Planning Policy 3.1 \u2013 Streetscape; and 3. The proposal does not satisfy Clause 67(m) and (n) of the Planning and Development (Local Planning Schemes) Regulations 2015, as the proposed impact of the reduced street boundary setback does not satisfy Policy Objective 3 of the Town's Local Planning Policy 3.1 \u2013 Streetscape, and will have an adverse impact on the local amenity as the natural topography of the site is unable to be interpreted due to the development not maintaining the traditional street setback. 4. The proposal does not satisfy Policy Objective 3 of the Town's Local Planning Policy 3.1 \u2013 Streetscape, as the proposed reduced primary street setback would not be respectful of the established character of the Floreat precinct and amenity of the locality due to the visual dominance the carport structure located wholly within the front setback, will have on the established streetscape. 5. If the proposal is approved it may set a precedent for similar street setback incursions to nearby properties, which would alter the existing character of the locality."
+          },
+          {
+            "title": "Approve confidential recommendation for compliance report",
+            "date": "2022-12-13",
+            "votes_for": 4,
+            "votes_against": 1,
+            "entity_id": 22256,
+            "quote": "That Council APPROVES the Confidential Recommendation as outlined in the Confidential Report."
+          },
+          {
+            "title": "Lot 5 Marlow Street Wembley - Procedural motion",
+            "date": "2022-11-22",
+            "votes_for": 2,
+            "votes_against": 1,
+            "entity_id": 24794,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Randklev"
+          },
+          {
+            "title": "Review of Elected Member Requests Policy - Second Motion",
+            "date": "2022-11-22",
+            "votes_for": 6,
+            "votes_against": 1,
+            "entity_id": 24806,
+            "quote": "That Council AMENDS the Elected Member Requests Policy as outlined in Attachment 2 and further amended at the Council meeting held on 22 November 2022."
+          },
+          {
+            "title": "DV22.89 Lot 212 Penryn Avenue City Beach \u2013 Proposed Two-Storey Single House",
+            "date": "2022-10-25",
+            "votes_for": 4,
+            "votes_against": 1,
+            "entity_id": 20539,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Barlow\n\nThat, pursuant to S31 of the State Administrative Tribunal Act 2004, in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, and the provisions of Local Law 43 - Buildings on Endowment Lands & Limekilns Estate, Council SETS ASIDE ITS PREVIOUS DECISION AND REFUSES the application for a three-storey single house at Lot 212 (No. 12) Penryn Avenue, City Beach as shown on the attached plans stamped received 15 September 2022, for the following reasons:"
+          },
+          {
+            "title": "Procedural Motion \u2013 DV22.91 Marlow Street Wembley",
+            "date": "2022-10-25",
+            "votes_for": 2,
+            "votes_against": 1,
+            "entity_id": 20541,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Randklev That the item be submitted to Council for determination to enable further information on the Arborist's Report and the Traffic Report to be obtained and circulated to Elected Members and to enable discussions to be held with the Administration."
+          },
+          {
+            "title": "Two grouped dwellings at Lot 35 (No. 20) Connolly Street, Wembley",
+            "date": "2022-10-25",
+            "votes_for": 3,
+            "votes_against": 2,
+            "entity_id": 20547,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Barlow"
+          },
+          {
+            "title": "Two Grouped Dwellings at Lot 55 Yaltara Road City Beach - Refusal",
+            "date": "2022-10-25",
+            "votes_for": 3,
+            "votes_against": 2,
+            "entity_id": 20563,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Anklesaria"
+          },
+          {
+            "title": "Lot 212 Penryn Avenue City Beach - Two-Storey Single House Refusal",
+            "date": "2022-10-18",
+            "votes_for": 2,
+            "votes_against": 1,
+            "entity_id": 17780,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Randklev"
+          },
+          {
+            "title": "Two grouped dwellings, Connolly Street, Wembley",
+            "date": "2022-10-18",
+            "votes_for": 3,
+            "votes_against": 2,
+            "entity_id": 17785,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Mack That, in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council REFUSES the application for two grouped dwellings at Lot 35 (No. 20) Connolly Street, Wembley"
+          },
+          {
+            "title": "Amendment of Policy No. 033 - Developer Contact with Planning Staff",
+            "date": "2021-11-23",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 20333,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Cutler\n\nThat Council APPROVES BY AN ABSOLUTE MAJORITY to AMEND Policy No: 033 \u2013 'Developer Contact with Planning Staff', as detailed in Attachment 1."
+          },
+          {
+            "title": "Revocation of Delegation Under Section 276 of the Planning and Development Act 2005",
+            "date": "2021-11-23",
+            "votes_for": 6,
+            "votes_against": 2,
+            "entity_id": 20334,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Cutler\n\nThat Council:- 1. APPROVES BY AN ABSOLUTE MAJORITY to AMEND Delegation 12.1.4 by REVOKING function 10 of the delegation; as follows: \"10. Provide comment to the WAPC on significant development applications where the WAPC is the determining authority (Section 274 of the Planning and Development Act 2005)\"; and 2. REQUIRES that any submission from the Town under s274 of the Planning and Development Act 2005 must be reported to and approved/determined by the Council prior to lodgement."
+          },
+          {
+            "title": "Proposed Freeplay Zone Trial in Empire Park, City Beach",
+            "date": "2021-11-23",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 20335,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Cutler\n\nThat Council:- 1. AUTHORISES pursuant to the Town of Cambridge Local Government and Public Property Local Law 2017, clause 2.7(b); the riding of bicycles on a delineated section of Empire Park for the purpose of a trial of a Freeplay Zone in Empire Park; as shown in this report on page 41; 2. REQUESTS the CEO to prepare a plan for the trial of a Freeplay zone in the eastern section of Empire Park"
+          },
+          {
+            "title": "Establishment of a Policy and Legislation Committee",
+            "date": "2021-11-23",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 20336,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Cutler\n\nThat Council APPROVES BY AN ABSOLUTE MAJORITY:- 1. Pursuant to section 5.8 and 5.9(2)(b) of the Local Government Act 1995 to ESTABLISH a 'Town of Cambridge Policy and Legislation Committee' to support Council in fulfilling its responsibility under section 2.7(2)(b) of the Local Government Act and assist Council in carrying out its legislative functions to manage local laws;"
+          },
+          {
+            "title": "Tree Protection \u2013 Confidential",
+            "date": "2021-11-23",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 20343,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Barlow That Council APPROVES the confidential motion '13.2 Tree Protection \u2013 Confidential', submitted by Mayor Shannon."
+          },
+          {
+            "title": "Additional Information on Turnover Rent",
+            "date": "2021-06-22",
+            "votes_for": 7,
+            "votes_against": 1,
+            "entity_id": 23512,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Timmermanis"
+          },
+          {
+            "title": "Floreat Beach Kiosk Retractable Roof Procedural Motion",
+            "date": "2021-05-25",
+            "votes_for": 4,
+            "votes_against": 1,
+            "entity_id": 29423,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Barlow\n\nThat the item relating to the Floreat Beach Kiosk be submitted to Council for determination."
+          },
+          {
+            "title": "Audit Committee Charter amendment to include risk",
+            "date": "2021-04-27",
+            "votes_for": 6,
+            "votes_against": 1,
+            "entity_id": 23639,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Haddon-Casey"
+          },
+          {
+            "title": "Further Planning Legal Advice Confidential",
+            "date": "2021-02-23",
+            "votes_for": 5,
+            "votes_against": 4,
+            "entity_id": 5816,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Haddon-Casey"
+          },
+          {
+            "title": "Complaints Management",
+            "date": "2020-10-27",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 29133,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Barlow\n\nThat Council APPROVES the confidential motion."
+          },
+          {
+            "title": "No. 69 McCourt Street West Leederville planning matters \u2013 referral to Development Committee",
+            "date": "2020-08-25",
+            "votes_for": 6,
+            "votes_against": 1,
+            "entity_id": 21900,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Everett"
+          },
+          {
+            "title": "Support for Revaluation of Rates and WALGA Media",
+            "date": "2020-04-28",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 23327,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Everett\n\nThat Council:-\n\n1. REQUESTS the CEO to prepare a letter for the CEO and Mayor to send to the Premier expressing the Town's support for the immediate implementation of the revaluation of Gross Rental Values and the Unimproved Value of properties by Landgate in 2020, and seeking the addition of the \"Rate in the Dollar\" information for all councils to the My Council website. The letter should also be copied to the Minister for Local Government and published on the Town's website under Public Notices on or before 5 May 2020;"
+          },
+          {
+            "title": "CCTV Partnership Project - Approval and listing for consideration",
+            "date": "2020-03-26",
+            "votes_for": 7,
+            "votes_against": 1,
+            "entity_id": 20371,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Nelson"
+          },
+          {
+            "title": "Coastal viewing platform CMB 12 budget allocation",
+            "date": "2020-03-26",
+            "votes_for": 4,
+            "votes_against": 1,
+            "entity_id": 20386,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Timmermanis\n\nThat clause 1 of the motion be deleted.\n\nAmendment put and CARRIED (4/1)"
+          },
+          {
+            "title": "Provision of Instructions to Legal Representatives by Council",
+            "date": "2020-03-26",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 20418,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Haddon-Casey That Council:- 1. INSTRUCTS the CEO that, until the Local Planning Policy 1.5 is reviewed and amended, all instructions to legal representatives acting on behal f of the Council must have a report brought to Council which includes: (a) legal advice ; (b) instructions to legal representatives; and 2. APPROVES BY AN ABSOLUTE MAJORITY to DELEGATE, pursuant to Section 5.42 of the Local Government Act 1995 its power to provide ongoing instructions to the Town's legal representatives to the CEO, on the condition that all instructions and legal advice must be provided in writing."
+          },
+          {
+            "title": "Blencowe Street West Leederville \u2013 Change of Use Refused",
+            "date": "2019-12-17",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 20683,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Timmermanis"
+          },
+          {
+            "title": "Two-Storey Addition at Dilkara Way, City Beach",
+            "date": "2019-09-24",
+            "votes_for": 7,
+            "votes_against": 1,
+            "entity_id": 20051,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Everett"
+          },
+          {
+            "title": "Town Teams Community Empowerment Report",
+            "date": "2019-09-24",
+            "votes_for": 7,
+            "votes_against": 1,
+            "entity_id": 20071,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Nelson That Council REQUESTS the CEO to prepare a report for the November 2019 meeting on the potential use of Town Teams to proactively empower the communities within the Town and create better places within the Town."
+          },
+          {
+            "title": "Additional Coaster Bus for Seniors Hub Activities",
+            "date": "2019-09-24",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 20072,
+            "quote": "Moved by Mayor Shannon, seconded by Cr Timmermanis That Council REQUESTS the CEO to prepare a report for the October 2019 Council meeting regarding: 1. the cost of purchasing a new or second-hand 11 seater coaster bus using the Parking in Lieu funds which can be used to provide a free transport service for the seniors hub activities and can also be used in summer to provide a free hop on and off summer bus service using volunteer drivers; 2. the insurance requirements of using volunteer drivers for a summer bus service; 3. the cost of hiring casual drivers to operate a summer bus service; and 4. any other relevant matters."
+          }
+        ]
+      },
+      {
+        "name": "Gary Mack",
+        "carried": 69,
+        "contested": 11,
+        "contest_pct": 15.9,
+        "n_shown": 11,
+        "motions": [
+          {
+            "title": "WALGA Submission - Electoral Reform Discussion Paper - Part 2(a)",
+            "date": "2026-03-24",
+            "votes_for": 5,
+            "votes_against": 3,
+            "entity_id": 5234,
+            "quote": "Moved by Mayor Mack, seconded by Cr Le Page\n\nThat Council:\n\n2(a) DETERMINES, for the purpose of informing the Town's submission to WALGA only, the following advocacy position:\n(a) SUPPORTS four-year terms on an all in / all out basis."
+          },
+          {
+            "title": "AEM Motion 6 - Calculation of Rates",
+            "date": "2026-03-24",
+            "votes_for": 7,
+            "votes_against": 1,
+            "entity_id": 5250,
+            "quote": "That Council: 1. NOTES the Notice of Motion submitted by Jenny Hart, at the Annual Electors Meeting on 10 February 2026; and 2. NOTES the scope of the external review of rates and the Administration's ongoing consideration of equitable rate setting across the Town."
+          },
+          {
+            "title": "Revoke Policy 33 Developer Contact with Staff",
+            "date": "2025-12-16",
+            "votes_for": 6,
+            "votes_against": 3,
+            "entity_id": 5332,
+            "quote": "Moved by Mayor Mack, seconded by Cr Le Page\n\nThat Council:\n\n1. REVOKES Policy 33: Developer Contact with Staff Policy, as contained in Attachment 1;"
+          },
+          {
+            "title": "Amend Council Policy 39 Elected Member Relationship with Developers",
+            "date": "2025-12-16",
+            "votes_for": 7,
+            "votes_against": 2,
+            "entity_id": 5334,
+            "quote": "Moved by Mayor Mack, seconded by Cr Le Page\n\nThat Council:\n\n3. AMENDS Council Policy 39 \u2013 Elected Member Relationship with Developers, as contained in Attachment 3."
+          },
+          {
+            "title": "Procedural motion to cease debate",
+            "date": "2025-12-16",
+            "votes_for": 6,
+            "votes_against": 3,
+            "entity_id": 5343,
+            "quote": "Mayor Mack Moved the following procedural motion. PROCEDURAL MOTION: Moved by Mayor Mack, seconded by Cr Le Page That the motion now be put and debate cease."
+          },
+          {
+            "title": "Grantham Street Multi-Intersection Project - Traffic Signals Application",
+            "date": "2025-12-16",
+            "votes_for": 6,
+            "votes_against": 3,
+            "entity_id": 5351,
+            "quote": "Moved by Mayor Mack, seconded by Cr Heil"
+          },
+          {
+            "title": "Annual Report 2023/2024 Reception",
+            "date": "2025-04-09",
+            "votes_for": 8,
+            "votes_against": 2,
+            "entity_id": 4989,
+            "quote": "Moved by Mayor Mack, seconded by Jim Ashenden. That the 2023/2024 Annual Report for the Town of Cambridge be RECEIVED"
+          },
+          {
+            "title": "Heritage assessment West Leederville precinct",
+            "date": "2024-11-26",
+            "votes_for": 6,
+            "votes_against": 2,
+            "entity_id": 5717,
+            "quote": "That Council: 1. REQUESTS the Chief Executive Officer to undertake consultation on the nine place records shown in Confidential Attachment 1 in accordance with Local Planning Policy 1.7; and 2. NOTES that a future report will be presented to Council for it to consider the results of the consultation, and the potential entering of the identified places in the Town's Local Heritage Survey and Heritage List."
+          },
+          {
+            "title": "Confirmation of Minutes",
+            "date": "2024-11-08",
+            "votes_for": 2,
+            "votes_against": 1,
+            "entity_id": 4546,
+            "quote": "Moved by Mayor Mack, seconded by Cr Mayes"
+          },
+          {
+            "title": "Leederville Town Hall Lesser Hall Licence Agreement - Amendment Motion",
+            "date": "2024-10-22",
+            "votes_for": 5,
+            "votes_against": 2,
+            "entity_id": 5090,
+            "quote": "That Council: 1. CONSENT to a new licence between Perth Tango Club Inc. and the Town of Cambridge for the period of two (2) years with an option for a further term of one (1) year; 2. AUTHORISES the CEO to make the necessary changes to the deed of licence at Attachment 2 to change the term of the licence to two (2) years with an option for a further term of one (1) year; and 3. AUTHORISES the CEO to sign and execute the deed of licence at Attachment 2 between the Town of Cambridge and Perth Tango Club for the amended period of two (2) years with an option for a further term of one (1) year pursuant to section 9.49A(4) of the Local Government Act 1995 (WA)."
+          },
+          {
+            "title": "Approve carport addition at Lot 1571 Tralee Road Floreat",
+            "date": "2023-11-13",
+            "votes_for": 3,
+            "votes_against": 1,
+            "entity_id": 18642,
+            "quote": "Moved by Mayor Mack, seconded by Cr Le Page"
+          }
+        ]
+      },
+      {
+        "name": "Simon Withers",
+        "carried": 49,
+        "contested": 5,
+        "contest_pct": 10.2,
+        "n_shown": 5,
+        "motions": [
+          {
+            "title": "Surf Club Building and Commercial Development - Community Feedback",
+            "date": "2012-09-25",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 21177,
+            "quote": "That:- (i) this report into community feedback on endorsed concept of the Surf Club Building and Commercial Development at City Beach Concept be noted; (ii) design continue on the basis of the surf club leased space being 1,610m\u00b2 of enclosed area; (iii) an appropriately qualified consultant be appointed to produce an independent assessment on the impact of wind, salt spray and sand movement on the surf club building; (iv) the public toilets at beach level remain generally as shown in the concept plans; (v) dedicated surf club parking areas not be included in the scope of this project; (vi) necessary planning studies commence, including coastal engineering and traffic and parking; (vii) the road on the east side of the restaurants to be a pedestrian friendly service road and set down area without parking; (viii) the capacity of the commercial/restaurant space be reduced by approximately 20%; and (iv) the respondents be advised of the outcome of this report. Carried 8/1"
+          },
+          {
+            "title": "Surf Club Building - Tender T20-11 Architectural Services",
+            "date": "2011-12-20",
+            "votes_for": 6,
+            "votes_against": 1,
+            "entity_id": 28708,
+            "quote": "That: (i) the tender for Tender T20-11 for architectural services for Surf Club and Commercial Facilities Development be awarded to Christou Design Group at an indicative cost of $536,000 for the project; (ii) a report to Council be prepared on the new lease agreement between the Town and the City of Perth Surf Lifesaving Club; (iii) Christou Design Group not commence work on the project until Council has approved the new lease."
+          },
+          {
+            "title": "Waste Fees \u2013 Budget 2011/2012",
+            "date": "2011-07-26",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 21331,
+            "quote": "Moved by Cr Langer, seconded by Cr Pelczar That the following fees be considered when adopting the Budget for 2011/12:- (i) a green waste fee for collection of green waste from as soon as practicable be:- \"Opt In\" service $40.00 (ex GST) (ii) a compulsory waste fee per assessment on general waste bins, levied under the Health Act 1911, and allocated in accordance with Policies 5.3.1, 5.3.2 and 5.3.3 on all rateable properties be:- \"Opt In\" Green Waste Service Waste Fee Option 2 120L Domestic $40.00 240L Domestic $196.32 240L Green Bin $40.00"
+          },
+          {
+            "title": "North Lake Monger Reserve Master Plan - refer back",
+            "date": "2010-10-26",
+            "votes_for": 5,
+            "votes_against": 4,
+            "entity_id": 20239,
+            "quote": "Motion to Refer Back. Moved by Mayor Withers, seconded by Cr Langer. That the item relating to North Lake Monger Reserve Master Plan be referred back to the Community and Resources Committee for further consideration. Carried 5/4"
+          },
+          {
+            "title": "Audit Charter and Terms of Reference adopted",
+            "date": "2008-03-25",
+            "votes_for": 8,
+            "votes_against": 1,
+            "entity_id": 28897,
+            "quote": "Moved by Mayor Withers, seconded by Cr Watson\n\nThat:- \n\n(i) the Audit Charter and Terms of Reference, as amended and attached to the Minutes, be adopted; \n\n(ii) the Chief Executive Officer calls for expressions of interest seeking the services of a community member with relevant expertise to be a member of the Audit Committee at the rate of $500 per meeting, and that the expressions of interest be submitted to Council to formalise the appointment."
+          }
+        ]
+      }
+    ]
+  }
+}

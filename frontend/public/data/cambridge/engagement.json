@@ -1,0 +1,197 @@
+{
+  "published_at": "2026-09-16T13:05:32.574687+00:00",
+  "data": [
+    {
+      "year": 1995,
+      "public_questions": 5,
+      "deputations": 3,
+      "petitions": 0
+    },
+    {
+      "year": 1996,
+      "public_questions": 34,
+      "deputations": 15,
+      "petitions": 17
+    },
+    {
+      "year": 1997,
+      "public_questions": 32,
+      "deputations": 60,
+      "petitions": 31
+    },
+    {
+      "year": 1998,
+      "public_questions": 23,
+      "deputations": 51,
+      "petitions": 12
+    },
+    {
+      "year": 1999,
+      "public_questions": 28,
+      "deputations": 45,
+      "petitions": 19
+    },
+    {
+      "year": 2000,
+      "public_questions": 90,
+      "deputations": 58,
+      "petitions": 10
+    },
+    {
+      "year": 2001,
+      "public_questions": 43,
+      "deputations": 52,
+      "petitions": 11
+    },
+    {
+      "year": 2002,
+      "public_questions": 48,
+      "deputations": 51,
+      "petitions": 20
+    },
+    {
+      "year": 2003,
+      "public_questions": 35,
+      "deputations": 60,
+      "petitions": 12
+    },
+    {
+      "year": 2004,
+      "public_questions": 22,
+      "deputations": 90,
+      "petitions": 25
+    },
+    {
+      "year": 2005,
+      "public_questions": 110,
+      "deputations": 124,
+      "petitions": 23
+    },
+    {
+      "year": 2006,
+      "public_questions": 65,
+      "deputations": 104,
+      "petitions": 13
+    },
+    {
+      "year": 2007,
+      "public_questions": 72,
+      "deputations": 35,
+      "petitions": 8
+    },
+    {
+      "year": 2008,
+      "public_questions": 63,
+      "deputations": 61,
+      "petitions": 9
+    },
+    {
+      "year": 2009,
+      "public_questions": 71,
+      "deputations": 37,
+      "petitions": 8
+    },
+    {
+      "year": 2010,
+      "public_questions": 50,
+      "deputations": 41,
+      "petitions": 27
+    },
+    {
+      "year": 2011,
+      "public_questions": 98,
+      "deputations": 40,
+      "petitions": 12
+    },
+    {
+      "year": 2012,
+      "public_questions": 90,
+      "deputations": 53,
+      "petitions": 15
+    },
+    {
+      "year": 2013,
+      "public_questions": 71,
+      "deputations": 28,
+      "petitions": 16
+    },
+    {
+      "year": 2014,
+      "public_questions": 98,
+      "deputations": 75,
+      "petitions": 13
+    },
+    {
+      "year": 2015,
+      "public_questions": 333,
+      "deputations": 31,
+      "petitions": 3
+    },
+    {
+      "year": 2016,
+      "public_questions": 535,
+      "deputations": 105,
+      "petitions": 4
+    },
+    {
+      "year": 2017,
+      "public_questions": 185,
+      "deputations": 37,
+      "petitions": 6
+    },
+    {
+      "year": 2018,
+      "public_questions": 180,
+      "deputations": 24,
+      "petitions": 7
+    },
+    {
+      "year": 2019,
+      "public_questions": 197,
+      "deputations": 52,
+      "petitions": 13
+    },
+    {
+      "year": 2020,
+      "public_questions": 138,
+      "deputations": 14,
+      "petitions": 11
+    },
+    {
+      "year": 2021,
+      "public_questions": 165,
+      "deputations": 32,
+      "petitions": 23
+    },
+    {
+      "year": 2022,
+      "public_questions": 43,
+      "deputations": 12,
+      "petitions": 1
+    },
+    {
+      "year": 2023,
+      "public_questions": 2,
+      "deputations": 8,
+      "petitions": 0
+    },
+    {
+      "year": 2024,
+      "public_questions": 48,
+      "deputations": 10,
+      "petitions": 1
+    },
+    {
+      "year": 2025,
+      "public_questions": 136,
+      "deputations": 15,
+      "petitions": 0
+    },
+    {
+      "year": 2026,
+      "public_questions": 88,
+      "deputations": 2,
+      "petitions": 0
+    }
+  ]
+}

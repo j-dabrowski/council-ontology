@@ -1,0 +1,672 @@
+{
+  "published_at": "2026-09-16T13:05:32.574687+00:00",
+  "data": {
+    "alliances": [
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Jane Powell",
+        "name_b": "Jo McAllister",
+        "sponsorships": 9,
+        "lift": 7.3,
+        "agree_pct": 71.3,
+        "agree_n": 164,
+        "kind": "alliance",
+        "id_a": 234,
+        "id_b": 239
+      },
+      {
+        "era_label": "2004\u201307",
+        "name_a": "Graham Burkett",
+        "name_b": "Ken McAullay",
+        "sponsorships": 71,
+        "lift": 6.57,
+        "agree_pct": 83.3,
+        "agree_n": 36,
+        "kind": "alliance",
+        "id_a": 230,
+        "id_b": 243
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Corinne MacRae",
+        "name_b": "Tracey King",
+        "sponsorships": 107,
+        "lift": 4.66,
+        "agree_pct": 90.3,
+        "agree_n": 226,
+        "kind": "alliance",
+        "id_a": 206,
+        "id_b": 245
+      },
+      {
+        "era_label": "2004\u201307",
+        "name_a": "John Gow",
+        "name_b": "Penny Huxtable",
+        "sponsorships": 40,
+        "lift": 4.39,
+        "agree_pct": 86.6,
+        "agree_n": 172,
+        "kind": "alliance",
+        "id_a": 218,
+        "id_b": 219
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Kate McKerracher",
+        "name_b": "Ian Everett",
+        "sponsorships": 13,
+        "lift": 4.09,
+        "agree_pct": 93.3,
+        "agree_n": 180,
+        "kind": "alliance",
+        "id_a": 197,
+        "id_b": 199
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Pauline O'Connor",
+        "name_b": "Tracey King",
+        "sponsorships": 80,
+        "lift": 3.81,
+        "agree_pct": 82.9,
+        "agree_n": 216,
+        "kind": "alliance",
+        "id_a": 214,
+        "id_b": 245
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Corinne MacRae",
+        "name_b": "Pauline O'Connor",
+        "sponsorships": 24,
+        "lift": 3.62,
+        "agree_pct": 83.5,
+        "agree_n": 218,
+        "kind": "alliance",
+        "id_a": 206,
+        "id_b": 214
+      },
+      {
+        "era_label": "2000\u201303",
+        "name_a": "Hilary Pinerua",
+        "name_b": "Ken McAullay",
+        "sponsorships": 67,
+        "lift": 3.18,
+        "agree_pct": 77.1,
+        "agree_n": 35,
+        "kind": "alliance",
+        "id_a": 213,
+        "id_b": 243
+      },
+      {
+        "era_label": "2012\u201315",
+        "name_a": "Sonia Grinceri",
+        "name_b": "Colin Walker",
+        "sponsorships": 26,
+        "lift": 3.15,
+        "agree_pct": 73.5,
+        "agree_n": 83,
+        "kind": "alliance",
+        "id_a": 244,
+        "id_b": 246
+      },
+      {
+        "era_label": "2004\u201307",
+        "name_a": "Corinne MacRae",
+        "name_b": "Hilary Pinerua",
+        "sponsorships": 141,
+        "lift": 3.12,
+        "agree_pct": 76.8,
+        "agree_n": 56,
+        "kind": "alliance",
+        "id_a": 206,
+        "id_b": 213
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Kate McKerracher",
+        "name_b": "Keri Shannon",
+        "sponsorships": 37,
+        "lift": 2.61,
+        "agree_pct": 92.2,
+        "agree_n": 204,
+        "kind": "alliance",
+        "id_a": 197,
+        "id_b": 200
+      },
+      {
+        "era_label": "2020\u201323",
+        "name_a": "Kate Barlow",
+        "name_b": "Jane Cutler",
+        "sponsorships": 27,
+        "lift": 2.39,
+        "agree_pct": 84.4,
+        "agree_n": 32,
+        "kind": "alliance",
+        "id_a": 2,
+        "id_b": 8
+      }
+    ],
+    "procedural": [
+      {
+        "era_label": "2004\u201307",
+        "name_a": "Hilary Pinerua",
+        "name_b": "Graham Burkett",
+        "sponsorships": 83,
+        "lift": 3.34,
+        "agree_pct": 48.8,
+        "agree_n": 41,
+        "kind": "procedural",
+        "id_a": 213,
+        "id_b": 230
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Andres Timmermanis",
+        "name_b": "Jo McAllister",
+        "sponsorships": 20,
+        "lift": 3.0,
+        "agree_pct": 30.8,
+        "agree_n": 169,
+        "kind": "procedural",
+        "id_a": 195,
+        "id_b": 239
+      },
+      {
+        "era_label": "2000\u201303",
+        "name_a": "Hilary Pinerua",
+        "name_b": "Pauline O'Connor",
+        "sponsorships": 99,
+        "lift": 2.82,
+        "agree_pct": 50.0,
+        "agree_n": 40,
+        "kind": "procedural",
+        "id_a": 213,
+        "id_b": 214
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Rod Bradley",
+        "name_b": "Louis Carr",
+        "sponsorships": 22,
+        "lift": 2.39,
+        "agree_pct": 48.0,
+        "agree_n": 75,
+        "kind": "procedural",
+        "id_a": 196,
+        "id_b": 240
+      },
+      {
+        "era_label": "2008\u201311",
+        "name_a": "Otto Pelczar",
+        "name_b": "David Berry",
+        "sponsorships": 35,
+        "lift": 2.14,
+        "agree_pct": 44.0,
+        "agree_n": 50,
+        "kind": "procedural",
+        "id_a": 205,
+        "id_b": 217
+      },
+      {
+        "era_label": "2016\u201319",
+        "name_a": "Xavier Carr",
+        "name_b": "Andres Timmermanis",
+        "sponsorships": 115,
+        "lift": 2.1,
+        "agree_pct": 39.5,
+        "agree_n": 332,
+        "kind": "procedural",
+        "id_a": 5,
+        "id_b": 195
+      }
+    ],
+    "convergence_high_agree": 67.3,
+    "convergence_low_agree": 54.1,
+    "oldguard_label": "2000\u201307",
+    "oldguard_unanimous_pct": 92.8,
+    "oldguard_nodes": [
+      {
+        "name": "Corinne MacRae",
+        "moved": 583,
+        "seconded": 418,
+        "in_core": true
+      },
+      {
+        "name": "Graham Burkett",
+        "moved": 306,
+        "seconded": 693,
+        "in_core": true
+      },
+      {
+        "name": "Pauline O'Connor",
+        "moved": 567,
+        "seconded": 393,
+        "in_core": true
+      },
+      {
+        "name": "Rod Bradley",
+        "moved": 289,
+        "seconded": 388,
+        "in_core": true
+      },
+      {
+        "name": "Hilary Pinerua",
+        "moved": 309,
+        "seconded": 286,
+        "in_core": true
+      },
+      {
+        "name": "David Berry",
+        "moved": 416,
+        "seconded": 132,
+        "in_core": true
+      },
+      {
+        "name": "Ken McAullay",
+        "moved": 202,
+        "seconded": 293,
+        "in_core": true
+      },
+      {
+        "name": "Alan Langer",
+        "moved": 223,
+        "seconded": 206,
+        "in_core": true
+      },
+      {
+        "name": "Kate Barlow",
+        "moved": 154,
+        "seconded": 267,
+        "in_core": true
+      },
+      {
+        "name": "Marlene Anderton",
+        "moved": 327,
+        "seconded": 91,
+        "in_core": true
+      },
+      {
+        "name": "Kerry Smith",
+        "moved": 175,
+        "seconded": 197,
+        "in_core": true
+      },
+      {
+        "name": "Penny Huxtable",
+        "moved": 16,
+        "seconded": 179,
+        "in_core": true
+      },
+      {
+        "name": "John Gow",
+        "moved": 99,
+        "seconded": 66,
+        "in_core": true
+      },
+      {
+        "name": "Ian Steele",
+        "moved": 15,
+        "seconded": 57,
+        "in_core": true
+      },
+      {
+        "name": "Susan Kennerly",
+        "moved": 22,
+        "seconded": 25,
+        "in_core": false
+      },
+      {
+        "name": "Melanie Foley",
+        "moved": 23,
+        "seconded": 21,
+        "in_core": false
+      },
+      {
+        "name": "Jane Cutler",
+        "moved": 16,
+        "seconded": 18,
+        "in_core": false
+      }
+    ],
+    "oldguard_edges": [
+      {
+        "era_label": "2000\u201307",
+        "name_a": "John Gow",
+        "name_b": "Penny Huxtable",
+        "sponsorships": 40,
+        "lift": 8.35,
+        "agree_pct": 86.6,
+        "agree_n": 172,
+        "kind": "alliance",
+        "id_a": 218,
+        "id_b": 219
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Rod Bradley",
+        "name_b": "John Gow",
+        "sponsorships": 73,
+        "lift": 4.98,
+        "agree_pct": 68.0,
+        "agree_n": 172,
+        "kind": "mixed",
+        "id_a": 196,
+        "id_b": 218
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Rod Bradley",
+        "name_b": "Penny Huxtable",
+        "sponsorships": 62,
+        "lift": 4.19,
+        "agree_pct": 63.6,
+        "agree_n": 162,
+        "kind": "mixed",
+        "id_a": 196,
+        "id_b": 219
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Alan Langer",
+        "name_b": "Ian Steele",
+        "sponsorships": 15,
+        "lift": 3.72,
+        "agree_pct": 81.5,
+        "agree_n": 27,
+        "kind": "alliance",
+        "id_a": 204,
+        "id_b": 312
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Alan Langer",
+        "name_b": "Pauline O'Connor",
+        "sponsorships": 180,
+        "lift": 3.45,
+        "agree_pct": 60.2,
+        "agree_n": 264,
+        "kind": "mixed",
+        "id_a": 204,
+        "id_b": 214
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Kerry Smith",
+        "name_b": "Ken McAullay",
+        "sponsorships": 80,
+        "lift": 3.44,
+        "agree_pct": 63.2,
+        "agree_n": 38,
+        "kind": "mixed",
+        "id_a": 229,
+        "id_b": 243
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Graham Burkett",
+        "name_b": "Ken McAullay",
+        "sponsorships": 200,
+        "lift": 3.41,
+        "agree_pct": 86.8,
+        "agree_n": 76,
+        "kind": "alliance",
+        "id_a": 230,
+        "id_b": 243
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Hilary Pinerua",
+        "name_b": "Ken McAullay",
+        "sponsorships": 116,
+        "lift": 3.07,
+        "agree_pct": 72.6,
+        "agree_n": 73,
+        "kind": "alliance",
+        "id_a": 213,
+        "id_b": 243
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Kate Barlow",
+        "name_b": "Rod Bradley",
+        "sponsorships": 97,
+        "lift": 2.78,
+        "agree_pct": 50.2,
+        "agree_n": 205,
+        "kind": "mixed",
+        "id_a": 2,
+        "id_b": 196
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Pauline O'Connor",
+        "name_b": "Ian Steele",
+        "sponsorships": 27,
+        "lift": 2.77,
+        "agree_pct": 34.8,
+        "agree_n": 23,
+        "kind": "procedural",
+        "id_a": 214,
+        "id_b": 312
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Marlene Anderton",
+        "name_b": "Graham Burkett",
+        "sponsorships": 164,
+        "lift": 2.53,
+        "agree_pct": 71.0,
+        "agree_n": 107,
+        "kind": "alliance",
+        "id_a": 216,
+        "id_b": 230
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Corinne MacRae",
+        "name_b": "Hilary Pinerua",
+        "sponsorships": 178,
+        "lift": 2.36,
+        "agree_pct": 71.3,
+        "agree_n": 94,
+        "kind": "alliance",
+        "id_a": 206,
+        "id_b": 213
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Kate Barlow",
+        "name_b": "David Berry",
+        "sponsorships": 73,
+        "lift": 2.18,
+        "agree_pct": 53.0,
+        "agree_n": 151,
+        "kind": "mixed",
+        "id_a": 2,
+        "id_b": 217
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Rod Bradley",
+        "name_b": "David Berry",
+        "sponsorships": 111,
+        "lift": 2.18,
+        "agree_pct": 21.1,
+        "agree_n": 185,
+        "kind": "procedural",
+        "id_a": 196,
+        "id_b": 217
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Corinne MacRae",
+        "name_b": "David Berry",
+        "sponsorships": 137,
+        "lift": 2.14,
+        "agree_pct": 83.1,
+        "agree_n": 195,
+        "kind": "alliance",
+        "id_a": 206,
+        "id_b": 217
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Alan Langer",
+        "name_b": "Marlene Anderton",
+        "sponsorships": 45,
+        "lift": 2.01,
+        "agree_pct": 58.6,
+        "agree_n": 222,
+        "kind": "mixed",
+        "id_a": 204,
+        "id_b": 216
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Corinne MacRae",
+        "name_b": "Penny Huxtable",
+        "sponsorships": 53,
+        "lift": 1.87,
+        "agree_pct": 45.8,
+        "agree_n": 144,
+        "kind": "procedural",
+        "id_a": 206,
+        "id_b": 219
+      },
+      {
+        "era_label": "2000\u201307",
+        "name_a": "Kate Barlow",
+        "name_b": "Pauline O'Connor",
+        "sponsorships": 98,
+        "lift": 1.81,
+        "agree_pct": 71.3,
+        "agree_n": 202,
+        "kind": "alliance",
+        "id_a": 2,
+        "id_b": 214
+      }
+    ],
+    "eras": [
+      {
+        "label": "1996\u201399",
+        "year_from": 1996,
+        "year_to": 1999,
+        "n_events": 2222,
+        "n_active": 11,
+        "cluster_size": 6,
+        "core_names": [
+          "A Michael Moore",
+          "A Moore",
+          "David Johnston",
+          "Kerry Smith",
+          "Pauline O'Connor",
+          "Robina McConnell"
+        ],
+        "structure": "forming"
+      },
+      {
+        "label": "2000\u201303",
+        "year_from": 2000,
+        "year_to": 2003,
+        "n_events": 1857,
+        "n_active": 10,
+        "cluster_size": 10,
+        "core_names": [
+          "Alan Langer",
+          "Corinne MacRae",
+          "David Berry",
+          "Graham Burkett",
+          "Hilary Pinerua",
+          "Ian Steele",
+          "Ken McAullay",
+          "Kerry Smith"
+        ],
+        "structure": "old guard consolidates"
+      },
+      {
+        "label": "2004\u201307",
+        "year_from": 2004,
+        "year_to": 2007,
+        "n_events": 2063,
+        "n_active": 12,
+        "cluster_size": 11,
+        "core_names": [
+          "Alan Langer",
+          "Corinne MacRae",
+          "David Berry",
+          "Graham Burkett",
+          "Hilary Pinerua",
+          "John Gow",
+          "Kate Barlow",
+          "Ken McAullay"
+        ],
+        "structure": "old guard at its peak"
+      },
+      {
+        "label": "2008\u201311",
+        "year_from": 2008,
+        "year_to": 2011,
+        "n_events": 1376,
+        "n_active": 8,
+        "cluster_size": 4,
+        "core_names": [
+          "David Berry",
+          "Julie Watson",
+          "Otto Pelczar",
+          "Sonia Grinceri"
+        ],
+        "structure": "fragmented"
+      },
+      {
+        "label": "2012\u201315",
+        "year_from": 2012,
+        "year_to": 2015,
+        "n_events": 1228,
+        "n_active": 9,
+        "cluster_size": 4,
+        "core_names": [
+          "Corinne MacRae",
+          "Pauline O'Connor",
+          "Rod Bradley",
+          "Tracey King"
+        ],
+        "structure": "small nucleus"
+      },
+      {
+        "label": "2016\u201319",
+        "year_from": 2016,
+        "year_to": 2019,
+        "n_events": 1731,
+        "n_active": 14,
+        "cluster_size": 11,
+        "core_names": [
+          "Andres Timmermanis",
+          "Ian Everett",
+          "James Nelson",
+          "Jane Powell",
+          "Jo McAllister",
+          "Kate McKerracher",
+          "Keri Shannon",
+          "Louis Carr"
+        ],
+        "structure": "broad / hyperactive"
+      },
+      {
+        "label": "2020\u201323",
+        "year_from": 2020,
+        "year_to": 2023,
+        "n_events": 1072,
+        "n_active": 10,
+        "cluster_size": 4,
+        "core_names": [
+          "Gary Mack",
+          "Ian Everett",
+          "Kate McKerracher",
+          "Rod Bradley"
+        ],
+        "structure": "reshuffled, no durable bloc"
+      }
+    ]
+  }
+}
