@@ -5,7 +5,8 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api, ContractorTotal, TenderAward, EvidenceEntry } from "../api";
-import { LoadingCard, ErrorCard } from "./InterestsChart";
+import { LoadingCard } from "./InterestsChart";
+import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
@@ -63,7 +64,7 @@ export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
+  if (error || !data) return <BatteryTestBody test={test} cllrData={null} />;
 
   const evidenceById = new Map<number, EvidenceEntry>();
   if (evidence) {

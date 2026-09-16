@@ -5,7 +5,8 @@ import {
 import { useData } from "../hooks/useData";
 import { api, EvidenceEntry } from "../api";
 import { useCorpusSpan } from "../councils";
-import { LoadingCard, ErrorCard } from "./InterestsChart";
+import { LoadingCard } from "./InterestsChart";
+import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
@@ -39,7 +40,7 @@ export function EngagementChart({ test }: { test: ResolvedTest }) {
   const span = useCorpusSpan();
 
   if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
+  if (error || !data) return <BatteryTestBody test={test} cllrData={null} />;
 
   const itemsByYear = new Map<number, EvidenceEntry[]>();
   if (evidence) {

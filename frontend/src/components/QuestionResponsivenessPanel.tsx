@@ -6,7 +6,8 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api, QuestionResponsivenessData, PQResponseDetail, PQYearPoint, EvidenceEntry } from "../api";
-import { LoadingCard, ErrorCard } from "./InterestsChart";
+import { LoadingCard } from "./InterestsChart";
+import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
@@ -99,7 +100,7 @@ export function QuestionResponsivenessPanel({ test }: { test: ResolvedTest }) {
   const [selectedEra, setSelectedEra] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
+  if (error || !data) return <BatteryTestBody test={test} cllrData={null} />;
 
   const evidenceById = new Map<number, EvidenceEntry>();
   if (evidence) {

@@ -5,7 +5,8 @@ import {
 } from "recharts";
 import { useData } from "../hooks/useData";
 import { api, MayorContest, MayoralMotion, type EvidenceEntry } from "../api";
-import { LoadingCard, ErrorCard } from "./InterestsChart";
+import { LoadingCard } from "./InterestsChart";
+import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
@@ -53,7 +54,7 @@ export function MayoralAgendaPanel({ test }: { test: ResolvedTest }) {
   const [selected, setSelected] = useState<string | null>(null);
 
   if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
+  if (error || !data) return <BatteryTestBody test={test} cllrData={null} />;
 
   const chartData = data.per_mayor.map((m) => ({ ...m, shortName: m.name }));
   const height = Math.max(220, chartData.length * 42);

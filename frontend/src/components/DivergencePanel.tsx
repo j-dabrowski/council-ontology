@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useData } from "../hooks/useData";
 import { api, type OfficerRatificationPair } from "../api";
-import { LoadingCard, ErrorCard } from "./InterestsChart";
+import { LoadingCard } from "./InterestsChart";
+import { BatteryTestBody } from "./BatteryTestPanel";
 import { SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 
@@ -15,7 +16,7 @@ export function DivergencePanel({ test }: { test: ResolvedTest }) {
   const [expanded, setExpanded] = useState<number | null>(null);
 
   if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
+  if (error || !data) return <BatteryTestBody test={test} cllrData={null} />;
 
   const pct = data.compliance_rate != null
     ? `${(data.compliance_rate * 100).toFixed(0)}%`

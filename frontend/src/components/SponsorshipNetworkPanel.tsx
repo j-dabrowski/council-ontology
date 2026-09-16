@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useData } from "../hooks/useData";
 import { api, SponsorshipData, SponsorEdge, SponsorNode, EvidenceEntry } from "../api";
-import { LoadingCard, ErrorCard } from "./InterestsChart";
+import { LoadingCard } from "./InterestsChart";
+import { BatteryTestBody } from "./BatteryTestPanel";
 import { CouncillorLink, useCouncillor } from "./CouncillorModal";
 import { DrillDown, Reveal, SourceQuote } from "./DrillDown";
 import { surname } from "../surname";
@@ -110,7 +111,7 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
   const [selectedEdge, setSelectedEdge] = useState<SponsorEdge | null>(null);
 
   if (loading) return <LoadingCard />;
-  if (error || !data) return <ErrorCard msg={error} />;
+  if (error || !data) return <BatteryTestBody test={test} cllrData={null} />;
 
   const motionsByEdge = new Map<string, EvidenceEntry[]>();
   if (evidence) {
