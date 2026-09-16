@@ -821,6 +821,22 @@ a:hover { text-decoration: underline; }
   display: inline-block;
 }
 
+/* Sets the wrap's width from real browser text layout, not an estimate —
+   a <select> sizes itself to fit its widest *option* (so opening it never
+   reflows the page), not the currently selected one, which left a gap
+   before the arrow whenever one council's name rendered narrower than
+   another's; a `ch`-based guess at the select's own width was still an
+   approximation (`ch` = the '0' glyph's width, not every letter's) and
+   left the same gap on every option. This invisible span carries the
+   exact same text/font/padding in normal flow, so the wrap hugs it
+   pixel-for-pixel; the select is absolutely positioned to fully overlay
+   it (same content, so its own layout width doesn't matter). */
+.council-select-ghost {
+  visibility: hidden;
+  white-space: pre;
+  padding: 0 18px 0 3px;
+}
+
 .council-select {
   appearance: none;
   -webkit-appearance: none;
@@ -832,6 +848,9 @@ a:hover { text-decoration: underline; }
   cursor: pointer;
   padding: 0 18px 0 3px;
   outline: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
 }
 
 .council-select:hover,
