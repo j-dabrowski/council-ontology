@@ -118,6 +118,33 @@ elsewhere says to.
   is the Phase 1.1 worklist, not a permanent exemption. Also checks the
   registry/battery join has no orphan, and that every `data_ok=False`
   result carries the real `_nodata()` shape.
+- **`test_rating.py`** — the overall governance rating
+  (`frontend/MAP_PAGE_PLAN.md` Phase 1): `compute_rating()`'s eight B.2
+  scenarios (the base share, the integrity-flag floor firing vs. being a
+  no-op once the base share already reached the floor's target band, the
+  coverage gate, and the two drift cases — new neutral tests don't move
+  the band, new supportive ones can), plus three invariants (a floor
+  never improves a band, over 200 random batteries; zero computable tests
+  returns `insufficient`, not a crash; every real battery test's
+  valence/grade pair agrees, checked against Testville's baseline profile
+  rather than `data/council.db`). Fixtures throughout, not Cambridge's
+  live numbers, since Refiner and `SECOND_COUNCIL_PLAN` keep changing
+  those for reasons unrelated to whether `rating.py` itself is correct.
+- **`test_build_boundaries.py`** — `scripts/build_boundaries.py`'s pure
+  logic (Phase 3): matching an LGA feature by name (case-insensitively,
+  ambiguity, null-geometry rows skipped), the point-in-polygon share
+  (`None` — not `0.0`/`1.0` — with no sites), provenance carried in a
+  built feature's own `properties`, and that the backdrop drops the two
+  null-geometry pseudo-LGAs and keeps its own properties name-only.
+  Synthetic square polygons — no ABS fetch, no DB.
+- **`test_geocode_sites.py`** — `scripts/geocode_sites.py`'s address
+  cleaning (Phase 4.1): one test per B.4-measured shape (ranged/compound/
+  reversed street numbers, trailing plan notation, each with the real
+  corpus example), the unaddressable classifier (precinct name/
+  intersection/road reserve), the multi-site splitter (on `;`/`&`, never
+  inside a `(...)` compound-number parenthetical), and suburb derivation.
+  No network, no DB — `_geocode_address()` itself (the one function that
+  calls Nominatim) isn't covered here.
 
 All of these test **pure functions or hermetic DB/source-parsing logic** —
 same inputs
@@ -508,6 +535,20 @@ copying, it also re-hashes every draft file and compares against the hashes
 recorded at draft time (`verify_draft_integrity`); any drift — even an
 innocent edit — aborts the publish rather than silently shipping something
 nobody actually reviewed.
+
+**Two published files this hash check doesn't cover.**
+`frontend/public/data/councils.geojson` and `wa_lga_backdrop.geojson`
+(`frontend/MAP_PAGE_PLAN.md` Phase 3.3) are written by `cmd_publish` on
+every publish call, of any council, straight from `config/
+council_boundaries/*.geojson` and `config/wa_lga_backdrop.geojson` — never
+from the draft directory. They're cross-council indexes (a council's own
+boundary, not its analysis output), config-sourced rather than
+draft-sourced, so `verify_draft_integrity` has nothing to say about them:
+the guarantee it gives is "what was reviewed is what ships" for *this
+council's snapshots*, not for these two. Provenance for a boundary file
+instead comes from `council boundary <key>`'s own point-in-polygon
+validation at build time (Phase 3.2) and the fields it writes into the
+feature's own `properties` — not from the publish gate.
 
 **`--gate-profile`** (`interactive` default, or `auto`) picks how the rest of
 the gate is satisfied — see `src/publish_gate.py`'s `check_clearance()` and
