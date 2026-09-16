@@ -2052,6 +2052,15 @@ SNAPSHOT_TIER: dict[str, str] = {
     # tenure_top_name, the same class of deliberate councillor-name field
     # as sponsorship/mayoral/power above -- no redaction needed.
     "overview": "public",
+    # `councillors` (CouncillorModal's click-through profile card) --
+    # requested explicitly, the richest per-person view on the site:
+    # win_rate/dissent_rate/recusal_rate/declarations/dissent_votes/
+    # top_partners per councillor. Its declarations[]/dissent_votes[] are
+    # DeclarationDetail/ContestedVoteDetail, the exact same shapes
+    # declared/power already carry -- redacted the same way (title/what/
+    # quote), including the `title` field the first redaction pass on
+    # declared/recusal missed (see that _dc_redacted call's own comment).
+    "councillors": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
@@ -2359,10 +2368,15 @@ def _generate_snapshots(
                 "must_leave_declared": p.must_leave_declared,
                 "must_leave_recused": p.must_leave_recused,
                 "must_leave_recusal_rate": p.must_leave_recusal_rate,
-                # inline drill-down detail — each declared-interest vote expanded.
-                # `what`/`quote` are free text (interest description, verbatim
-                # minute text) — redacted for the public-tier promotion above.
-                "declarations": [_dc_redacted(d, ("what", "quote")) for d in p.declarations],
+                # inline drill-down detail — each declared-interest vote
+                # expanded. `title`/`what`/`quote` are free text (motion
+                # title, interest description, verbatim minute text) —
+                # redacted for the public-tier promotion above. `title` was
+                # missed on the first pass (found reviewing councillors.json
+                # before promoting it too) — a motion title can name a
+                # private individual, same "Legal Proceedings - Mr M
+                # Congerton" risk `quote` already covers.
+                "declarations": [_dc_redacted(d, ("title", "what", "quote")) for d in p.declarations],
             }
             for p in recusal.profiles
         ],
@@ -3612,8 +3626,14 @@ def _generate_snapshots(
             _cp.declarations if _cp else [],
             key=lambda d: d.date or "", reverse=True,
         )[:15]
-        # dissent examples: AGAINST votes from the power drill-down list, capped at 8
-        _diss = [_dc(v) for v in (_pp.votes if _pp else []) if getattr(v, "choice", "") == "Against"][:8]
+        # dissent examples: AGAINST votes from the power drill-down list,
+        # capped at 8. `title`/`quote` are free text — redacted for the
+        # public-tier promotion below, same ContestedVoteDetail shape
+        # `power`'s own votes[] already carries.
+        _diss = [
+            _dc_redacted(v, ("title", "quote"))
+            for v in (_pp.votes if _pp else []) if getattr(v, "choice", "") == "Against"
+        ][:8]
         # top co-sponsors by total count, capped at 3
         _top_p = sorted(
             [{"name": _pn, "count": _c} for _pn, _c in _partner_sums.get(_name, {}).items()],
@@ -3639,7 +3659,10 @@ def _generate_snapshots(
             "n_declarations": _cp.declared_votes if _cp else 0,
             "n_recused": _cp.recused if _cp else 0,
             "recusal_rate": round(_cp.recusal_rate, 3) if _cp else None,
-            "declarations": [_dc(d) for d in _decls],
+            # `title`/`what`/`quote` are free text — redacted for the
+            # public-tier promotion below, same DeclarationDetail shape
+            # `declared`'s own declarations[] already carries.
+            "declarations": [_dc_redacted(d, ("title", "what", "quote")) for d in _decls],
             "dissent_votes": _diss,
             "moved": _moved_x.get(_name, 0),
             "seconded": _seconded_x.get(_name, 0),
