@@ -1,10 +1,10 @@
 {
-  "published_at": "2026-09-16T13:19:20.981312+00:00",
+  "published_at": "2026-09-16T13:54:41.831509+00:00",
   "council": "cambridge",
-  "draft_run_id": "draft_20260916_130532",
+  "draft_run_id": "draft_20260916_133711",
   "authorization": {
     "gate_profile": "interactive",
-    "confirm_note": "Promotes 9 bespoke-panel snapshots to public tier after redaction review (declared/recusal/tenders/power/mayoral/divergence/sponsorship/engagement/question-responsiveness) -- verified 0 remaining private-name pattern hits post-redaction, questioner blanked. Run at Josef's explicit direction.",
+    "confirm_note": "Fixes overview.json's hardcoded span/counts (now computed live) and promotes overview + councillors to public tier alongside the earlier nine, after fixing a missed title-field redaction gap on declared/recusal's declarations. Verified 0 remaining private-name pattern hits across all promoted snapshots. Run at Josef's explicit direction.",
     "clearance_source": null,
     "reason": "human-confirmed (interactive gate profile)"
   },
@@ -27,9 +27,11 @@
     "recusal",
     "question-responsiveness",
     "sponsorship",
+    "overview",
     "rating",
     "scorecard",
     "evidence/governance.incumbency",
+    "councillors",
     "record_councillors",
     "method",
     "watch"

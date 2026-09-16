@@ -1,8 +1,8 @@
 {
-  "published_at": "2026-09-16T13:05:32.574687+00:00",
+  "published_at": "2026-09-16T13:37:11.263131+00:00",
   "data": {
     "council": "Cambridge",
-    "generated_at": "2026-09-16T13:05:32.574687+00:00",
+    "generated_at": "2026-09-16T13:37:11.263131+00:00",
     "coverage": {
       "census_total": {
         "value": 537,
@@ -370,7 +370,7 @@
     "entity_resolution": {
       "supplier_normalisation": {
         "source": "data/council.db",
-        "generated_at": "2026-09-16T13:05:32.574687+00:00",
+        "generated_at": "2026-09-16T13:37:11.263131+00:00",
         "named_award_rows": 436,
         "distinct_firms": 314,
         "multi_variant_firms": 15,
@@ -617,7 +617,7 @@
       },
       "surname_collision": {
         "source": "data/council.db",
-        "generated_at": "2026-09-16T13:05:32.574687+00:00",
+        "generated_at": "2026-09-16T13:37:11.263131+00:00",
         "named_awards": 412,
         "surnames_tested": 198,
         "naive_matches": 2,
