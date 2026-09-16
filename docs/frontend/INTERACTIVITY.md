@@ -75,6 +75,14 @@ identity/era/span half of this rule — it can't see a councillor name (no
 fixed registry to check literals against), so that half still relies on
 review; run it before any deploy either way.
 
+Two components registered under this rule outside the panel-per-test
+pattern above: `RatingBand.tsx` (the Overview page's governance-rating
+band — MAP_PAGE_PLAN.md Phase 2) and `MapPage.tsx`'s hover/tap card
+(Phase 5.3). Neither renders a test result, so neither is in the
+`PANEL_COMPONENTS` registry below, but both render a council's own
+band/label/counts straight from its snapshot the same way any panel
+would — the rule applies regardless of registry membership.
+
 ### A panel is body-only — the analysis page owns the shell
 
 `AnalysisPage.tsx` composes one shell per registry row: `<Card>` (heading
