@@ -2044,6 +2044,14 @@ SNAPSHOT_TIER: dict[str, str] = {
     "power": "public",
     "mayoral": "public",
     "question-responsiveness": "public",
+    # `overview` (OverviewPanel, the Overview page's "Governance at a
+    # Glance") is a tenth full-tier snapshot found the same way (404 on the
+    # live site) but not one of the nine bespoke registry panels above --
+    # it's a standalone component, not registered per-test. No free text
+    # anywhere in it (every field is an aggregate figure) except
+    # tenure_top_name, the same class of deliberate councillor-name field
+    # as sponsorship/mayoral/power above -- no redaction needed.
+    "overview": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
@@ -2984,10 +2992,38 @@ def _generate_snapshots(
     tenure_15plus = sum(1 for p in tenure.profiles if p.years >= 15)
     top_servant = max(tenure.profiles, key=lambda p: p.years) if tenure.profiles else None
     dose_by = {b.label: b.refusal_pct for b in dose.buckets}
+    # span/n_minutes/n_documents were hardcoded to Cambridge's own 2026-06-24
+    # snapshot numbers ("1995–2026" / 506 / 580) -- src/cli.py was never in
+    # scripts/check_no_hardcoded_content.py's scan scope (frontend/src/** and
+    # src/analysis/tests.py only), so this slipped through every Phase 3
+    # sweep. Computed here instead, the same way profile.span does.
+    from sqlalchemy import func as _ov_func
+    from src.models import Meeting as _OverviewMeeting
+    _ov_span_row = (
+        session.query(
+            _ov_func.min(_OverviewMeeting.meeting_date), _ov_func.max(_OverviewMeeting.meeting_date),
+        )
+        .filter(_OverviewMeeting.council_id == council_id)
+        .one()
+    )
+    _ov_span = (
+        f"{_ov_span_row[0].year}–{_ov_span_row[1].year}"
+        if _ov_span_row[0] and _ov_span_row[1] else None
+    )
+    _ov_n_minutes = (
+        session.query(_ov_func.count(_OverviewMeeting.id))
+        .filter(_OverviewMeeting.council_id == council_id, _OverviewMeeting.document_type == "minutes")
+        .scalar()
+    ) or 0
+    _ov_n_documents = (
+        session.query(_ov_func.count(_OverviewMeeting.id))
+        .filter(_OverviewMeeting.council_id == council_id)
+        .scalar()
+    ) or 0
     _write("overview", {
-        "span": "1995–2026",
-        "n_minutes": 506,
-        "n_documents": 580,
+        "span": _ov_span,
+        "n_minutes": _ov_n_minutes,
+        "n_documents": _ov_n_documents,
         # 1 — the Inquiry hinge
         "confidential_pre_pct": trans.pre_era_pct,
         "confidential_peak_pct": trans.peak_pct,
