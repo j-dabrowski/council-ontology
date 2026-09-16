@@ -97,11 +97,55 @@ function listDraftCouncils(): DraftCouncilEntry[] {
     })
 }
 
+// The two cross-council boundary layers council publish writes at the top
+// of frontend/public/data/ (MAP_PAGE_PLAN.md Phase 3.3) — config-sourced,
+// not draft output, so they carry no review risk and don't belong behind
+// the Draft/Publish toggle the way a council's own snapshots do. Without
+// this, MapPage's fixed /data/wa_lga_backdrop.geojson and
+// /data/councils.geojson fetches would 404 in local dev until someone ran
+// a real `council publish` — which shouldn't be a prerequisite for
+// reviewing the map locally, any more than reviewing any other snapshot
+// is. Served straight from config/ whenever the real published copy isn't
+// there yet; once a real publish exists, that committed file wins (this
+// only ever fills the gap before the first one, never shadows it).
+const CONFIG_ROOT = resolve(__dirname, '../config')
+const PUBLIC_DATA_ROOT = resolve(__dirname, 'public/data')
+
+function serveBackdropFromConfig(res: import('node:http').ServerResponse): boolean {
+  const configPath = resolve(CONFIG_ROOT, 'wa_lga_backdrop.geojson')
+  if (!existsSync(configPath)) return false
+  res.setHeader('Content-Type', 'application/json')
+  res.setHeader('Cache-Control', 'no-store')
+  res.end(readFileSync(configPath))
+  return true
+}
+
+function serveCouncilsGeojsonFromConfig(res: import('node:http').ServerResponse): boolean {
+  const boundaryDir = resolve(CONFIG_ROOT, 'council_boundaries')
+  if (!existsSync(boundaryDir)) return false
+  const features = readdirSync(boundaryDir)
+    .filter(f => f.endsWith('.geojson'))
+    .map(f => JSON.parse(readFileSync(resolve(boundaryDir, f), 'utf-8')))
+  res.setHeader('Content-Type', 'application/json')
+  res.setHeader('Cache-Control', 'no-store')
+  res.end(JSON.stringify({ type: 'FeatureCollection', features }))
+  return true
+}
+
 function draftOverlay(): Plugin {
   return {
     name: 'draft-overlay',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
+        if (req.url === '/data/wa_lga_backdrop.geojson'
+          && !existsSync(resolve(PUBLIC_DATA_ROOT, 'wa_lga_backdrop.geojson'))) {
+          if (serveBackdropFromConfig(res)) return
+        }
+        if (req.url === '/data/councils.geojson'
+          && !existsSync(resolve(PUBLIC_DATA_ROOT, 'councils.geojson'))) {
+          if (serveCouncilsGeojsonFromConfig(res)) return
+        }
+
         if (req.url === '/data/draft/councils.json') {
           res.setHeader('Content-Type', 'application/json')
           res.setHeader('Cache-Control', 'no-store')
