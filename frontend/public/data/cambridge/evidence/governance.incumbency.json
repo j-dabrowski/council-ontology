@@ -1,0 +1,1722 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "entries": [
+      {
+        "entity_table": "motions",
+        "entity_id": 137,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 17,
+        "meeting_date": "2007-11-20",
+        "document": {
+          "filename": "074e73ce.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2007/2007_11_20.pdf",
+          "page": null
+        },
+        "quotes": [],
+        "tier": "no_evidence"
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 169,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 23,
+        "meeting_date": "2012-02-28",
+        "document": {
+          "filename": "09a1c8f6.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_02_28.pdf",
+          "page": null
+        },
+        "quotes": [],
+        "tier": "no_evidence"
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 310,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 55,
+        "meeting_date": "2006-08-22",
+        "document": {
+          "filename": "1d8a81c1.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2006/2006_08_22.pdf",
+          "page": null
+        },
+        "quotes": [],
+        "tier": "no_evidence"
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 439,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 95,
+        "meeting_date": "2020-11-24",
+        "document": {
+          "filename": "0e220000.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_11_24m.pdf",
+          "page": null
+        },
+        "quotes": [],
+        "tier": "no_evidence"
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 589,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 132,
+        "meeting_date": "2015-10-13",
+        "document": {
+          "filename": "3f2b55ce.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2015/minutes/2015_10_13.pdf",
+          "page": null
+        },
+        "quotes": [],
+        "tier": "no_evidence"
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 2802,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 2,
+        "meeting_date": "2012-04-24",
+        "document": {
+          "filename": "0064743e.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Bradley, seconded by Cr Walker \n\nThat clause 8.9 of the Standing Orders requiring Members to rise when addressing the Council during debate be deleted. \n\nCarried 4/3 \n\nFor: Mayor Withers (Casting Vote), Crs Bradley and Walker \nAgainst: Crs Carr, King and Langer",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 320182,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Submission by Cr Bradley \n\nThat clause 8.9 of the Standing Orders requiring Members to rise when addressing the Council during debate be deleted.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 318080,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 2821,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 9,
+        "meeting_date": "2009-07-28",
+        "document": {
+          "filename": "03e85360.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Berry, seconded by Cr Pelczar\n\nThat in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1 Council APPROVES the application for a three storey dwelling with basement submitted by Seacrest Homes at Lot 487 (No. 5) Orana Crescent, City Beach as shown on the amended plans dated 9 July 2009 subject to the following conditions:- (i) a privacy screen being provided to the eastern side of the terrace to restrict views into the adjoining property to the east in accordance with the acceptable development provisions of part 6.8.1 'Visual Privacy' of the Residential Design Codes of Western Australia; (ii) the infill panels of the fencing and gates in the front setback area to have a surface with an open to solid ratio of no less than 1:1; (iii) the roof material not to be zincalume or off-white ('Surfmist') Colorbond.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 24208,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: Mayor Withers, Crs Berry, Grinceri, Langer and MacRae\nAgainst: Crs Bradley, Pelczar and Pinerua\n\nCarried 5/3",
+            "tier": "paraphrase",
+            "char_offset": null,
+            "resolved_offset": null,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 2859,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 9,
+        "meeting_date": "2009-07-28",
+        "document": {
+          "filename": "03e85360.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Berry, seconded by Cr Langer",
+            "tier": "exact",
+            "char_offset": 364059,
+            "resolved_offset": 354087,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That:- (i) the attached Strategic Plan be adopted as the Town's Plan for the Future by an ABSOLUTE MAJORITY under Section 5.56 of the Local Government Act, incorporating the following changes:",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 275757,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried by an ABSOLUTE MAJORITY 7/1",
+            "tier": "exact",
+            "char_offset": 365964,
+            "resolved_offset": 355992,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: Mayor Withers, Crs Berry, Grinceri, Langer, MacRae, Pelczar and Pinerua",
+            "tier": "exact",
+            "char_offset": 122448,
+            "resolved_offset": 119345,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Against: Cr Bradley",
+            "tier": "exact",
+            "char_offset": 122526,
+            "resolved_offset": 119423,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 2904,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 18,
+        "meeting_date": "1995-07-25",
+        "document": {
+          "filename": "060c4c87.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "That:- (i) the redevelopment of the 'new' course at the Wembley Golf Complex, based on the execution of limited improvements, specifically increased course length with minimal upgrades of tees, greens and reticulation, as detailed at Option Two in the report relating to the redevelopment proposals be approved at a total cost not exceeding $911,000; (ii) the appointment of Gutteridge Haskins Davey (GHD) as project manager be approved at a cost of $32,270; (iii) the completion of additional improvements on an annual programmed basis be approved in principle; (iv) the expenditure in (i) and (ii) above be charged to Budget Item \"Wembley Golf Complex - New Course Redevelopment\".",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 49707,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 4510,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 200,
+        "meeting_date": "2025-11-18",
+        "document": {
+          "filename": "00f63e72.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2025/11.-november/audit-risk-and-improvement-committee-meeting-minutes-public.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Le Page, seconded by Cr Randklev. The Committee appoints Jane Cutler as Interim Presiding Member for the duration of today's meeting.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 2126,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED    (7/0)",
+            "tier": "exact",
+            "char_offset": 4670,
+            "resolved_offset": 4670,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 4660,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 245,
+        "meeting_date": "2026-04-28",
+        "document": {
+          "filename": "09dd1bd4.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/4.-april/public-minutes-28-april-2026-ordinary-council-meeting-v2-1.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "That Council: 1. NOTES the decision provided by the Department of Planning, Lands and Heritage to the Town in its correspondence dated 24 April 2026, as contained in Attachment 1; 2. REQUESTS the CEO to lodge an application for internal review within the prescribed timeframe, and to provide a report to the next available Ordinary Council Meeting once the internal review is complete; and 3. REQUESTS the CEO to provide a copy of this motion and attachment to the Select Committee into Land Development and Planning in Western Australia for its consideration.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 627451,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Moved by Cr Mayes, seconded by Cr Heil",
+            "tier": "exact",
+            "char_offset": 61816,
+            "resolved_offset": 61816,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED    (9/0)",
+            "tier": "exact",
+            "char_offset": 60286,
+            "resolved_offset": 60286,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 4795,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 216,
+        "meeting_date": "2026-05-05",
+        "document": {
+          "filename": "270c930d.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/4.-april/public-art-committee-5-may-2026-minutes.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Randklev, seconded by Cr Kennerly",
+            "tier": "exact",
+            "char_offset": 6789,
+            "resolved_offset": 6789,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That the Committee RECOMMENDS that Council ADOPTS the amended Percent for Public Art - Cash-in-Lieu Expenditure Plan, as contained in Attachment 2.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 6441,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 4983,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 259,
+        "meeting_date": "2025-09-30",
+        "document": {
+          "filename": "859eb9d2.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2025/9.-september/ordinary-council-meeting-30-september-2025-public-minutes-v2.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Mayes, seconded by Cr Barlow",
+            "tier": "exact",
+            "char_offset": 483622,
+            "resolved_offset": 483622,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That Council RECEIVES the Risk Management Update for the period 21 June 2025 to 31 August 2025 as detailed in this report.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 455695,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED    (8/0)",
+            "tier": "exact",
+            "char_offset": 41757,
+            "resolved_offset": 41757,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 5228,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 271,
+        "meeting_date": "2026-03-24",
+        "document": {
+          "filename": "e9c9efc2.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/3.-march/public-minutes-24-march-2026-ordinary-council-meeting-v2.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Mayor Mack, seconded by David Price\n\nThat the Committee recommends that Council NOTES the improvements, progress and actions taken to address workplace safety and health compliance as detailed in this report.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 339462,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED    (6/0)\n\nFor:\nCr Randklev, Mayor Mack, Cr Mayes, Cr Le Page, David Price and Mainuddin Bhuiyan",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 338139,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 5229,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 271,
+        "meeting_date": "2026-03-24",
+        "document": {
+          "filename": "e9c9efc2.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/3.-march/public-minutes-24-march-2026-ordinary-council-meeting-v2.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Mayor Mack, seconded by Cr Le Page\n\nThat the meeting be reopened to the public.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 340083,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED    (6/0)\n\nFor:\nCr Randklev, Mayor Mack, Cr Mayes, Cr Le Page, David Price and Mainuddin Bhuiyan",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 338139,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 5590,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 228,
+        "meeting_date": "2024-09-17",
+        "document": {
+          "filename": "5afc9908.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2024/9.september/updated-public-agenda-17-september-2024.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "APPROVES BY ABSOLUTE MAJORITY the subdivision and sale of the Town owned Ocean Village land known as Ocean Village Local Centre (proposed Lot 701 and 702) on Plan 11424 to 3 Kilpa Crt City Beach Pty Ltd ACN 660 984 289 (previously BBD Holdings Co Pty Ltd) for the total sum of $8,900,000",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 1002216,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED BY AN ABSOLUTE MAJORITY (8/1)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 1003055,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: Mayor Shannon, Crs Anklesaria, Barlow, Cutler, Haddon-Casey, Mack, Mayes and Randklev Against: Cr Carr",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 1003108,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 5611,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 276,
+        "meeting_date": "2026-05-26",
+        "document": {
+          "filename": "67b12d29.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/5.-may/public-agenda-26-may-2026-ordinary-council-meeting-as-at-22.05.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "That the Committee recommends that Council: 1. ADOPT the amended Use of Local Government Property and Public Places Policy at Attachment 2. 2. NOTE that supporting information will be published on the Town's website with respect to Parklet and Alfresclets.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 559590,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "The proposed amendments clarify Council's position on parklets and alfresclets in response to increased interest from the local business community and recent activation projects within the Town.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 558818,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "The amendments explicitly recognise parklets and alfresclets as permissible where impacts on parking, amenity and revenue are acceptable, and provide additional flexibility for outdoor dining and the installation of fixed furniture in the public realm where safety and accessibility are maintained.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 703313,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 18544,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 302,
+        "meeting_date": "1996-10-15",
+        "document": {
+          "filename": "587b78c0.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1996/1996_10_15.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr MacRae, seconded by Cr Anderton",
+            "tier": "exact",
+            "char_offset": 221009,
+            "resolved_offset": 221009,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme and having regard to the matters it is required to consider by the Schemes generally and in partic ular as the proposal would be contrary to the orderly and proper planning of the locality by virtue of:- (i) the use of the property as Da y Centre for the Aged would representing an 'ad hoc' incursion of non residential activity into a residential area and establishing an undesirable precedent for further non residential uses along Salvado Road to the detriment of the established residential locality; the Council refuses the application submitted by Parry & Rosenthal Architects on behalf of the Sisters of Mercy for the construction of a Day Centre fo r the Aged on Lot 823 (No.124) Salvado Road, Wembley, as shown on plans submitted and dated 30 August 1996.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 194008,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "His Worship, The Mayor, Ross Willcock and Cr Anderton requested that they be recorded as voting against the motion for refusal.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 242484,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 18637,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 305,
+        "meeting_date": "2007-02-27",
+        "document": {
+          "filename": "59d8906b.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2007/2007_02_27.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr MacRae, seconded by Cr O'Connor: That discussion of the following matter be regarded as confidential in accordance with Section 5.23 of the Local Government Act 1995.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 513678,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 7/1",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 306015,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: Mayor Anderton, Crs Barlow, Bradley, Gow, Huxtable, MacRae and O'Connor / Against: Cr Berry",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 247115,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 18748,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 309,
+        "meeting_date": "2019-06-25",
+        "document": {
+          "filename": "5cc4217c.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/4/documents-and-files/aaa-agenda-and-minutes/2019/council-minutes/2019_06_25m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Nelson, seconded by Cr Powell\n\nThat Council APPROVES the confidential recommendation, as outlined in the confidential report.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 633289,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED (6/0)\n(Crs Carr, McAllister and McKerracher was not present at the meeting as they had declared a financial interest in the matter)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 633426,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 18842,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 312,
+        "meeting_date": "2021-08-24",
+        "document": {
+          "filename": "5d9cad46.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/2/documents-and-files/aaa-agenda-and-minutes/2021/council-minutes/2021_08_24m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Mayor Shannon, seconded by Meg Anklesaria",
+            "tier": "exact",
+            "char_offset": 345257,
+            "resolved_offset": 335690,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That confirmation of the Minutes of the meeting of the Audit Committee held on 5 July 2021 be deferred to enable amendments to be made.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 323679,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED (4/2)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 323815,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 18852,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 312,
+        "meeting_date": "2021-08-24",
+        "document": {
+          "filename": "5d9cad46.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/2/documents-and-files/aaa-agenda-and-minutes/2021/council-minutes/2021_08_24m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Mack, Seconded by Cr Barlow",
+            "tier": "exact",
+            "char_offset": 499331,
+            "resolved_offset": 485410,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That the matter be regarded as confidential in accordance with Section 5.23(2)(b) of the Local Government Act 1995 and the Council Proceeds Behind Closed Doors to consider Confidential Item 14.2.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 468611,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Procedural Motion put and CARRIED (5/2)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 468807,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 18990,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 315,
+        "meeting_date": "2003-04-22",
+        "document": {
+          "filename": "5f994892.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2003/2003_04_22.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Smith, seconded by Cr MacRae\n\nThat:- \n\n(i) the Hon Minister for Planning and Infrastructure be requested, in response to her letter dated 4 December 2002, that in view of the Council's legal advice dated 25 March 2003 and 8 April 2003 and the Council's clear understanding that the net proceeds from the sale of Areas \"F\" and \"G\" would be utilised in determining the value of the agreement towards achieving $11.5 million and resulting in a shared return to the Town and the Botanic Gardens and Parks Authority for any proceeds exceeding $11.5 million, to change her position to that detailed in the Council's decision dated 16 December 1996;",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 124031,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Members requested that the vote of all those present be recorded:-\n\nFor: Mayor Willcock, Crs Anderton, Burkett, Langer, MacRae, McAullay, O'Connor, Pinerua and Smith\nAgainst: Nil",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 126212,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 19179,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 320,
+        "meeting_date": "2007-07-24",
+        "document": {
+          "filename": "6311ecb9.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2007/2007_07_24.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Bradley, seconded by Cr Barlow",
+            "tier": "exact",
+            "char_offset": 205915,
+            "resolved_offset": 200117,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That by an ABSOLUTE MAJORITY:- General Rates and Charges (i) the budget for the year ending 30 June 2008 including notes and supporting schedules as laid on the table and included in the minutes be adopted",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 451291,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried by an ABSOLUTE MAJORITY 5/2 For: Crs Barlow, Berry, Langer, MacRae and O'Connor Against: Cr Bradley and Gow",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 463312,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 19566,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 328,
+        "meeting_date": "1995-06-27",
+        "document": {
+          "filename": "669abff7.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_06_27.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Moore, seconded by Cr Johnston",
+            "tier": "exact",
+            "char_offset": 127655,
+            "resolved_offset": 125807,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That the Council requests the Perth Netball Association to meet with the Council's officers to further discuss the proposal for the redevelopment and funding arrangements related to the replacement of 54 grass courts with hard surface courts at the Matthews Netball Centre.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 107199,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "(Cr Berry dissenting.)",
+            "tier": "exact",
+            "char_offset": 146409,
+            "resolved_offset": 144297,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried",
+            "tier": "exact",
+            "char_offset": 5434,
+            "resolved_offset": 5410,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 19891,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 337,
+        "meeting_date": "2015-11-24",
+        "document": {
+          "filename": "6d8d43db.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2015/minutes/2015_11_24-1.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr King, seconded by Cr MacRae That: (i) in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application for amendments to planning approval conditions for a health studio (Xtend Barre) submitted by K Houlahan and K Maltese at Lot 5 on Strata Plan 23107 (No. 5/131) Herdsman Parade, corner Reserve Street, Wembley, as shown on the plans dated 23 October 2015 subject to the following conditions",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 59075,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "hours of operation to be: \u2022 6:00 am to 9.00 am; one class at 9.30 am and 5:00 pm to 8:30 pm Monday to Friday; and \u2022 8:00 am to 12 noon Saturdays and Sundays",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 62340,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 19906,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 337,
+        "meeting_date": "2015-11-24",
+        "document": {
+          "filename": "6d8d43db.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2015/minutes/2015_11_24-1.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Amendment Moved by Cr King, seconded by Cr MacRae That clause (i)(b) of the motion be amended to read as follows:- (i) (b) pay $84,303 to the Town for the temporary use of the park for a period of up to nine months, paid in advance. Any extension beyond nine months to be subject of the Town's agreement and at the rate of $9,367 per month or part thereof paid in advance. Amendment carried 8/1 For: Mayor Shannon, Crs Carr, Grinceri, King, Langer, MacRae, O'Connor and Timmermanis Against: Cr Bradley",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 264346,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 20077,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 340,
+        "meeting_date": "2019-09-24",
+        "document": {
+          "filename": "6fcbdccb.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2019/council-minutes/2019_09_24m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Everett, seconded by Cr Powell That the meeting be reopened to the public.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 232794,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED (8/0)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 19520,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 20121,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 341,
+        "meeting_date": "2001-04-24",
+        "document": {
+          "filename": "706c482b.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2001/2001_04_24.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "The amended motion was then put and carried.",
+            "tier": "exact",
+            "char_offset": 48799,
+            "resolved_offset": 47282,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: Mayor, Crs Anderton,Berry, MacRae, Smith and Steele\nAgainst: Burkett, Langer and O'Connor",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 242341,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 20139,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 342,
+        "meeting_date": "2022-07-21",
+        "document": {
+          "filename": "706df242.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/council-minutes/minutes-special-council-21-july-2022.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Haddon-Casey, seconded by Cr Cutler. That Council APPOINTS Kelton Hincks as Acting Chief Executive Officer from 22 July 2022 until 24 August 2022.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 5556,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That Council: 1. ACCEPTS the resignation of CEO, [private individual \u2014 name withheld] on 21 July 2022; and 2. APPOINTS Kelton Hincks as Acting Chief Executive Officer from 22 July 2022 until 30 September 2022.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 7404,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED (6/2)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 8301,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 20345,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 348,
+        "meeting_date": "2021-11-23",
+        "document": {
+          "filename": "72addd63.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/7/documents-and-files/aaa-agenda-and-minutes/2021/council-minutes/2021_11_23m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Barlow, seconded by Cr Cutler That Council APPROVES the Confidential Recommendation as contained in the Confidential Report.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 543377,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion, as AMENDED, put and CARRIED (8/0) (Unanimous)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 203197,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 21343,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 373,
+        "meeting_date": "2013-10-01",
+        "document": {
+          "filename": "7d4fb3d4.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2013/minutes/2013_10_01_sc.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Bradley, seconded by Cr Grinceri That clause (iii) of the motion be deleted.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 31415,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Amendment lost 1/6 For: Cr Bradley Against: Mayor Withers, Crs Grinceri, King, Langer, MacRae and Pelczar",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 31504,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 22688,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 611,
+        "meeting_date": "2005-02-22",
+        "document": {
+          "filename": "90a709a9.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_02_22.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr McAullay, seconded by Cr Burkett",
+            "tier": "exact",
+            "char_offset": 421426,
+            "resolved_offset": 410971,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Amendment Moved by Cr MacRae, seconded by Cr Pinerua That clause (i) be added to the motion as follows:- (i) the balustrading on the rear upper storey balcony being visually impermeable (opaque) to a height of 1.0 metre.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 570563,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application submitted by Oswald Homes for a two storey dwelling, swimming pool and front fence noting variations to:- \u2022 Wall height; and \u2022 Retaining walls; and \u2022 Walls and fences; and \u2022 Visual privacy. at Lot 38 (No.12) Branksome Gardens, City Beach as shown on the amended plans dated 28 January 2005 subject to:- (i) the balustrading on the rear upper storey balcony being visually impermeable (opaque) to a height of 1.0 metre.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 570824,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 8/1",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 280139,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 23208,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 420,
+        "meeting_date": "2017-10-24",
+        "document": {
+          "filename": "98f42da8.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2017/council-minutes/2017_10_24scm.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr McKerracher, seconded by Cr Bradley\n\nThat Cr Timmermanis be appointed as Council delegate to the Tamala Park Regional Council.\n\nCarried 5/4\n\nFor: Mayor Shannon (Casting Vote), Crs Bradley, McKerracher and Timmermanis\nAgainst: Crs Carr, McAllister, Nelson and Powell",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 6781,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 23289,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 421,
+        "meeting_date": "2003-05-27",
+        "document": {
+          "filename": "99335b49.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2003/2003_05_27.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Bradley, seconded by Cr O'Connor That:- (i) clause (iii) of the Council decision dated 25 February 2003 (Item TS03.14) as follows:- \"(iii) Council proceeds with the installation of entry statements at Perry Lakes Reserve as outlined in (ii) above at a cost of up to $55,000 to be funded from existing Budget Item C143-002 Perry Lakes Drive (Oceanic and Underwood) \u2013 Entry Statement.\" be revoked by an ABSOLUTE MAJORITY; (ii) Council not proceed with the installation of entry statements at Perry Lakes Reserve.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 521780,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: Mayor, Crs Barlow, Bradley and O'Connor Against: Crs Burkett, Langer, MacRae, McAullay and Pinerua",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 522245,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 23846,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 437,
+        "meeting_date": "2005-05-10",
+        "document": {
+          "filename": "a4329e51.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_05_10_sc.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Bradley, seconded by Cr Barlow\n\nThat the following nominations be submitted for consideration by the Hon Minister for the Environment:- Mayor Anderton and Deputy Mayor Cr O'Connor",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 5001,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 7/1 For: Mayor Anderton, Crs Barlow, Berry, Bradley, Gow, Huxtable, O'Connor Against: Cr MacRae",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 5158,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 23944,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 439,
+        "meeting_date": "1999-05-25",
+        "document": {
+          "filename": "a4ec0005.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1999/1999_05_25.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr MacRae, seconded by Cr Smith",
+            "tier": "exact",
+            "char_offset": 171923,
+            "resolved_offset": 171923,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That the application submitted by [private individual \u2014 name withheld] to conduct a private function in the Garden Week area of Perry Lakes Reserve on Friday, 31 December 1999, be approved subject to :- (i) the charges for the conduct of the event to be as follows: (a) $600 hire fee, (b) $1000 reserve bond, (c) $50 outgoings (electricity, water); (ii) the sound levels associated with amplified music from the event, when measured at the boundary of the closest residence, not to exceed:- (a) before midnight - 65 dB(A) when measured as L Aeq, 1 min values; (b) after midnight - 55 dB(A) L Aeq, 1 min values; the organisers or their agent to establish compliance with the maximum permitted sound levels by regular measurement at the boundary of the closest residence; (iii) a liquor licence is to be obtained from the Liquor Licensing Court and a copy forwarded to Council prior to the event; (iv) the organisers or their agent to ensure that: (a) the supply and handling of food, (b) the provision of sanitary facilities, (c) all public and electrical safety issues, (d) all emergency management and fire safety issues, and (e) the responsible service of alcohol (in accordance with the terms of the Western Accord); (f) the clean up of the area the following day; comply, or are carried out in accordance with the Council's requirements; (v) the organisers or their agent to provide the Council with proof of a Public Liability Policy to the value of $10 million for the event; (vi) the use of fireworks be approved, subject to adequate safety precautions to the satisfaction of the Chief Executive Officer, being observed.",
+            "tier": "paraphrase",
+            "char_offset": null,
+            "resolved_offset": null,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: The Mayor, Crs Berry, Langer and Steele Against: Crs Burkett, MacRae, O'Connor and Smith In accordance with Clause 3.5.1 of the Standing Orders the Mayor then exercised his casting vote in favour of the amendment. Amendment carried The amended motion was then put and carried.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 239270,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 24920,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 463,
+        "meeting_date": "2007-06-26",
+        "document": {
+          "filename": "b357b7af.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2007/2007_06_26.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Barlow, seconded by Cr Berry",
+            "tier": "exact",
+            "char_offset": 549342,
+            "resolved_offset": 535629,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That: (i) an increase in rates or alternate funding sources be identified to match the shortfall in funding; (ii) the Draft 2007/2008 Budget, incorporating the following change adopted at the Council Meeting of 26 June 2007, be advertised for public comment and further considered for adoption by Council at its meeting to be held on 24 July 2007:- \u2022 Pat Goodridge Pavilion $25,000",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 513218,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 6/2 For: Crs Barlow, Berry, Huxtable, Langer, MacRae and O'Connor Against: Crs Bradley and Gow",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 72905,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 25035,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 466,
+        "meeting_date": "2003-09-23",
+        "document": {
+          "filename": "b5906b16.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2003/2003_09_23.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr O'Connor, seconded by Cr Barlow",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 18824,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That:- (i) as part of the annual road re-surfacing program, red asphalt entry statements are constructed on roads with a 50 km/h speed limit where they intersect a road with a greater speed limit; (ii) Policy 4.2.21 Road Design be amended to include the following clauses:- (a) red asphalt entry statements are constructed on roads with a 50 km/h speed limit where they intersect a road with a greater speed limit. This work should be carried out when a road is resurfaced; (b) the use of red asphalt is identified with, and limited to, entry statements, car parks, parking lanes, bike lanes, medians or special projects within the Town.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 80403,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 25521,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 481,
+        "meeting_date": "2020-10-19",
+        "document": {
+          "filename": "bd7cca90.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/minutes-special-council-19-october-2020.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Timmermanis, Seconded by Cr Mack",
+            "tier": "exact",
+            "char_offset": 3314,
+            "resolved_offset": 3082,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That Cr Robert Fredericks be appointed by an ABSOLUTE MAJORITY to the following:- Standing Committees 4.1 Community and Resources Committee \u2013 Second Deputy 4.2 Development Committee - Member 4.3 Audit Committee \u2013 First Deputy Occasional Committees 4.4 CEO Performance Review Committee \u2013 Member 4.5 Restoring the Environment at Perry Lakes Steering Committee - Member Appointment of Representative to Council Working Groups 4.6 Lake Monger Working Group - Member",
+            "tier": "paraphrase",
+            "char_offset": null,
+            "resolved_offset": null,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED BY AN ABSOLUTE MAJORITY (7/2)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 3367,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 25929,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 490,
+        "meeting_date": "2015-08-25",
+        "document": {
+          "filename": "c0def403.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2015/minutes/2015_08_25m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Prior to consideration of this item, Mayor Withers, in accordance with Section 5.65 of the Local Government Act 1995, declared a financial interest in this matter and left the meeting at 7.23 pm.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 336932,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Moved by Cr Walker, seconded by Cr Carr That in accordance with the provisions of clause 11(3) and (4) of the Ocean Gardens (Inc) Constitution: (i) [private individual \u2014 name withheld] be reappointed as a Director of the Ocean Gardens (Inc) Board for an additional 12 month term, expiring on 19 October 2016: and (ii) [private individual \u2014 name withheld] be reappointed as a Director of the Ocean Gardens (Inc) Board for a further three year period expiring on 23 October 2018. The original motion was then put and carried 7/1",
+            "tier": "paraphrase",
+            "char_offset": null,
+            "resolved_offset": null,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 25961,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 491,
+        "meeting_date": "2009-10-13",
+        "document": {
+          "filename": "c18baf07.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_10_13.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Langer, seconded by Cr Watson",
+            "tier": "exact",
+            "char_offset": 204906,
+            "resolved_offset": 199449,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That the revised Town of Cambridge logo design and associated corporate colours:- Green (PMS 377); Blue (PMS 7469); and Charcoal (PMS 432); together with the font ITC Leawood \u2013 Book; be adopted and integrated into the Town's Style Guide and Corporate colour palette.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 194188,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 8/1; For: Mayor Withers, Crs Berry, Grinceri, Langer, MacRae, Pelczar, Pinerua and Watson; Against: Cr Bradley",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 95497,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 26049,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 493,
+        "meeting_date": "2005-04-26",
+        "document": {
+          "filename": "c1bf6ea2.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_04_26.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Mayor Anderton, seconded by Cr Bradley\n\nThat the item relating to the Business Plan for the Redevelopment of the Perry Lakes Stadium Site be referred to the May Council meetings.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 143282,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 5/4",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 143469,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 26086,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 494,
+        "meeting_date": "2011-11-22",
+        "document": {
+          "filename": "c2c22144.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2011/minutes/2011_11_22.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "That the Minutes of the Ordinary Meeting of the Council held on 11 October 2011 be confirmed.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 15245,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 8/1. For: Mayor Withers, Crs Carr, Grinceri, King, Langer, MacRae, Pelczar and Walker. Against: Cr Bradley",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 11303,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 26597,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 509,
+        "meeting_date": "2021-07-27",
+        "document": {
+          "filename": "cc303603.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/8/documents-and-files/aaa-agenda-and-minutes/2021/council-minutes/2021_07_27m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "That the following matters be regarded as confidential in accordance with Section 5.23 of the Local Government Act 1995.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 529225,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Procedural Motion put and CARRIED (6/3)",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 529346,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: Crs Barlow, Bradley, Everett, Fredericks, Haddon-Casey and McKerracher Against: Mayor Shannon, Crs Mack and Timmermanis",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 529386,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 26946,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 525,
+        "meeting_date": "2012-11-27",
+        "document": {
+          "filename": "d5cf7627.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_11_27.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "That:- (i) this report into the commercial facilities for the surf club building as part of the Surf Club Building and Commercial Development at City Beach Concept be noted; (ii) negotiations commence with operators that submitted an Expression of Interest to finalise offers for commercial facilities consistent with the hospitality mix detailed in this report; (iii) the enclosed commercial space be no more than 1400 m2; (iv) a Business Plan be prepared and advertised for the commercial leases; and (v) a report be prepared for the December Council meeting recommending Council's conditions on the commercial liquor licences.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 359495,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 6/2 For: Mayor Withers, Crs Bradley, King, Langer, Pelczar and Watson Against: Crs Carr and MacRae",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 360125,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 27082,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 530,
+        "meeting_date": "1995-10-10",
+        "document": {
+          "filename": "d7807d27.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_10_10.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Moore, seconded by Cr Johnston",
+            "tier": "exact",
+            "char_offset": 148461,
+            "resolved_offset": 145521,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That:- (i) Council, having been re-briefed by the Project Consultants Mitchell McCotter, at the public meeting held on 27 September 1995, expresses its concern that the Department of Environmental Protection has imposed unreasonable constraints on the project area to a point where the safety factors, which the realignment was intended to overcome, have been sacrificed; (ii) the Department of Environmental Protection be urged to urgently review and expand the boundary of the project area to allow the Consultants to design junction systems to minimise further tragedies and facilitate traffic movements into and out of Helston Avenue and modified Challenger Parade; (iii) the Chief Executive Officer be authorised to request the Department of Environmental Protection to take the necessary action as set out in (ii) above.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 136392,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Affirmative: Crs Johnston, Moore, O'Connor / Negative: Crs Berry, McConnell",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 107781,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 27429,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 537,
+        "meeting_date": "1997-05-27",
+        "document": {
+          "filename": "d91854b9.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1997/1997_05_27.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Burkett, seconded by Cr Steele",
+            "tier": "exact",
+            "char_offset": 400260,
+            "resolved_offset": 400260,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That:- (i) in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme, the application submitted by the Wembley Hotel for the installation of a marquee to the hotel beer garden area at Lot 2 (No.346) Cambridge Street, Wembley as shown on plans dated 11 April 1997 be APPROVED for a period of three consecutive months commencing on 1 June 1997 and concluding on 31 August 1997 subject to:- (a) Council assessing the performance of the applicant at the end of each month and on the basis of this assessment, will determine whether the approval can continue; (b) compliance with the building and health requirements of the Council and liquor licensing requirements; (ii) in order to satisfy Council's requirements with regard to performance measurement the applicant is to:- (a) hold a meeting in the first week of each calendar month with the Wembley Hotel Residents' Group; (b) following each meeting referred to in (ii)(a) above, a report comprising the minutes of these meetings be submitted to Council for consideration in that same month.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 310419,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: The Mayor, Crs Anderton, Burkett and Steele / Against: Crs Berry, MacRae, McConnell, O'Connor and Smith",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 312020,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 27686,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 543,
+        "meeting_date": "2001-05-22",
+        "document": {
+          "filename": "dc56eccc.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2001/2001_05_22.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Burkett, seconded by Cr McAullay That:- (i) the Western Australian Planning Commission be advised that Council supports by an ABSOLUTE MAJORITY the proposed survey strata subdivision of Lot 432 (90) McCourt Street, West Leederville (WAPC Ref: 350-01), subject to:- (a) the common property pedestrian link to McCourt Street being a minimum of 1.2 metres wide; (ii) the Western Australian Planning Commission be advised that the Council would also support an application for a two lot green title subdivision of Lot 432 (90) McCourt Street, West Leederville subject to:- (a) the pedestrian access leg to McCourt Street being a minimum of 1.2 metres wide; (b) a development application for the lot under 350 square metres being approved prior to the issue of titles.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 325229,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried by an ABSOLUTE MAJORITY Members requested that the vote of all those present be recorded. For: Mayor, Crs Anderton, Burkett, O'Connor and McAullay Against: Crs Langer, MacRae, Pinerua and Smith",
+            "tier": "paraphrase",
+            "char_offset": null,
+            "resolved_offset": null,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 28035,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 554,
+        "meeting_date": "1995-06-13",
+        "document": {
+          "filename": "e29e7089.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_06_13.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Moore, seconded by Cr McConnell",
+            "tier": "exact",
+            "char_offset": 4249,
+            "resolved_offset": 4214,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That:- (i) subject to the approval of  the Hon Minister for Local Government, under Section 267 of the Local Government Act 1960, the Council agrees to enter into an Assignment of Lease between Andrea Simonelli and MacDuff Pty Ltd, C/- Burgess McFarlane and Young of 230 Rokeby Road, Subiaco over  City Beach Kiosk No 2, Challenger Parade, City Beach; (ii) no endorsement be given for any improvements or changes to the present operational lease arrangements at this stage; (iii) the Council retains the right to renegotiate the lease after completion of any future refurbishment works.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 96208,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 28257,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 558,
+        "meeting_date": "2020-09-22",
+        "document": {
+          "filename": "e3b25533.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_09_22m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr McKerracher, seconded by Cr Barlow That Council DEFERS the item relating to the Town of Cambridge Workforce Plan 2020 \u2013 2024 to a future Council meeting to enable further information to be included.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 375262,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Motion put and CARRIED (7/1) For: Mayor Shannon, Crs Barlow, Bradley, Everett, Haddon- Casey, McKerracher and Timmermanis Against: Cr Nelson",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 305665,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 28386,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 561,
+        "meeting_date": "2017-10-17",
+        "document": {
+          "filename": "e5a16e23.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/2/documents-and-files/aaa-agenda-and-minutes/2017/council-minutes/2017_10_17m.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Powell, seconded by Cr Carr",
+            "tier": "exact",
+            "char_offset": 142468,
+            "resolved_offset": 138251,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That, to thank in their presence the three retiring councillors: (i) the Town of Cambridge extends its thanks and appreciation to retiring Councillor Corinne MacRae for her 22 years' service and, in particular, recognises her outstanding contribution to the Development Committee, the Town Planning Steering Review Committee, the development of the award winning West Leederville Activity Centre Plan and the Wembley Activity Centre plan, her representation of the Town on both the Tamala Park Regional Council and the Mindarie Regional Council as well as her role as Deputy Mayor; (ii) the Town of Cambridge extends its thanks and appreciation to retiring Councillor Sonia Grinceri for her 10 years' service and, in particular, recognises her outstanding contribution to the Community and Resources Committee, the Town Planning Steering Review Committee, the CEO Performance Review Committee and her championing the cause of the ground-breaking Public Art Policy\"; and (iii) the Town of Cambridge extends its thanks and appreciation to retiring Councillor Tracey King for her 8 years' service and, in particular, recognises her outstanding contribution to the Development Committee and the Town Planning Steering Review Committee.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 132769,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 6/3",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 132588,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 28494,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 565,
+        "meeting_date": "2007-12-18",
+        "document": {
+          "filename": "e8c64f89.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2007/2007_12_18.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Berry, seconded by Cr Bradley\n\nThat:- \n\n(i) the report detailing the August/September 2007 community consultation for traffic management in Pandora Drive and Malton Place be received; \n\n(ii) a letterbox drop to residents facing Malton Place be undertaken with a view to seeking their comments concerning the possible:- \n\n(a) re-opening of Malton Place to access Durston Road with the closure of the north/south section of Malton Place, or \n(b) permit traffic travelling north in Pandora Drive only, from Malton Place \n\n(iii) Council proceeds with the public advertising in accordance with Section 3.50 of the Local Government Act 1995 for the road closure of Pandora Drive just south of Malton Place as amended in accordance with the resolution above. A public notice be placed in resident letter boxes covering the area bounded by Erskine Place, Tilton Terrace, Simon Place, Oban Road, The Boulevard, Durston Road and Empire Avenue; \n\n(iv) the residents of Pandora Drive and Malton Place be notified of Council's decision.\n\nLost 1/7\n\nFor: Cr Bradley\nAgainst: Mayor Withers, Crs Berry, Grinceri, Langer, MacRae, Pelczar and Pinerua",
+            "tier": "paraphrase",
+            "char_offset": null,
+            "resolved_offset": null,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 28915,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 579,
+        "meeting_date": "2009-11-24",
+        "document": {
+          "filename": "efb0a195.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_11_24.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "That:- (i) a Residential Parking Scheme for Nanson Street, between Cambridge Street and Ruislip Street, Wembley be introduced which states \"No Parking, 5pm to midnight, Thursday to Saturday, Residential Permit exempted\" as soon as practicable; (ii) the Administration undertake further surveillance of parking in Holland Street and Essex Street, between Cambridge Street and Ruislip Street, Wembley over the next three months and write to residents in the area in February, seeking further comment, and that a further report on this matter be submitted to the Council in March 2010; (iii) the signs in (i) above be funded from Budget Item - Road Name Signs and Parking Signs; (iv) those persons who made a submission as part of the Town's survey of residents/owners of properties in Nanson Street, Essex Street and Holland Street, between Cambridge Street and Ruislip Street, Wembley be advised of the Council decision.",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 127008,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Carried 7/2",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 130131,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 28984,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 580,
+        "meeting_date": "2011-08-23",
+        "document": {
+          "filename": "f003307c.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2011/minutes/2011_08_23.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Bradley, seconded by Cr Pelczar",
+            "tier": "exact",
+            "char_offset": 336847,
+            "resolved_offset": 327549,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "in accordance with the provisions of Regulation 10(1) of the Local Government (Administration) Regulations 1996, clause (ii) of the Council's decision CR11.88 made at its meeting held on 26 July 2011 as follows:- \"(ii) a further report be prepared for Council examining alternatives to constructing a roundabout at the intersection of Empire Avenue and Durston Road.\" be revoked by an ABSOLUTE MAJORITY",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 314361,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Lost 1/8. For: Cr Bradley. Against: Mayor Withers, Crs Grinceri, King, Langer, MacRae, Pelczar and Pinerua",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 255929,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 29005,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 582,
+        "meeting_date": "1995-07-11",
+        "document": {
+          "filename": "f130c90a.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_11.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Anderton, seconded by Cr Smith",
+            "tier": "exact",
+            "char_offset": 5236,
+            "resolved_offset": 5212,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "That:- (i) Cr O'Connor be authorised to accompany His Worship The Mayor to attend the 1995 National General Assembly of Australian Local Government, to be held in Canberra from 12 to 15 November 1995, incurring expenditure as follows:- (a) both Council delegates be booked on the Special Group and Convention Fare at $572 each, totalling $1,144; (b) a medium range hotel accommodation be authorised for both delegates, to reduce the quoted accommodation costs of $660 per person; (c) conference registration fees for Cr O'Connor of $540 and a maximum allowance of $250 be authorised; (ii) all expenditure incurred by the attendance of His Worship The Mayor and Cr O'Connor, as set out above, be charged to Budget Item \"Members - Course/Conference Expenses\".",
+            "tier": "paraphrase",
+            "char_offset": null,
+            "resolved_offset": null,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "Ayes: Crs Anderton, Johnston, Moore, Smith / Noes: Crs Berry, MacRae, McConnell",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 60199,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 29878,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 606,
+        "meeting_date": "2008-02-26",
+        "document": {
+          "filename": "fe726590.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2008/minutes/2008_02_26.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Berry, seconded by Cr Bradley\n\nThat:\n\n(i) the report detailing the options for consideration for addressing speed and volume of traffic in Pandora Drive be received;\n\n(ii) the development of the intersection of Empire Avenue / Durston Road be reviewed, in conjunction with the City of Stirling and the adjacent residents, and a proposal be submitted for Council consideration;\n\n(iii) origin/destination surveys be completed on Pandora Drive traffic for consideration when evaluating further traffic management options;\n\n(iv) the Administration be requested to evaluate traffic treatment options for Pandora Drive for presentation to Council and subsequent canvassing with residents.",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 27553,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "The motion was then put and carried 8/1\n\nFor: Mayor Withers, Crs Berry, Bradley, Grincer, Langer, MacRae, Pinerua and Watson\nAgainst: Cr Pelczar",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 36652,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      },
+      {
+        "entity_table": "motions",
+        "entity_id": 29984,
+        "role": "tenure_bookend_motion",
+        "meeting_id": 400,
+        "meeting_date": "1998-11-24",
+        "document": {
+          "filename": "ff0ce012.pdf",
+          "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1998/1998_11_24.pdf",
+          "page": null
+        },
+        "quotes": [
+          {
+            "text": "Moved by Cr Anderton, seconded by Cr Burkett\n\nThat in accordance with Regulations 17 and 25 of the Town Planning Regulations 1967, Amendment No.1 to Town Planning Scheme No 1 be ADOPTED for final approval with the following modifications",
+            "tier": "normalised",
+            "char_offset": null,
+            "resolved_offset": 264922,
+            "resolved_against": "minutes_text"
+          },
+          {
+            "text": "For: His Worship the Mayor, Crs Anderton, Burkett, O'Connor, Smith and Steele Against: Crs Berry, MacRae and McConnell",
+            "tier": "stripped",
+            "char_offset": null,
+            "resolved_offset": 214363,
+            "resolved_against": "minutes_text"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,883 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "generated_at": "2026-09-16T11:33:38.011421+00:00",
+    "source": "data/council.db",
+    "councillors": [
+      {
+        "name": "Marlene Anderton",
+        "given_name": "Marlene",
+        "family_name": "Anderton",
+        "slug": "marlene-anderton",
+        "years_served": 11.7,
+        "first_vote": "1995-06",
+        "motions_moved": 698,
+        "votes_cast": 327,
+        "most_frequent_seconder": {
+          "name": "Graham Burkett",
+          "count": 266
+        },
+        "contested_votes": {
+          "total": 294,
+          "won": 214,
+          "lost": 80
+        }
+      },
+      {
+        "name": "Meg Anklesaria",
+        "given_name": "Meg",
+        "family_name": "Anklesaria",
+        "slug": "meg-anklesaria",
+        "years_served": 15.2,
+        "first_vote": "2009-07",
+        "motions_moved": 16,
+        "votes_cast": 43,
+        "most_frequent_seconder": {
+          "name": "Kate Barlow",
+          "count": 3
+        },
+        "contested_votes": {
+          "total": 31,
+          "won": 28,
+          "lost": 3
+        }
+      },
+      {
+        "name": "Kate Barlow",
+        "given_name": "Kate",
+        "family_name": "Barlow",
+        "slug": "kate-barlow",
+        "years_served": 23.0,
+        "first_vote": "2003-05",
+        "motions_moved": 306,
+        "votes_cast": 862,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 94
+        },
+        "contested_votes": {
+          "total": 457,
+          "won": 384,
+          "lost": 73
+        }
+      },
+      {
+        "name": "David Berry",
+        "given_name": "David",
+        "family_name": "Berry",
+        "slug": "david-berry",
+        "years_served": 14.3,
+        "first_vote": "1995-06",
+        "motions_moved": 798,
+        "votes_cast": 362,
+        "most_frequent_seconder": {
+          "name": "Graham Burkett",
+          "count": 233
+        },
+        "contested_votes": {
+          "total": 319,
+          "won": 165,
+          "lost": 154
+        }
+      },
+      {
+        "name": "Mainuddin Bhuiyan",
+        "given_name": "Mainuddin",
+        "family_name": "Bhuiyan",
+        "slug": "mainuddin-bhuiyan",
+        "years_served": 5.3,
+        "first_vote": "2020-11",
+        "motions_moved": 4,
+        "votes_cast": 43,
+        "most_frequent_seconder": {
+          "name": "Ben Mayes",
+          "count": 4
+        },
+        "contested_votes": {
+          "total": 3,
+          "won": 3,
+          "lost": 0
+        }
+      },
+      {
+        "name": "Rod Bradley",
+        "given_name": "Rod",
+        "family_name": "Bradley",
+        "slug": "rod-bradley",
+        "years_served": 18.8,
+        "first_vote": "2003-09",
+        "motions_moved": 641,
+        "votes_cast": 1208,
+        "most_frequent_seconder": {
+          "name": "Pauline O'Connor",
+          "count": 74
+        },
+        "contested_votes": {
+          "total": 1067,
+          "won": 601,
+          "lost": 466
+        }
+      },
+      {
+        "name": "Graham Burkett",
+        "given_name": "Graham",
+        "family_name": "Burkett",
+        "slug": "graham-burkett",
+        "years_served": 7.8,
+        "first_vote": "1997-05",
+        "motions_moved": 635,
+        "votes_cast": 167,
+        "most_frequent_seconder": {
+          "name": "Corinne MacRae",
+          "count": 141
+        },
+        "contested_votes": {
+          "total": 152,
+          "won": 114,
+          "lost": 38
+        }
+      },
+      {
+        "name": "Louis Carr",
+        "given_name": "Louis",
+        "family_name": "Carr",
+        "slug": "louis-carr",
+        "years_served": 7.8,
+        "first_vote": "2011-11",
+        "motions_moved": 39,
+        "votes_cast": 140,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 11
+        },
+        "contested_votes": {
+          "total": 110,
+          "won": 78,
+          "lost": 32
+        }
+      },
+      {
+        "name": "Xavier Carr",
+        "given_name": "Xavier",
+        "family_name": "Carr",
+        "slug": "xavier-carr",
+        "years_served": 18.4,
+        "first_vote": "2007-11",
+        "motions_moved": 318,
+        "votes_cast": 840,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 86
+        },
+        "contested_votes": {
+          "total": 509,
+          "won": 381,
+          "lost": 128
+        }
+      },
+      {
+        "name": "Jane Cutler",
+        "given_name": "Jane",
+        "family_name": "Cutler",
+        "slug": "jane-cutler",
+        "years_served": 19.6,
+        "first_vote": "2006-08",
+        "motions_moved": 187,
+        "votes_cast": 290,
+        "most_frequent_seconder": {
+          "name": "Kate Barlow",
+          "count": 34
+        },
+        "contested_votes": {
+          "total": 77,
+          "won": 67,
+          "lost": 10
+        }
+      },
+      {
+        "name": "Matt Delmenico",
+        "given_name": "Matt",
+        "family_name": "Delmenico",
+        "slug": "matt-delmenico",
+        "years_served": 16.8,
+        "first_vote": "2009-07",
+        "motions_moved": 87,
+        "votes_cast": 210,
+        "most_frequent_seconder": {
+          "name": "Brett Heil",
+          "count": 21
+        },
+        "contested_votes": {
+          "total": 21,
+          "won": 19,
+          "lost": 2
+        }
+      },
+      {
+        "name": "Ian Everett",
+        "given_name": "Ian",
+        "family_name": "Everett",
+        "slug": "ian-everett",
+        "years_served": 9.2,
+        "first_vote": "2012-04",
+        "motions_moved": 231,
+        "votes_cast": 394,
+        "most_frequent_seconder": {
+          "name": "Gary Mack",
+          "count": 66
+        },
+        "contested_votes": {
+          "total": 299,
+          "won": 268,
+          "lost": 31
+        }
+      },
+      {
+        "name": "Gavin Foley",
+        "given_name": "Gavin",
+        "family_name": "Foley",
+        "slug": "gavin-foley",
+        "years_served": 16.2,
+        "first_vote": "2009-07",
+        "motions_moved": 32,
+        "votes_cast": 147,
+        "most_frequent_seconder": {
+          "name": "Jane Cutler",
+          "count": 6
+        },
+        "contested_votes": {
+          "total": 29,
+          "won": 9,
+          "lost": 20
+        }
+      },
+      {
+        "name": "Melanie Foley",
+        "given_name": "Melanie",
+        "family_name": "Foley",
+        "slug": "melanie-foley",
+        "years_served": 9.2,
+        "first_vote": "2006-08",
+        "motions_moved": 37,
+        "votes_cast": 21,
+        "most_frequent_seconder": {
+          "name": "Shannon Unknown",
+          "count": 12
+        },
+        "contested_votes": {
+          "total": 3,
+          "won": 3,
+          "lost": 0
+        }
+      },
+      {
+        "name": "Robert Fredericks",
+        "given_name": "Robert",
+        "family_name": "Fredericks",
+        "slug": "robert-fredericks",
+        "years_served": 1.1,
+        "first_vote": "2020-10",
+        "motions_moved": 4,
+        "votes_cast": 123,
+        "most_frequent_seconder": {
+          "name": "Kate Barlow",
+          "count": 1
+        },
+        "contested_votes": {
+          "total": 93,
+          "won": 56,
+          "lost": 37
+        }
+      },
+      {
+        "name": "John Gow",
+        "given_name": "John",
+        "family_name": "Gow",
+        "slug": "john-gow",
+        "years_served": 2.2,
+        "first_vote": "2005-05",
+        "motions_moved": 99,
+        "votes_cast": 192,
+        "most_frequent_seconder": {
+          "name": "Penny Huxtable",
+          "count": 37
+        },
+        "contested_votes": {
+          "total": 179,
+          "won": 135,
+          "lost": 44
+        }
+      },
+      {
+        "name": "Sonia Grinceri",
+        "given_name": "Sonia",
+        "family_name": "Grinceri",
+        "slug": "sonia-grinceri",
+        "years_served": 9.8,
+        "first_vote": "2007-12",
+        "motions_moved": 94,
+        "votes_cast": 476,
+        "most_frequent_seconder": {
+          "name": "Julie Watson",
+          "count": 33
+        },
+        "contested_votes": {
+          "total": 451,
+          "won": 350,
+          "lost": 101
+        }
+      },
+      {
+        "name": "Alaine Haddon-Casey",
+        "given_name": "Alaine",
+        "family_name": "Haddon-Casey",
+        "slug": "alaine-haddon-casey",
+        "years_served": 16.8,
+        "first_vote": "2007-11",
+        "motions_moved": 113,
+        "votes_cast": 250,
+        "most_frequent_seconder": {
+          "name": "Kate Barlow",
+          "count": 28
+        },
+        "contested_votes": {
+          "total": 190,
+          "won": 169,
+          "lost": 21
+        }
+      },
+      {
+        "name": "Brett Heil",
+        "given_name": "Brett",
+        "family_name": "Heil",
+        "slug": "brett-heil",
+        "years_served": 14.1,
+        "first_vote": "2012-04",
+        "motions_moved": 10,
+        "votes_cast": 160,
+        "most_frequent_seconder": {
+          "name": "Matt Delmenico",
+          "count": 5
+        },
+        "contested_votes": {
+          "total": 17,
+          "won": 13,
+          "lost": 4
+        }
+      },
+      {
+        "name": "Penny Huxtable",
+        "given_name": "Penny",
+        "family_name": "Huxtable",
+        "slug": "penny-huxtable",
+        "years_served": 2.1,
+        "first_vote": "2005-05",
+        "motions_moved": 17,
+        "votes_cast": 178,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 7
+        },
+        "contested_votes": {
+          "total": 169,
+          "won": 138,
+          "lost": 31
+        }
+      },
+      {
+        "name": "Susan Kennerly",
+        "given_name": "Susan",
+        "family_name": "Kennerly",
+        "slug": "susan-kennerly",
+        "years_served": 19.8,
+        "first_vote": "2006-08",
+        "motions_moved": 101,
+        "votes_cast": 355,
+        "most_frequent_seconder": {
+          "name": "Michael Le Page",
+          "count": 27
+        },
+        "contested_votes": {
+          "total": 51,
+          "won": 33,
+          "lost": 18
+        }
+      },
+      {
+        "name": "Tracey King",
+        "given_name": "Tracey",
+        "family_name": "King",
+        "slug": "tracey-king",
+        "years_served": 7.9,
+        "first_vote": "2009-11",
+        "motions_moved": 520,
+        "votes_cast": 428,
+        "most_frequent_seconder": {
+          "name": "Corinne MacRae",
+          "count": 164
+        },
+        "contested_votes": {
+          "total": 396,
+          "won": 327,
+          "lost": 69
+        }
+      },
+      {
+        "name": "Alan Langer",
+        "given_name": "Alan",
+        "family_name": "Langer",
+        "slug": "alan-langer",
+        "years_served": 16.5,
+        "first_vote": "1999-05",
+        "motions_moved": 1013,
+        "votes_cast": 526,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 186
+        },
+        "contested_votes": {
+          "total": 494,
+          "won": 408,
+          "lost": 86
+        }
+      },
+      {
+        "name": "Michael Le Page",
+        "given_name": "Michael",
+        "family_name": "Le Page",
+        "slug": "michael-le-page",
+        "years_served": 18.4,
+        "first_vote": "2007-11",
+        "motions_moved": 90,
+        "votes_cast": 392,
+        "most_frequent_seconder": {
+          "name": "Gary Mack",
+          "count": 24
+        },
+        "contested_votes": {
+          "total": 59,
+          "won": 44,
+          "lost": 15
+        }
+      },
+      {
+        "name": "Corinne MacRae",
+        "given_name": "Corinne",
+        "family_name": "MacRae",
+        "slug": "corinne-macrae",
+        "years_served": 22.2,
+        "first_vote": "1995-07",
+        "motions_moved": 1487,
+        "votes_cast": 862,
+        "most_frequent_seconder": {
+          "name": "Graham Burkett",
+          "count": 266
+        },
+        "contested_votes": {
+          "total": 785,
+          "won": 548,
+          "lost": 237
+        }
+      },
+      {
+        "name": "Gary Mack",
+        "given_name": "Gary",
+        "family_name": "Mack",
+        "slug": "gary-mack",
+        "years_served": 30.8,
+        "first_vote": "1995-07",
+        "motions_moved": 177,
+        "votes_cast": 742,
+        "most_frequent_seconder": {
+          "name": "Kate Barlow",
+          "count": 28
+        },
+        "contested_votes": {
+          "total": 276,
+          "won": 171,
+          "lost": 105
+        }
+      },
+      {
+        "name": "Ben Mayes",
+        "given_name": "Ben",
+        "family_name": "Mayes",
+        "slug": "ben-mayes",
+        "years_served": 18.5,
+        "first_vote": "2007-11",
+        "motions_moved": 127,
+        "votes_cast": 401,
+        "most_frequent_seconder": {
+          "name": "Gary Mack",
+          "count": 33
+        },
+        "contested_votes": {
+          "total": 74,
+          "won": 56,
+          "lost": 18
+        }
+      },
+      {
+        "name": "Jo McAllister",
+        "given_name": "Jo",
+        "family_name": "McAllister",
+        "slug": "jo-mcallister",
+        "years_served": 1.7,
+        "first_vote": "2017-10",
+        "motions_moved": 20,
+        "votes_cast": 196,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 6
+        },
+        "contested_votes": {
+          "total": 166,
+          "won": 82,
+          "lost": 84
+        }
+      },
+      {
+        "name": "Ken McAullay",
+        "given_name": "Ken",
+        "family_name": "McAullay",
+        "slug": "ken-mcaullay",
+        "years_served": 3.9,
+        "first_vote": "2001-05",
+        "motions_moved": 202,
+        "votes_cast": 89,
+        "most_frequent_seconder": {
+          "name": "Graham Burkett",
+          "count": 120
+        },
+        "contested_votes": {
+          "total": 80,
+          "won": 73,
+          "lost": 7
+        }
+      },
+      {
+        "name": "Robina McConnell",
+        "given_name": "Robina",
+        "family_name": "McConnell",
+        "slug": "robina-mcconnell",
+        "years_served": 3.3,
+        "first_vote": "1995-07",
+        "motions_moved": 283,
+        "votes_cast": 45,
+        "most_frequent_seconder": {
+          "name": "Marlene Anderton",
+          "count": 60
+        },
+        "contested_votes": {
+          "total": 32,
+          "won": 13,
+          "lost": 19
+        }
+      },
+      {
+        "name": "Kate McKerracher",
+        "given_name": "Kate",
+        "family_name": "McKerracher",
+        "slug": "kate-mckerracher",
+        "years_served": 15.0,
+        "first_vote": "2006-08",
+        "motions_moved": 79,
+        "votes_cast": 397,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 21
+        },
+        "contested_votes": {
+          "total": 318,
+          "won": 294,
+          "lost": 24
+        }
+      },
+      {
+        "name": "James Nelson",
+        "given_name": "James",
+        "family_name": "Nelson",
+        "slug": "james-nelson",
+        "years_served": 2.9,
+        "first_vote": "2017-10",
+        "motions_moved": 47,
+        "votes_cast": 279,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 14
+        },
+        "contested_votes": {
+          "total": 226,
+          "won": 144,
+          "lost": 82
+        }
+      },
+      {
+        "name": "Pauline O'Connor",
+        "given_name": "Pauline",
+        "family_name": "O'Connor",
+        "slug": "pauline-o-connor",
+        "years_served": 22.0,
+        "first_vote": "1995-10",
+        "motions_moved": 807,
+        "votes_cast": 679,
+        "most_frequent_seconder": {
+          "name": "Hilary Pinerua",
+          "count": 117
+        },
+        "contested_votes": {
+          "total": 625,
+          "won": 500,
+          "lost": 125
+        }
+      },
+      {
+        "name": "Otto Pelczar",
+        "given_name": "Otto",
+        "family_name": "Pelczar",
+        "slug": "otto-pelczar",
+        "years_served": 5.8,
+        "first_vote": "2007-12",
+        "motions_moved": 93,
+        "votes_cast": 165,
+        "most_frequent_seconder": {
+          "name": "Julie Watson",
+          "count": 29
+        },
+        "contested_votes": {
+          "total": 150,
+          "won": 107,
+          "lost": 43
+        }
+      },
+      {
+        "name": "Hilary Pinerua",
+        "given_name": "Hilary",
+        "family_name": "Pinerua",
+        "slug": "hilary-pinerua",
+        "years_served": 10.2,
+        "first_vote": "2001-05",
+        "motions_moved": 412,
+        "votes_cast": 231,
+        "most_frequent_seconder": {
+          "name": "Ken McAullay",
+          "count": 110
+        },
+        "contested_votes": {
+          "total": 212,
+          "won": 173,
+          "lost": 39
+        }
+      },
+      {
+        "name": "Jane Powell",
+        "given_name": "Jane",
+        "family_name": "Powell",
+        "slug": "jane-powell",
+        "years_served": 7.4,
+        "first_vote": "2012-04",
+        "motions_moved": 36,
+        "votes_cast": 492,
+        "most_frequent_seconder": {
+          "name": "James Nelson",
+          "count": 10
+        },
+        "contested_votes": {
+          "total": 446,
+          "won": 305,
+          "lost": 141
+        }
+      },
+      {
+        "name": "David Price",
+        "given_name": "David",
+        "family_name": "Price",
+        "slug": "david-price",
+        "years_served": 0.3,
+        "first_vote": "2025-11",
+        "motions_moved": 1,
+        "votes_cast": 41,
+        "most_frequent_seconder": {
+          "name": "Chris Colyer",
+          "count": 1
+        },
+        "contested_votes": {
+          "total": 3,
+          "won": 3,
+          "lost": 0
+        }
+      },
+      {
+        "name": "Georgie Randklev",
+        "given_name": "Georgie",
+        "family_name": "Randklev",
+        "slug": "georgie-randklev",
+        "years_served": 14.2,
+        "first_vote": "2012-02",
+        "motions_moved": 72,
+        "votes_cast": 469,
+        "most_frequent_seconder": {
+          "name": "Gary Mack",
+          "count": 16
+        },
+        "contested_votes": {
+          "total": 92,
+          "won": 76,
+          "lost": 16
+        }
+      },
+      {
+        "name": "Keri Shannon",
+        "given_name": "Keri",
+        "family_name": "Shannon",
+        "slug": "keri-shannon",
+        "years_served": 15.2,
+        "first_vote": "2009-07",
+        "motions_moved": 505,
+        "votes_cast": 809,
+        "most_frequent_seconder": {
+          "name": "James Nelson",
+          "count": 129
+        },
+        "contested_votes": {
+          "total": 695,
+          "won": 534,
+          "lost": 161
+        }
+      },
+      {
+        "name": "Kerry Smith",
+        "given_name": "Kerry",
+        "family_name": "Smith",
+        "slug": "kerry-smith",
+        "years_served": 7.8,
+        "first_vote": "1995-07",
+        "motions_moved": 447,
+        "votes_cast": 142,
+        "most_frequent_seconder": {
+          "name": "Pauline O'Connor",
+          "count": 104
+        },
+        "contested_votes": {
+          "total": 112,
+          "won": 69,
+          "lost": 43
+        }
+      },
+      {
+        "name": "Ian Steele",
+        "given_name": "Ian",
+        "family_name": "Steele",
+        "slug": "ian-steele",
+        "years_served": 3.9,
+        "first_vote": "1997-05",
+        "motions_moved": 182,
+        "votes_cast": 66,
+        "most_frequent_seconder": {
+          "name": "Kerry Smith",
+          "count": 42
+        },
+        "contested_votes": {
+          "total": 59,
+          "won": 43,
+          "lost": 16
+        }
+      },
+      {
+        "name": "Andres Timmermanis",
+        "given_name": "Andres",
+        "family_name": "Timmermanis",
+        "slug": "andres-timmermanis",
+        "years_served": 5.8,
+        "first_vote": "2015-11",
+        "motions_moved": 598,
+        "votes_cast": 642,
+        "most_frequent_seconder": {
+          "name": "Rod Bradley",
+          "count": 126
+        },
+        "contested_votes": {
+          "total": 571,
+          "won": 357,
+          "lost": 214
+        }
+      },
+      {
+        "name": "Colin Walker",
+        "given_name": "Colin",
+        "family_name": "Walker",
+        "slug": "colin-walker",
+        "years_served": 3.8,
+        "first_vote": "2011-11",
+        "motions_moved": 55,
+        "votes_cast": 106,
+        "most_frequent_seconder": {
+          "name": "Sonia Grinceri",
+          "count": 18
+        },
+        "contested_votes": {
+          "total": 97,
+          "won": 86,
+          "lost": 11
+        }
+      },
+      {
+        "name": "Julie Watson",
+        "given_name": "Julie",
+        "family_name": "Watson",
+        "slug": "julie-watson",
+        "years_served": 4.8,
+        "first_vote": "2008-02",
+        "motions_moved": 126,
+        "votes_cast": 109,
+        "most_frequent_seconder": {
+          "name": "Sonia Grinceri",
+          "count": 34
+        },
+        "contested_votes": {
+          "total": 102,
+          "won": 83,
+          "lost": 19
+        }
+      },
+      {
+        "name": "Ross Willcock",
+        "given_name": "Ross",
+        "family_name": "Willcock",
+        "slug": "ross-willcock",
+        "years_served": 6.5,
+        "first_vote": "1996-10",
+        "motions_moved": 1,
+        "votes_cast": 61,
+        "most_frequent_seconder": {
+          "name": "Kerry Smith",
+          "count": 1
+        },
+        "contested_votes": {
+          "total": 54,
+          "won": 43,
+          "lost": 11
+        }
+      },
+      {
+        "name": "Simon Withers",
+        "given_name": "Simon",
+        "family_name": "Withers",
+        "slug": "simon-withers",
+        "years_served": 7.7,
+        "first_vote": "2007-12",
+        "motions_moved": 53,
+        "votes_cast": 238,
+        "most_frequent_seconder": {
+          "name": "Alan Langer",
+          "count": 19
+        },
+        "contested_votes": {
+          "total": 221,
+          "won": 194,
+          "lost": 27
+        }
+      }
+    ]
+  }
+}

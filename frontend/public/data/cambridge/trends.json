@@ -1,0 +1,711 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "contestation": [
+      {
+        "year": 1995,
+        "total_carried": 503,
+        "total_with_dissent": 2,
+        "contestation_rate": 0.004,
+        "most_contested": [
+          "Cr O'Connor attendance at National Assembly",
+          "West Coast Highway realignment"
+        ]
+      },
+      {
+        "year": 1996,
+        "total_carried": 567,
+        "total_with_dissent": 6,
+        "contestation_rate": 0.0106,
+        "most_contested": [
+          "City to Sea Greenway route approval",
+          "Day Centre for the Aged - 124 Salvado Road, Wembley",
+          "Ocean Gardens (Inc) - Commencement of Legal Proceedings"
+        ]
+      },
+      {
+        "year": 1997,
+        "total_carried": 628,
+        "total_with_dissent": 14,
+        "contestation_rate": 0.0223,
+        "most_contested": [
+          "Motion to refer back - Quarry Amphitheatre management",
+          "70 Moray Avenue subdivision support",
+          "Alderbury Street Cycleway Current Design Retained"
+        ]
+      },
+      {
+        "year": 1998,
+        "total_carried": 498,
+        "total_with_dissent": 6,
+        "contestation_rate": 0.012,
+        "most_contested": [
+          "Refuse conference and training facilities application",
+          "Verge tree removal and replacement",
+          "Home occupation (osteopath practice) at Lot 210 (No 455) Cambridge Street, Floreat"
+        ]
+      },
+      {
+        "year": 1999,
+        "total_carried": 477,
+        "total_with_dissent": 9,
+        "contestation_rate": 0.0189,
+        "most_contested": [
+          "Dual coding R12.5 areas - no further action at this time",
+          "Challenger Parade Road Hierarchy Classification",
+          "Approve off-white colorbond roof at Lot 1249 Caithness Road"
+        ]
+      },
+      {
+        "year": 2000,
+        "total_carried": 514,
+        "total_with_dissent": 18,
+        "contestation_rate": 0.035,
+        "most_contested": [
+          "Motion to defer Perry Lakes to end of meeting",
+          "Lot 1650 Bantry Road Floreat - Carport Application (Second Motion - Approval)",
+          "Skate Facility - Perry Lakes Reserve"
+        ]
+      },
+      {
+        "year": 2001,
+        "total_carried": 344,
+        "total_with_dissent": 12,
+        "contestation_rate": 0.0349,
+        "most_contested": [
+          "Lot 390 Catesby Street alterations and additions refusal",
+          "Lot 432 McCourt Street - Survey Strata Subdivision",
+          "Shenton Park Hockey Facility - Financial Contribution"
+        ]
+      },
+      {
+        "year": 2002,
+        "total_carried": 476,
+        "total_with_dissent": 20,
+        "contestation_rate": 0.042,
+        "most_contested": [
+          "Templetonia Crescent/Kingsland Avenue Intersection - Traffic (Alternative Motion)",
+          "Lot 11 Marlow Street Wembley two storey residence \u2013 amended plans approval",
+          "Lot 116 (No. 4) Dupont Avenue, City Beach \u2013 Shed and Carport Enclosure"
+        ]
+      },
+      {
+        "year": 2003,
+        "total_carried": 414,
+        "total_with_dissent": 15,
+        "contestation_rate": 0.0362,
+        "most_contested": [
+          "Areas F and G Mount Claremont and Former Nursery Site Salvado Road Jolimont - Motion to Refer Back",
+          "Refer back to Policy and Administration Committee",
+          "Lease negotiation with Hutchison Telecoms - approval with amendment"
+        ]
+      },
+      {
+        "year": 2004,
+        "total_carried": 553,
+        "total_with_dissent": 28,
+        "contestation_rate": 0.0506,
+        "most_contested": [
+          "Two-storey dwelling approval - Jersey Street Wembley",
+          "Cambridge Street Commercial Development Approval",
+          "Lot 10 No. 112 Kimberley Street West Leederville - Two Dwellings Application"
+        ]
+      },
+      {
+        "year": 2005,
+        "total_carried": 658,
+        "total_with_dissent": 87,
+        "contestation_rate": 0.1322,
+        "most_contested": [
+          "Amendment to delete chaplaincy and PICYS funding",
+          "Refer Business Plan to May Council Meeting",
+          "Quarry Amphitheatre Management Tender Council Decision (Carried)"
+        ]
+      },
+      {
+        "year": 2006,
+        "total_carried": 512,
+        "total_with_dissent": 54,
+        "contestation_rate": 0.1055,
+        "most_contested": [
+          "Gayton Road Shopping Centre Car Park Licence - Referral Back",
+          "Location 633 Powis Street Wembley - Infant/Toddler Child Care Centre Refusal",
+          "Coast Ward Ratepayers Association legal fees reimbursement"
+        ]
+      },
+      {
+        "year": 2007,
+        "total_carried": 282,
+        "total_with_dissent": 36,
+        "contestation_rate": 0.1277,
+        "most_contested": [
+          "Two storey dwelling - St Leonards Avenue, West Leederville",
+          "Pat Goodridge Reserve Pavilion \u2013 Security Installation",
+          "ANZ Bank change of use application refusal"
+        ]
+      },
+      {
+        "year": 2008,
+        "total_carried": 385,
+        "total_with_dissent": 45,
+        "contestation_rate": 0.1169,
+        "most_contested": [
+          "Revoke deemed refusal and approve small bar use change",
+          "Approve three-level dwelling - Dupont Avenue, City Beach",
+          "Amendment to Standing Orders - Questions by Members"
+        ]
+      },
+      {
+        "year": 2009,
+        "total_carried": 276,
+        "total_with_dissent": 22,
+        "contestation_rate": 0.0797,
+        "most_contested": [
+          "Child Day Care Centre at Lot 286 Newry Street, Floreat",
+          "Appointment to Ocean Gardens Board of Management (Motion for Cr Pinerua)",
+          "Three-Storey Dwelling with Basement - Lot 487 Orana Crescent"
+        ]
+      },
+      {
+        "year": 2010,
+        "total_carried": 357,
+        "total_with_dissent": 26,
+        "contestation_rate": 0.0728,
+        "most_contested": [
+          "North Lake Monger Reserve Master Plan - refer back",
+          "The People's Beach Project - Consultation Review (main motion)",
+          "Lot 604 Kalari Drive, City Beach - Retrospective Approval for Shed"
+        ]
+      },
+      {
+        "year": 2011,
+        "total_carried": 354,
+        "total_with_dissent": 29,
+        "contestation_rate": 0.0819,
+        "most_contested": [
+          "Lot 292 (No. 48) Tilton Terrace cnr Dorking Road, City Beach - Three Storey Dwelling",
+          "Lot 29 (No. 34) Barrett Street, Wembley - Additions to Single Dwelling (Approval)",
+          "Empire Avenue/Durston Road \u2013 Proposed Roundabout"
+        ]
+      },
+      {
+        "year": 2012,
+        "total_carried": 340,
+        "total_with_dissent": 16,
+        "contestation_rate": 0.0471,
+        "most_contested": [
+          "Amendment to Standing Orders Local Law 2007 - Members Rising",
+          "Lot 2 The Boulevard Floreat - Front fence",
+          "Standing Orders Clause 8.9 - Members to Rise"
+        ]
+      },
+      {
+        "year": 2013,
+        "total_carried": 288,
+        "total_with_dissent": 24,
+        "contestation_rate": 0.0833,
+        "most_contested": [
+          "BioLINC project not proceed",
+          "City Beach Tennis Club Lights - Amendment",
+          "Lot 5 Northwood Street West Leederville - Two Storey Dwelling"
+        ]
+      },
+      {
+        "year": 2014,
+        "total_carried": 364,
+        "total_with_dissent": 35,
+        "contestation_rate": 0.0962,
+        "most_contested": [
+          "Gayton Road Shopping Centre Carpark",
+          "Suspension of Standing Orders",
+          "Tilton Terrace path establishment"
+        ]
+      },
+      {
+        "year": 2015,
+        "total_carried": 240,
+        "total_with_dissent": 22,
+        "contestation_rate": 0.0917,
+        "most_contested": [
+          "Amendments to Conditions of Change of Use - Health Studio",
+          "Metropolitan West JDAP Member Nomination",
+          "Grantham Street-Selby Street Park Temporary Use - Defer Item"
+        ]
+      },
+      {
+        "year": 2016,
+        "total_carried": 584,
+        "total_with_dissent": 118,
+        "contestation_rate": 0.2021,
+        "most_contested": [
+          "Amendment to Committee Recommendation for DV16.124 commercial parking period",
+          "Adoption of Council Policy No. 4.4.9 - Parking Permits",
+          "Four two storey dwellings - West Leederville"
+        ]
+      },
+      {
+        "year": 2017,
+        "total_carried": 285,
+        "total_with_dissent": 62,
+        "contestation_rate": 0.2175,
+        "most_contested": [
+          "Lot 501 Omaroo Terrace - Refusal Motion",
+          "Gateway Entry Signage for Town of Cambridge",
+          "Local Planning Strategy - Contract Variation and Project Schedule"
+        ]
+      },
+      {
+        "year": 2018,
+        "total_carried": 378,
+        "total_with_dissent": 106,
+        "contestation_rate": 0.2804,
+        "most_contested": [
+          "Chief Executive Officer's Performance Confidential",
+          "Confirmation of Minutes - 7 February 2018",
+          "Confirmation of Minutes - 20 February 2018"
+        ]
+      },
+      {
+        "year": 2019,
+        "total_carried": 421,
+        "total_with_dissent": 71,
+        "contestation_rate": 0.1686,
+        "most_contested": [
+          "Ocean Gardens (Inc) - Proposed Changes to Ocean Gardens (Inc) Constitution",
+          "Adopt revised Policy 1.1.8 - Civic Ceremonies, Functions and Receptions",
+          "Adopt revised Policy 1.1.8 - Civic Ceremonies, Functions and Receptions (Part 2)"
+        ]
+      },
+      {
+        "year": 2020,
+        "total_carried": 477,
+        "total_with_dissent": 93,
+        "contestation_rate": 0.195,
+        "most_contested": [
+          "STEM funding allocation from SLWA",
+          "Proposed Works to Median Strip Configuration on Brookdale Street \u2013 Oceanic Drive Intersection Under Delegation 1.2.13 Private Works On, Over Or Under Public Places",
+          "Safe Active Streets project progression"
+        ]
+      },
+      {
+        "year": 2021,
+        "total_carried": 427,
+        "total_with_dissent": 63,
+        "contestation_rate": 0.1475,
+        "most_contested": [
+          "Salaries and Allowances Tribunal Submission",
+          "Recording of Closed Session Proceedings",
+          "Further Planning Legal Advice Confidential"
+        ]
+      },
+      {
+        "year": 2022,
+        "total_carried": 165,
+        "total_with_dissent": 33,
+        "contestation_rate": 0.2,
+        "most_contested": [
+          "Extension of Time to Speak",
+          "Two grouped dwellings, Connolly Street, Wembley",
+          "Appointment of Acting CEO"
+        ]
+      },
+      {
+        "year": 2023,
+        "total_carried": 29,
+        "total_with_dissent": 4,
+        "contestation_rate": 0.1379,
+        "most_contested": [
+          "Procedural Motion - Item Referred to Council",
+          "DV23.44 Lot 1712 No. 60 Oceanic Drive Floreat - Refuse Front Fence and Retaining Wall",
+          "Approve carport addition at Lot 1571 Tralee Road Floreat"
+        ]
+      },
+      {
+        "year": 2024,
+        "total_carried": 103,
+        "total_with_dissent": 15,
+        "contestation_rate": 0.1456,
+        "most_contested": [
+          "Floreat Activity Centre PSP Community Working Group - alternative motion",
+          "WALGA Advocacy Positions - Participation",
+          "WALGA Advocacy Positions - Voting Accessibility"
+        ]
+      },
+      {
+        "year": 2025,
+        "total_carried": 186,
+        "total_with_dissent": 16,
+        "contestation_rate": 0.086,
+        "most_contested": [
+          "Micro-Mobility Shared Services Review \u2013 E-Scooter Trial Extension",
+          "Revoke Policy 33 Developer Contact with Staff",
+          "Procedural motion to cease debate"
+        ]
+      },
+      {
+        "year": 2026,
+        "total_carried": 189,
+        "total_with_dissent": 10,
+        "contestation_rate": 0.0529,
+        "most_contested": [
+          "WALGA Submission - Electoral Reform Discussion Paper - Part 2(a)",
+          "AEM Motion 2 - Australia Day",
+          "Risk Management Update - Amendment"
+        ]
+      }
+    ],
+    "topics": {
+      "1995": {
+        "governance": 155,
+        "procedural": 121,
+        "other": 458,
+        "infrastructure": 82,
+        "community": 90,
+        "planning": 146,
+        "development": 37,
+        "residential": 5,
+        "budget": 63
+      },
+      "1996": {
+        "governance": 189,
+        "procedural": 171,
+        "infrastructure": 124,
+        "other": 512,
+        "community": 113,
+        "budget": 90,
+        "planning": 172,
+        "residential": 40,
+        "development": 16
+      },
+      "1997": {
+        "governance": 225,
+        "budget": 118,
+        "community": 112,
+        "other": 532,
+        "planning": 204,
+        "infrastructure": 129,
+        "procedural": 159,
+        "residential": 34,
+        "development": 17
+      },
+      "1998": {
+        "governance": 124,
+        "procedural": 120,
+        "budget": 90,
+        "other": 432,
+        "infrastructure": 116,
+        "community": 89,
+        "planning": 198,
+        "development": 27,
+        "residential": 69
+      },
+      "1999": {
+        "governance": 148,
+        "procedural": 118,
+        "other": 427,
+        "budget": 89,
+        "infrastructure": 115,
+        "community": 100,
+        "planning": 185,
+        "residential": 68,
+        "development": 22
+      },
+      "2000": {
+        "community": 96,
+        "other": 557,
+        "governance": 137,
+        "infrastructure": 141,
+        "budget": 93,
+        "procedural": 128,
+        "planning": 181,
+        "residential": 82,
+        "development": 30
+      },
+      "2001": {
+        "governance": 99,
+        "infrastructure": 90,
+        "community": 63,
+        "budget": 59,
+        "other": 367,
+        "procedural": 94,
+        "planning": 103,
+        "residential": 34,
+        "development": 6
+      },
+      "2002": {
+        "governance": 139,
+        "community": 92,
+        "infrastructure": 115,
+        "other": 517,
+        "budget": 83,
+        "procedural": 125,
+        "planning": 170,
+        "development": 7,
+        "residential": 91
+      },
+      "2003": {
+        "governance": 123,
+        "other": 401,
+        "infrastructure": 103,
+        "community": 72,
+        "planning": 157,
+        "budget": 69,
+        "procedural": 103,
+        "development": 25,
+        "residential": 69
+      },
+      "2004": {
+        "governance": 120,
+        "other": 646,
+        "infrastructure": 93,
+        "community": 81,
+        "budget": 94,
+        "procedural": 144,
+        "planning": 247,
+        "residential": 95,
+        "development": 63
+      },
+      "2005": {
+        "governance": 209,
+        "infrastructure": 97,
+        "community": 85,
+        "other": 811,
+        "budget": 96,
+        "procedural": 171,
+        "planning": 299,
+        "development": 58,
+        "residential": 150
+      },
+      "2006": {
+        "governance": 129,
+        "infrastructure": 91,
+        "other": 637,
+        "community": 77,
+        "procedural": 148,
+        "budget": 69,
+        "planning": 224,
+        "development": 28,
+        "residential": 73
+      },
+      "2007": {
+        "governance": 101,
+        "procedural": 75,
+        "infrastructure": 89,
+        "other": 387,
+        "budget": 61,
+        "planning": 101,
+        "community": 52,
+        "residential": 35,
+        "development": 21
+      },
+      "2008": {
+        "governance": 142,
+        "planning": 168,
+        "other": 385,
+        "infrastructure": 85,
+        "community": 62,
+        "budget": 71,
+        "procedural": 81,
+        "residential": 69,
+        "development": 19
+      },
+      "2009": {
+        "governance": 102,
+        "other": 283,
+        "planning": 89,
+        "infrastructure": 45,
+        "community": 48,
+        "procedural": 95,
+        "residential": 31,
+        "budget": 54,
+        "development": 8
+      },
+      "2010": {
+        "governance": 130,
+        "planning": 107,
+        "other": 320,
+        "residential": 38,
+        "procedural": 93,
+        "development": 39,
+        "community": 79,
+        "budget": 74,
+        "infrastructure": 67
+      },
+      "2011": {
+        "governance": 107,
+        "planning": 125,
+        "community": 60,
+        "procedural": 109,
+        "other": 347,
+        "infrastructure": 71,
+        "development": 44,
+        "residential": 26,
+        "budget": 61
+      },
+      "2012": {
+        "governance": 95,
+        "community": 58,
+        "other": 315,
+        "planning": 134,
+        "development": 39,
+        "infrastructure": 64,
+        "procedural": 81,
+        "residential": 40,
+        "budget": 68
+      },
+      "2013": {
+        "governance": 67,
+        "planning": 125,
+        "development": 41,
+        "other": 273,
+        "infrastructure": 48,
+        "community": 30,
+        "procedural": 67,
+        "residential": 43,
+        "budget": 53
+      },
+      "2014": {
+        "governance": 94,
+        "planning": 162,
+        "development": 43,
+        "other": 425,
+        "residential": 40,
+        "procedural": 82,
+        "infrastructure": 60,
+        "community": 61,
+        "budget": 67
+      },
+      "2015": {
+        "governance": 78,
+        "procedural": 60,
+        "planning": 119,
+        "development": 31,
+        "other": 250,
+        "community": 28,
+        "residential": 31,
+        "budget": 28,
+        "infrastructure": 33
+      },
+      "2016": {
+        "procedural": 201,
+        "planning": 249,
+        "infrastructure": 91,
+        "other": 648,
+        "community": 89,
+        "residential": 68,
+        "budget": 113,
+        "governance": 238,
+        "development": 42
+      },
+      "2017": {
+        "governance": 116,
+        "planning": 105,
+        "community": 40,
+        "other": 238,
+        "procedural": 78,
+        "residential": 13,
+        "development": 13,
+        "infrastructure": 39,
+        "budget": 43
+      },
+      "2018": {
+        "governance": 171,
+        "infrastructure": 58,
+        "other": 430,
+        "community": 73,
+        "planning": 137,
+        "procedural": 129,
+        "development": 38,
+        "residential": 30,
+        "budget": 46
+      },
+      "2019": {
+        "governance": 197,
+        "other": 462,
+        "procedural": 132,
+        "community": 68,
+        "planning": 134,
+        "development": 42,
+        "residential": 41,
+        "infrastructure": 60,
+        "budget": 59
+      },
+      "2020": {
+        "governance": 215,
+        "procedural": 175,
+        "other": 456,
+        "infrastructure": 69,
+        "planning": 145,
+        "development": 46,
+        "community": 73,
+        "budget": 48,
+        "residential": 27
+      },
+      "2021": {
+        "governance": 231,
+        "planning": 101,
+        "other": 436,
+        "procedural": 197,
+        "development": 30,
+        "budget": 46,
+        "infrastructure": 53,
+        "community": 66,
+        "residential": 15
+      },
+      "2022": {
+        "governance": 75,
+        "other": 327,
+        "infrastructure": 26,
+        "community": 53,
+        "procedural": 74,
+        "budget": 27,
+        "planning": 109,
+        "residential": 25,
+        "development": 39
+      },
+      "2023": {
+        "governance": 30,
+        "procedural": 14,
+        "planning": 54,
+        "other": 144,
+        "development": 19,
+        "residential": 11,
+        "budget": 13,
+        "infrastructure": 10,
+        "community": 16
+      },
+      "2024": {
+        "procedural": 56,
+        "governance": 93,
+        "other": 163,
+        "budget": 29,
+        "planning": 22,
+        "development": 5,
+        "community": 19,
+        "infrastructure": 13
+      },
+      "2025": {
+        "community": 46,
+        "other": 391,
+        "planning": 55,
+        "procedural": 111,
+        "governance": 188,
+        "budget": 68,
+        "development": 12,
+        "infrastructure": 46,
+        "residential": 2
+      },
+      "2026": {
+        "procedural": 97,
+        "other": 354,
+        "community": 36,
+        "budget": 46,
+        "governance": 206,
+        "infrastructure": 32,
+        "planning": 21,
+        "residential": 1,
+        "development": 3
+      }
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "published_at": "2026-09-16T11:46:11.890093+00:00",
+  "council": "cambridge",
+  "draft_run_id": "draft_20260916_113338",
+  "authorization": {
+    "gate_profile": "interactive",
+    "confirm_note": "Republish under the new multi-council-ready pipeline (SECOND_COUNCIL_PLAN.md Phases 2-3): same Cambridge corpus/battery already reviewed through this project's prior editorial passes, restructured into council-segmented output. Run at Josef's explicit direction.",
+    "clearance_source": null,
+    "reason": "human-confirmed (interactive gate profile)"
+  },
+  "snapshots": [
+    "trends",
+    "planning",
+    "dose",
+    "evidence/planning.objection_responsiveness",
+    "record_streets",
+    "lookup_search",
+    "transparency",
+    "evidence/transparency.confidential_share",
+    "tenure",
+    "rating",
+    "scorecard",
+    "evidence/governance.incumbency",
+    "record_councillors",
+    "method",
+    "watch"
+  ]
+}

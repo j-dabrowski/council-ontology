@@ -1,0 +1,277 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "trend": [
+      {
+        "year": 1995,
+        "n_applications": 86,
+        "decided": 76,
+        "approved": 44,
+        "refused": 32,
+        "approval_pct": 57.9
+      },
+      {
+        "year": 1996,
+        "n_applications": 120,
+        "decided": 103,
+        "approved": 65,
+        "refused": 38,
+        "approval_pct": 63.1
+      },
+      {
+        "year": 1997,
+        "n_applications": 136,
+        "decided": 118,
+        "approved": 85,
+        "refused": 33,
+        "approval_pct": 72.0
+      },
+      {
+        "year": 1998,
+        "n_applications": 150,
+        "decided": 124,
+        "approved": 83,
+        "refused": 41,
+        "approval_pct": 66.9
+      },
+      {
+        "year": 1999,
+        "n_applications": 145,
+        "decided": 137,
+        "approved": 115,
+        "refused": 22,
+        "approval_pct": 83.9
+      },
+      {
+        "year": 2000,
+        "n_applications": 137,
+        "decided": 114,
+        "approved": 91,
+        "refused": 23,
+        "approval_pct": 79.8
+      },
+      {
+        "year": 2001,
+        "n_applications": 74,
+        "decided": 63,
+        "approved": 53,
+        "refused": 10,
+        "approval_pct": 84.1
+      },
+      {
+        "year": 2002,
+        "n_applications": 130,
+        "decided": 107,
+        "approved": 93,
+        "refused": 14,
+        "approval_pct": 86.9
+      },
+      {
+        "year": 2003,
+        "n_applications": 113,
+        "decided": 95,
+        "approved": 89,
+        "refused": 6,
+        "approval_pct": 93.7
+      },
+      {
+        "year": 2004,
+        "n_applications": 201,
+        "decided": 174,
+        "approved": 154,
+        "refused": 20,
+        "approval_pct": 88.5
+      },
+      {
+        "year": 2005,
+        "n_applications": 242,
+        "decided": 209,
+        "approved": 180,
+        "refused": 29,
+        "approval_pct": 86.1
+      },
+      {
+        "year": 2006,
+        "n_applications": 200,
+        "decided": 165,
+        "approved": 141,
+        "refused": 24,
+        "approval_pct": 85.5
+      },
+      {
+        "year": 2007,
+        "n_applications": 62,
+        "decided": 51,
+        "approved": 44,
+        "refused": 7,
+        "approval_pct": 86.3
+      },
+      {
+        "year": 2008,
+        "n_applications": 118,
+        "decided": 89,
+        "approved": 81,
+        "refused": 8,
+        "approval_pct": 91.0
+      },
+      {
+        "year": 2009,
+        "n_applications": 56,
+        "decided": 53,
+        "approved": 46,
+        "refused": 7,
+        "approval_pct": 86.8
+      },
+      {
+        "year": 2010,
+        "n_applications": 71,
+        "decided": 67,
+        "approved": 59,
+        "refused": 8,
+        "approval_pct": 88.1
+      },
+      {
+        "year": 2011,
+        "n_applications": 67,
+        "decided": 61,
+        "approved": 48,
+        "refused": 13,
+        "approval_pct": 78.7
+      },
+      {
+        "year": 2012,
+        "n_applications": 82,
+        "decided": 71,
+        "approved": 61,
+        "refused": 10,
+        "approval_pct": 85.9
+      },
+      {
+        "year": 2013,
+        "n_applications": 71,
+        "decided": 63,
+        "approved": 51,
+        "refused": 12,
+        "approval_pct": 81.0
+      },
+      {
+        "year": 2014,
+        "n_applications": 121,
+        "decided": 105,
+        "approved": 79,
+        "refused": 26,
+        "approval_pct": 75.2
+      },
+      {
+        "year": 2015,
+        "n_applications": 69,
+        "decided": 61,
+        "approved": 52,
+        "refused": 9,
+        "approval_pct": 85.2
+      },
+      {
+        "year": 2016,
+        "n_applications": 155,
+        "decided": 138,
+        "approved": 110,
+        "refused": 28,
+        "approval_pct": 79.7
+      },
+      {
+        "year": 2017,
+        "n_applications": 66,
+        "decided": 59,
+        "approved": 46,
+        "refused": 13,
+        "approval_pct": 78.0
+      },
+      {
+        "year": 2018,
+        "n_applications": 77,
+        "decided": 67,
+        "approved": 48,
+        "refused": 19,
+        "approval_pct": 71.6
+      },
+      {
+        "year": 2019,
+        "n_applications": 83,
+        "decided": 74,
+        "approved": 58,
+        "refused": 16,
+        "approval_pct": 78.4
+      },
+      {
+        "year": 2020,
+        "n_applications": 87,
+        "decided": 81,
+        "approved": 59,
+        "refused": 22,
+        "approval_pct": 72.8
+      },
+      {
+        "year": 2021,
+        "n_applications": 48,
+        "decided": 43,
+        "approved": 26,
+        "refused": 17,
+        "approval_pct": 60.5
+      },
+      {
+        "year": 2022,
+        "n_applications": 82,
+        "decided": 49,
+        "approved": 34,
+        "refused": 15,
+        "approval_pct": 69.4
+      },
+      {
+        "year": 2023,
+        "n_applications": 24,
+        "decided": 16,
+        "approved": 12,
+        "refused": 4,
+        "approval_pct": 75.0
+      },
+      {
+        "year": 2024,
+        "n_applications": 12,
+        "decided": 5,
+        "approved": 3,
+        "refused": 2,
+        "approval_pct": 60.0
+      },
+      {
+        "year": 2025,
+        "n_applications": 12,
+        "decided": 5,
+        "approved": 5,
+        "refused": 0,
+        "approval_pct": 100.0
+      },
+      {
+        "year": 2026,
+        "n_applications": 7,
+        "decided": 6,
+        "approved": 0,
+        "refused": 6,
+        "approval_pct": 0.0
+      }
+    ],
+    "objections": {
+      "with_objection": {
+        "n": 975,
+        "approved": 755,
+        "refused": 220,
+        "approval_pct": 77.4
+      },
+      "no_objection": {
+        "n": 1674,
+        "approved": 1360,
+        "refused": 314,
+        "approval_pct": 81.2
+      }
+    }
+  }
+}

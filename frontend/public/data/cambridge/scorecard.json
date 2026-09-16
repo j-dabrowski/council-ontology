@@ -1,0 +1,1861 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "summary": {
+      "n_tests": 29,
+      "n_supportive": 9,
+      "n_neutral": 12,
+      "n_critical": 6,
+      "n_not_computable": 2,
+      "rating": {
+        "band": "yellow",
+        "band_label": "Mixed record",
+        "band_reason": "base",
+        "critical_share": 0.4,
+        "n_supportive": 9,
+        "n_neutral": 12,
+        "n_critical": 6,
+        "n_not_computable": 2,
+        "n_decisive": 15,
+        "computable_share": 0.9310344827586207,
+        "config_version": 1
+      }
+    },
+    "tests": [
+      {
+        "test_id": "procurement.threshold_gaming",
+        "title": "Tender values around the competitive-tender threshold",
+        "genre": "Integrity / procurement (3.3)",
+        "principle": "Nolan Objectivity \u00b7 CIPFA-A (IBAC Operation Royston)",
+        "question": "Is there excess mass just below the threshold that triggers competitive tender?",
+        "valence": "supportive",
+        "grade": "Good-governance strength",
+        "headline": "No spike at the $250k line \u2014 just-below and just-above mass are balanced",
+        "verdict": "No Operation-Royston fingerprint: the amount distribution is a smooth small-jobs decay with no pile-up against the threshold.",
+        "data_ok": true,
+        "n": 69,
+        "base_rate": "below:above mass ratio 1.25",
+        "era": "2015+ ($250k regime)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "threshold-gaming",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "",
+          "refline": {
+            "label": "$250k tender line",
+            "after": "200\u2013250k"
+          },
+          "bars": [
+            {
+              "label": "<50k",
+              "value": 2,
+              "highlight": false
+            },
+            {
+              "label": "50\u2013100k",
+              "value": 2,
+              "highlight": false
+            },
+            {
+              "label": "100\u2013150k",
+              "value": 7,
+              "highlight": false
+            },
+            {
+              "label": "150\u2013200k",
+              "value": 9,
+              "highlight": false
+            },
+            {
+              "label": "200\u2013250k",
+              "value": 5,
+              "highlight": true
+            },
+            {
+              "label": "250\u2013300k",
+              "value": 4,
+              "highlight": false
+            },
+            {
+              "label": "300\u2013350k",
+              "value": 7,
+              "highlight": false
+            },
+            {
+              "label": "350\u2013400k",
+              "value": 4,
+              "highlight": false
+            },
+            {
+              "label": "400k+",
+              "value": 29,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "procurement.incumbency",
+        "title": "Repeat winners and big-dollar incumbents",
+        "genre": "Integrity / procurement (3.3)",
+        "principle": "ICAC supplier-panel risk \u00b7 CIPFA-F",
+        "question": "Is any supplier both a frequent repeat-winner and a big-dollar incumbent?",
+        "valence": "supportive",
+        "grade": "Good-governance strength",
+        "headline": "Most-recurring firm (Leoheaney) appears in 5 distinct years",
+        "verdict": "No entrenched big-dollar incumbent: the repeat-winners are mundane low-value equipment/cartage rebids, not the firms that capture the dollars.",
+        "data_ok": true,
+        "n": 308,
+        "base_rate": "repeat \u2260 big-dollar",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "incumbency",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": " yrs",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Leoheaney",
+              "value": 5,
+              "highlight": false
+            },
+            {
+              "label": "Hotmix",
+              "value": 5,
+              "highlight": false
+            },
+            {
+              "label": "Cjdequipment",
+              "value": 5,
+              "highlight": false
+            },
+            {
+              "label": "Boyaequipment",
+              "value": 5,
+              "highlight": false
+            },
+            {
+              "label": "Techsand",
+              "value": 4,
+              "highlight": false
+            },
+            {
+              "label": "Ghd",
+              "value": 4,
+              "highlight": false
+            },
+            {
+              "label": "Walimestone",
+              "value": 4,
+              "highlight": false
+            },
+            {
+              "label": "Connellwagner",
+              "value": 4,
+              "highlight": false
+            },
+            {
+              "label": "Majormotors",
+              "value": 4,
+              "highlight": false
+            },
+            {
+              "label": "Totaleden",
+              "value": 4,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "procurement.single_source",
+        "title": "Single-source and direct-negotiation share",
+        "genre": "Integrity / procurement (3.3)",
+        "principle": "ICAC direct-negotiation guidance",
+        "question": "What share of tenders had no competitive field?",
+        "valence": "neutral",
+        "grade": "Not computable on this corpus",
+        "headline": "Not computable on this corpus",
+        "verdict": "Tenders carry no competitive-field metadata (number of respondents) in this corpus, so single-source concentration can't be measured \u2014 flagged for re-extraction.",
+        "data_ok": false,
+        "n": null,
+        "base_rate": null,
+        "era": null,
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "single-source",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "procurement.concentration",
+        "title": "Tender awards by contractor",
+        "genre": "Procurement / transparency (3.1/3.4)",
+        "principle": "CIPFA-F, G",
+        "question": "Is tendered spend concentrated, and how much is awarded confidentially?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "$119.6M across 214 named firms; 23% of dollars redacted; top-10 take 47%",
+        "verdict": "Concentration is the nature of big civil contracts and the supplier base is broad; the watch-item is the redacted share (a transparency issue), not capture.",
+        "data_ok": true,
+        "n": 328,
+        "base_rate": "214 distinct named contractors",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "tenders",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "procurement.decider_supplier_conflict",
+        "title": "Declared interests on tender awards",
+        "genre": "Integrity / procurement (3.3)",
+        "principle": "Nolan Objectivity \u00b7 CIPFA-A/F",
+        "question": "When council awards a tender, is a conflict declared \u2014 and does the winner ever match a councillor's known connections?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "Tender-award votes declare an interest just 1.74% of the time (below the 3.75% chamber base) \u2014 2 raw decider\u2194winner surname collision(s) across 412 named awards, unconfirmed",
+        "verdict": "2 raw surname collision(s) were found between a tender winner and a voting councillor \u2014 a name match against a councillor's surname, not a confirmed relationship; resolving one needs the underlying minute text (see the drill-down for names, firms, and provenance).",
+        "data_ok": true,
+        "n": 461,
+        "base_rate": "3.75% chamber-wide declared-interest rate; 412 named awards vs 198 voting-councillor surnames",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "decider-supplier",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Tender-award votes",
+              "value": 1.74,
+              "highlight": true
+            },
+            {
+              "label": "Chamber base rate",
+              "value": 3.75,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "conflict.recusal_management",
+        "title": "Recusal following a declared interest",
+        "genre": "Integrity / conflict (3.3)",
+        "principle": "Nolan Integrity, Objectivity \u00b7 CIPFA-A",
+        "question": "When an interest is declared, is it *managed* \u2014 i.e. does the member recuse?",
+        "valence": "critical",
+        "grade": "Governance concern",
+        "headline": "Declaring lifts recusal 83\u00d7, but members still stay and vote 75.0% of the time",
+        "verdict": "Disclosure works at the first step; the identify\u2013disclose\u2013manage chain breaks at the manage limb.",
+        "data_ok": true,
+        "n": 596,
+        "base_rate": "0.3% recuse on a normal vote",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "declared",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "conflict.recusal_trend",
+        "title": "Recusal rate before, during and after external scrutiny",
+        "genre": "Integrity / conflict (3.3)",
+        "principle": "Nolan Accountability \u00b7 CIPFA-A",
+        "question": "Did stepping out of serious conflicts change around external scrutiny?",
+        "valence": "critical",
+        "grade": "Governance concern",
+        "headline": "Must-leave recusal fell from 87.1% before scrutiny to 66.7% after (peaked at 100.0% during it)",
+        "verdict": "Financial-only recusal (leaving is mandatory) moved 100.0%\u2192100.0% (n=1) over the same window \u2014 too few post-scrutiny financial declarations to confirm or rule out a confound from a shift in which interest type gets declared.",
+        "data_ok": true,
+        "n": 132,
+        "base_rate": "leaving is legally mandatory for financial/proximity interests",
+        "era": "pre-2018 / 2018\u201321 / post-2022",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "recusal",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "conflict.delegate_body_conflict",
+        "title": "Declaration rate of council-appointed delegates",
+        "genre": "Integrity / conflict (3.3)",
+        "principle": "Nolan Objectivity/Integrity \u00b7 CIPFA-A",
+        "question": "When a councillor is Council's own appointed delegate/board member on an external body, do they declare an interest before voting on that body's business \u2014 the same disclosure regime a private supplier relationship gets?",
+        "valence": "supportive",
+        "grade": "Sound practice",
+        "headline": "Institutional delegates declare ~0% on their own body's business (public role, correctly) \u2014 the one body with genuine personal stakes, Ocean Gardens (Inc) Board of Management, declares 5/21 (23.8%), backed by 60 corpus-wide mentions \u2014 DIRECTIONAL, thin n",
+        "verdict": "The one channel where councillors could plausibly hold an undeclared personal stake in an external body's business \u2014 their own Council-appointed delegate role \u2014 comes back clean, and the split is explicable rather than a gap: institutional delegation (Mindarie Regional Council 0/15 (0.0%); Tamala Park Regional Council 0/2 (0.0%)) correctly attracts near-zero declarations, while Ocean Gardens (Inc) Board of Management, the one body some appointees hold a genuine private stake in, shows real declare-and-recuse behaviour at a materially higher rate, corroborated by 60 corpus-wide declaration mentions vs 1\u20133 for the institutional bodies. Every per-body n is thin (2\u201321 affiliated votes) \u2014 read this as a directional, explanatory pattern across three bodies, not a precise rate for any one of them.",
+        "data_ok": true,
+        "n": 38,
+        "base_rate": "other councillors' declared-interest rate on the SAME motions: Mindarie Regional Council 1.3%; Tamala Park Regional Council 11.1%; Ocean Gardens (Inc) Board of Management 3.7%",
+        "era": "1995\u20132026 \u00b7 DIRECTIONAL (thin n per body)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "delegate-body-conflict",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Mindarie Regional Council",
+              "value": 0.0,
+              "highlight": false
+            },
+            {
+              "label": "Tamala Park Regional Council",
+              "value": 0.0,
+              "highlight": false
+            },
+            {
+              "label": "Ocean Gardens (Inc) Board of Management",
+              "value": 23.8,
+              "highlight": true
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "planning.big_dollar_leniency",
+        "title": "Approval rate by development value",
+        "genre": "Governance / fairness (3.2)",
+        "principle": "CIPFA-D \u00b7 Nolan Objectivity",
+        "question": "Does approval rate vary with the estimated value of the development?",
+        "valence": "supportive",
+        "grade": "Sound practice",
+        "headline": "Approval by value quartile (low\u2192high): 74/74/69/74%",
+        "verdict": "Flat across value quartiles \u2014 big developers get neither an easier ride nor extra scrutiny.",
+        "data_ok": true,
+        "n": 235,
+        "base_rate": "5pp spread across quartiles",
+        "era": "applications with a recorded value",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "big-dollar",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Q1 (lowest $)",
+              "value": 74,
+              "highlight": false
+            },
+            {
+              "label": "Q2",
+              "value": 74,
+              "highlight": false
+            },
+            {
+              "label": "Q3",
+              "value": 69,
+              "highlight": false
+            },
+            {
+              "label": "Q4 (highest $)",
+              "value": 74,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "planning.repeat_applicant",
+        "title": "Approval rate by applicant frequency",
+        "genre": "Integrity / fairness (3.3)",
+        "principle": "ICAC favouritism risk \u00b7 Nolan Objectivity",
+        "question": "Do repeat builders/agents get approved at a higher rate than one-shot applicants?",
+        "valence": "supportive",
+        "grade": "Good-governance strength",
+        "headline": "Approval by applicant frequency: 1\u00d7=82% \u00b7 2\u20133=72% \u00b7 4\u20136=84% \u00b7 7+=83%",
+        "verdict": "No repeat-player advantage \u2014 frequent applicants win no more than first-timers.",
+        "data_ok": true,
+        "n": 2557,
+        "base_rate": "flat across frequency",
+        "era": "applications with a named applicant",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "repeat-applicant",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "1 app",
+              "value": 82,
+              "highlight": false
+            },
+            {
+              "label": "2\u20133",
+              "value": 72,
+              "highlight": false
+            },
+            {
+              "label": "4\u20136",
+              "value": 84,
+              "highlight": false
+            },
+            {
+              "label": "7+",
+              "value": 83,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "planning.objection_responsiveness",
+        "title": "Refusal rate by objection count",
+        "genre": "Process / engagement (3.4)",
+        "principle": "CIPFA-B \u2014 meaningful stakeholder engagement",
+        "question": "Does refusal rise with the number of residents objecting to an application?",
+        "valence": "supportive",
+        "grade": "Sound practice",
+        "headline": "Refusal climbs 18.8% \u2192 50.0% from no objectors to 5+",
+        "verdict": "A clean dose\u2013response: a lone objection is noise, but coordinated numbers move outcomes \u2014 engagement works, even if a single letter does not.",
+        "data_ok": true,
+        "n": 2649,
+        "base_rate": "18.8% refusal with no objectors",
+        "era": "all decided applications",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "dose",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.officer_ratification",
+        "title": "Departures from the officer recommendation",
+        "genre": "Governance / culture (3.2)",
+        "principle": "CIPFA-F \u00b7 the 'visible contest is theatre' prior",
+        "question": "How often does council depart from the officer recommendation?",
+        "valence": "critical",
+        "grade": "Governance concern",
+        "headline": "Council adopted the officer recommendation 97.0% of the time",
+        "verdict": "Near-total ratification means the substantive decision is upstream, in who writes the recommendation \u2014 the most important caveat on every voting finding.",
+        "data_ok": true,
+        "n": 203,
+        "base_rate": "6 departures across 203 matched items",
+        "era": "where officer recs exist (agenda-matched)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "divergence",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.power_spread",
+        "title": "Outcomes on contested votes",
+        "genre": "Governance / culture (3.2)",
+        "principle": "CIPFA-B \u00b7 Nolan Accountability",
+        "question": "On contested votes, how unequal is who actually wins \u2014 and is it accountable?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "Contested-vote win rates span 41\u201392% between councillors",
+        "verdict": "A real hidden hierarchy behind near-unanimous votes \u2014 but one that turns over at elections rather than ossifying, so it is electorally accountable.",
+        "data_ok": true,
+        "n": 1473,
+        "base_rate": "75.9% base carry rate",
+        "era": "2003\u20132026 (contested motions)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "power",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.oversight_body_capture",
+        "title": "Oversight-committee membership against chamber win rates",
+        "genre": "Governance / culture (3.2) & Strength (E)",
+        "principle": "CIPFA-A (internal audit/oversight function) \u00b7 Nolan Accountability",
+        "question": "Does membership on the council's Audit Committee / CEO Performance Review Committee skew toward the chamber's habitual winners, or draw broadly \u2014 including from its habitual dissenters?",
+        "valence": "supportive",
+        "grade": "Good-governance strength",
+        "headline": "31 distinct councillors have ever sat on an oversight body; appointee win rate 73.28% (n=7160) vs non-appointee 73.13% (n=3707) \u2014 a 0.2 pp gap, not meaningfully distinguishable",
+        "verdict": "No self-appointment of the powerful to watch themselves: the oversight-body appointee list's win-rate spread (31.0\u201392.5%) runs almost the full range of the chamber, from its most consistent winners among appointees down to some of the corpus's most frequent dissenters. CIPFA-A's internal audit/oversight-function principle is met on this reading; era-pooled, so a modern-era shift could still hide in the aggregate.",
+        "data_ok": true,
+        "n": 10867,
+        "base_rate": "non-appointee win rate 73.13% (n=3707)",
+        "era": "1995\u20132026, era-pooled",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "oversight-body-capture",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Appointees",
+              "value": 73.28,
+              "highlight": false
+            },
+            {
+              "label": "Non-appointees",
+              "value": 73.13,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.unanimity_trend",
+        "title": "Share of carried motions drawing dissent",
+        "genre": "Governance / culture (3.2)",
+        "principle": "CIPFA-B \u2014 how the chamber conducts business",
+        "question": "What share of carried motions drew at least one dissenting vote, over time?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "9.1% of carried motions drew a dissenting vote (chamber-wide)",
+        "verdict": "Mostly-unanimous on the surface; the contested share moves with the political era rather than holding constant.",
+        "data_ok": true,
+        "n": 12274,
+        "base_rate": "9.1% contested",
+        "era": "1995\u20132026 (years with \u226530 carried motions)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "unanimity",
+        "series": [
+          {
+            "x": 1995,
+            "y": 0.4
+          },
+          {
+            "x": 1996,
+            "y": 1.1
+          },
+          {
+            "x": 1997,
+            "y": 2.2
+          },
+          {
+            "x": 1998,
+            "y": 1.2
+          },
+          {
+            "x": 1999,
+            "y": 1.9
+          },
+          {
+            "x": 2000,
+            "y": 3.5
+          },
+          {
+            "x": 2001,
+            "y": 3.5
+          },
+          {
+            "x": 2002,
+            "y": 4.2
+          },
+          {
+            "x": 2003,
+            "y": 3.6
+          },
+          {
+            "x": 2004,
+            "y": 5.1
+          },
+          {
+            "x": 2005,
+            "y": 13.2
+          },
+          {
+            "x": 2006,
+            "y": 10.5
+          },
+          {
+            "x": 2007,
+            "y": 12.8
+          },
+          {
+            "x": 2008,
+            "y": 11.7
+          },
+          {
+            "x": 2009,
+            "y": 8.0
+          },
+          {
+            "x": 2010,
+            "y": 7.3
+          },
+          {
+            "x": 2011,
+            "y": 8.2
+          },
+          {
+            "x": 2012,
+            "y": 4.7
+          },
+          {
+            "x": 2013,
+            "y": 8.3
+          },
+          {
+            "x": 2014,
+            "y": 9.6
+          },
+          {
+            "x": 2015,
+            "y": 9.2
+          },
+          {
+            "x": 2016,
+            "y": 20.2
+          },
+          {
+            "x": 2017,
+            "y": 21.8
+          },
+          {
+            "x": 2018,
+            "y": 28.0
+          },
+          {
+            "x": 2019,
+            "y": 16.9
+          },
+          {
+            "x": 2020,
+            "y": 19.5
+          },
+          {
+            "x": 2021,
+            "y": 14.8
+          },
+          {
+            "x": 2022,
+            "y": 20.0
+          },
+          {
+            "x": 2024,
+            "y": 14.6
+          },
+          {
+            "x": 2025,
+            "y": 8.6
+          },
+          {
+            "x": 2026,
+            "y": 5.3
+          }
+        ],
+        "chart": {
+          "kind": "line",
+          "unit": "%",
+          "refline": null,
+          "points": [
+            {
+              "x": 1995,
+              "y": 0.4
+            },
+            {
+              "x": 1996,
+              "y": 1.1
+            },
+            {
+              "x": 1997,
+              "y": 2.2
+            },
+            {
+              "x": 1998,
+              "y": 1.2
+            },
+            {
+              "x": 1999,
+              "y": 1.9
+            },
+            {
+              "x": 2000,
+              "y": 3.5
+            },
+            {
+              "x": 2001,
+              "y": 3.5
+            },
+            {
+              "x": 2002,
+              "y": 4.2
+            },
+            {
+              "x": 2003,
+              "y": 3.6
+            },
+            {
+              "x": 2004,
+              "y": 5.1
+            },
+            {
+              "x": 2005,
+              "y": 13.2
+            },
+            {
+              "x": 2006,
+              "y": 10.5
+            },
+            {
+              "x": 2007,
+              "y": 12.8
+            },
+            {
+              "x": 2008,
+              "y": 11.7
+            },
+            {
+              "x": 2009,
+              "y": 8.0
+            },
+            {
+              "x": 2010,
+              "y": 7.3
+            },
+            {
+              "x": 2011,
+              "y": 8.2
+            },
+            {
+              "x": 2012,
+              "y": 4.7
+            },
+            {
+              "x": 2013,
+              "y": 8.3
+            },
+            {
+              "x": 2014,
+              "y": 9.6
+            },
+            {
+              "x": 2015,
+              "y": 9.2
+            },
+            {
+              "x": 2016,
+              "y": 20.2
+            },
+            {
+              "x": 2017,
+              "y": 21.8
+            },
+            {
+              "x": 2018,
+              "y": 28.0
+            },
+            {
+              "x": 2019,
+              "y": 16.9
+            },
+            {
+              "x": 2020,
+              "y": 19.5
+            },
+            {
+              "x": 2021,
+              "y": 14.8
+            },
+            {
+              "x": 2022,
+              "y": 20.0
+            },
+            {
+              "x": 2024,
+              "y": 14.6
+            },
+            {
+              "x": 2025,
+              "y": 8.6
+            },
+            {
+              "x": 2026,
+              "y": 5.3
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.chair_capture",
+        "title": "Dissent rate on the Mayor's motions against backbench motions",
+        "genre": "Governance / culture (3.2)",
+        "principle": "Nolan Accountability, Objectivity",
+        "question": "Do the Mayor's own motions get an easier ride than backbench motions?",
+        "valence": "supportive",
+        "grade": "Good-governance strength",
+        "headline": "Mayoral motions drew dissent 21.8% of the time vs 8.3% for backbench motions",
+        "verdict": "The opposite of chair capture: the chamber votes against its own Mayor at least as often as backbench motions \u2014 the most powerful member earns no deference at the gavel.",
+        "data_ok": true,
+        "n": 622,
+        "base_rate": "8.3% backbench dissent rate",
+        "era": "1999\u20132026 (mayors with dated terms)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "mayoral",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.durable_faction",
+        "title": "Sponsorship and voting blocs across electoral terms",
+        "genre": "Governance / culture (3.2)",
+        "principle": "CIPFA-B \u00b7 the Perth root-cause genre",
+        "question": "Do voting/sponsorship blocs persist across electoral terms (an entrenched bloc)?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "A 2000s old-guard sponsorship clique existed and fragmented in 2008; no durable bloc in the modern council",
+        "verdict": "Working alliances are real and visible in who-seconds-whom, but the persistence test found no entrenched modern faction \u2014 the structure reshuffles each election.",
+        "data_ok": true,
+        "n": null,
+        "base_rate": "high-sponsor pairs agree 67.3% vs 54.1% base",
+        "era": "1996\u20132023 (electoral terms)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "sponsorship",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.incumbency",
+        "title": "Tenure and turnover",
+        "genre": "Governance / culture (3.2)",
+        "principle": "CIPFA-A, E",
+        "question": "How entrenched is the chamber \u2014 long-server-heavy, or renewing?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "Median service 9.5 years; 17 served 15+; longest 30.8y",
+        "verdict": "Stability with institutional memory, but a long-server-heavy tail that is an entrenchment risk worth watching.",
+        "data_ok": true,
+        "n": 46,
+        "base_rate": "median 9.5y",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "tenure",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.freshman_effect",
+        "title": "Dissent rate in a councillor's first year against later years",
+        "genre": "Governance / culture (3.2)",
+        "principle": "CIPFA-E \u2014 leadership capacity",
+        "question": "Do councillors dissent at a different rate in their first year than later?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "Dissent in first 12 months 22.5% vs 17.2% later",
+        "verdict": "No systematic freshman effect once cohort era is accounted for \u2014 new members behave much like veterans (the rigorous per-councillor test was a clean null).",
+        "data_ok": true,
+        "n": 12839,
+        "base_rate": "17.2% veteran dissent",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "freshman",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "First 12 months",
+              "value": 22.5,
+              "highlight": false
+            },
+            {
+              "label": "Later service",
+              "value": 17.2,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.election_cycle",
+        "title": "Dissent rate in the pre-election window",
+        "genre": "Governance / culture (3.2)",
+        "principle": "Nolan Selflessness",
+        "question": "Is dissent higher in the pre-election window than the rest of the cycle?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "Pre-election dissent 19.4% vs 17.2% otherwise",
+        "verdict": "A small, confound-prone difference \u2014 no strong electoral-cycle positioning effect.",
+        "data_ok": true,
+        "n": 12839,
+        "base_rate": "17.2% off-cycle",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "election-cycle",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Pre-election (Apr\u2013Oct odd yr)",
+              "value": 19.4,
+              "highlight": false
+            },
+            {
+              "label": "Rest of cycle",
+              "value": 17.2,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "governance.attendance",
+        "title": "Absence from votes, split by recusal and non-attendance",
+        "genre": "Governance / culture (3.2)",
+        "principle": "Nolan Accountability \u2014 submit to scrutiny",
+        "question": "What share of cast-vote opportunities are ABSENT, and is that recusal or disengagement?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "1.2% of vote rows are ABSENT \u2014 76% of those are lawful recusal, only 24% genuine non-attendance (0.3% of all votes)",
+        "verdict": "The single ABSENT figure is dominated by councillors stepping out on declared conflicts, not disengagement: genuine non-attendance is a fraction of a percent of votes \u2014 an attendance strength once the recusal share is separated out.",
+        "data_ok": true,
+        "n": 15881,
+        "base_rate": "149 recusal vs 48 genuine of 197 ABSENT",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "attendance",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Recusal (declared)",
+              "value": 149,
+              "highlight": false
+            },
+            {
+              "label": "Genuine absence",
+              "value": 48,
+              "highlight": true
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "transparency.confidential_share",
+        "title": "Share of decided items closed to the public",
+        "genre": "Process / transparency (3.4)",
+        "principle": "Nolan Openness \u00b7 CIPFA-B",
+        "question": "What share of decided items is confidential, and is it rising?",
+        "valence": "critical",
+        "grade": "Governance concern",
+        "headline": "2.4% confidential at baseline, spiking to 17.2% in 2020",
+        "verdict": "A strong baseline openness rate with a spike that stands out from it; the concern is the scale and timing of that spike, not a habit of secrecy.",
+        "data_ok": true,
+        "n": null,
+        "base_rate": "2.4% two-decade baseline",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "transparency",
+        "series": [
+          {
+            "x": 1995,
+            "y": 1.8
+          },
+          {
+            "x": 1996,
+            "y": 2.2
+          },
+          {
+            "x": 1997,
+            "y": 3.9
+          },
+          {
+            "x": 1998,
+            "y": 2.0
+          },
+          {
+            "x": 1999,
+            "y": 2.1
+          },
+          {
+            "x": 2000,
+            "y": 0.9
+          },
+          {
+            "x": 2001,
+            "y": 1.6
+          },
+          {
+            "x": 2002,
+            "y": 2.9
+          },
+          {
+            "x": 2003,
+            "y": 1.2
+          },
+          {
+            "x": 2004,
+            "y": 1.4
+          },
+          {
+            "x": 2005,
+            "y": 1.7
+          },
+          {
+            "x": 2006,
+            "y": 2.7
+          },
+          {
+            "x": 2007,
+            "y": 1.9
+          },
+          {
+            "x": 2008,
+            "y": 3.4
+          },
+          {
+            "x": 2009,
+            "y": 3.3
+          },
+          {
+            "x": 2010,
+            "y": 3.1
+          },
+          {
+            "x": 2011,
+            "y": 4.9
+          },
+          {
+            "x": 2012,
+            "y": 1.3
+          },
+          {
+            "x": 2013,
+            "y": 0.5
+          },
+          {
+            "x": 2014,
+            "y": 3.0
+          },
+          {
+            "x": 2015,
+            "y": 1.0
+          },
+          {
+            "x": 2016,
+            "y": 4.8
+          },
+          {
+            "x": 2017,
+            "y": 3.8
+          },
+          {
+            "x": 2018,
+            "y": 7.7
+          },
+          {
+            "x": 2019,
+            "y": 8.3
+          },
+          {
+            "x": 2020,
+            "y": 17.2
+          },
+          {
+            "x": 2021,
+            "y": 15.9
+          },
+          {
+            "x": 2022,
+            "y": 7.1
+          },
+          {
+            "x": 2024,
+            "y": 7.1
+          },
+          {
+            "x": 2025,
+            "y": 2.5
+          },
+          {
+            "x": 2026,
+            "y": 3.8
+          }
+        ],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "transparency.confidential_tender_size",
+        "title": "Tender values, confidential against open",
+        "genre": "Transparency / financial (3.4 / 3.1)",
+        "principle": "Nolan Openness \u00b7 CIPFA-G \u2014 transparency/audit",
+        "question": "Do confidential tenders carry higher dollar values than open ones?",
+        "valence": "critical",
+        "grade": "Governance concern",
+        "headline": "Confidential tenders run a $313,495 median vs $108,861 open (~2.9\u00d7) \u2014 DIRECTIONAL, n=16",
+        "verdict": "The contracts residents can least scrutinise are systematically the largest \u2014 confidentiality is often lawful, so this is a visibility concern, not impropriety.",
+        "data_ok": true,
+        "n": 16,
+        "base_rate": "open-tender median $108,861 (n=319)",
+        "era": "1995\u20132026 \u00b7 DIRECTIONAL (n<30)",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "confidential-tender-size",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "k",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Confidential",
+              "value": 313,
+              "highlight": true
+            },
+            {
+              "label": "Open",
+              "value": 109,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "transparency.confidential_topics",
+        "title": "Subject matter of confidential items",
+        "genre": "Transparency (3.4)",
+        "principle": "Nolan Openness \u00b7 CIPFA-B \u2014 openness & engagement",
+        "question": "Does confidentiality track lawful statutory grounds or politically contentious topics?",
+        "valence": "supportive",
+        "grade": "Good-governance strength",
+        "headline": "Confidentiality concentrates on lawful grounds (Commercial-in-conf 23%, lift 4.97\u00d7); contentious 'named development' is the LEAST closed (1.6%, lift 0.36\u00d7)",
+        "verdict": "Closure tracks the categories the law exists to protect (commercial-in-confidence, tenders, HR, legal, land contracts); the most politically sensitive category \u2014 named developments \u2014 is the most OPEN, not the most closed. Keyword themes are coarse, and any error biases toward the null (over-counting development closures).",
+        "data_ok": true,
+        "n": 530,
+        "base_rate": "4.6% of all items confidential",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "confidential-topics",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Commercial-in-conf",
+              "value": 22.7,
+              "highlight": false
+            },
+            {
+              "label": "Tender/procurement",
+              "value": 11.5,
+              "highlight": false
+            },
+            {
+              "label": "Personnel/HR",
+              "value": 10.6,
+              "highlight": false
+            },
+            {
+              "label": "Legal/litigation",
+              "value": 10.4,
+              "highlight": false
+            },
+            {
+              "label": "Land/property deal",
+              "value": 8.2,
+              "highlight": false
+            },
+            {
+              "label": "Named development",
+              "value": 1.6,
+              "highlight": true
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "finance.eoy_spending",
+        "title": "Tender spend by month of the budget year",
+        "genre": "Financial (3.1)",
+        "principle": "CIPFA-F \u2014 financial management",
+        "question": "Do tender dollars cluster into the final months of the budget cycle?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "December holds 13% of tender dollars (42 awards) vs ~8% expected",
+        "verdict": "A modest end-of-year bump consistent with normal capital timing, not a dramatic use-it-or-lose-it dump.",
+        "data_ok": true,
+        "n": 335,
+        "base_rate": "~8% if evenly spread",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "eoy",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "$M",
+          "refline": null,
+          "bars": [
+            {
+              "label": "Jan",
+              "value": 0.0,
+              "highlight": false
+            },
+            {
+              "label": "Feb",
+              "value": 5.6,
+              "highlight": false
+            },
+            {
+              "label": "Mar",
+              "value": 11.0,
+              "highlight": false
+            },
+            {
+              "label": "Apr",
+              "value": 12.5,
+              "highlight": false
+            },
+            {
+              "label": "May",
+              "value": 3.6,
+              "highlight": false
+            },
+            {
+              "label": "Jun",
+              "value": 13.4,
+              "highlight": false
+            },
+            {
+              "label": "Jul",
+              "value": 4.8,
+              "highlight": false
+            },
+            {
+              "label": "Aug",
+              "value": 24.0,
+              "highlight": false
+            },
+            {
+              "label": "Sep",
+              "value": 12.2,
+              "highlight": false
+            },
+            {
+              "label": "Oct",
+              "value": 6.7,
+              "highlight": false
+            },
+            {
+              "label": "Nov",
+              "value": 18.0,
+              "highlight": false
+            },
+            {
+              "label": "Dec",
+              "value": 16.9,
+              "highlight": true
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "finance.reserve_trajectory",
+        "title": "Reserve balances over time",
+        "genre": "Financial (3.1)",
+        "principle": "CIPFA Financial Resilience Index",
+        "question": "Are reserves being depleted (the s.114 precursor)?",
+        "valence": "neutral",
+        "grade": "Not computable on this corpus",
+        "headline": "Not computable on this corpus",
+        "verdict": "An investment-portfolio series exists in the minutes (peaked ~$73M in 2018) but the ~24 irregular free-text snapshots can't be normalised to a defensible reserve trend yet \u2014 needs a finance-aware re-extraction.",
+        "data_ok": false,
+        "n": null,
+        "base_rate": null,
+        "era": null,
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus"
+        ],
+        "reply": null,
+        "detail_panel": "reserve",
+        "series": [],
+        "chart": null,
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "engagement.participation",
+        "title": "Public questions, deputations and petitions over time",
+        "genre": "Process / engagement (3.4)",
+        "principle": "CIPFA-B \u2014 openness & stakeholder engagement",
+        "question": "What is the volume and trend of public questions, deputations and petitions?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "4,993 recorded public engagements (questions, deputations, petitions) \u00b7 ~190/yr recently",
+        "verdict": "Public participation is channelled through questions, deputations and petitions; the volume tracks the political temperature rather than a steady civic baseline.",
+        "data_ok": true,
+        "n": 4993,
+        "base_rate": "~190/yr since 2016",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "engagement",
+        "series": [],
+        "chart": {
+          "kind": "line",
+          "unit": "",
+          "refline": null,
+          "points": [
+            {
+              "x": 1995,
+              "y": 8
+            },
+            {
+              "x": 1996,
+              "y": 66
+            },
+            {
+              "x": 1997,
+              "y": 123
+            },
+            {
+              "x": 1998,
+              "y": 86
+            },
+            {
+              "x": 1999,
+              "y": 92
+            },
+            {
+              "x": 2000,
+              "y": 158
+            },
+            {
+              "x": 2001,
+              "y": 106
+            },
+            {
+              "x": 2002,
+              "y": 119
+            },
+            {
+              "x": 2003,
+              "y": 107
+            },
+            {
+              "x": 2004,
+              "y": 137
+            },
+            {
+              "x": 2005,
+              "y": 257
+            },
+            {
+              "x": 2006,
+              "y": 182
+            },
+            {
+              "x": 2007,
+              "y": 115
+            },
+            {
+              "x": 2008,
+              "y": 133
+            },
+            {
+              "x": 2009,
+              "y": 116
+            },
+            {
+              "x": 2010,
+              "y": 118
+            },
+            {
+              "x": 2011,
+              "y": 150
+            },
+            {
+              "x": 2012,
+              "y": 158
+            },
+            {
+              "x": 2013,
+              "y": 115
+            },
+            {
+              "x": 2014,
+              "y": 186
+            },
+            {
+              "x": 2015,
+              "y": 367
+            },
+            {
+              "x": 2016,
+              "y": 644
+            },
+            {
+              "x": 2017,
+              "y": 228
+            },
+            {
+              "x": 2018,
+              "y": 211
+            },
+            {
+              "x": 2019,
+              "y": 262
+            },
+            {
+              "x": 2020,
+              "y": 163
+            },
+            {
+              "x": 2021,
+              "y": 220
+            },
+            {
+              "x": 2022,
+              "y": 56
+            },
+            {
+              "x": 2023,
+              "y": 10
+            },
+            {
+              "x": 2024,
+              "y": 59
+            },
+            {
+              "x": 2025,
+              "y": 151
+            },
+            {
+              "x": 2026,
+              "y": 90
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "engagement.deputation_dissent",
+        "title": "Contested-vote rate at meetings with a deputation",
+        "genre": "Process / engagement (3.4)",
+        "principle": "CIPFA-B \u2014 stakeholder engagement",
+        "question": "Do meetings with a public deputation see more contested votes?",
+        "valence": "neutral",
+        "grade": "Observation",
+        "headline": "Contestation 9.5% with a deputation vs 7.4% without",
+        "verdict": "A small gap, confounded by busy meetings having both more deputations and more motions \u2014 no strong effect.",
+        "data_ok": true,
+        "n": 12274,
+        "base_rate": "7.4% without a deputation",
+        "era": "1995\u20132026",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "deputations",
+        "series": [],
+        "chart": {
+          "kind": "bars",
+          "unit": "%",
+          "refline": null,
+          "bars": [
+            {
+              "label": "With a deputation",
+              "value": 9.5,
+              "highlight": false
+            },
+            {
+              "label": "Without",
+              "value": 7.4,
+              "highlight": false
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      },
+      {
+        "test_id": "engagement.question_responsiveness",
+        "title": "Public questions taken on notice against answered in the meeting",
+        "genre": "Process / engagement (3.4)",
+        "principle": "CIPFA-B \u2014 openness & stakeholder engagement \u00b7 Nolan Accountability",
+        "question": "What share of public questions are deferred rather than answered in the meeting, over time?",
+        "valence": "critical",
+        "grade": "Governance concern",
+        "headline": "Deferral of public questions rose from 4.3% before scrutiny to 15.7% during it (peak 26.8% in 2020), still elevated at 11.2% after",
+        "verdict": "Most public questions are answered live, but during and after the scrutiny window they were increasingly deferred to 'on notice' \u2014 a measurable dip in in-room accountability. 'On notice' is lawful and often appropriate, so this is a responsiveness concern, not impropriety; the classifier is conservative, so the deferral share is a floor.",
+        "data_ok": true,
+        "n": 3138,
+        "base_rate": "4.3% deferred pre-scrutiny baseline",
+        "era": "pre-2018 / 2018\u201321 / post-2022",
+        "unit_of_analysis": "institutional",
+        "named_entities": [],
+        "entity_resolution": "clean",
+        "scope": [
+          "whole_corpus",
+          "single_meeting"
+        ],
+        "reply": null,
+        "detail_panel": "question-responsiveness",
+        "series": [],
+        "chart": {
+          "kind": "line",
+          "unit": "%",
+          "refline": null,
+          "points": [
+            {
+              "x": 1996,
+              "y": 0.0
+            },
+            {
+              "x": 1997,
+              "y": 6.2
+            },
+            {
+              "x": 1998,
+              "y": 13.0
+            },
+            {
+              "x": 1999,
+              "y": 0.0
+            },
+            {
+              "x": 2000,
+              "y": 4.5
+            },
+            {
+              "x": 2001,
+              "y": 7.3
+            },
+            {
+              "x": 2002,
+              "y": 4.3
+            },
+            {
+              "x": 2003,
+              "y": 5.7
+            },
+            {
+              "x": 2004,
+              "y": 4.5
+            },
+            {
+              "x": 2005,
+              "y": 4.7
+            },
+            {
+              "x": 2006,
+              "y": 5.2
+            },
+            {
+              "x": 2007,
+              "y": 12.7
+            },
+            {
+              "x": 2008,
+              "y": 8.5
+            },
+            {
+              "x": 2009,
+              "y": 2.8
+            },
+            {
+              "x": 2010,
+              "y": 17.4
+            },
+            {
+              "x": 2011,
+              "y": 2.0
+            },
+            {
+              "x": 2012,
+              "y": 0.0
+            },
+            {
+              "x": 2013,
+              "y": 7.0
+            },
+            {
+              "x": 2014,
+              "y": 2.0
+            },
+            {
+              "x": 2015,
+              "y": 1.8
+            },
+            {
+              "x": 2016,
+              "y": 3.7
+            },
+            {
+              "x": 2017,
+              "y": 5.9
+            },
+            {
+              "x": 2018,
+              "y": 14.0
+            },
+            {
+              "x": 2019,
+              "y": 17.3
+            },
+            {
+              "x": 2020,
+              "y": 26.8
+            },
+            {
+              "x": 2021,
+              "y": 6.2
+            },
+            {
+              "x": 2022,
+              "y": 20.5
+            },
+            {
+              "x": 2024,
+              "y": 12.5
+            },
+            {
+              "x": 2025,
+              "y": 10.3
+            },
+            {
+              "x": 2026,
+              "y": 6.8
+            }
+          ]
+        },
+        "stat": null,
+        "digest_floor": 0.0
+      }
+    ]
+  }
+}

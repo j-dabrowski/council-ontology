@@ -1,0 +1,649 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "council": "Cambridge",
+    "generated_at": "2026-09-16T11:33:38.011421+00:00",
+    "coverage": {
+      "census_total": {
+        "value": 537,
+        "source": "data/cambridge/census.json",
+        "generated_at": "2026-05-28T07:56:35.451025+00:00",
+        "n": 537
+      },
+      "by_year": [
+        {
+          "year": 1995,
+          "censused": 22,
+          "documents_in_db": 22,
+          "minutes_in_db": 22
+        },
+        {
+          "year": 1996,
+          "censused": 23,
+          "documents_in_db": 23,
+          "minutes_in_db": 23
+        },
+        {
+          "year": 1997,
+          "censused": 22,
+          "documents_in_db": 22,
+          "minutes_in_db": 22
+        },
+        {
+          "year": 1998,
+          "censused": 15,
+          "documents_in_db": 15,
+          "minutes_in_db": 15
+        },
+        {
+          "year": 1999,
+          "censused": 15,
+          "documents_in_db": 14,
+          "minutes_in_db": 14
+        },
+        {
+          "year": 2000,
+          "censused": 13,
+          "documents_in_db": 13,
+          "minutes_in_db": 13
+        },
+        {
+          "year": 2001,
+          "censused": 15,
+          "documents_in_db": 15,
+          "minutes_in_db": 15
+        },
+        {
+          "year": 2002,
+          "censused": 15,
+          "documents_in_db": 15,
+          "minutes_in_db": 15
+        },
+        {
+          "year": 2003,
+          "censused": 14,
+          "documents_in_db": 14,
+          "minutes_in_db": 14
+        },
+        {
+          "year": 2004,
+          "censused": 14,
+          "documents_in_db": 14,
+          "minutes_in_db": 14
+        },
+        {
+          "year": 2005,
+          "censused": 18,
+          "documents_in_db": 18,
+          "minutes_in_db": 18
+        },
+        {
+          "year": 2006,
+          "censused": 15,
+          "documents_in_db": 15,
+          "minutes_in_db": 15
+        },
+        {
+          "year": 2007,
+          "censused": 16,
+          "documents_in_db": 16,
+          "minutes_in_db": 16
+        },
+        {
+          "year": 2008,
+          "censused": 13,
+          "documents_in_db": 13,
+          "minutes_in_db": 13
+        },
+        {
+          "year": 2009,
+          "censused": 16,
+          "documents_in_db": 16,
+          "minutes_in_db": 16
+        },
+        {
+          "year": 2010,
+          "censused": 14,
+          "documents_in_db": 14,
+          "minutes_in_db": 14
+        },
+        {
+          "year": 2011,
+          "censused": 15,
+          "documents_in_db": 15,
+          "minutes_in_db": 15
+        },
+        {
+          "year": 2012,
+          "censused": 14,
+          "documents_in_db": 14,
+          "minutes_in_db": 14
+        },
+        {
+          "year": 2013,
+          "censused": 18,
+          "documents_in_db": 17,
+          "minutes_in_db": 17
+        },
+        {
+          "year": 2014,
+          "censused": 13,
+          "documents_in_db": 12,
+          "minutes_in_db": 12
+        },
+        {
+          "year": 2015,
+          "censused": 15,
+          "documents_in_db": 15,
+          "minutes_in_db": 15
+        },
+        {
+          "year": 2016,
+          "censused": 14,
+          "documents_in_db": 14,
+          "minutes_in_db": 14
+        },
+        {
+          "year": 2017,
+          "censused": 16,
+          "documents_in_db": 16,
+          "minutes_in_db": 16
+        },
+        {
+          "year": 2018,
+          "censused": 26,
+          "documents_in_db": 26,
+          "minutes_in_db": 26
+        },
+        {
+          "year": 2019,
+          "censused": 18,
+          "documents_in_db": 17,
+          "minutes_in_db": 17
+        },
+        {
+          "year": 2020,
+          "censused": 26,
+          "documents_in_db": 26,
+          "minutes_in_db": 26
+        },
+        {
+          "year": 2021,
+          "censused": 22,
+          "documents_in_db": 21,
+          "minutes_in_db": 20
+        },
+        {
+          "year": 2022,
+          "censused": 17,
+          "documents_in_db": 23,
+          "minutes_in_db": 13
+        },
+        {
+          "year": 2023,
+          "censused": 15,
+          "documents_in_db": 18,
+          "minutes_in_db": 8
+        },
+        {
+          "year": 2024,
+          "censused": 11,
+          "documents_in_db": 23,
+          "minutes_in_db": 9
+        },
+        {
+          "year": 2025,
+          "censused": 31,
+          "documents_in_db": 43,
+          "minutes_in_db": 17
+        },
+        {
+          "year": 2026,
+          "censused": 6,
+          "documents_in_db": 21,
+          "minutes_in_db": 8
+        }
+      ],
+      "type_mix": {
+        "value": {
+          "Ordinary Council Meeting": 331,
+          "Special Meeting": 133,
+          "Committee Meeting": 26,
+          "Annual General Meeting of Electors": 17,
+          "Annual General Meeting": 10,
+          "Special Council Meeting": 9,
+          "Special Meeting of Electors": 7,
+          "Meeting Agenda Briefing Forum": 2
+        },
+        "source": "data/cambridge/inventories/summary.json",
+        "generated_at": "2026-05-28T16:34:53.750321+00:00",
+        "n": 537
+      },
+      "document_flags": {
+        "value": {
+          "large_document": 319,
+          "tiny_document": 90,
+          "no_motion_keywords": 18,
+          "high_da_count": 43,
+          "zero_keyword_hits": 1,
+          "extraction_empty": 1
+        },
+        "source": "data/cambridge/census.json",
+        "generated_at": "2026-05-28T07:56:35.451025+00:00",
+        "n": 537
+      }
+    },
+    "validation": {
+      "metrics": {
+        "quote_completeness": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A low completeness means entities were extracted with no supporting quote at all \u2014 the record exists in the database but nothing in the source document backs it. That is a missing-evidence failure, not a wrong-evidence one.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/cambridge/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/cambridge/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "paraphrase_rate": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A high paraphrase rate means the quotes attached to entities are not verbatim from the source document \u2014 the extraction may be rewording or inventing text rather than citing it.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/cambridge/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/cambridge/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "coverage_ratio": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "Low coverage means most of the document's text was never touched by any extracted quote \u2014 content could be missing from the extraction even where every individual quote checks out.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/cambridge/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/cambridge/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "inventory_agreement": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A flagged ratio (far below or above 1.0) means the LLM extraction found a very different number of entities than the cheaper Level 1 inventory pass counted for the same document \u2014 either pass could be wrong, but the two should track each other.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/cambridge/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/cambridge/sample_validation/report.txt",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        },
+        "keyword_gap_rate": {
+          "definition": null,
+          "target": null,
+          "means_if_failed": "A high gap rate means the source text contains motion, planning or declaration language that never made it into any extracted quote \u2014 a sign of entities missed entirely, not just a citation problem.",
+          "full_corpus": {
+            "value": null,
+            "source": "data/cambridge/validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          },
+          "sample": {
+            "value": null,
+            "source": "data/cambridge/sample_validation/summary.json",
+            "generated_at": null,
+            "n": null,
+            "reason": "source_missing"
+          }
+        }
+      },
+      "full_corpus_split": {
+        "value": null,
+        "source": "data/cambridge/validation/summary.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "sample_split": {
+        "value": null,
+        "source": "data/cambridge/sample_validation/summary.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "sample_per_file": {
+        "value": null,
+        "source": "data/cambridge/sample_validation/report.txt",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      },
+      "schema_flags": {
+        "value": null,
+        "source": "data/cambridge/validation/summary.json",
+        "generated_at": null,
+        "n": null,
+        "reason": "source_missing"
+      }
+    },
+    "extraction_batch": {
+      "value": null,
+      "source": "data/cambridge/extraction_errors.json",
+      "generated_at": null,
+      "n": null,
+      "reason": "source_missing"
+    },
+    "entity_resolution": {
+      "supplier_normalisation": {
+        "source": "data/council.db",
+        "generated_at": "2026-09-16T11:33:38.011421+00:00",
+        "named_award_rows": 436,
+        "distinct_firms": 314,
+        "multi_variant_firms": 15,
+        "rule": "lowercase; strip company suffixes; drop . and ,; remove internal whitespace",
+        "examples": [
+          {
+            "merged_key": "cjdequipment",
+            "raw": [
+              {
+                "string": "CJD Equipment",
+                "n": 7
+              },
+              {
+                "string": "CJD Equipment Pty Ltd",
+                "n": 2
+              }
+            ],
+            "n_awards": 9,
+            "total_amount": 442282.0
+          },
+          {
+            "merged_key": "boyaequipment",
+            "raw": [
+              {
+                "string": "Boya Equipment",
+                "n": 5
+              },
+              {
+                "string": "Boya Equipment Pty Ltd",
+                "n": 1
+              }
+            ],
+            "n_awards": 6,
+            "total_amount": 409770.0
+          },
+          {
+            "merged_key": "hotmix",
+            "raw": [
+              {
+                "string": "HOT MIX",
+                "n": 1
+              },
+              {
+                "string": "Hotmix",
+                "n": 3
+              },
+              {
+                "string": "Hot Mix",
+                "n": 1
+              },
+              {
+                "string": "Hot Mix Pty Ltd",
+                "n": 1
+              }
+            ],
+            "n_awards": 6,
+            "total_amount": 225.0
+          },
+          {
+            "merged_key": "majormotors",
+            "raw": [
+              {
+                "string": "Major Motors Pty Ltd",
+                "n": 2
+              },
+              {
+                "string": "Major Motors",
+                "n": 3
+              }
+            ],
+            "n_awards": 5,
+            "total_amount": 223547.81
+          },
+          {
+            "merged_key": "connellwagner",
+            "raw": [
+              {
+                "string": "Connell Wagner",
+                "n": 2
+              },
+              {
+                "string": "Connell Wagner Pty Ltd",
+                "n": 2
+              }
+            ],
+            "n_awards": 4,
+            "total_amount": 35000.0
+          },
+          {
+            "merged_key": "ghd",
+            "raw": [
+              {
+                "string": "GHD",
+                "n": 2
+              },
+              {
+                "string": "GHD Pty Ltd",
+                "n": 2
+              }
+            ],
+            "n_awards": 4,
+            "total_amount": 304298.0
+          },
+          {
+            "merged_key": "walimestone",
+            "raw": [
+              {
+                "string": "WA Limestone",
+                "n": 3
+              },
+              {
+                "string": "W.A. Limestone",
+                "n": 1
+              }
+            ],
+            "n_awards": 4,
+            "total_amount": 18250.0
+          },
+          {
+            "merged_key": "davidporterconsultingengineer",
+            "raw": [
+              {
+                "string": "David Porter Consulting Engineer",
+                "n": 1
+              },
+              {
+                "string": "David Porter, Consulting Engineer",
+                "n": 2
+              }
+            ],
+            "n_awards": 3,
+            "total_amount": 16920.0
+          },
+          {
+            "merged_key": "deneefesigns",
+            "raw": [
+              {
+                "string": "De Neefe Signs Pty Ltd",
+                "n": 2
+              },
+              {
+                "string": "DeNeefe Signs",
+                "n": 1
+              }
+            ],
+            "n_awards": 3,
+            "total_amount": 55706.0
+          },
+          {
+            "merged_key": "downerediworks",
+            "raw": [
+              {
+                "string": "Downer EDI Works",
+                "n": 2
+              },
+              {
+                "string": "Downer EDI Works Pty Ltd",
+                "n": 1
+              }
+            ],
+            "n_awards": 3,
+            "total_amount": 4776000.0
+          },
+          {
+            "merged_key": "fleetcare",
+            "raw": [
+              {
+                "string": "Fleetcare Pty Ltd",
+                "n": 2
+              },
+              {
+                "string": "Fleetcare",
+                "n": 1
+              }
+            ],
+            "n_awards": 3,
+            "total_amount": 1560000.0
+          },
+          {
+            "merged_key": "proturfservices",
+            "raw": [
+              {
+                "string": "Pro Turf Services",
+                "n": 2
+              },
+              {
+                "string": "Pro Turf Services Pty Ltd",
+                "n": 1
+              }
+            ],
+            "n_awards": 3,
+            "total_amount": 165000.0
+          },
+          {
+            "merged_key": "rjvincent",
+            "raw": [
+              {
+                "string": "R J Vincent",
+                "n": 1
+              },
+              {
+                "string": "RJ Vincent",
+                "n": 2
+              }
+            ],
+            "n_awards": 3,
+            "total_amount": 7170003.39
+          },
+          {
+            "merged_key": "alvito",
+            "raw": [
+              {
+                "string": "Alvito Pty Ltd",
+                "n": 1
+              },
+              {
+                "string": "Alvito",
+                "n": 1
+              }
+            ],
+            "n_awards": 2,
+            "total_amount": 81000.0
+          },
+          {
+            "merged_key": "bsdconsultants",
+            "raw": [
+              {
+                "string": "BSD Consultants",
+                "n": 1
+              },
+              {
+                "string": "BSD Consultants Pty Ltd",
+                "n": 1
+              }
+            ],
+            "n_awards": 2,
+            "total_amount": 32500.0
+          }
+        ],
+        "excluded_placeholders": {
+          "n_awards": 15,
+          "note": "de-identification placeholders such as 'Respondent 1' or 'Tenderer 3' are excluded from the grouping above \u2014 grouped in as if they were suppliers, a placeholder can out-rank every real contractor by value"
+        }
+      },
+      "surname_collision": {
+        "source": "data/council.db",
+        "generated_at": "2026-09-16T11:33:38.011421+00:00",
+        "named_awards": 412,
+        "surnames_tested": 198,
+        "naive_matches": 2,
+        "resolved": [
+          {
+            "firm": "G T Evans Weed Spraying Service",
+            "amount": 70000.0,
+            "what_it_is": "a weed-spraying contractor",
+            "resolution": "resolves on provenance to an unrelated business, not the councillor who shares the surname"
+          },
+          {
+            "firm": "MacDonald Johnston",
+            "amount": 217154.0,
+            "what_it_is": "a street-sweeper manufacturer",
+            "resolution": "resolves on provenance to an unrelated business, not the councillor who shares the surname"
+          }
+        ],
+        "genuine_matches": 0,
+        "unresolved_matches": 0,
+        "dedup_note": "this award is itself extracted as 2 minutes rows 14 days apart (ids 172, 1850) \u2014 one real award, not 2; decider_supplier_conflict() counts it once",
+        "limits": [
+          "Surname matching cannot detect a connection through a differently-named entity \u2014 a councillor with an interest in a firm trading under any other name is invisible to this test.",
+          "This is a null within a stated coverage boundary, not proof of absence.",
+          "Only separately-moved tender-award motions are visible, not consent-agenda'd awards \u2014 412 named awards were tested against 432 tender-award motions."
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,951 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "total_decided": 2649,
+    "max_objections": 22,
+    "headline_examples": [
+      "22 objectors \u2014 Additional land use of 'Use Not Listed' (Betting Agency) for the installation of",
+      "6 objectors \u2014 Use of part of existing residence as consulting rooms (dental surgery)",
+      "6 objectors \u2014 Two, two storey dwellings",
+      "6 objectors \u2014 Bed and breakfast establishment using two upstairs bedrooms (one double bed, one"
+    ],
+    "buckets": [
+      {
+        "label": "0",
+        "n": 1674,
+        "refused": 314,
+        "refusal_pct": 18.8,
+        "n_shown": 30,
+        "apps": [
+          {
+            "reference": "100DA-2012",
+            "description": "Retrospective approval for retaining wall, fill and open-style fencing in front setback area",
+            "address": "Lot 197 (No. 27) Ruislip Street, West Leederville",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 395,
+            "quote": "Application: 100DA - 2012\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "96DA-2012",
+            "description": "Additions and alterations to existing dwelling with new master bedroom and bathrooms at ground level, kitchen, laundry and living area at undercroft level, and two bedrooms with balcony within roof sp",
+            "address": "Lot 358 (No. 69) St Leonards Avenue, West Leederville",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 402,
+            "quote": "application for additions and alterations to the existing dwelling submitted by Pollock Consulting at Lot 358 (No. 69) St Leonards Avenue, West Leederville as shown on the plans dated 6 March 2012"
+          },
+          {
+            "reference": "0038DA-2012",
+            "description": "Additions and alterations to existing dwelling including second storey addition to rear, garage relocation, and storeroom partly within front setback area",
+            "address": "Lot 56 (No. 41) Dilkara Way, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 403,
+            "quote": "application for additions and alterations to existing dwelling submitted by Vision Felix Pty. Ltd. T/A Construction West at Lot 56 (No. 41) Dilkara Way, City Beach"
+          },
+          {
+            "reference": "180DA-2011",
+            "description": "Retrospective approval for garage in front setback area following SAT mediation",
+            "address": "Lot 41 (No. 69) Lake Monger Drive, Wembley",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 405,
+            "quote": "revised proposal for the retrospective approval for the garage, submitted by Rechichi Architects at Lot 41 (No. 69) Lake Monger Drive, Wembley"
+          },
+          {
+            "reference": "35DA-2007",
+            "description": "Armoured vehicle embayment for ANZ Bank following State Administrative Tribunal approval of change of use from shop to office",
+            "address": "Lot 100 (No. 5) Howtree Place, Floreat",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 407,
+            "quote": "BA/DA REFERENCE: 35DA-2007 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: District Centre USE CLASS: Office"
+          },
+          {
+            "reference": "DV09.62",
+            "description": "Two storey dwelling with undercroft garage. Demolition of existing single storey dwelling. Front setback minimum 4.8 metres (compared to acceptable 6.5 metres). Landscaping in front setback area 47% (",
+            "address": "Lot 185 (No. 61) Pandora Drive, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 411,
+            "quote": "Council APPROVES the application for a two storey dwelling with undercroft submitted by S Bransby at Lot 185 (No. 61) Pandora Drive, City Beach as shown on the amended plans dated 10 July 2009"
+          },
+          {
+            "reference": "DV09.64",
+            "description": "Enclosure of existing side-loaded carport to form garage, 2.75 metres primary street setback (compared to acceptable 9.0 metres). Three large windows and planter boxes proposed on western side.",
+            "address": "Lot 494 (No. 4) Arbordale Street, Floreat",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 413,
+            "quote": "Council APPROVES the application for a garage submitted by CA Design and Drafting at Lot 494 (No. 4) Arbordale Street, Floreat as shown on the plans dated 14 July 2009"
+          },
+          {
+            "reference": "463DA-2013",
+            "description": "Retrospective application for a loft on top floor of dwelling with amended plans showing no window to the loft",
+            "address": "Lot 185 (No. 61) Pandora Drive, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 418,
+            "quote": "Application: 463DA-2013 [private individual \u2014 name withheld] [private individual \u2014 name withheld] Zoning: Residential R12.5"
+          },
+          {
+            "reference": "98057",
+            "description": "Proposed subdivision of lot into two lots of 430 square metres each",
+            "address": "111 Harborne Street, Wembley",
+            "n_objectors": 0,
+            "outcome": "refused",
+            "entity_id": 422,
+            "quote": "The application for subdivision has been referred to the Council by the Western Australian Planning Commission (WAPC) for comment and recommendation. Approval is sought to subdivide the 860 square metre lot into two lots of 430 square metres each. The existing house (being 1960s era) on the land would need to be demolished as its present location would straddle the proposed dividing boundary."
+          },
+          {
+            "reference": "97650",
+            "description": "Proposed subdivision of amended plan into two lots of 700 and 767 square metres",
+            "address": "2 Peebles Road, Floreat",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 423,
+            "quote": "The application for subdivision (amended plan) has been referred to the Council by the Western Australian Planning Commission (WAPC) for comment and recommendation. At its meeting held on 13 June 1995, the Council recommended refusal of a proposal for subdivision of this land involving retention of the existing dwelling and irregular lot boundaries. Following the Council's recommendation, discussions took place between the applicant and the Western Australian Planning Commission which resulted in the submission of an amended plan. Approval is sought to subdivide the 1,467 square metre lot into two lots of 700 square metres and 767 square metres."
+          },
+          {
+            "reference": "CP181/95",
+            "description": "Home occupation - occasional children's art and craft classes",
+            "address": "33 Oceanic Drive, Floreat",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 424,
+            "quote": "Adjoining landowners and residents have been notified of this proposal and given an opportunity to comment. Only one written submission was received advising that there was no objection to the proposed home occupation use."
+          },
+          {
+            "reference": "CP208/95",
+            "description": "Illuminated roof sign advertising LJ Hooker tenancy, 1200mm height by 3500mm length",
+            "address": "343A Cambridge Street, Wembley",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 425,
+            "quote": "An application for planning consent has been submitted for an illuminated roof sign advertising the LJ Hooker tenancy adjoining the Commonwealth Bank, Wembley. The proposed sign is to be installed on metal brackets 75mm above the parapet wall on the eastern side of the building and has dimensions of 1200 mm height by 3500 mm in length. The sign is to display the LJ Hooker company logo."
+          },
+          {
+            "reference": "98021",
+            "description": "Subdivision of lot into two lots with narrow frontages of 11.46 and 11.47 metres",
+            "address": "34 Reserve Street, Wembley",
+            "n_objectors": 0,
+            "outcome": "refused",
+            "entity_id": 426,
+            "quote": "The application for subdivision has been referred to the Council by the Western Australian Planning Commission for comment and recommendation. Approval is sought to subdivide No 34 Reserve Street, Wembley, with a total area of 1075 square metres into two lots of 542 square metres and 541 square metres. The proposed lots will have a frontage of 11.46 metres and 11.47 metres and a depth of 47.27 metres."
+          },
+          {
+            "reference": "C105/95",
+            "description": "Medical centre with five two storey residential town houses with lofts",
+            "address": "32-34 Salvado Road, Wembley",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 427,
+            "quote": "Following consultation with the Council's Development and Environmental Services staff, the applicant has submitted revised plans seeking approval for a single storey specialist medical centre and five two storey town houses with lofts at 32 and 34 Salvado Road."
+          },
+          {
+            "reference": "C170/95",
+            "description": "Two storey split level four bedroom two bathroom residence with undercroft garage",
+            "address": "97 Evandale Street, Floreat",
+            "n_objectors": 0,
+            "outcome": "refused",
+            "entity_id": 430,
+            "quote": "It is proposed to construct a new two storey split level four bedroom two bathroom residence with an undercroft garage at Lot 433 (No. 97) Evandale Street, Floreat. Council approval is sought to allow an undercroft garage and upstairs verandah and bedroom to extend into the required 9.0m front setback area, to within 4.0m of the front boundary."
+          },
+          {
+            "reference": "CP210/95",
+            "description": "Refurbishment of Wembley Piazza Shopping Centre including 445.4 square metres of additional floorspace for retail, restaurant, food court, new entries, crossover and car parking realignment.",
+            "address": "Lot 4 (Nos 346-350) Cambridge Street, Wembley",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 431,
+            "quote": "That in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme the Council APPROVES BY AN ABSOLUTE MAJORITY the application submitted by Rizzo & Associates Pty Ltd on behalf of Capebay Holdings Pty Ltd for the refurbishment of the Wembley Piazza Shopping Centre on Lot 4 (Nos 346-350) Cambridge Street, Wembley, as shown on plans dated 4 August 1995 and amended plans dated 6 September 1995"
+          },
+          {
+            "reference": "CP365/95",
+            "description": "Renewal of planning approval for construction of two 2 storey attached single houses with double garages, to replace existing rendered brick and tile dwelling. Plot ratio 0.53:1.0 exceeds policy limit",
+            "address": "Lot 489 (No. 21) Tate Street, West Leederville",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 433,
+            "quote": "That in accordance with the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme, the Council APPROVES BY AN ABSOLUTE MAJORITY the application submitted by Brent Shulman Architect on behalf of Mr and [private individual \u2014 name withheld] received on 15 September 1995 for two 2 storey attached dwellings (being renewal of approval DA93/1242) at Lot 489 (No. 21) Tate Street, West Leederville, as shown on plans dated 15 September 1995"
+          },
+          {
+            "reference": "C305/95",
+            "description": "Two storey residence consisting of living and service areas downstairs with three bedrooms and two bathrooms upstairs.",
+            "address": "Lot 100 (No 126) Tower Street, Leederville",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 436,
+            "quote": "DA/BA REFERENCE: C305/95"
+          },
+          {
+            "reference": "C219/95",
+            "description": "Two storey residence consisting of three bedrooms, a study and two bathrooms upstairs, and a garage, living and service areas downstairs.",
+            "address": "Lot 497 (No 18) Joseph Street, Leederville",
+            "n_objectors": 0,
+            "outcome": "refused",
+            "entity_id": 437,
+            "quote": "DA/BA REFERENCE: C219/95"
+          },
+          {
+            "reference": "349/95",
+            "description": "Double garage with reduced secondary street setback to be attached to existing building. Applicant has had vehicle and items stolen in past and wishes to provide security for vehicles.",
+            "address": "Lot 343 (No 1) Bodmin Avenue, City Beach",
+            "n_objectors": 0,
+            "outcome": "refused",
+            "entity_id": 438,
+            "quote": "DA/BA REFERENCE: 349/95"
+          },
+          {
+            "reference": "C320/95",
+            "description": "Two storey and single storey sections with undercroft. Two storey component fronts Gregory Street. Consists of study, two bedrooms, formal dining and lounge and service areas downstairs and guests' be",
+            "address": "Lot 1059 (No 197) Gregory Street, Wembley",
+            "n_objectors": 0,
+            "outcome": "refused",
+            "entity_id": 439,
+            "quote": "DA/BA REFERENCE: C320/95"
+          },
+          {
+            "reference": "DA20/0359",
+            "description": "Proposed Patio and Decking",
+            "address": "Lot 246 (No. 3) Warreen Place, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 441,
+            "quote": "Address: Lot 246 (No. 3) Warreen Place, City Beach  Report Date: 1 December 2020 File Reference: DA20/0359"
+          },
+          {
+            "reference": "DV20.157",
+            "description": "Proposed Carport Addition to Existing Single Dwelling",
+            "address": "Lot 317 (No. 23) Kinkuna Way, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 443,
+            "quote": "DV20.157 Lot 317 (No.23) Kinkuna Way, City Beach \u2013 Proposed Carport Addition to Existing Single Dwelling"
+          },
+          {
+            "reference": "DV20.158",
+            "description": "Proposed Alterations and Additions to Existing Dwelling",
+            "address": "Lot 1 (No. 27) Tarongo Way, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 444,
+            "quote": "DV20.158 Lot 1 (No.27) Tarongo Way, City Beach \u2013 Proposed Alterations and Additions to Existing Dwelling"
+          },
+          {
+            "reference": "DV20.159",
+            "description": "Proposed Alterations/Additions to Existing Single House",
+            "address": "Lot 1683 (No. 67) Glengariff Drive, Floreat",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 445,
+            "quote": "DV20.159 Lot 1683 (No.67) Glengariff Drive, Floreat \u2013 Proposed Alterations/Additions to Existing Single House"
+          },
+          {
+            "reference": "DV20.160",
+            "description": "Proposed Two Storey Dwelling (Amendment to DA19/0288)",
+            "address": "Lot 517 (No. 4) Dandaloo Road, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 446,
+            "quote": "DV20.160 Lot 517 (No.4) Dandaloo Road, City Beach \u2013 Proposed Two Storey Dwelling (Amendment to DA19/0288)"
+          },
+          {
+            "reference": "DV20.157",
+            "description": "Carport addition to existing single dwelling",
+            "address": "Lot 317 (No. 23) Kinkuna Way, City Beach",
+            "n_objectors": 0,
+            "outcome": "refused",
+            "entity_id": 447,
+            "quote": "Application proposes a carport addition to the existing single dwelling. The variations for the proposal include: 1. The addition of a carport forward of the front wall of the existing dwelling onsite. The structure is set back 3.75m from the primary street, in lieu of 7.5m; 2. Proposed widening of the existing driveway, resulting in a total of 41.8% landscaping in the primary street setback area, in lieu of 60%; 3. A total width of proposed side-by-side configured car parking bays of 5.14m, in lieu of 5.4m; and 4. Proposed weatherboard cladding finish to the proposed addition, in lieu of masonry materials listed within Local Law 43."
+          },
+          {
+            "reference": "DV20.158",
+            "description": "Alterations and additions to existing dwelling",
+            "address": "Lot 1 (No. 27) Tarongo Way, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 448,
+            "quote": "The application proposes an extension to the existing family room which will encroach into the primary street setback area resulting in a setback of 6.8m in lieu of 7.5m. The area of new development within the primary street setback area is approximately 0.8m2."
+          },
+          {
+            "reference": "DV20.159",
+            "description": "Alterations/Additions Including a Carport to Existing Single House",
+            "address": "Lot 1683 (No. 67) Glengariff Drive, Floreat",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 449,
+            "quote": "The application proposes the new carport to be setback 2.97m from the front boundary in lieu of 9m. The maximum height of the rear of the carport also does not comply."
+          },
+          {
+            "reference": "DV20.160",
+            "description": "Amendment to two-storey dwelling approval to include widened raised pathway and planter retaining walls",
+            "address": "Lot 517 (No. 4) Dandaloo Road, City Beach",
+            "n_objectors": 0,
+            "outcome": "approved",
+            "entity_id": 450,
+            "quote": "The amended application proposes to widen the raised pathway, and surround it with new planter retaining walls. The proposed planter retaining walls, which will have a maximum height of 1.6m above the natural ground levels, and the raised pathway, which will have a maximum height of 1.4m above the natural ground level, will have a minimum primary street setback of 4.09m from the front boundary in lieu of 7.5m."
+          }
+        ]
+      },
+      {
+        "label": "1",
+        "n": 818,
+        "refused": 179,
+        "refusal_pct": 21.9,
+        "n_shown": 30,
+        "apps": [
+          {
+            "reference": "60DA-2012",
+            "description": "Two storey dwelling with skillion roof; roof overheight by 350mm at highest point",
+            "address": "Lot 395 (No. 4) Challenger Parade, City Beach",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 397,
+            "quote": "Application: 60DA-2012\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]"
+          },
+          {
+            "reference": null,
+            "description": "Second storey additions and alterations to existing dwelling",
+            "address": "Lot 708 (No. 16) Blencowe Street, West Leederville",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 399,
+            "quote": "application for second storey additions and alterations to the existing dwelling submitted by J Keszi at Lot 708 (No. 16) Blencowe Street, West Leederville as shown on the plans dated 4 November 2011"
+          },
+          {
+            "reference": "52-DA - 2012",
+            "description": "Additions and alterations to existing ground floor and upper floor addition with undercroft garage conversion and carport",
+            "address": "Lot 1460 (No. 17) Kildare Road, Floreat",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 400,
+            "quote": "application for additions and alterations submitted by Slatter Projects Pty Ltd trading as Slatter Constructions at Lot 1460 (No. 17) Kildare Road, Floreat"
+          },
+          {
+            "reference": "82-DA - 2012",
+            "description": "Additions and alterations to ground and upper floor areas to the rear with new double garage on side boundary",
+            "address": "Lot 4 (No. 8) St Leonards Avenue, West Leederville",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 401,
+            "quote": "application for additions and alterations submitted by James Edwards at Lot 4 (No. 8) St Leonards Avenue, West Leederville"
+          },
+          {
+            "reference": "0097DA-2012",
+            "description": "Outbuilding (shed) located in rear southern corner of property",
+            "address": "Lot 114 (No. 6) The Grove, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 404,
+            "quote": "application for an Outbuilding submitted by C Moody and H R Moody at Lot 114 (No. 6) The Grove, Wembley"
+          },
+          {
+            "reference": "0096DA-2009",
+            "description": "Additions to single dwelling comprising carport to front parallel with street, lift and stairwell, front fence compliant with R Codes and Council Policy, pool deck to north and west of existing pool, ",
+            "address": "Lot 41 (No. 69) Lake Monger Drive, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 408,
+            "quote": "BA/DA REFERENCE: 0096DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R20 USE CLASS: Dwelling (single): 'P' (Permitted) LAND AREA: 1161sqm"
+          },
+          {
+            "reference": "DV09.61",
+            "description": "Three storey dwelling with variations to side setbacks, visual privacy, garage doors, roof pitch (30\u00b0 skillion), landscaping in front setback area (50%), and building height (7.8 metres maximum)",
+            "address": "Lot 36 (No. 79A) Lake Monger Drive, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 410,
+            "quote": "Council APPROVES the application for a three storey dwelling submitted by Design Inc. Perth Pty Ltd at Lot 36 (No. 79A) Lake Monger Drive, Wembley as shown on the plans dated 29 May 2009"
+          },
+          {
+            "reference": "DV09.63",
+            "description": "Pavilion in south-eastern corner, 3.0 metres x 5.0 metres, maximum 2.4 metres height, tiled roof and timber columns, open on all four sides, set back 0.5 metres from southern boundary (compared to acc",
+            "address": "Lot 691 (No. 32) Holland Street, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 412,
+            "quote": "Council APPROVES the application for a patio submitted by [private individual \u2014 name withheld] at Lot 691 (No. 32) Holland Street, Wembley as shown on the plans dated 4 May 2009"
+          },
+          {
+            "reference": "DV09.65",
+            "description": "1.2 metre high pinelap fence on western side boundary within front setback area (compared to acceptable 0.75 metres maximum solid wall height).",
+            "address": "Lot 33 (No. 1) Teslin Road, Mt Claremont",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 414,
+            "quote": "Council APPROVES the application for a front fence submitted by [private individual \u2014 name withheld] at Lot 33 (No. 1) Teslin Road, Mt Claremont as shown on the plans dated 26 May 2009"
+          },
+          {
+            "reference": "DV09.66",
+            "description": "Two storey dwelling with triple garage, office, guest room, dining, living, home theatre, kitchen, alfresco on ground floor; master suite, ensuite, two bedrooms, bathroom, activity on upper floor. Ren",
+            "address": "Lot 44 (No. 4) Highbury Street, Floreat",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 415,
+            "quote": "Council APPROVES the application for a two storey dwelling submitted by JWH Group Pty Ltd at Lot 44, (No. 4) Highbury Street, Floreat as shown on the plans dated 17 June 2009"
+          },
+          {
+            "reference": "DV09.67",
+            "description": "Second storey addition and alterations to existing single dwelling. Ground floor extension with new kitchen, laundry, family room, store, alfresco. Upper floor with three bedrooms, activity area, bath",
+            "address": "Lot 715 (No. 5) Holland Street, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 416,
+            "quote": "Council APPROVES the application for a second storey addition and alterations to an existing dwelling submitted by Yesteryear Building Company at Lot 715, (No. 5) Holland Street, Wembley as shown on the plans dated 30 April 2009"
+          },
+          {
+            "reference": "DV09.68",
+            "description": "Two storey dwelling with pitched roofs and rendered walls on 809m2 lot sloping approximately 2.0 metres from northeast to southwest. Overheight walls ranging from 6.88 metres to 5.96 metres along fron",
+            "address": "Lot 1383 (No. 23) Kilkenny Road, Floreat",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 417,
+            "quote": "Council APPROVES the application for a two storey dwelling submitted by JWH Group Pty Ltd at Lot 1383, (No. 23) Kilkenny Road, Floreat as shown on amended plans dated 3 June 2009"
+          },
+          {
+            "reference": "228DA-2013",
+            "description": "Two storey dwelling with garage having nil setback to southern side boundary, oriented to south for solar orientation",
+            "address": "Lot 5 (No. 67) Northwood Street, West Leederville",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 419,
+            "quote": "Application: 228DA-2013 [private individual \u2014 name withheld] [private individual \u2014 name withheld] Zoning: Residential R30 Use class: Dwelling (single) 'P' \u2013 permitted"
+          },
+          {
+            "reference": "210DA-2013",
+            "description": "Second storey addition to rear of existing dwelling with new bedroom and living area at ground level and store room at upper level",
+            "address": "Lot 1694 (No. 87) Holland Street, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 420,
+            "quote": "Application: 210DA-2013 [private individual \u2014 name withheld] [private individual \u2014 name withheld] Zoning: Residential R20 Use class: Dwelling (single) 'P' \u2013 permitted"
+          },
+          {
+            "reference": null,
+            "description": "Double garage located on side boundary with nil side setback",
+            "address": "50 Oban Road, City Beach",
+            "n_objectors": 1,
+            "outcome": "refused",
+            "entity_id": 428,
+            "quote": "The applicant has approached the adjoining owner, and a non-favourable reply has been received, due in part to the perceived loss of light to a bedroom window, and the noise function relating to the garage."
+          },
+          {
+            "reference": "C174/95",
+            "description": "Double carport with supporting piers located on side boundary with 500mm eaves clearance",
+            "address": "50 Oban Road, City Beach",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 429,
+            "quote": "Approval is now sought to construct a carport on the boundary of the property at 50 Oban Road, City Beach, with a 500mm eaves clearance with piers placed on the boundary."
+          },
+          {
+            "reference": "94/1419",
+            "description": "Revision to approved plans for car parking at rear of residential property and dedication of Lot 25 as road reserve for access.",
+            "address": "No 15 (Lot 301) Bernard Street, Leederville",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 432,
+            "quote": "in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme the Council APPROVES BY AN ABSOLUTE MAJORITY the application submitted by M A Congerton for car parking at the rear of No 15 (Lot 301) Bernard Street, Leederville as shown on plans dated 27 June 1995"
+          },
+          {
+            "reference": "PRO0718",
+            "description": "Home occupation - office for real estate bookwork in 9 square metre bedroom. Applicant conducts settlement and property management business on part-time basis with minimal client visits.",
+            "address": "Lot 3 (No.43A) Pangbourne Street, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 434,
+            "quote": "That in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme, the application submitted by [private individual \u2014 name withheld] for a Home Occupation (office for real estate bookwork) on Lot 3 (No.43A) Pangbourne Street, Wembley, as shown on plans dated 22 August 1995, be approved for a period of twelve months"
+          },
+          {
+            "reference": "DA20/0329",
+            "description": "Pergola Addition to Previously Approved Single House",
+            "address": "Lot 79 (No. 29) Tranmore Way, City Beach",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 440,
+            "quote": "Address: Lot 79 (No. 29) Tranmore Way, City Beach  Report Date: 1 December 2020 File Reference: DA20/0329"
+          },
+          {
+            "reference": "Ruislip Street Safe Active Street",
+            "description": "$2,200,000 Department of Transport funded Safe Active Streets project to create east to west and north to south cycling and pedestrian routes",
+            "address": "Ruislip Street, Cambridge",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 453,
+            "quote": "The Town was successful in obtaining a $2,200,000 grant for the design and construction of a SAS along Ruislip Street."
+          },
+          {
+            "reference": "0168DA-2009",
+            "description": "Two double storey grouped dwellings, side by side with garages on boundaries",
+            "address": "Lot 187 (No. 41) Alexander Street, Wembley",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 456,
+            "quote": "BA/DA REFERENCE: 0168DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "DA25-013",
+            "description": "Temporary Viewing Tower, 24m height (notionally eight storeys), setback 64m from nearest western residential property, 36-month approval period with removal required by September 2028",
+            "address": "Lot 245 (No. 5) Kilpa Court, City Beach",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 528,
+            "quote": "That, pursuant to Section 31 of the State Administrative Tribunal Act 2004 and in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council SETS ASIDE its previous decision and APPROVES the application for the development of a Use Not Listed (Temporary Viewing Tower) at Lot 241 (No. 3) Kilpa Court, City Beach as amended and shown on the attached plans stamped received 23 July 2025"
+          },
+          {
+            "reference": "DA23/0247",
+            "description": "Additional land use of 'Use Not Listed' (Betting Agency) with installation of two TAB betting terminals within existing Tavern (Sporting Globe Bar)",
+            "address": "Lot 100 (No. 94/5) Howtree Place, Floreat",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 536,
+            "quote": "The application seeks approval for an additional land use classified as 'Use Not Listed' (Betting Agency) at the existing Sporting Globe Bar, located at No. 94/5 Howtree Place, Floreat, to permit the installation of two TAB betting terminals within the premises."
+          },
+          {
+            "reference": "DA25-350",
+            "description": "Advertisement (Temporary Hoarding Signage) - temporary hoarding signage attached to sections of temporary site hoarding and perimeter fencing along the southern boundary, approximately 79m in length, ",
+            "address": "Lots 243 and 245 (Nos. 3\u20135) Kilpa Court, City Beach",
+            "n_objectors": 1,
+            "outcome": "refused",
+            "entity_id": 546,
+            "quote": "Application for Development Approval - Lots 243 & 245 (Nos. 3\u20135) Kilpa Court, City Beach (Ocean Village) - Advertisement (Temporary Hoarding Signage)"
+          },
+          {
+            "reference": null,
+            "description": "Precinct Structure Plan for Floreat Activity Centre proposing approximately 900-1,250 new dwellings and additional employment floorspace with building heights up to 23 storeys in core development site",
+            "address": "Floreat Activity Centre, bound by The Boulevard, Hornsey Road, Oceanic Drive and Howtree Place",
+            "n_objectors": 1,
+            "outcome": "refused",
+            "entity_id": 574,
+            "quote": "the draft Precinct Structure Plan for the Floreat Activity Centre, prepared by Hatch RobertsDay on behalf of the APIL Group, be REFUSED"
+          },
+          {
+            "reference": "DV21.5",
+            "description": "Local Development Plan for hospital redevelopment comprising: new Emergency Department, new coronary care unit, high dependency/intensive care unit expansion, approximately 12,500m2 new clinical block",
+            "address": "Lot 800 (No. 12) Salvado Road, Lots 147-149 (No. 177) Cambridge Street, Lots 1-21 (No. 181) Cambridge Street, Lot 5 (No. 187) Cambridge Street, Wembley and Lot 2 (No. 1-19) McCourt Street, Subiaco",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 578,
+            "quote": "APPROVES the Local Development Plan submitted for Lot 800 (No. 12) Salvado Road, Lots 147-149 (No. 177) Cambridge Street, Lots 1-21 (No. 181) Cambridge Street, Lot 5 (No. 187) Cambridge Street, Wembley and Lot 2 (No. 1-19) McCourt Street, Subiaco dated January 2021"
+          },
+          {
+            "reference": "DV22.89",
+            "description": "Proposed Two-Storey Single House \u2013 S31 Reconsideration",
+            "address": "Lot 212 (No. 12) Penryn Avenue, City Beach",
+            "n_objectors": 1,
+            "outcome": "refused",
+            "entity_id": 3528,
+            "quote": "DV22.89 Lot 212 (No.12) Penryn Avenue, City Beach \u2013  Proposed Two-Storey Single House \u2013 S31 Reconsideration"
+          },
+          {
+            "reference": "DV22.89",
+            "description": "Proposed Two-Storey Single House \u2013 S31 Reconsideration",
+            "address": "Lot 212 (No. 12) Penryn Avenue, City Beach",
+            "n_objectors": 1,
+            "outcome": "refused",
+            "entity_id": 3529,
+            "quote": "DV22.89 Lot 212 (No.12) Penryn Avenue, City Beach \u2013  Proposed Two-Storey Single House \u2013 S31 Reconsideration"
+          },
+          {
+            "reference": "DV22.93",
+            "description": "Two double-storey grouped dwellings with reduced first floor lot boundary setbacks (1.2m instead of 1.5m), reduced open space (43.7% instead of 45%), and increased overshadowing to southern adjoining ",
+            "address": "Lot 35 (No. 20) Connolly Street, Wembley",
+            "n_objectors": 1,
+            "outcome": "refused",
+            "entity_id": 3534,
+            "quote": "That, in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council REFUSES the application for two grouped dwellings at Lot 35 (No. 20) Connolly Street, Wembley"
+          },
+          {
+            "reference": "DV23.51",
+            "description": "Single storey single dwelling with external walls constructed in Accoya Timber Cladding and Easy Tex Cladding, with garage in brickwork and concrete.",
+            "address": "24 Kincardine Crescent, Floreat",
+            "n_objectors": 1,
+            "outcome": "approved",
+            "entity_id": 3537,
+            "quote": "Property Applicant/Landowner(s) 24 Kincardine Crescent, Floreat [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          }
+        ]
+      },
+      {
+        "label": "2-4",
+        "n": 147,
+        "refused": 36,
+        "refusal_pct": 24.5,
+        "n_shown": 30,
+        "apps": [
+          {
+            "reference": "261BA-2005",
+            "description": "Application for building approval for a three storey residence with garage, guest bedroom on undercroft level, indoor and outdoor living areas, kitchen, laundry and study on main level with swimming p",
+            "address": "Lot 242 (No. 49) Hesperia Avenue, City Beach",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 3576,
+            "quote": "BA/DA REFERENCE: 261BA-2005\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "427BA-2006",
+            "description": "Proposed three level dwelling with undercroft garage, cellar and store",
+            "address": "Lot 577 (No. 13) Banool Crescent, City Beach",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 3668,
+            "quote": "BA/DA REFERENCE: 427BA-2006 [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "11DA-2004",
+            "description": "Three two-storey grouped dwellings with variations to boundary setbacks, visual privacy and paving within front setback area",
+            "address": "Lot 210 (No.15A) Caddy Avenue, West Leederville",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 3690,
+            "quote": "in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application submitted by [private individual \u2014 name withheld] for three two-storey grouped dwellings at Lot 210 (No.15A) Caddy Avenue, West Leederville as shown on the plans dated 5 and 20 May 2004 noting variations to"
+          },
+          {
+            "reference": "DV22.93",
+            "description": "Two double-storey grouped dwellings with reduced lot boundary setbacks, reduced open space, and increased overshadowing",
+            "address": "Lot 35 (No. 20) Connolly Street, Wembley",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 4052,
+            "quote": "That, in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council APPROVES the application for two grouped dwellings at Lot 35 (No. 20) Connolly Street, Wembley as shown on the attached plans stamped received 27 May 2022, subject to the following conditions"
+          },
+          {
+            "reference": "0271DA-2010",
+            "description": "Two storey dwelling with loft",
+            "address": "Lot 229 (No. 5) Yallambee Place, City Beach",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 4153,
+            "quote": "BA/DA REFERENCE: 0271DA-2010 [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "220DA-2010",
+            "description": "Two storey dwelling on rear battleaxe lot",
+            "address": "Lot 9 (No. 10B) Lentara Crescent, City Beach",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 4311,
+            "quote": "BA/DA REFERENCE: 220DA-2010 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 USE CLASS: Single dwelling 'P' \u2013 permitted in residential zone LAND AREA: 767 m\u00b2"
+          },
+          {
+            "reference": "186DA-2014",
+            "description": "Single storey dwelling with rear setback variation (4.0m vs 6.0m deemed-to-comply); includes five bedrooms, three bathrooms, study, triple garage, pool and alfresco",
+            "address": "Lot 1789 (Street No. 11) Dunkeld Street, Floreat",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 4470,
+            "quote": "The Town has received an application for a single storey dwelling at No. 11 Dunkeld Street, Floreat."
+          },
+          {
+            "reference": "463DA-2012",
+            "description": "Retrospective application for a loft with extended roof ridge and gable end",
+            "address": "Lot 185 (No. 61) Pandora Drive, City Beach",
+            "n_objectors": 4,
+            "outcome": "refused",
+            "entity_id": 4841,
+            "quote": "Application: 463DA-2012\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]\nZoning: Residential R12.5\nUse class: Dwelling (single) 'P' \u2013 permitted\nLand area: 1014 m\u00b2"
+          },
+          {
+            "reference": "642BA-2007",
+            "description": "Three storey dwelling on sloping site, two storey at front and three storey at rear with undercroft games room/cellar/store. Proposed balconies at rear to take advantage of views to Lake Monger.",
+            "address": "Lot 107 (No. 9) Tara Vista, West Leederville",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 5206,
+            "quote": "BA/DA REFERENCE: 642BA-2007\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "DV08.54",
+            "description": "Additions and alterations to existing two level dwelling including undercroft level, ground level bedroom 4 and portico, alterations to garage and carport, upper level additions with main living areas",
+            "address": "Lot 639 (No. 17) Pindari Road, City Beach",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 5214,
+            "quote": "BA/DA REFERENCE: 5DA-2008 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 LAND AREA: 997 square metres"
+          },
+          {
+            "reference": null,
+            "description": "ambulatory care building, decked carpark, new chapel and alterations and renovations to St John of God Hospital",
+            "address": "Lot 1 (No. 175) Cambridge Street, Subiaco",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 5367,
+            "quote": "in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No.1, Council APPROVES the application by Silver Thom as Hanley Architects at Lot 1 (No. 175) Cambridge Street, Subiaco for ambulatory care building, decked carpark, new chapel and alterations and renovations to St John of God Hospital as shown on plans dated 16 July 2003 and amended plans dated 4 September 2003, 16 September 2003 and 19 September 2003 subject to the following conditions"
+          },
+          {
+            "reference": "585BA\u20132005",
+            "description": "Amended plans for two storey dwelling with variations to rear balcony screening and privacy provisions",
+            "address": "Strata Lot 2 (No. 74B) Evandale Street, Floreat",
+            "n_objectors": 4,
+            "outcome": "refused",
+            "entity_id": 5585,
+            "quote": "BA/DA REFERENCE: 585BA \u2013 2005 \u2013 Amended Plans [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "18DA-2005",
+            "description": "Use of newly constructed two storey dwelling as display home with opening hours Wednesday, Saturday and Sunday afternoons from 12pm to 5pm (total 15 hours per week)",
+            "address": "Lot 1272 (No. 133) The Boulevard, corner Clanmel Road, Floreat",
+            "n_objectors": 4,
+            "outcome": "refused",
+            "entity_id": 5624,
+            "quote": "The builders of the dwelling nearing completion on the property at Lot 1272 (No. 133) The Boulevard, corner Clanmel Road, Floreat seek approval to use the dwelling as a display home."
+          },
+          {
+            "reference": "0426DA-2009",
+            "description": "Five storey mixed use development comprising one shop, 22 offices and two residential apartments",
+            "address": "Lot 48 (No. 343-343A) Cambridge Street, Wembley",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 5693,
+            "quote": "BA/DA REFERENCE: 0426DA-2009"
+          },
+          {
+            "reference": "0394DA-2010",
+            "description": "Amendment to roofing material for second storey additions to existing dwelling",
+            "address": "Lot 788 (No. 2) Dampier Street, City Beach",
+            "n_objectors": 4,
+            "outcome": "refused",
+            "entity_id": 5770,
+            "quote": "Council REFUSES the amended application to a development approval submitted by Summit Homes at Lot 783 (No. 2) Dampier Avenue, City Beach as shown on plans dated for the following reasons:- (i) the proposed roof colour does not meet the requirements of Clause 8 of Local Law 43; (ii) the proposed roof colour could result in excessive glare for neighbouring properties and the streetscape."
+          },
+          {
+            "reference": "331DA-2012",
+            "description": "Two storey dwelling on corner lot with primary street frontage to Adina Road and secondary street frontage and garage access to Windarra Drive",
+            "address": "Lot 425 (No. 32) Windarra Drive, City Beach, corner Adina Road",
+            "n_objectors": 4,
+            "outcome": "approved",
+            "entity_id": 5831,
+            "quote": "That, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application for a two storey dwelling as submitted by Giorgi Exclusive Homes at Lot 425 (No. 32) Windarra Drive, City Beach, as shown on the amended plans dated 26 November 2012 subject to the overall roof height being a maximum height of 44.523 metres AHD."
+          },
+          {
+            "reference": "10DA-96",
+            "description": "Three two-storey single dwellings on Lots 1 and 2 (future Lots 300, 301, 302)",
+            "address": "112 Northwood Street, Leederville",
+            "n_objectors": 4,
+            "outcome": "refused",
+            "entity_id": 5876,
+            "quote": "DA/BA REFERENCE: 10DA-96 [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "DV16.132",
+            "description": "Two, two storey dwellings in side by side configuration",
+            "address": "Lot 176 (No. 22) Joseph Street, West Leederville",
+            "n_objectors": 4,
+            "outcome": "refused",
+            "entity_id": 6175,
+            "quote": "The Town has received an application for two, two storey dwellings in a side by side configuration at No. 22 Joseph Street, West Leederville."
+          },
+          {
+            "reference": "0031DA-2009 / 0032DA-2009",
+            "description": "Two three-storey single dwellings (77A and 77B) on subdivided lots of 506sqm each with 10.13 metre frontage. Ground floors built at same level as Lake Monger Drive, first and second floors stepped dow",
+            "address": "Lot 37 (No. 77A and 77B) Lake Monger Drive, Wembley",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 409,
+            "quote": "BA/DA REFERENCE: 0031DA-2009 / 0032DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R20 USE CLASS: Dwelling (single): 'P' (Permitted) LAND AREA: Proposed Lot 402 - 506sqm Proposed Lot 403 - 506sqm"
+          },
+          {
+            "reference": "DA20/0103",
+            "description": "Five take-away food outlets at corner of Marlow Street and Grantham Street",
+            "address": "Lot 423 (No. 59) Marlow Street, Wembley",
+            "n_objectors": 3,
+            "outcome": "refused",
+            "entity_id": 442,
+            "quote": "DV20.156 LOT 423 (NO. 59) MARLOW STREET, WEMBLEY \u2013 FIVE TAKE-AWAY FOOD OUTLETS (S31 RECONSIDERATION)"
+          },
+          {
+            "reference": "737BA-2004",
+            "description": "Two storey dwelling with undercroft garage (four car) and swimming pool, seeking variations to ground floor side setback, retaining walls, rear setback, wall height and visual privacy requirements",
+            "address": "Lot 141 (No. 25) Oban Road, City Beach",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 3550,
+            "quote": "BA/DA REFERENCE: 737BA-2004 [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "355BA-2005",
+            "description": "Additions including plant room at top of upper level and garage widening with non-habitable space for air conditioning plant",
+            "address": "Lot 124 (No.34) Tilton Terrace, City Beach",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 3583,
+            "quote": "BA/DA REFERENCE: 355BA-2005 [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "75DA-2006",
+            "description": "Proposed two storey grouped dwelling with undercroft garage at rear of existing dwelling. Lot area 491 square metres, 47% open space. Variations: ground floor side setback 1.3m (1.6m prescribed), uppe",
+            "address": "Lot 3 (No. 17) Ruislip Street, West Leederville",
+            "n_objectors": 3,
+            "outcome": "refused",
+            "entity_id": 3756,
+            "quote": "The proposed building is set too close to the right/east boundary with regards to both ground and upper floor side setbacks. In addition, I am particularly concerned that the proposed roof height is 1.18 metres higher than regulations as this will have a direct impact of overshadowing on my property."
+          },
+          {
+            "reference": "515BA-2006",
+            "description": "Three storey dwelling with swimming pool, noting variations to wall height, privacy and side and rear setback provisions",
+            "address": "Lot 138 (No. 11) Peasholm Street, City Beach",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 3759,
+            "quote": "That in accordance with the provisions of Part 4 of the Town of Cambridge Town Planning Scheme No.1, Council APPROVES the application for a two storey dwelling with undercroft, noting variations wall height, privacy and side and rear setback provisions, as submitted by McDonald Jones Architects at Lot 138 (No. 11) Peasholm Street, City Beach as shown on the amended plans dated 6 February 2007"
+          },
+          {
+            "reference": "140BA-2003",
+            "description": "Erection of recycled ex-Telstra remote generating shed (cyclone rated) at rear of dwelling",
+            "address": "Lot 1638 (No. 20) Herdsman Parade, Wembley",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 3854,
+            "quote": "Approval is sought for the erection of a shed at the rear of an existing dwelling at Lot 1638 (No. 20) Herdsman Parade, Wembley. The shed is proposed to be 11.9 metres long and 4.8 metres wide, and have a wall height of 3.6 metres and a height to the top of the ridge of 4.5 metres."
+          },
+          {
+            "reference": "203BA-2008",
+            "description": "Two storey dwelling",
+            "address": "Lot 1723 (No. 27) Glengariff Drive, Floreat",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 4034,
+            "quote": "That in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES BY AN ABSOLUTE MAJORITY the application for a two storey dwelling submitted by Harden Jones Architects at Lot 1723 (No. 27) Glengariff Drive, Floreat as shown on the plans dated 11 June 2008 as amended on 18 June 2008"
+          },
+          {
+            "reference": "16DA01",
+            "description": "Redevelopment of Floreat Forum Shopping Centre including expansion from 11,654m\u00b2 to 18,403m\u00b2 total floor area (14,680m\u00b2 retail, 3,723m\u00b2 non-retail). Includes expansion of Woolworths from 2,850m\u00b2 to 3,",
+            "address": "Lot 43 (No. 5) Howtree Place, Floreat",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 4124,
+            "quote": "BA/DA REFERENCE: 16DA01"
+          },
+          {
+            "reference": "DV22.89",
+            "description": "Two-storey single house with modifications to fill within front setback area, increased external wall heights to roof deck balustrading, reduced side lot boundary setbacks, and timber cladding to exte",
+            "address": "Lot 212 (No. 12) Penryn Avenue, City Beach",
+            "n_objectors": 3,
+            "outcome": "refused",
+            "entity_id": 4214,
+            "quote": "Address: Lot 212 (No. 12) Penryn Avenue, City Beach"
+          },
+          {
+            "reference": "3DA-2004",
+            "description": "Proposed two grouped dwellings with variations to R-Codes boundary setbacks, visual privacy, and site works",
+            "address": "Lot 143 and Part Lot 142 (Nos. 239 \u2013 241) Salvado Road, Floreat",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 4242,
+            "quote": "A development application was submitted to the Town for two grouped dwellings, in accordance with Condition 2 of the WAPC approval notice at Lot 143 and portion of Lot 142 (No's. 239 - 241) Salvado Road, Floreat."
+          },
+          {
+            "reference": "DA19/0179",
+            "description": "Two-storey Dwelling",
+            "address": "Lot 272 (No.14) Baramba Road, City Beach",
+            "n_objectors": 3,
+            "outcome": "approved",
+            "entity_id": 4254,
+            "quote": "File Reference: DA19/0179"
+          }
+        ]
+      },
+      {
+        "label": "5+",
+        "n": 10,
+        "refused": 5,
+        "refusal_pct": 50.0,
+        "n_shown": 10,
+        "apps": [
+          {
+            "reference": "DA23/0247",
+            "description": "Additional land use of 'Use Not Listed' (Betting Agency) for the installation of two TAB betting terminals within the Sporting Globe Bar",
+            "address": "94/5 Howtree Place, Floreat",
+            "n_objectors": 22,
+            "outcome": "refused",
+            "entity_id": 537,
+            "quote": "The application proposes an additional land use of 'Use Not Listed' (Betting Agency) for the existing Sporting Globe Bar operating at No. 94/5 Howtree Place, Floreat so that two TAB betting terminals can be installed within the premises."
+          },
+          {
+            "reference": "CP013/95",
+            "description": "Use of part of existing residence as consulting rooms (dental surgery)",
+            "address": "Lot 1850 (No. 63) Alexander Street, Wembley",
+            "n_objectors": 6,
+            "outcome": "refused",
+            "entity_id": 3973,
+            "quote": "DA/BA REFERENCE: CP013/95"
+          },
+          {
+            "reference": "DV17.72",
+            "description": "Two, two storey dwellings",
+            "address": "Lot 176 (No. 22) Joseph Street, West Leederville",
+            "n_objectors": 6,
+            "outcome": "refused",
+            "entity_id": 4643,
+            "quote": "Submissions were received from the owners of Nos. 19A, 21, 23, 25 Joseph Street (across the road), 20 Joseph Street and 136 Woolwich Street (south), 134 Woolwich Street (rear), and 1/24 and 2/24 Joseph Street (north). Concerns have been raised relating to the appearance of the development on the streetscape, boundary to boundary overdevelopment, minimal landscaping adjacent to the street, bulk and consequent overshadowing, precedence and two driveways."
+          },
+          {
+            "reference": "70HO-98",
+            "description": "Bed and breakfast establishment using two upstairs bedrooms (one double bed, one single bed) in existing four-bedroom two-storey dwelling with attached ancillary accommodation, providing full use of d",
+            "address": "Lot 736 (No.6) Caithness Road corner Peebles Road, Floreat",
+            "n_objectors": 6,
+            "outcome": "refused",
+            "entity_id": 5654,
+            "quote": "An application has been received for permission to operate a \"bed and breakfast\" at Lot 736 (No.6) Caithness Road corner Peebles Road, Floreat. The lot accommodates an existing single dwelling with four bedrooms (two storey) and attached ancillary accommodation unit with two bedrooms (single storey). The owners intend to use two upstairs bedrooms in the original dwelling for bed and breakfast accommodation (one room has a double bed and the other has a single bed)."
+          },
+          {
+            "reference": "352BA-2005",
+            "description": "Three storey residence with garage, study, second bedroom and kitchen, dining and living rooms at main entry level; main bedroom, retreat and third bedroom at upper storey level; undercroft level at r",
+            "address": "Lot 107 (No. 9) Tara Vista, West Leederville",
+            "n_objectors": 6,
+            "outcome": "refused",
+            "entity_id": 6395,
+            "quote": "Approval is sought for the construction of a three storey residence at Lot 107 (No. 9) Tara Vista, West Leederville. The subject site is located on the northern side of Tara Vista and at the junction of Tara Vista and Kavanagh Street so that there is a large verge area on the left hand side of the lot."
+          },
+          {
+            "reference": "60DA-2009",
+            "description": "Three-storey dwelling with basement comprising basement with cellar and toy store, ground floor with double garage, gym, games room, lounge, alfresco opening to existing pool and four bedrooms and fou",
+            "address": "Lot 487 (No. 5) Orana Crescent, City Beach",
+            "n_objectors": 5,
+            "outcome": "approved",
+            "entity_id": 406,
+            "quote": "BA/DA REFERENCE: 60DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 LAND AREA: 1191m2 USE CLASS: Dwelling (single): 'P' (permitted)"
+          },
+          {
+            "reference": "DV12.44",
+            "description": "Two storey dwelling with undercroft garage",
+            "address": "Lot 2 (No. 18a) Dilkara Way, City Beach",
+            "n_objectors": 5,
+            "outcome": "approved",
+            "entity_id": 3855,
+            "quote": "Application: 0039DA-2012 [private individual \u2014 name withheld] [private individual \u2014 name withheld]"
+          },
+          {
+            "reference": "DV08.164",
+            "description": "Three storey dwelling with variations to side setbacks and building height requirements. Plans submitted 9 December 2008 show compliance with overall height and wall height acceptable development requ",
+            "address": "Lot 581 (No. 14) Banool Crescent, City Beach",
+            "n_objectors": 5,
+            "outcome": "approved",
+            "entity_id": 6203,
+            "quote": "That in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No.1, Council APPROVES the application for a three storey dwelling submitted by R Stewart T/as Oceanside Homes at Lot 581 (No. 14) Banool Crescent, City Beach as shown on the amended plans dated 9 December 2008, subject to the following condition:- (i) the roof material to not be zincalume or off-white ('Surfmist') colorbond."
+          },
+          {
+            "reference": "DV08.32",
+            "description": "Additions and alterations to existing two storey dwelling seeking variations to street setbacks and wall height",
+            "address": "Lot 501 (No. 1) Calver Place, City Beach",
+            "n_objectors": 5,
+            "outcome": "approved",
+            "entity_id": 6299,
+            "quote": "That in accordance with the provisions of Part 4 of the Town of Cambridge Town Planning Scheme No. 1, the Council APPROVES BY AN ABSOLUTE MAJORITY the amended plans submitted by Russell Stewart for additions and alterations to the existing dwelling, noting variations to setbacks and wall height at Lot 501 (No. 1) Calver Place, City Beach as shown on the amended plans dated 13 March 2008."
+          },
+          {
+            "reference": "DV09.109",
+            "description": "Construction of a two storey dwelling with basement and a low pitch flat and skillion roof form. The roof is concealed from the street with a brick feature wall. The front fa\u00e7ade has extensive glazing",
+            "address": "Lot 131 (No. 35) Kingsland Avenue, City Beach",
+            "n_objectors": 5,
+            "outcome": "approved",
+            "entity_id": 6309,
+            "quote": "BA/DA REFERENCE: 117DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 LAND AREA: 1080m2 USE CLASS: Dwelling (single): 'P' (permitted)"
+          }
+        ]
+      }
+    ]
+  }
+}

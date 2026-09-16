@@ -1,0 +1,2988 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "buckets": [
+      {
+        "label": "0",
+        "applications": [
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 395,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application: 100DA - 2012\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 16193,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Moved by Cr King, seconded by Cr Bradley\n\nThat, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application for retaining wall, fencing and fill submitted by [private individual \u2014 name withheld] and [private individual \u2014 name withheld] at Lot 197 (No.27) Ruislip Street, West Leederville, as shown on the plans dated 12 March 2012, subject to the following condition:- (i) the panels of the fencing in the front setback area to have a surface with an open to solid ratio of no less than 1:1.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 23454,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 402,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "application for additions and alterations to the existing dwelling submitted by Pollock Consulting at Lot 358 (No. 69) St Leonards Avenue, West Leederville as shown on the plans dated 6 March 2012",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 105856,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The applicant has provided letters from both adjoining neighbours specifically mentioning they have no objection to the proposed extension of the existing roof line further towards the rear of the site",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 82643,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 403,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "application for additions and alterations to existing dwelling submitted by Vision Felix Pty. Ltd. T/A Construction West at Lot 56 (No. 41) Dilkara Way, City Beach",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 110944,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The adjoining owners to the south have been consulted and have no objections to the storeroom parapet wall",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 106658,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 405,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "revised proposal for the retrospective approval for the garage, submitted by Rechichi Architects at Lot 41 (No. 69) Lake Monger Drive, Wembley",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 122366,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "the Town accepts the revised proposal put forward in mediation by the applicant",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 122749,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 407,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 35DA-2007 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: District Centre USE CLASS: Office",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 32684,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The applicant has been in discussions with Council officers regarding the location of an armoured vehicle embayment and the options have been narrowed to two possible locations.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 36665,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 411,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a two storey dwelling with undercroft submitted by S Bransby at Lot 185 (No. 61) Pandora Drive, City Beach as shown on the amended plans dated 10 July 2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 99634,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Front Setback Min 4.8 metres Min 6.5 metres (garage is in line with the front of the dwelling)",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 94302,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 413,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a garage submitted by CA Design and Drafting at Lot 494 (No. 4) Arbordale Street, Floreat as shown on the plans dated 14 July 2009",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 88102,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A side loaded (entry parallel to the street) carport is existing in the position of the proposed garage, with three piers facing the street.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 105046,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 418,
+            "role": "application",
+            "meeting_id": 12,
+            "meeting_date": "2013-08-27",
+            "document": {
+              "filename": "058c6718.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2013/minutes/2013_08_27.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application: 463DA-2013 [private individual \u2014 name withheld] [private individual \u2014 name withheld] Zoning: Residential R12.5",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 11851,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "On 4 July 2013, the applicant submitted amended plans to the Town showing no window to the loft. In the window's place, is a blank gable wall.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 13700,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "With the removal of the window, the dutch gable face is part of the roof form and is therefore only subject to overall roof height. The overall (ridge) height of the dwelling (including the loft) complies as it is less than the acceptable development requirement maximum of 9.0 metres (measures at 8.9 metres above natural ground level).",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 11007,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 422,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The application for subdivision has been referred to the Council by the Western Australian Planning Commission (WAPC) for comment and recommendation. Approval is sought to subdivide the 860 square metre lot into two lots of 430 square metres each. The existing house (being 1960s era) on the land would need to be demolished as its present location would straddle the proposed dividing boundary.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 4271,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 423,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The application for subdivision (amended plan) has been referred to the Council by the Western Australian Planning Commission (WAPC) for comment and recommendation. At its meeting held on 13 June 1995, the Council recommended refusal of a proposal for subdivision of this land involving retention of the existing dwelling and irregular lot boundaries. Following the Council's recommendation, discussions took place between the applicant and the Western Australian Planning Commission which resulted in the submission of an amended plan. Approval is sought to subdivide the 1,467 square metre lot into two lots of 700 square metres and 767 square metres.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 6663,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 424,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Adjoining landowners and residents have been notified of this proposal and given an opportunity to comment. Only one written submission was received advising that there was no objection to the proposed home occupation use.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 13200,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 425,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "An application for planning consent has been submitted for an illuminated roof sign advertising the LJ Hooker tenancy adjoining the Commonwealth Bank, Wembley. The proposed sign is to be installed on metal brackets 75mm above the parapet wall on the eastern side of the building and has dimensions of 1200 mm height by 3500 mm in length. The sign is to display the LJ Hooker company logo.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 12760,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 426,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The application for subdivision has been referred to the Council by the Western Australian Planning Commission for comment and recommendation. Approval is sought to subdivide No 34 Reserve Street, Wembley, with a total area of 1075 square metres into two lots of 542 square metres and 541 square metres. The proposed lots will have a frontage of 11.46 metres and 11.47 metres and a depth of 47.27 metres.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 15966,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 427,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Following consultation with the Council's Development and Environmental Services staff, the applicant has submitted revised plans seeking approval for a single storey specialist medical centre and five two storey town houses with lofts at 32 and 34 Salvado Road.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 20063,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 430,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "It is proposed to construct a new two storey split level four bedroom two bathroom residence with an undercroft garage at Lot 433 (No. 97) Evandale Street, Floreat. Council approval is sought to allow an undercroft garage and upstairs verandah and bedroom to extend into the required 9.0m front setback area, to within 4.0m of the front boundary.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 45176,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 431,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme the Council APPROVES BY AN ABSOLUTE MAJORITY the application submitted by Rizzo & Associates Pty Ltd on behalf of Capebay Holdings Pty Ltd for the refurbishment of the Wembley Piazza Shopping Centre on Lot 4 (Nos 346-350) Cambridge Street, Wembley, as shown on plans dated 4 August 1995 and amended plans dated 6 September 1995",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 21807,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 433,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That in accordance with the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme, the Council APPROVES BY AN ABSOLUTE MAJORITY the application submitted by Brent Shulman Architect on behalf of Mr and [private individual \u2014 name withheld] received on 15 September 1995 for two 2 storey attached dwellings (being renewal of approval DA93/1242) at Lot 489 (No. 21) Tate Street, West Leederville, as shown on plans dated 15 September 1995",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 36534,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 436,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DA/BA REFERENCE: C305/95",
+                "tier": "exact",
+                "char_offset": 108496,
+                "resolved_offset": 107132,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Approval is sought to construct a two storey residence at Lot 100 Tower Street, West Leederville. The proposal consists of living and service areas downstairs with three bedrooms and two bathrooms upstairs.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 81790,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Adjoining owners on both sides of the subject property have sighted the plans and have raised no objections.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 82205,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 437,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DA/BA REFERENCE: C219/95",
+                "tier": "exact",
+                "char_offset": 113651,
+                "resolved_offset": 112203,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Approval is sought to construct a two storey residence at Lot 497 Joseph Street, Leederville consisting of three bedrooms, a study and two bathrooms upstairs, and a garage, living and service areas downstairs.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 86148,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "the adjoining owners on the southern boundary have supported the proposal",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 87995,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 438,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DA/BA REFERENCE: 349/95",
+                "tier": "exact",
+                "char_offset": 119356,
+                "resolved_offset": 117824,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Approval is sought to construct a double garage with a reduced secondary street setback at 1 Bodmin Avenue, City Beach.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 89896,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The applicant has approached adjoining and surrounding neighbours who have endorsed the plans.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 114521,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 439,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DA/BA REFERENCE: C320/95",
+                "tier": "exact",
+                "char_offset": 124257,
+                "resolved_offset": 122641,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Approval is sought to construct a residence with two storey and single storey sections and undercroft at 197 Gregory Street, Wembley.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 93559,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Whilst one neighbour has endorsed the plans, the other neighbour has not given the same undertaking.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 95567,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 441,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Address: Lot 246 (No. 3) Warreen Place, City Beach  Report Date: 1 December 2020 File Reference: DA20/0359",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 26174,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Value: $5,390",
+                "tier": "exact",
+                "char_offset": 28830,
+                "resolved_offset": 27859,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "[private individual \u2014 name withheld]",
+                "tier": "exact",
+                "char_offset": 28643,
+                "resolved_offset": 27672,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 443,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DV20.157 Lot 317 (No.23) Kinkuna Way, City Beach \u2013 Proposed Carport Addition to Existing Single Dwelling",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 1661,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 444,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DV20.158 Lot 1 (No.27) Tarongo Way, City Beach \u2013 Proposed Alterations and Additions to Existing Dwelling",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 1769,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 445,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DV20.159 Lot 1683 (No.67) Glengariff Drive, Floreat \u2013 Proposed Alterations/Additions to Existing Single House",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 1877,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 446,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DV20.160 Lot 517 (No.4) Dandaloo Road, City Beach \u2013 Proposed Two Storey Dwelling (Amendment to DA19/0288)",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 1990,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 447,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application proposes a carport addition to the existing single dwelling. The variations for the proposal include: 1. The addition of a carport forward of the front wall of the existing dwelling onsite. The structure is set back 3.75m from the primary street, in lieu of 7.5m; 2. Proposed widening of the existing driveway, resulting in a total of 41.8% landscaping in the primary street setback area, in lieu of 60%; 3. A total width of proposed side-by-side configured car parking bays of 5.14m, in lieu of 5.4m; and 4. Proposed weatherboard cladding finish to the proposed addition, in lieu of masonry materials listed within Local Law 43.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "No submissions were received during the public consultation period.",
+                "tier": "exact",
+                "char_offset": 85478,
+                "resolved_offset": 83142,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 448,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The application proposes an extension to the existing family room which will encroach into the primary street setback area resulting in a setback of 6.8m in lieu of 7.5m. The area of new development within the primary street setback area is approximately 0.8m2.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 71011,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "No concerns were received during the advertising period with regard to the proposed reduced street boundary setbacks.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 89483,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 449,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The application proposes the new carport to be setback 2.97m from the front boundary in lieu of 9m. The maximum height of the rear of the carport also does not comply.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 92951,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "In addition, the application proposes weatherboard cladding in lieu of masonry materials and 'Shale Grey' roof colour to the carport and additions to the dwelling, which has a solar reflectivity index of 57% in lieu of maximum 40%.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 75853,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 450,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The amended application proposes to widen the raised pathway, and surround it with new planter retaining walls. The proposed planter retaining walls, which will have a maximum height of 1.6m above the natural ground levels, and the raised pathway, which will have a maximum height of 1.4m above the natural ground level, will have a minimum primary street setback of 4.09m from the front boundary in lieu of 7.5m.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 84818,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "1",
+        "applications": [
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 397,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application: 60DA-2012\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 37932,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Moved by Cr King, seconded by Cr Bradley\n\nThat, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application for a two storey dwelling submitted by Peter Hobbs Architect at Lot 395 (No. 4) Challenger Parade, City Beach as shown on the amended plans dated 16 March 2012 subject to the following conditions",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 42001,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 399,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "application for second storey additions and alterations to the existing dwelling submitted by J Keszi at Lot 708 (No. 16) Blencowe Street, West Leederville as shown on the plans dated 4 November 2011",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 80970,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A submission was received from the neighbour to the northern side (No. 18 Blencowe Street)",
+                "tier": "exact",
+                "char_offset": 79446,
+                "resolved_offset": 77111,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 400,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "application for additions and alterations submitted by Slatter Projects Pty Ltd trading as Slatter Constructions at Lot 1460 (No. 17) Kildare Road, Floreat",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 91924,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A submission was received by the landowner's of No.15 Kildare Road objecting to the wall height, side setback and rear setback variations",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 86257,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 401,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "application for additions and alterations submitted by James Edwards at Lot 4 (No. 8) St Leonards Avenue, West Leederville",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 98611,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A submission was received by the landowner of No.308 Railway Parade objecting to the wall height variation on the south elevation",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 94678,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 404,
+            "role": "application",
+            "meeting_id": 2,
+            "meeting_date": "2012-04-24",
+            "document": {
+              "filename": "0064743e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "application for an Outbuilding submitted by C Moody and H R Moody at Lot 114 (No. 6) The Grove, Wembley",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 116924,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "One submission was received from the owners of 4 The Grove objecting to (the reduced setback of 0.3 metres to their common boundary",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 113991,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 408,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 0096DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R20 USE CLASS: Dwelling (single): 'P' (Permitted) LAND AREA: 1161sqm",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 32958,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The applicant proposes additions to the existing dwelling comprising of:- A carport to the front parallel with the street, at grade with the slip road; A lift and stairwell to the front of the dwelling; Front Fence compliant with the R Codes and Council Policy; A pool deck to the north and west of the existing pool; and A free standing cabana to the rear of the property, and an alfresco attached to the dwelling.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 33140,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 410,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a three storey dwelling submitted by Design Inc. Perth Pty Ltd at Lot 36 (No. 79A) Lake Monger Drive, Wembley as shown on the plans dated 29 May 2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 88104,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The proposed variation to the building height of No. 79A Lake Monger Drive is due to the substantial slope on the site (approximately 5.0 metres difference in natural ground level from the front to the rear)",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 83651,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 412,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a patio submitted by [private individual \u2014 name withheld] at Lot 691 (No. 32) Holland Street, Wembley as shown on the plans dated 4 May 2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 104284,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A pavilion is proposed in the south-eastern corner of Lot 691 (No. 32) Holland Street; The pavilion will be set back 0.5 metres from the southern boundary",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 80437,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 414,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a front fence submitted by [private individual \u2014 name withheld] at Lot 33 (No. 1) Teslin Road, Mt Claremont as shown on the plans dated 26 May 2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 115396,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A 1.2 metre pinelap fence constructed on the western side boundary and within the front setback area.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 111060,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 415,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a two storey dwelling submitted by JWH Group Pty Ltd at Lot 44, (No. 4) Highbury Street, Floreat as shown on the plans dated 17 June 2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 124482,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Two storey dwelling comprising: ground floor with triple garage, office, guest room, dining, living, home theatre, kitchen and alfresco; upper floor with master suite and ensuite, two bedrooms, bathroom and activity.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 416,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a second storey addition and alterations to an existing dwelling submitted by Yesteryear Building Company at Lot 715, (No. 5) Holland Street, Wembley as shown on the plans dated 30 April 2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 132564,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Additions and alterations to existing single dwelling comprising; ground floor extension to incorporate new kitchen, laundry, family room, store and alfresco upper floor to have three bedrooms, an activity area and bathroom.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 417,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council APPROVES the application for a two storey dwelling submitted by JWH Group Pty Ltd at Lot 1383, (No. 23) Kilkenny Road, Floreat as shown on amended plans dated 3 June 2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 140440,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "809m2 lot currently developed with a single storey dwelling. The proposal is for a two storey dwelling with pitched roofs and rendered walls.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 107292,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 419,
+            "role": "application",
+            "meeting_id": 12,
+            "meeting_date": "2013-08-27",
+            "document": {
+              "filename": "058c6718.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2013/minutes/2013_08_27.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application: 228DA-2013 [private individual \u2014 name withheld] [private individual \u2014 name withheld] Zoning: Residential R30 Use class: Dwelling (single) 'P' \u2013 permitted",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 13665,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The Town notified the owners of the two properties directly adjoining the side boundaries of the subject site, being Nos. 65 and 69 Northwood Street, West Leederville. One submission was received from the owner of No. 65 Northwood Street objecting to the proximity of the dwelling to the boundary and the resultant bulk and overshadowing.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 19474,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Two storey dwelling oriented towards the southern side of the lot to maximise solar orientation to the north resulting in a setback variation to the southern side boundary.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 18734,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 420,
+            "role": "application",
+            "meeting_id": 12,
+            "meeting_date": "2013-08-27",
+            "document": {
+              "filename": "058c6718.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2013/minutes/2013_08_27.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application: 210DA-2013 [private individual \u2014 name withheld] [private individual \u2014 name withheld] Zoning: Residential R20 Use class: Dwelling (single) 'P' \u2013 permitted",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 21904,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "One submi ssion was received from the owners of No. 85 Holland Street objecting to the setbacks and about privacy due to the proposed external staircase to the upper storey store.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 29651,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Two storey addition (90 square metres in area) to the rear of the existing dwelling which is shown as a storeroom. New living area and bedroom on the ground floor.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 28602,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 428,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The applicant has approached the adjoining owner, and a non-favourable reply has been received, due in part to the perceived loss of light to a bedroom window, and the noise function relating to the garage.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 29660,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 429,
+            "role": "application",
+            "meeting_id": 18,
+            "meeting_date": "1995-07-25",
+            "document": {
+              "filename": "060c4c87.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_07_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Approval is now sought to construct a carport on the boundary of the property at 50 Oban Road, City Beach, with a 500mm eaves clearance with piers placed on the boundary.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 41750,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 432,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme the Council APPROVES BY AN ABSOLUTE MAJORITY the application submitted by M A Congerton for car parking at the rear of No 15 (Lot 301) Bernard Street, Leederville as shown on plans dated 27 June 1995",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 31767,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 434,
+            "role": "application",
+            "meeting_id": 15,
+            "meeting_date": "1995-09-26",
+            "document": {
+              "filename": "06da2141.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That in accordance with the provisions of the Town of Cambridge Town Planning Scheme and the Metropolitan Region Scheme, the application submitted by [private individual \u2014 name withheld] for a Home Occupation (office for real estate bookwork) on Lot 3 (No.43A) Pangbourne Street, Wembley, as shown on plans dated 22 August 1995, be approved for a period of twelve months",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 45403,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 440,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Address: Lot 79 (No. 29) Tranmore Way, City Beach  Report Date: 1 December 2020 File Reference: DA20/0329",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 17593,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Value: $50,000",
+                "tier": "exact",
+                "char_offset": 19825,
+                "resolved_offset": 19114,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "During the consultation period, the Town received one submission in objection of the proposal. The main concerns raised in the submission were that there is sufficient space behind the front setback area for the pergola; the structure appears to only be decorative and therefore should meet the deemed- to-comply planning requirements; and concern that noise, mess and congestion during construction, which will have an adverse impact on neighbours.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 19772,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 453,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The Town was successful in obtaining a $2,200,000 grant for the design and construction of a SAS along Ruislip Street.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 301651,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Overall from the community engagement results, the preferred east to west SAS route linking the Boulevard shared path via Bournville, Ruislip, Woolwich and Southport Street to the Leederville train station is supported.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 305479,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "For Ruislip Street that 15 residents opposed the scheme with 15 residents in favour, but unfortunately Ruislip Street is the critical connecting link to the project with no suitable alternative.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 456,
+            "role": "application",
+            "meeting_id": 198,
+            "meeting_date": "2009-09-22",
+            "document": {
+              "filename": "c85b54e8.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_09_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 0168DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 28383,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Two double storey grouped dwellings comprising:- Side by side development. Garages located on the boundaries.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 21920,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 528,
+            "role": "application",
+            "meeting_id": 259,
+            "meeting_date": "2025-09-30",
+            "document": {
+              "filename": "859eb9d2.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2025/9.-september/ordinary-council-meeting-30-september-2025-public-minutes-v2.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That, pursuant to Section 31 of the State Administrative Tribunal Act 2004 and in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council SETS ASIDE its previous decision and APPROVES the application for the development of a Use Not Listed (Temporary Viewing Tower) at Lot 241 (No. 3) Kilpa Court, City Beach as amended and shown on the attached plans stamped received 23 July 2025",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 399164,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "[private individual \u2014 name withheld] [private individual \u2014 name withheld] Zoning: Local Centre Precinct: P1 \u2013 City Beach Development Description: Temporary Viewing Tower Development Value: $100,000",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 400882,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A total of 11 submissions were received, all objecting to the proposal. The key issues raised were: concerns that the 30m tower would overlook adjacent low-rise residential properties.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 323175,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 536,
+            "role": "application",
+            "meeting_id": 264,
+            "meeting_date": "2024-10-22",
+            "document": {
+              "filename": "b1d3fe58.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2024/10.october/ordinary-council-meeting-minutes-22-october-2024-public-unconfirmed-v3-final.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The application seeks approval for an additional land use classified as 'Use Not Listed' (Betting Agency) at the existing Sporting Globe Bar, located at No. 94/5 Howtree Place, Floreat, to permit the installation of two TAB betting terminals within the premises.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 1294926,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Two betting terminals will be installed in the 'High Bar Seating Area.' Six television screens displaying live sports will be positioned above the betting terminals.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 1001538,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "During the consultation period, 39 submissions were received, all opposing the proposal. Of these, 36 were from residents within the Town, and three were from individuals living outside the Town's boundaries.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 1006048,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 546,
+            "role": "application",
+            "meeting_id": 271,
+            "meeting_date": "2026-03-24",
+            "document": {
+              "filename": "e9c9efc2.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2026/3.-march/public-minutes-24-march-2026-ordinary-council-meeting-v2.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application for Development Approval - Lots 243 & 245 (Nos. 3\u20135) Kilpa Court, City Beach (Ocean Village) - Advertisement (Temporary Hoarding Signage)",
+                "tier": "exact",
+                "char_offset": 1444004,
+                "resolved_offset": 1444004,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Lots 243 and 245 (Nos. 3\u20135) Kilpa Court, City Beach - Proposed Temporary Hoarding Signage",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 1151571,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "the signage is proposed to be attached to temporary site hoarding and perimeter fencing installed around the site following demolition of the former Ocean Village Shopping Centre",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "approximately 79m in length, maximum height of approximately 2.4m above natural ground level, total advertising area of approximately 178m\u00b2",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 1129018,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 574,
+            "role": "application",
+            "meeting_id": 199,
+            "meeting_date": "2024-11-26",
+            "document": {
+              "filename": "8f8b0b4a.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2024/11.november/confirmed-ordinary-council-meeting-minutes-26-november-2024.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "the draft Precinct Structure Plan for the Floreat Activity Centre, prepared by Hatch RobertsDay on behalf of the APIL Group, be REFUSED",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 202932,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The Town's Local Planning Strategy projects that the Floreat Activity Centre will need to accommodate between 900 to 1,250 new dwellings",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 126051,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Centre Core Development Site A: podium height up to 5 storeys and upper levels up to 20 storeys permitted total building height of 25 storeys at the corner of The Boulevard and Howtree Place",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "a total of 1,690 submissions were received by the DPLH",
+                "tier": "exact",
+                "char_offset": 209931,
+                "resolved_offset": 209931,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The submissions indicate 65% of respondents support the draft PSP and 15% support the draft PSP but have comments or concerns. Overall, 80% of submission indicated a level of support for the draft PSP, with approximately 19% opposing it.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 164174,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 578,
+            "role": "application",
+            "meeting_id": 30,
+            "meeting_date": "2021-02-23",
+            "document": {
+              "filename": "0ca1074e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2021/council-minutes/2021_02_23m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "APPROVES the Local Development Plan submitted for Lot 800 (No. 12) Salvado Road, Lots 147-149 (No. 177) Cambridge Street, Lots 1-21 (No. 181) Cambridge Street, Lot 5 (No. 187) Cambridge Street, Wembley and Lot 2 (No. 1-19) McCourt Street, Subiaco dated January 2021",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 108672,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "In total, 14 submissions (refer to Attachment 7) were received, with: \u2022 5 in support; \u2022 4 providing comment; and \u2022 5 objecting.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 76939,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The key themes are listed below and are incorporated into the assessment contained within subsequent sections of this report: 1. Safety of intersections for pedestrians; 2. Traffic generated by the development; 3. Impact of the proposal on 181 Cambridge Street; and 4. Consideration of wider area (West Leederville Activity Centre and Subi-East).",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 77067,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3528,
+            "role": "application",
+            "meeting_id": 279,
+            "meeting_date": "2022-10-18",
+            "document": {
+              "filename": "27a49ee9.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-minutes/minutes-development-committee-18-october-2022.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DV22.89 Lot 212 (No.12) Penryn Avenue, City Beach \u2013  Proposed Two-Storey Single House \u2013 S31 Reconsideration",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 479,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "In response, a total of three submissions were received, all of which objected to the proposal. The main concerns raised during the consultation period are summarised below: i. Object to the raised levels within the front setback. ii. Object to the increased maximum building heights. iii. Object to the reduced north-western side boundary setback. iv. Request that the LPP 3.24 contours are used to assess the plans.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 16668,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Value: $2,500,000",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 11965,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3529,
+            "role": "application",
+            "meeting_id": 279,
+            "meeting_date": "2022-10-18",
+            "document": {
+              "filename": "27a49ee9.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-minutes/minutes-development-committee-18-october-2022.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DV22.89 Lot 212 (No.12) Penryn Avenue, City Beach \u2013  Proposed Two-Storey Single House \u2013 S31 Reconsideration",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 479,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "In response, a total of three submissions were received, all of which objected to the proposal.",
+                "tier": "exact",
+                "char_offset": 17397,
+                "resolved_offset": 17397,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Value: $2,500,000",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 11965,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3534,
+            "role": "application",
+            "meeting_id": 279,
+            "meeting_date": "2022-10-18",
+            "document": {
+              "filename": "27a49ee9.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-minutes/minutes-development-committee-18-october-2022.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That, in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council REFUSES the application for two grouped dwellings at Lot 35 (No. 20) Connolly Street, Wembley",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 132647,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Address: Lot 35 (No. 20) Connolly Street, Wembley [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3537,
+            "role": "application",
+            "meeting_id": 280,
+            "meeting_date": "2023-10-09",
+            "document": {
+              "filename": "3cbc0d1b.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2023/committee-minutes/minutes-development-committee-9-october-2023.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Property Applicant/Landowner(s) 24 Kincardine Crescent, Floreat [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 78569,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The application proposes the construction of a single storey single house. Most of the external walls of the proposed dwelling will be constructed in 'Accoya Timber' and 'Easy Tex' cladding.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 63670,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "It is noted that one (1) submission was received during the public consultation period in relation to the proposed Accoya Timber cladding and East Tex cladding materials. The submission is summarised as follows; \"Proposed building materials and cladding not in keeping with the neighbourhood (i.e. not brick, nor concrete, nor stone etc.)\"",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 65040,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "2-4",
+        "applications": [
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3576,
+            "role": "application",
+            "meeting_id": 284,
+            "meeting_date": "2005-06-28",
+            "document": {
+              "filename": "5053bc0f.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_06_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 261BA-2005\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 409458,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Approval is sought for the construction of a three storey residence at Lot 242 (No. 49) Hesperia Avenue, City Beach.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 411240,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3668,
+            "role": "application",
+            "meeting_id": 296,
+            "meeting_date": "2006-09-26",
+            "document": {
+              "filename": "56363b56.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2006/2006_09_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 427BA-2006 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 305619,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Lot 577 (No. 13) Banool Crescent, City Beach",
+                "tier": "exact",
+                "char_offset": 4504,
+                "resolved_offset": 4360,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Three level dwelling with undercroft garage, cellar and store, main living areas and bedroom 3 on ground level and main bedroom, sitting room and bedroom 2 on upper level.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 306830,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3690,
+            "role": "application",
+            "meeting_id": 298,
+            "meeting_date": "2004-06-22",
+            "document": {
+              "filename": "56b00012.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2004/2004_06_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application submitted by [private individual \u2014 name withheld] for three two-storey grouped dwellings at Lot 210 (No.15A) Caddy Avenue, West Leederville as shown on the plans dated 5 and 20 May 2004 noting variations to",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 298536,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4052,
+            "role": "application",
+            "meeting_id": 334,
+            "meeting_date": "2022-10-18",
+            "document": {
+              "filename": "6a18a6e0.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2022/committee-agendas/2022_10_18dva.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That, in accordance with the provisions of Local Planning Scheme No. 1 and the authority delegated to the Town under the provisions of the Metropolitan Region Scheme, Council APPROVES the application for two grouped dwellings at Lot 35 (No. 20) Connolly Street, Wembley as shown on the attached plans stamped received 27 May 2022, subject to the following conditions",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 101696,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4153,
+            "role": "application",
+            "meeting_id": 345,
+            "meeting_date": "2010-10-26",
+            "document": {
+              "filename": "72416611.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2010/minutes/2010_10_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 0271DA-2010 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 19140,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Proposal is for a new two storey dwelling with loft.",
+                "tier": "exact",
+                "char_offset": 20983,
+                "resolved_offset": 20224,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "That, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application for a two storey dwelling with loft as submitted by Webb and Brown-Neaves at Lot 229 (No. 5) Yallambee Place, City Beach as shown on the amended plans dated 29 September 2010 subject to the following condition:- (i) the roof material not being zincalume or off-white (\"Surfmist\") colorbond . Carried 9/0",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 22073,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4311,
+            "role": "application",
+            "meeting_id": 360,
+            "meeting_date": "2010-08-24",
+            "document": {
+              "filename": "75bf4195.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2010/minutes/2010_08_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 220DA-2010 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 USE CLASS: Single dwelling 'P' \u2013 permitted in residential zone LAND AREA: 767 m\u00b2",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 24146,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Existing rear battleaxe lot. Ground levels on the site range from 33.0 metres AHD at the front of the effective lot area to 30.2 metres at the rear boundary.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 24519,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4470,
+            "role": "application",
+            "meeting_id": 378,
+            "meeting_date": "2014-07-22",
+            "document": {
+              "filename": "81287b3a.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2014/minutes/2014_07_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The Town has received an application for a single storey dwelling at No. 11 Dunkeld Street, Floreat.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 87655,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Application: 186DA-2014 / [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 71619,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Four submissions were received from the owners of four adjoining properties (Nos. 9 & 13 Dunkeld Street, No. 16 Alyth Road and No. 16 West Lorne Street ), objecting to the proposed rear setback, garage wall and retaining walls",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 73422,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4841,
+            "role": "application",
+            "meeting_id": 412,
+            "meeting_date": "2013-04-23",
+            "document": {
+              "filename": "92cb0b39.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2013/minutes/2013_04_23.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application: 463DA-2012\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]\nZoning: Residential R12.5\nUse class: Dwelling (single) 'P' \u2013 permitted\nLand area: 1014 m\u00b2",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 21563,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The tallest ridge of the dwelling has been extended two metres to the west to create a loft space. A gable end has been added (facing west) which includes an openable awning window that is 1.98 metres wide, 0.55 metres high, and 1.0 metre from the floor level.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 22502,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5206,
+            "role": "application",
+            "meeting_id": 448,
+            "meeting_date": "2008-04-22",
+            "document": {
+              "filename": "a9549407.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2008/minutes/2008_04_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 642BA-2007\n[private individual \u2014 name withheld]\n[private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 27689,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "DV08.46 LOT 107 (NO. 9) TARA VISTA, W EST LEEDERVILLE - PROPOSED THREE STOREY DWELLING",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 21000,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5214,
+            "role": "application",
+            "meeting_id": 448,
+            "meeting_date": "2008-04-22",
+            "document": {
+              "filename": "a9549407.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2008/minutes/2008_04_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 5DA-2008 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 LAND AREA: 997 square metres",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 130595,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The proposal is for additions and alterations to an existing two level dwelling, including: Undercroft level (visible from the rear): new covered outdoor area (below new ground level balcony); Ground level: new bedroom 4 and portico at the front of the dwelling, and an increase in the size of the existing double garage and double carport (in front of the garage). At the rear, an increase in the size of the family room and a new balcony and spiral staircase. Upper level: new upper level comprising the main living areas and bedroom 1 (with a small side balcony).",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The application was advertised in accordance with the provisions of the R Codes to owners of adjoining properties to the north-east (19 Pindari Road), south-west (15 Pindari Road), rear (16 and 18 Yanagin Crescent) and across the road (18 and 20 Pindari Road).",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 136935,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5367,
+            "role": "application",
+            "meeting_id": 466,
+            "meeting_date": "2003-09-23",
+            "document": {
+              "filename": "b5906b16.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2003/2003_09_23.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No.1, Council APPROVES the application by Silver Thom as Hanley Architects at Lot 1 (No. 175) Cambridge Street, Subiaco for ambulatory care building, decked carpark, new chapel and alterations and renovations to St John of God Hospital as shown on plans dated 16 July 2003 and amended plans dated 4 September 2003, 16 September 2003 and 19 September 2003 subject to the following conditions",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 278818,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A small number of submissions were received by the Town. Three of these were from the same residential apartment block immediately to the north of the proposed carpark. One other submission raised issues with regard to traffic. The other two submissions were from government authorities.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 305862,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5585,
+            "role": "application",
+            "meeting_id": 489,
+            "meeting_date": "2006-12-19",
+            "document": {
+              "filename": "c0a19140.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2006/2006_12_19.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 585BA \u2013 2005 \u2013 Amended Plans [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 447150,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Submissions objecting to the proposal have been received from both of the neighbours at 293A and 295 Salvado Road. In addition, submissions have also been received from neighbours at 291A Salvado Road and 74A Evandale Street also objecting to the proposal.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 451329,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "That:- (i) in accordance with Part 4 of the Town of Cambridge Town planning Scheme No. 1, and matters required to be considered under this Scheme generally and, in particular, as the proposal would be contrary to the orderly and proper planning of the locality, the Council REFUSES the applications to alter the balustrading on the rear balcony at Strata Lot 2 (No. 74B) Evandale Street, Floreat as shown on plans dated 9 October 2006, 7 December 2006 and 15 December 2006 for the following reasons:- (a) the proposal does not meet the acceptable development requirements or performance criteria of Part 3.8.1 \u2013 Privacy Requirements of Residential Design Codes; (b) the proposal would have a detrimental impact on the privacy of adjoining neighbours; (c) the adjoining neighbours object to the proposed amendments. (ii) the Council is not prepared to support anything less than an obscure balustrade to a minimum height of 1.6 metres for the entire balcony as shown on plans dated 21 February 2006.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 459428,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5624,
+            "role": "application",
+            "meeting_id": 493,
+            "meeting_date": "2005-04-26",
+            "document": {
+              "filename": "c1bf6ea2.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_04_26.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The builders of the dwelling nearing completion on the property at Lot 1272 (No. 133) The Boulevard, corner Clanmel Road, Floreat seek approval to use the dwelling as a display home.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 242116,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The proposed display home will operate on a restricted basis with opening hours being confined to Wednesday, Saturday and Sunday afternoons from 12pm to 5pm being a total 15 hours per week.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 242299,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5693,
+            "role": "application",
+            "meeting_id": 500,
+            "meeting_date": "2010-05-25",
+            "document": {
+              "filename": "c750d299.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2010/minutes/2010_05_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 0426DA-2009",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 11334,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Lot 48 (No. 343-343A) Cambridge Street, Wembley",
+                "tier": "exact",
+                "char_offset": 1435,
+                "resolved_offset": 1367,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "To consider an application for a mixed use commercial development comprising one shop, twenty two offices and two residential apartments requiring assessment under the Town Planning Scheme No. 1 in respect of car parking and plot ratio.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 11085,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5770,
+            "role": "application",
+            "meeting_id": 518,
+            "meeting_date": "2011-04-19",
+            "document": {
+              "filename": "d1f96af5.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2011/minutes/2011_04_19.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Council REFUSES the amended application to a development approval submitted by Summit Homes at Lot 783 (No. 2) Dampier Avenue, City Beach as shown on plans dated for the following reasons:- (i) the proposed roof colour does not meet the requirements of Clause 8 of Local Law 43; (ii) the proposed roof colour could result in excessive glare for neighbouring properties and the streetscape.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5831,
+            "role": "application",
+            "meeting_id": 525,
+            "meeting_date": "2012-11-27",
+            "document": {
+              "filename": "d5cf7627.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_11_27.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application for a two storey dwelling as submitted by Giorgi Exclusive Homes at Lot 425 (No. 32) Windarra Drive, City Beach, as shown on the amended plans dated 26 November 2012 subject to the overall roof height being a maximum height of 44.523 metres AHD.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 110961,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5876,
+            "role": "application",
+            "meeting_id": 527,
+            "meeting_date": "1996-06-11",
+            "document": {
+              "filename": "d63d62fb.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1996/1996_06_12_sc.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DA/BA REFERENCE: 10DA-96 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 1122,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Approval is sought for three, two storey single dwellings, to be located on three individual \"green\" title lots.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 1947,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Written objections to this development have been received from the owners of No 14 Warwick Street, No 114 Northwood Street and No 15 Caddy Avenue. In addition, a pro-forma letter opposing the use of Warwick Street for access to the development has been received from seven residents of that street.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 4609,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 6175,
+            "role": "application",
+            "meeting_id": 560,
+            "meeting_date": "2016-09-27",
+            "document": {
+              "filename": "e44de427.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2016/minutes/2016_09_27minutes.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The Town has received an application for two, two storey dwellings in a side by side configuration at No. 22 Joseph Street, West Leederville.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 177755,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The Town notified the owners of the six properties directly adjoining the subject site, being No. 20 Joseph Street and No. 136 Woolwich Street to the south, 1/24, 2/24 and 3/24 Joseph Street to the north and No. 134 Woolwich Street to the rear (east). Submissions were received from Nos. 20 Joseph Street, 134 Woolwich Street, 136 Woolwich Street and 1/24 Joseph Street.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 182975,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 409,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 0031DA-2009 / 0032DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R20 USE CLASS: Dwelling (single): 'P' (Permitted) LAND AREA: Proposed Lot 402 - 506sqm Proposed Lot 403 - 506sqm",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 42572,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The two (2) three storey dwellings comprise of: 77A (Left hand side) - Ground Floor: built at the same ground level as Lake Monger Drive; - First Floor: floor level approximately 2.40 metres below the natural ground level at the rear boundary; - Second Floor: floor level approximately 0.4 metres higher than the natural ground level at the rear boundary. 77B (Right hand side) - Ground Floor: floor level at the same ground level as Lake Monger Drive; - First Floor: floor level approximately 2.40 metres below the natural ground level at the rear boundary; - Second Floor: floor level approximately 0.6 metres higher than the natural ground level at the rear boundary.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 442,
+            "role": "application",
+            "meeting_id": 26,
+            "meeting_date": "2020-12-15",
+            "document": {
+              "filename": "0a12261e.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/5/documents-and-files/aaa-agenda-and-minutes/2020/council-minutes/2020_12_15m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DV20.156 LOT 423 (NO. 59) MARLOW STREET, WEMBLEY \u2013 FIVE TAKE-AWAY FOOD OUTLETS (S31 RECONSIDERATION)",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 31871,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "29 April 2020 (DA20/0103) Development application lodged for 5 take- away food outlets",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 36112,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The site is within the Wembley Precinct and is located on the south-west corner of the intersection of Marlow Street and Grantham Street, approximately 145m west of Wembley Primary School.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 37026,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3550,
+            "role": "application",
+            "meeting_id": 283,
+            "meeting_date": "2005-03-22",
+            "document": {
+              "filename": "460feb1b.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_03_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 737BA-2004 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 258733,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "two storey dwelling with a four car garage and store at an undercroft level and a gym, guest bedroom and all main living areas on the ground floor",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 260061,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3583,
+            "role": "application",
+            "meeting_id": 284,
+            "meeting_date": "2005-06-28",
+            "document": {
+              "filename": "5053bc0f.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_06_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 355BA-2005 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 507002,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Council has received an application for additions to an existing two storey dwelling, specifically for a new plant room to top of the upper level and widening the existing garage which is on the east side of the dwelling.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 507763,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Both side neighbours and one of the rear neighbours have made the following comments in relation to the proposed variations",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 509322,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3756,
+            "role": "application",
+            "meeting_id": 305,
+            "meeting_date": "2007-02-27",
+            "document": {
+              "filename": "59d8906b.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2007/2007_02_27.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The proposed building is set too close to the right/east boundary with regards to both ground and upper floor side setbacks. In addition, I am particularly concerned that the proposed roof height is 1.18 metres higher than regulations as this will have a direct impact of overshadowing on my property.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 502322,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "That accordance with the provisions of the Town of Cambridge Town Planning Scheme No.1 and matters required to be considered under this scheme generally and, in particular, as the proposal would be contrary to the orderly and proper planning of the locality, Council REFUSES the application for a two storey grouped dwelling with undercroft as submitted by Cross Fishwick and Associates, at Lot 3 (No. 17) Ruislip Street, West Leederville as shown on the plans dated 18 December 2006",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 510898,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3759,
+            "role": "application",
+            "meeting_id": 305,
+            "meeting_date": "2007-02-27",
+            "document": {
+              "filename": "59d8906b.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2007/2007_02_27.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That in accordance with the provisions of Part 4 of the Town of Cambridge Town Planning Scheme No.1, Council APPROVES the application for a two storey dwelling with undercroft, noting variations wall height, privacy and side and rear setback provisions, as submitted by McDonald Jones Architects at Lot 138 (No. 11) Peasholm Street, City Beach as shown on the amended plans dated 6 February 2007",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 556066,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The applicant subsequently submitted a new application which sought to address the impact of the development on the adjoining property to the west by increasing setbacks to this side and retaining existing ground levels along the western boundary with no additional fill proposed.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 532278,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3854,
+            "role": "application",
+            "meeting_id": 315,
+            "meeting_date": "2003-04-22",
+            "document": {
+              "filename": "5f994892.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2003/2003_04_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Approval is sought for the erection of a shed at the rear of an existing dwelling at Lot 1638 (No. 20) Herdsman Parade, Wembley. The shed is proposed to be 11.9 metres long and 4.8 metres wide, and have a wall height of 3.6 metres and a height to the top of the ridge of 4.5 metres.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 339472,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "the applicant submitted written confirmation agreeing to lower the wall height of the proposed shed from 3.6 metres to 2.6 metres, lower the overall height of the proposed shed from 4.5 metres to 3.7 metres and increase the setback of the proposed shed from the south eastern corner of the property to 1.0 metre",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 353495,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4034,
+            "role": "application",
+            "meeting_id": 331,
+            "meeting_date": "2008-06-24",
+            "document": {
+              "filename": "694bfd65.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2008/minutes/2008_06_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES BY AN ABSOLUTE MAJORITY the application for a two storey dwelling submitted by Harden Jones Architects at Lot 1723 (No. 27) Glengariff Drive, Floreat as shown on the plans dated 11 June 2008 as amended on 18 June 2008",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 114697,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4124,
+            "role": "application",
+            "meeting_id": 341,
+            "meeting_date": "2001-04-24",
+            "document": {
+              "filename": "706c482b.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2001/2001_04_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 16DA01",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 227088,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "[private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 227153,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The overall floor area of the centre will increase from 11654m\u00b2 to 18403m2. This is comprised of 14680m\u00b2 of retail floor area and 3723m\u00b2 of non-retail floor area. The two existing supermarkets are to be expanded. Woolworths is proposed to expand from 2850m\u00b2 to 3728m\u00b2 and Newmart is proposed to expand from 2241m\u00b2 to 2830m2.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A petition has been submitted by Peter Duckett, 19 Chandler Avenue, Floreat containing 326 signatories, requesting that Council changes the planned Floreat Forum redevelopment due to its adverse impact on nearby residential areas and safety concerns from increases in traffic flow",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 226009,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "As a result of the advertising process, 55 written submissions have been received by the Town.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 240893,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Sixty six pro forma letters supporting the development have also been received. The comments book at the shopping centre display contains approximately 200 comments.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 241415,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4214,
+            "role": "application",
+            "meeting_id": 353,
+            "meeting_date": "2022-10-25",
+            "document": {
+              "filename": "7402bfdf.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/4/documents-and-files/aaa-agenda-and-minutes/2022/council-minutes/2022_10_25m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Address: Lot 212 (No. 12) Penryn Avenue, City Beach",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 24415,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "[private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 24958,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Description: Two-Storey Single House",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 25072,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Value: $2,500,000",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 25121,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "In response, a total of three submissions were received, all of which objected to the proposal.",
+                "tier": "exact",
+                "char_offset": 32068,
+                "resolved_offset": 31017,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4242,
+            "role": "application",
+            "meeting_id": 355,
+            "meeting_date": "2004-03-23",
+            "document": {
+              "filename": "743dbd90.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2004/2004_03_23.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "A development application was submitted to the Town for two grouped dwellings, in accordance with Condition 2 of the WAPC approval notice at Lot 143 and portion of Lot 142 (No's. 239 - 241) Salvado Road, Floreat.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 216129,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Moved by Cr Burkett, seconded by Cr McAullay That, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application submitted by Webb and Browne Neaves Pty Ltd. for two grouped dwellings at Lot 143 and Part Lot 142 (Nos. 239 - 241) Salvado Road, Floreat as shown on the plans dated 13 January 2004",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 292547,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Carried",
+                "tier": "exact",
+                "char_offset": 16674,
+                "resolved_offset": 16674,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4254,
+            "role": "application",
+            "meeting_id": 357,
+            "meeting_date": "2019-12-17",
+            "document": {
+              "filename": "751676e1.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/6/documents-and-files/aaa-agenda-and-minutes/2019/council-minutes/2019_12_17m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "File Reference: DA19/0179",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 120543,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Address: Lot 272 (No.14) Baramba Road, City Beach",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 120463,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "[private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 121079,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Description: Two-storey Dwelling",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 121226,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Development Value: $865,000",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 121271,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "In response, a total of four submissions were received; of which two objected to the application, one provided comment and one raised no-objection.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 123152,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "label": "5+",
+        "applications": [
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 537,
+            "role": "application",
+            "meeting_id": 264,
+            "meeting_date": "2024-10-22",
+            "document": {
+              "filename": "b1d3fe58.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/2024/10.october/ordinary-council-meeting-minutes-22-october-2024-public-unconfirmed-v3-final.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "The application proposes an additional land use of 'Use Not Listed' (Betting Agency) for the existing Sporting Globe Bar operating at No. 94/5 Howtree Place, Floreat so that two TAB betting terminals can be installed within the premises.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 1173982,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "During the consultation period, 39 submissions were received, all of which objected to the proposal.",
+                "tier": "exact",
+                "char_offset": 1444896,
+                "resolved_offset": 1444896,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The Town does not have any records of complaints or any information about any social impacts on the locality that resulted from the three betting terminals operating from the premises during that three year period.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 1521668,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3973,
+            "role": "application",
+            "meeting_id": 328,
+            "meeting_date": "1995-06-27",
+            "document": {
+              "filename": "669abff7.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1995/1995_06_27.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "DA/BA REFERENCE: CP013/95",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 15228,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "A total of eleven submissions plus one petition containing 31 signatures have been received. Seven submissions and the petition are from nearby residents, while the remaining submissions are from Wembley Primary School, the School's Parents & Citizens Association, Wembley Ward Ratepayers & Residents Association and Michelle Roberts MLA respectively. All submissions and the petition object to the proposal.",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The concerns raised in the submissions are considered valid. Consulting rooms have the potential to generate significant volumes of traffic, parking and associated noise and disturbance.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 17704,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 4643,
+            "role": "application",
+            "meeting_id": 610,
+            "meeting_date": "2017-06-27",
+            "document": {
+              "filename": "87feb59d.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/3/documents-and-files/aaa-agenda-and-minutes/2017/council-minutes/2017_06_27m.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Submissions were received from the owners of Nos. 19A, 21, 23, 25 Joseph Street (across the road), 20 Joseph Street and 136 Woolwich Street (south), 134 Woolwich Street (rear), and 1/24 and 2/24 Joseph Street (north). Concerns have been raised relating to the appearance of the development on the streetscape, boundary to boundary overdevelopment, minimal landscaping adjacent to the street, bulk and consequent overshadowing, precedence and two driveways.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 130306,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 5654,
+            "role": "application",
+            "meeting_id": 496,
+            "meeting_date": "1998-09-22",
+            "document": {
+              "filename": "c4ee1f81.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/1998/1998_09_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "An application has been received for permission to operate a \"bed and breakfast\" at Lot 736 (No.6) Caithness Road corner Peebles Road, Floreat. The lot accommodates an existing single dwelling with four bedrooms (two storey) and attached ancillary accommodation unit with two bedrooms (single storey). The owners intend to use two upstairs bedrooms in the original dwelling for bed and breakfast accommodation (one room has a double bed and the other has a single bed).",
+                "tier": "paraphrase",
+                "char_offset": null,
+                "resolved_offset": null,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The applicant has initiated advertising of the proposal by sending a copy of the application and plans to the surrounding properties at Nos.4 and 10 Caithness Road, Nos. 62, 60, 81, 77 and 79 Peebles Road and No.1 Kincardine Crescent, Floreat. Several objections have been received",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 212692,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 6395,
+            "role": "application",
+            "meeting_id": 591,
+            "meeting_date": "2005-08-23",
+            "document": {
+              "filename": "f788b405.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/1995-2007/2005/2005_08_23.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Approval is sought for the construction of a three storey residence at Lot 107 (No. 9) Tara Vista, West Leederville. The subject site is located on the northern side of Tara Vista and at the junction of Tara Vista and Kavanagh Street so that there is a large verge area on the left hand side of the lot.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 325305,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The proposal is for a three storey dwelling with a garage, study, second bedroom and kitchen, dining and living rooms at the main entry level and the main bedroom, retreat and third bedroom at the upper storey level. An undercroft level is proposed at the rear of the dwelling with storage areas and a large indoor room and outdoor paved areas. There are balconies proposed at the rear of the dwelling at the main living area level and at the upper level adjacent to Bedroom 1 to take advantage of views to Lake Monger.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 325694,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "In light of the proposed dwelling's variations to the Town's residential planning requirements and the obvious resulting negative impact it would have on our property we hereby strongly object to the said variations.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 271755,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 406,
+            "role": "application",
+            "meeting_id": 9,
+            "meeting_date": "2009-07-28",
+            "document": {
+              "filename": "03e85360.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_07_28.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 60DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 LAND AREA: 1191m2 USE CLASS: Dwelling (single): 'P' (permitted)",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 5861,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Four level dwelling comprising:- o Basement: cellar and toy store; o Ground floor: double garage, gym, games room and lounge and alfresco opening to the existing concrete pool on the eastern side of the property, and four bedrooms and four bathrooms. A tennis court is also proposed in the backyard. o First floor: main indoor living areas, front terrace (above proposed garage) and large balcony/alfresco area at the rear; o Second floor: guest bedroom, ensuite, retreat and small rear balcony",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 9402,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "Letters of objection to the proposed development were received from the owners of both side properties (3 and 7 Orana Crescent), 6 and 8 Orana Crescent (across the road), and 210 Oceanic Drive (to the rear/south-east).",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 11739,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 3855,
+            "role": "application",
+            "meeting_id": 316,
+            "meeting_date": "2012-05-22",
+            "document": {
+              "filename": "60f0e165.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2012/minutes/2012_05_22.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "Application: 0039DA-2012 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 13037,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The Town has received an application for a two storey dwelling with undercroft garage at No. 18A Dilkara Way, City Beach.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 12186,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "That, in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No. 1, Council APPROVES the application for a two storey dwelling withundercroft garage as submitted by Dasco Building Group Pty Ltd at Lot 2 (No. 18a) Dilkara Way, City Beach as shown on the amended plans dated 3 May 2012.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 20013,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 6203,
+            "role": "application",
+            "meeting_id": 563,
+            "meeting_date": "2008-12-16",
+            "document": {
+              "filename": "e6efd5a2.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2008/minutes/2008_12_16.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That in accordance with Part 4 of the Town of Cambridge Town Planning Scheme No.1, Council APPROVES the application for a three storey dwelling submitted by R Stewart T/as Oceanside Homes at Lot 581 (No. 14) Banool Crescent, City Beach as shown on the amended plans dated 9 December 2008, subject to the following condition:- (i) the roof material to not be zincalume or off-white ('Surfmist') colorbond.",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 28874,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "BA/DA REFERENCE: 320BA-2008 [private individual \u2014 name withheld] [private individual \u2014 name withheld]",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 17765,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The applicant submitted revised plans on 9 December 2008. The revised plans show compliance with the overall height and wall height acceptable development requirements of the Town of Cambridge Residential Design Guidelines",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 31433,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 6299,
+            "role": "application",
+            "meeting_id": 578,
+            "meeting_date": "2008-03-25",
+            "document": {
+              "filename": "ee76ddc1.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2008/minutes/2008_03_25.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "That in accordance with the provisions of Part 4 of the Town of Cambridge Town Planning Scheme No. 1, the Council APPROVES BY AN ABSOLUTE MAJORITY the amended plans submitted by Russell Stewart for additions and alterations to the existing dwelling, noting variations to setbacks and wall height at Lot 501 (No. 1) Calver Place, City Beach as shown on the amended plans dated 13 March 2008.",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 95227,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          },
+          {
+            "entity_table": "planning_applications",
+            "entity_id": 6309,
+            "role": "application",
+            "meeting_id": 579,
+            "meeting_date": "2009-11-24",
+            "document": {
+              "filename": "efb0a195.pdf",
+              "url": "https://www.cambridge.wa.gov.au/files/assets/public/v/1/documents-and-files/aaa-agenda-and-minutes/archive/2008-2016/2009/minutes/2009_11_24.pdf",
+              "page": null
+            },
+            "quotes": [
+              {
+                "text": "BA/DA REFERENCE: 117DA-2009 [private individual \u2014 name withheld] [private individual \u2014 name withheld] ZONING: Residential R12.5 LAND AREA: 1080m2 USE CLASS: Dwelling (single): 'P' (permitted)",
+                "tier": "stripped",
+                "char_offset": null,
+                "resolved_offset": 24202,
+                "resolved_against": "minutes_text"
+              },
+              {
+                "text": "The Town notified the owners of the properties to the left/east side (31 and 33 Kingsland Avenue), right/west side (37 Kingsland Avenue), across the road to the north (30, 32 and 34 Kingsland Avenue) and to the south/rear (42 and 44 Kingsland Avenue) of the subject site in relation to the proposed development, in particular the variations to the acceptable development requirements that may impact on their properties. Objections were received from the owners of five properties, 30, 33, 34 and 37 Kingsland Avenue and 44 Hesperia Avenue",
+                "tier": "normalised",
+                "char_offset": null,
+                "resolved_offset": 33920,
+                "resolved_against": "minutes_text"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

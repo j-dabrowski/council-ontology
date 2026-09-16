@@ -1,0 +1,476 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "median_years": 9.5,
+    "n_councillors": 46,
+    "histogram": {
+      "<2y": 3,
+      "2-5y": 8,
+      "5-10y": 13,
+      "10-15y": 5,
+      "15y+": 17
+    },
+    "profiles": [
+      {
+        "name": "Gary Mack",
+        "years": 30.8,
+        "n_votes": 742,
+        "first": "1995-07",
+        "last": "2026-05",
+        "is_active": true,
+        "first_motion_id": 2904,
+        "last_motion_id": 5611
+      },
+      {
+        "name": "Kate Barlow",
+        "years": 23.0,
+        "n_votes": 862,
+        "first": "2003-05",
+        "last": "2026-05",
+        "is_active": true,
+        "first_motion_id": 23289,
+        "last_motion_id": 4795
+      },
+      {
+        "name": "Corinne MacRae",
+        "years": 22.2,
+        "n_votes": 862,
+        "first": "1995-07",
+        "last": "2017-10",
+        "is_active": false,
+        "first_motion_id": 29005,
+        "last_motion_id": 28386
+      },
+      {
+        "name": "Pauline O'Connor",
+        "years": 22.0,
+        "n_votes": 679,
+        "first": "1995-10",
+        "last": "2017-10",
+        "is_active": false,
+        "first_motion_id": 27082,
+        "last_motion_id": 28386
+      },
+      {
+        "name": "Susan Kennerly",
+        "years": 19.8,
+        "n_votes": 355,
+        "first": "2006-08",
+        "last": "2026-05",
+        "is_active": true,
+        "first_motion_id": 310,
+        "last_motion_id": 4795
+      },
+      {
+        "name": "Jane Cutler",
+        "years": 19.6,
+        "n_votes": 290,
+        "first": "2006-08",
+        "last": "2026-03",
+        "is_active": true,
+        "first_motion_id": 310,
+        "last_motion_id": 5228
+      },
+      {
+        "name": "Rod Bradley",
+        "years": 18.8,
+        "n_votes": 1208,
+        "first": "2003-09",
+        "last": "2022-07",
+        "is_active": false,
+        "first_motion_id": 25035,
+        "last_motion_id": 20139
+      },
+      {
+        "name": "Ben Mayes",
+        "years": 18.5,
+        "n_votes": 401,
+        "first": "2007-11",
+        "last": "2026-05",
+        "is_active": true,
+        "first_motion_id": 137,
+        "last_motion_id": 5611
+      },
+      {
+        "name": "Xavier Carr",
+        "years": 18.4,
+        "n_votes": 840,
+        "first": "2007-11",
+        "last": "2026-04",
+        "is_active": true,
+        "first_motion_id": 137,
+        "last_motion_id": 4660
+      },
+      {
+        "name": "Michael Le Page",
+        "years": 18.4,
+        "n_votes": 392,
+        "first": "2007-11",
+        "last": "2026-04",
+        "is_active": true,
+        "first_motion_id": 137,
+        "last_motion_id": 4660
+      },
+      {
+        "name": "Matt Delmenico",
+        "years": 16.8,
+        "n_votes": 210,
+        "first": "2009-07",
+        "last": "2026-05",
+        "is_active": true,
+        "first_motion_id": 2859,
+        "last_motion_id": 5611
+      },
+      {
+        "name": "Alaine Haddon-Casey",
+        "years": 16.8,
+        "n_votes": 250,
+        "first": "2007-11",
+        "last": "2024-09",
+        "is_active": false,
+        "first_motion_id": 137,
+        "last_motion_id": 5590
+      },
+      {
+        "name": "Alan Langer",
+        "years": 16.5,
+        "n_votes": 526,
+        "first": "1999-05",
+        "last": "2015-11",
+        "is_active": false,
+        "first_motion_id": 23944,
+        "last_motion_id": 19906
+      },
+      {
+        "name": "Gavin Foley",
+        "years": 16.2,
+        "n_votes": 147,
+        "first": "2009-07",
+        "last": "2025-09",
+        "is_active": true,
+        "first_motion_id": 2821,
+        "last_motion_id": 4983
+      },
+      {
+        "name": "Keri Shannon",
+        "years": 15.2,
+        "n_votes": 809,
+        "first": "2009-07",
+        "last": "2024-09",
+        "is_active": false,
+        "first_motion_id": 2821,
+        "last_motion_id": 5590
+      },
+      {
+        "name": "Meg Anklesaria",
+        "years": 15.2,
+        "n_votes": 43,
+        "first": "2009-07",
+        "last": "2024-09",
+        "is_active": false,
+        "first_motion_id": 2821,
+        "last_motion_id": 5590
+      },
+      {
+        "name": "Kate McKerracher",
+        "years": 15.0,
+        "n_votes": 397,
+        "first": "2006-08",
+        "last": "2021-08",
+        "is_active": false,
+        "first_motion_id": 310,
+        "last_motion_id": 18842
+      },
+      {
+        "name": "David Berry",
+        "years": 14.3,
+        "n_votes": 362,
+        "first": "1995-06",
+        "last": "2009-10",
+        "is_active": false,
+        "first_motion_id": 19566,
+        "last_motion_id": 25961
+      },
+      {
+        "name": "Georgie Randklev",
+        "years": 14.2,
+        "n_votes": 469,
+        "first": "2012-02",
+        "last": "2026-05",
+        "is_active": true,
+        "first_motion_id": 169,
+        "last_motion_id": 5611
+      },
+      {
+        "name": "Brett Heil",
+        "years": 14.1,
+        "n_votes": 160,
+        "first": "2012-04",
+        "last": "2026-05",
+        "is_active": true,
+        "first_motion_id": 2802,
+        "last_motion_id": 4795
+      },
+      {
+        "name": "Marlene Anderton",
+        "years": 11.7,
+        "n_votes": 327,
+        "first": "1995-06",
+        "last": "2007-02",
+        "is_active": false,
+        "first_motion_id": 28035,
+        "last_motion_id": 18637
+      },
+      {
+        "name": "Hilary Pinerua",
+        "years": 10.2,
+        "n_votes": 231,
+        "first": "2001-05",
+        "last": "2011-08",
+        "is_active": false,
+        "first_motion_id": 27686,
+        "last_motion_id": 28984
+      },
+      {
+        "name": "Sonia Grinceri",
+        "years": 9.8,
+        "n_votes": 476,
+        "first": "2007-12",
+        "last": "2017-10",
+        "is_active": false,
+        "first_motion_id": 28494,
+        "last_motion_id": 28386
+      },
+      {
+        "name": "Melanie Foley",
+        "years": 9.2,
+        "n_votes": 21,
+        "first": "2006-08",
+        "last": "2015-10",
+        "is_active": false,
+        "first_motion_id": 310,
+        "last_motion_id": 589
+      },
+      {
+        "name": "Ian Everett",
+        "years": 9.2,
+        "n_votes": 394,
+        "first": "2012-04",
+        "last": "2021-07",
+        "is_active": false,
+        "first_motion_id": 2802,
+        "last_motion_id": 26597
+      },
+      {
+        "name": "Tracey King",
+        "years": 7.9,
+        "n_votes": 428,
+        "first": "2009-11",
+        "last": "2017-10",
+        "is_active": false,
+        "first_motion_id": 28915,
+        "last_motion_id": 28386
+      },
+      {
+        "name": "Kerry Smith",
+        "years": 7.8,
+        "n_votes": 142,
+        "first": "1995-07",
+        "last": "2003-04",
+        "is_active": false,
+        "first_motion_id": 29005,
+        "last_motion_id": 18990
+      },
+      {
+        "name": "Graham Burkett",
+        "years": 7.8,
+        "n_votes": 167,
+        "first": "1997-05",
+        "last": "2005-02",
+        "is_active": false,
+        "first_motion_id": 27429,
+        "last_motion_id": 22688
+      },
+      {
+        "name": "Louis Carr",
+        "years": 7.8,
+        "n_votes": 140,
+        "first": "2011-11",
+        "last": "2019-09",
+        "is_active": false,
+        "first_motion_id": 26086,
+        "last_motion_id": 20077
+      },
+      {
+        "name": "Simon Withers",
+        "years": 7.7,
+        "n_votes": 238,
+        "first": "2007-12",
+        "last": "2015-08",
+        "is_active": false,
+        "first_motion_id": 28494,
+        "last_motion_id": 25929
+      },
+      {
+        "name": "Jane Powell",
+        "years": 7.4,
+        "n_votes": 492,
+        "first": "2012-04",
+        "last": "2019-09",
+        "is_active": false,
+        "first_motion_id": 2802,
+        "last_motion_id": 20077
+      },
+      {
+        "name": "Ross Willcock",
+        "years": 6.5,
+        "n_votes": 61,
+        "first": "1996-10",
+        "last": "2003-04",
+        "is_active": false,
+        "first_motion_id": 18544,
+        "last_motion_id": 18990
+      },
+      {
+        "name": "Andres Timmermanis",
+        "years": 5.8,
+        "n_votes": 642,
+        "first": "2015-11",
+        "last": "2021-08",
+        "is_active": false,
+        "first_motion_id": 19891,
+        "last_motion_id": 18852
+      },
+      {
+        "name": "Otto Pelczar",
+        "years": 5.8,
+        "n_votes": 165,
+        "first": "2007-12",
+        "last": "2013-10",
+        "is_active": false,
+        "first_motion_id": 28494,
+        "last_motion_id": 21343
+      },
+      {
+        "name": "Mainuddin Bhuiyan",
+        "years": 5.3,
+        "n_votes": 43,
+        "first": "2020-11",
+        "last": "2026-03",
+        "is_active": true,
+        "first_motion_id": 439,
+        "last_motion_id": 5229
+      },
+      {
+        "name": "Julie Watson",
+        "years": 4.8,
+        "n_votes": 109,
+        "first": "2008-02",
+        "last": "2012-11",
+        "is_active": false,
+        "first_motion_id": 29878,
+        "last_motion_id": 26946
+      },
+      {
+        "name": "Ken McAullay",
+        "years": 3.9,
+        "n_votes": 89,
+        "first": "2001-05",
+        "last": "2005-04",
+        "is_active": false,
+        "first_motion_id": 27686,
+        "last_motion_id": 26049
+      },
+      {
+        "name": "Ian Steele",
+        "years": 3.9,
+        "n_votes": 66,
+        "first": "1997-05",
+        "last": "2001-04",
+        "is_active": false,
+        "first_motion_id": 27429,
+        "last_motion_id": 20121
+      },
+      {
+        "name": "Colin Walker",
+        "years": 3.8,
+        "n_votes": 106,
+        "first": "2011-11",
+        "last": "2015-08",
+        "is_active": false,
+        "first_motion_id": 26086,
+        "last_motion_id": 25929
+      },
+      {
+        "name": "Robina McConnell",
+        "years": 3.3,
+        "n_votes": 45,
+        "first": "1995-07",
+        "last": "1998-11",
+        "is_active": false,
+        "first_motion_id": 29005,
+        "last_motion_id": 29984
+      },
+      {
+        "name": "James Nelson",
+        "years": 2.9,
+        "n_votes": 279,
+        "first": "2017-10",
+        "last": "2020-09",
+        "is_active": false,
+        "first_motion_id": 23208,
+        "last_motion_id": 28257
+      },
+      {
+        "name": "John Gow",
+        "years": 2.2,
+        "n_votes": 192,
+        "first": "2005-05",
+        "last": "2007-07",
+        "is_active": false,
+        "first_motion_id": 23846,
+        "last_motion_id": 19179
+      },
+      {
+        "name": "Penny Huxtable",
+        "years": 2.1,
+        "n_votes": 178,
+        "first": "2005-05",
+        "last": "2007-06",
+        "is_active": false,
+        "first_motion_id": 23846,
+        "last_motion_id": 24920
+      },
+      {
+        "name": "Jo McAllister",
+        "years": 1.7,
+        "n_votes": 196,
+        "first": "2017-10",
+        "last": "2019-06",
+        "is_active": false,
+        "first_motion_id": 23208,
+        "last_motion_id": 18748
+      },
+      {
+        "name": "Robert Fredericks",
+        "years": 1.1,
+        "n_votes": 123,
+        "first": "2020-10",
+        "last": "2021-11",
+        "is_active": false,
+        "first_motion_id": 25521,
+        "last_motion_id": 20345
+      },
+      {
+        "name": "David Price",
+        "years": 0.3,
+        "n_votes": 41,
+        "first": "2025-11",
+        "last": "2026-03",
+        "is_active": true,
+        "first_motion_id": 4510,
+        "last_motion_id": 5229
+      }
+    ]
+  }
+}

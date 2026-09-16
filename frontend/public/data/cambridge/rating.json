@@ -1,0 +1,16 @@
+{
+  "published_at": "2026-09-16T11:33:38.011421+00:00",
+  "data": {
+    "band": "yellow",
+    "band_label": "Mixed record",
+    "band_reason": "base",
+    "critical_share": 0.4,
+    "n_supportive": 9,
+    "n_neutral": 12,
+    "n_critical": 6,
+    "n_not_computable": 2,
+    "n_decisive": 15,
+    "computable_share": 0.9310344827586207,
+    "config_version": 1
+  }
+}
