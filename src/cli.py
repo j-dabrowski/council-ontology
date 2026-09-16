@@ -2016,6 +2016,25 @@ SNAPSHOT_TIER: dict[str, str] = {
     "evidence/governance.incumbency": "public",
     "evidence/transparency.confidential_share": "public",
     "evidence/planning.objection_responsiveness": "public",
+    # 2026-09-16 — the only two of the nine bespoke-panel snapshots that
+    # were still full-tier (found live: their panels 404'd on the public
+    # site) that need no redaction review at all before promotion:
+    # `divergence`'s exceptions carry meeting_date/item_number/title/
+    # officer_recommendation/council_outcome/match_confidence, no name of
+    # any kind; `engagement` is a pure year x {public_questions,
+    # deputations, petitions} count grid, same shape as `trends`'
+    # `topics`. The other seven (declared, recusal, tenders, power,
+    # sponsorship, mayoral, question-responsiveness) all carry a
+    # councillor/mayor name deliberately (that's the accountability
+    # subject, same as every other named-councillor panel) but also carry
+    # free-text quotes or, in question-responsiveness's case, a real
+    # member-of-the-public's name in `questioner` -- neither has been
+    # through a redaction pass, and redact_private_names() (used below)
+    # only catches Mr/Mrs/Ms/Dr-prefixed names and Owner:/Applicant:-
+    # labelled fields, not a bare "Firstname Lastname" value, which is
+    # exactly questioner's shape. Not promoted here.
+    "divergence": "public",
+    "engagement": "public",
 }
 
 # Snapshot name -> the battery/claim list that governs its tier, per §4/§7's
