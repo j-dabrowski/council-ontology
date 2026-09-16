@@ -41,6 +41,16 @@ export function CouncilHeader() {
               className="council-select"
               value={council}
               onChange={(e) => handleSelect(e.target.value)}
+              // Browsers size a <select> to fit its widest *option*, not the
+              // currently selected one (so opening the dropdown never
+              // reflows the page) — harmless when every option is close in
+              // length, but a visible gap before the arrow once one council's
+              // name renders noticeably narrower than another's. Sized to
+              // the selected option's own text instead (`ch` = one character
+              // cell), plus the CSS padding reserved for the arrow (18px
+              // right + 3px left) — box-sizing: border-box (global) means
+              // `width` already has to include that padding, not sit outside it.
+              style={{ width: `calc(${shortName.length}ch + 21px)` }}
             >
               {list.map((c) => (
                 <option key={c.key} value={c.key}>{c.short_name}</option>
