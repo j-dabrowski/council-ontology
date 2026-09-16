@@ -86,6 +86,16 @@ COUNCILS = {
         # councils.json and every frontend page render; "Cambridge" alone is
         # the internal key/short_name, not what a reader sees.
         "display_name": "Town of Cambridge",
+        # name_prefix/name_suffix: the fixed plain-text scaffolding either
+        # side of the CouncilHeader selector ("Town of [Cambridge ▾]
+        # Council") — a WA local government's formal name never includes
+        # the word "Council" (CAMBRIDGE_NAME is "Town of Cambridge"), but
+        # the header still frames the selector inside that convention.
+        # Per-council so a Shire (a different prefix) or a future council
+        # with no such convention at all (empty strings) both render
+        # correctly without the header assuming one fixed template.
+        "name_prefix": "Town of",
+        "name_suffix": "Council",
         "source_url": "https://www.cambridge.wa.gov.au",
         "scraper": "src.scraper.cambridge:CambridgeScraper",
     },
@@ -98,6 +108,8 @@ COUNCILS = {
     "testville": {
         "short_name": "Testville",
         "display_name": "Testville",
+        "name_prefix": "",
+        "name_suffix": "",
         "source_url": None,
         "synthetic": True,
     },
@@ -3868,18 +3880,22 @@ def cmd_draft(args) -> None:
     }
     tiers = {name: _tier_of(name, battery) for name in written}
 
-    # display_name/source_url (SECOND_COUNCIL_PLAN.md Phase 2.5): a Draft-mode
-    # council listing has no other way to read COUNCILS' registry facts —
-    # vite.config.ts's draftOverlay() is plain Node/TS, it can't import this
-    # Python dict directly — so the manifest carries them instead of the
-    # frontend falling back to the raw key ("cambridge" instead of "Town of
-    # Cambridge"). load_draft_manifest() (src/publish_gate.py) ignores keys
-    # it doesn't declare, so this is additive, not a breaking manifest change.
+    # short_name/display_name/name_prefix/name_suffix/source_url (SECOND_
+    # COUNCIL_PLAN.md Phase 2.5): a Draft-mode council listing has no other
+    # way to read COUNCILS' registry facts — vite.config.ts's draftOverlay()
+    # is plain Node/TS, it can't import this Python dict directly — so the
+    # manifest carries them instead of the frontend falling back to the raw
+    # key ("cambridge" instead of "Town of Cambridge"). load_draft_manifest()
+    # (src/publish_gate.py) ignores keys it doesn't declare, so this is
+    # additive, not a breaking manifest change.
     _registry_entry = COUNCILS.get(key, {})
     (output_dir / "manifest.json").write_text(_json.dumps({
         "run_id": run_id,
         "council": key,
+        "short_name": _registry_entry.get("short_name", key),
         "display_name": _registry_entry.get("display_name", _registry_entry.get("short_name", key)),
+        "name_prefix": _registry_entry.get("name_prefix", ""),
+        "name_suffix": _registry_entry.get("name_suffix", ""),
         "source_url": _registry_entry.get("source_url"),
         "generated_at": generated_at,
         "snapshots": written,

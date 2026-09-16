@@ -270,7 +270,10 @@ def publish_snapshots(
         corpus_span = json.loads(overview_path.read_text())["data"].get("span")
     new_entry = {
         "key": key,
+        "short_name": registry_entry["short_name"],
         "display_name": registry_entry.get("display_name", registry_entry["short_name"]),
+        "name_prefix": registry_entry.get("name_prefix", ""),
+        "name_suffix": registry_entry.get("name_suffix", ""),
         "source_url": registry_entry.get("source_url"),
         "corpus_span": corpus_span,
         "published_at": published_at,

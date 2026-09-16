@@ -37,7 +37,19 @@ export function currentCouncil(): string {
 // can select it like any other council.
 export interface CouncilListEntry {
   key: string;
+  // The selectable/short form of the name — CouncilHeader's <select>
+  // shows this, framed by name_prefix/name_suffix either side, rather than
+  // the full display_name (which already includes the prefix and would
+  // double it up).
+  short_name: string;
   display_name: string;
+  // Fixed plain-text scaffolding either side of the selector (e.g. "Town
+  // of" / "Council") — per-council so a different local-government type
+  // (a different prefix) or a council with no such convention (empty
+  // strings) both render correctly; never a template CouncilHeader assumes
+  // on its own.
+  name_prefix: string;
+  name_suffix: string;
   source_url: string | null;
   corpus_span: string | null;
   published_at: string;
@@ -60,15 +72,20 @@ export async function fetchCouncilList(): Promise<CouncilListEntry[]> {
     if (!isRealJson(res)) return [];
     const rows: {
       key: string; run_id: string; generated_at: string;
-      display_name?: string; source_url?: string | null;
+      short_name?: string; display_name?: string;
+      name_prefix?: string; name_suffix?: string; source_url?: string | null;
     }[] = await res.json();
-    // display_name/source_url come from the draft's own manifest.json
-    // (src/cli.py's cmd_draft, sourced from the COUNCILS registry) via
-    // vite.config.ts's draftOverlay() plugin — falls back to the raw key
-    // only for a manifest written before that field existed.
+    // short_name/display_name/name_prefix/name_suffix/source_url come from
+    // the draft's own manifest.json (src/cli.py's cmd_draft, sourced from
+    // the COUNCILS registry) via vite.config.ts's draftOverlay() plugin —
+    // fall back to the raw key/empty scaffolding only for a manifest
+    // written before these fields existed.
     return rows.map((r) => ({
       key: r.key,
+      short_name: r.short_name ?? r.key,
       display_name: r.display_name ?? r.key,
+      name_prefix: r.name_prefix ?? "",
+      name_suffix: r.name_suffix ?? "",
       source_url: r.source_url ?? null,
       corpus_span: null,
       published_at: r.generated_at,

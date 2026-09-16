@@ -52,13 +52,17 @@ interface DraftCouncilEntry {
   key: string
   run_id: string
   generated_at: string
-  // From manifest.json's own display_name/source_url (src/cli.py's cmd_draft,
-  // sourced from the COUNCILS registry) — this plugin is plain Node/TS, it
-  // can't import that Python dict directly, so the manifest carries them
-  // instead of the frontend selector falling back to the raw key ("cambridge"
-  // instead of "Town of Cambridge"). Optional: a manifest written before this
-  // field existed just falls back to the key on the frontend side.
+  // From manifest.json's own short_name/display_name/name_prefix/
+  // name_suffix/source_url (src/cli.py's cmd_draft, sourced from the
+  // COUNCILS registry) — this plugin is plain Node/TS, it can't import that
+  // Python dict directly, so the manifest carries them instead of the
+  // frontend selector falling back to the raw key ("cambridge" instead of
+  // "Town of Cambridge"). Optional: a manifest written before these fields
+  // existed just falls back to the key on the frontend side.
+  short_name?: string
   display_name?: string
+  name_prefix?: string
+  name_suffix?: string
   source_url?: string | null
 }
 
@@ -71,7 +75,9 @@ function listDraftCouncils(): DraftCouncilEntry[] {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'))
     return [{
       key: manifest.council, run_id: manifest.run_id, generated_at: manifest.generated_at,
-      display_name: manifest.display_name, source_url: manifest.source_url,
+      short_name: manifest.short_name, display_name: manifest.display_name,
+      name_prefix: manifest.name_prefix, name_suffix: manifest.name_suffix,
+      source_url: manifest.source_url,
     }]
   }
 
@@ -84,7 +90,9 @@ function listDraftCouncils(): DraftCouncilEntry[] {
       const manifest = JSON.parse(readFileSync(resolve(dir, 'manifest.json'), 'utf-8'))
       return {
         key: council, run_id: manifest.run_id, generated_at: manifest.generated_at,
-        display_name: manifest.display_name, source_url: manifest.source_url,
+        short_name: manifest.short_name, display_name: manifest.display_name,
+        name_prefix: manifest.name_prefix, name_suffix: manifest.name_suffix,
+        source_url: manifest.source_url,
       }
     })
 }

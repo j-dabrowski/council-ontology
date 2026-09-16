@@ -11,7 +11,7 @@ export function CouncilHeader() {
     `council-subnav-link${isActive ? " council-subnav-link-active" : ""}`;
 
   const current = list.find((c) => c.key === council);
-  const displayName = current?.display_name ?? council ?? "";
+  const shortName = current?.short_name ?? council ?? "";
 
   // Switching council keeps the same sub-page (Analysis stays Analysis) —
   // only the council segment of the path changes, and the selection lives
@@ -24,11 +24,17 @@ export function CouncilHeader() {
 
   return (
     <div className="home-council-header">
+      {/* name_prefix/name_suffix ("Town of" / "Council") frame the selector
+          as fixed plain text either side, but come from the CURRENT
+          council's own registry entry — switching to a Shire (a different
+          prefix, or none) updates this scaffolding along with the selector
+          itself, never a fixed template. */}
       <h1 className="site-title">
+        {current?.name_prefix && <>{current.name_prefix}{" "}</>}
         {/* A single real council: plain text, not a one-option dropdown
             (Phase 3.2's explicit instruction) — the common case today. */}
         {loading || list.length <= 1 ? (
-          displayName
+          shortName
         ) : (
           <span className="council-select-wrap">
             <select
@@ -37,11 +43,12 @@ export function CouncilHeader() {
               onChange={(e) => handleSelect(e.target.value)}
             >
               {list.map((c) => (
-                <option key={c.key} value={c.key}>{c.display_name}</option>
+                <option key={c.key} value={c.key}>{c.short_name}</option>
               ))}
             </select>
           </span>
         )}
+        {current?.name_suffix && <>{" "}{current.name_suffix}</>}
       </h1>
       {span && (
         <p className="site-subtitle">
