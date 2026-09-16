@@ -168,44 +168,36 @@ function MapLegend({ analysed, total }: { analysed: number; total: number }) {
   );
 }
 
-// 5.8: a keyboard-navigable list beneath the map — a Leaflet polygon isn't
-// reachable by keyboard or a screen reader, so without this the discovery
-// surface is unusable for some readers. Also the fallback when map tiles
-// fail to load: every council the map itself would show, as plain links.
-function CouncilList({ list, infoByKey }: {
-  list: CouncilListEntry[];
-  infoByKey: Record<string, CouncilMapInfo>;
-}) {
-  if (list.length === 0) return null;
-  return (
-    <nav className="map-council-list" aria-label="Councils by governance rating">
-      <h2 className="map-council-list-title">Councils</h2>
-      <ul>
-        {list.map((c) => {
-          const band = infoByKey[c.key]?.rating?.band;
-          const label = infoByKey[c.key]?.rating?.band_label ?? "Not yet analysed";
-          return (
-            <li key={c.key}>
-              <a href={`#/c/${c.key}`} className="map-council-list-link">
-                <span
-                  className="map-council-list-dot"
-                  style={{ background: band ? BAND_FILL_COLOR[band] : NO_DATA_COLOR }}
-                  aria-hidden="true"
-                />
-                <span className="map-council-list-name">{c.display_name}</span>
-                <span className="map-council-list-band">{label}</span>
-              </a>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
+// Clamps the card to the viewport so it can't render off-screen near an
+// edge — a fixed assumed card size (it varies slightly with content, but
+// not enough to matter for this).
+function clampToViewport(x: number, y: number): { left: number; top: number } {
+  const offset = 16;
+  const cardWidth = 280;
+  const cardHeight = 150;
+  const maxLeft = (typeof window !== "undefined" ? window.innerWidth : 1280) - cardWidth - offset;
+  const maxTop = (typeof window !== "undefined" ? window.innerHeight : 800) - cardHeight - offset;
+  return {
+    left: Math.max(offset, Math.min(x + offset, maxLeft)),
+    top: Math.max(offset, Math.min(y + offset, maxTop)),
+  };
 }
 
-function HoverCard({ name, info }: { name: string; info: CouncilMapInfo | null }) {
+// Follows the cursor (or the tap point, on touch) rather than sitting in a
+// fixed corner — `pointer-events: none` (index.css) is what lets mouse/tap
+// events pass through it to the polygon underneath even while it's
+// positioned right where the pointer is. No link inside it: the card
+// itself can't be clicked (pointer-events: none), so a real <a> here would
+// be dead weight at best and confusing at worst — "Click to view full
+// analysis" is plain text, describing what clicking the *polygon* does.
+function HoverCard({ name, info, pos }: {
+  name: string;
+  info: CouncilMapInfo | null;
+  pos: { x: number; y: number };
+}) {
+  const { left, top } = clampToViewport(pos.x, pos.y);
   return (
-    <div className="map-hover-card">
+    <div className="map-hover-card" style={{ left, top }}>
       <div className="map-hover-name">{info?.displayName ?? name}</div>
       {info?.rating ? (
         <>
@@ -239,6 +231,7 @@ export function MapPage() {
   const [councilFeatures, setCouncilFeatures] = useState<GeoJsonObject | null>(null);
   const [infoByKey, setInfoByKey] = useState<Record<string, CouncilMapInfo>>({});
   const [hovered, setHovered] = useState<{ name: string; info: CouncilMapInfo | null } | null>(null);
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const geoLayerRef = useRef<LeafletGeoJSON | null>(null);
   const navigateRef = useRef(navigate);
   useEffect(() => { navigateRef.current = navigate; }, [navigate]);
@@ -315,16 +308,20 @@ export function MapPage() {
       const path = layer as Path;
 
       layer.on({
-        mouseover: () => {
+        mouseover: (e) => {
           const info = key ? infoByKey[key] : null;
           path.setStyle({ fillOpacity: info ? 0.85 : 0.5, weight: 1.5 });
+          setMousePos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY });
           setHovered({ name, info: info ?? null });
+        },
+        mousemove: (e) => {
+          setMousePos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY });
         },
         mouseout: () => {
           geoLayerRef.current?.resetStyle(path);
           setHovered(null);
         },
-        click: () => {
+        click: (e) => {
           if (!key) return;
           // 5.7: touch has no hover state, so a coarse pointer gets a tap
           // equivalent instead of the desktop hover card — first tap shows
@@ -332,6 +329,7 @@ export function MapPage() {
           // council navigates. A fine pointer (mouse) still navigates on a
           // single click, since hover already previewed it.
           if (isCoarsePointer()) {
+            setMousePos({ x: e.originalEvent.clientX, y: e.originalEvent.clientY });
             setHovered((prev) => {
               if (prev?.name === name) {
                 navigateRef.current(`/c/${key}`);
@@ -349,56 +347,53 @@ export function MapPage() {
   );
 
   return (
-    <>
-      <div className="map-page">
-        <MapContainer
-          center={WA_CENTER}
-          zoom={WA_ZOOM}
-          // `height: "100%"` doesn't reliably resolve here — this is a
-          // pre-existing bug found while testing 5.5/5.7/5.8, not
-          // introduced by them: react-leaflet's MapContainer freezes its
-          // `style` prop on first render (useState, no setter — see
-          // MapContainer.js), and the resulting .leaflet-container
-          // computes to height:0 despite .map-page (position: relative)
-          // having a fully resolved, non-percentage height at every
-          // ancestor in the chain — confirmed live in headless Chromium.
-          // Absolute-filling the already-positioned parent sidesteps
-          // percentage-height resolution entirely rather than depending
-          // on it, and doesn't need .map-page's own CSS to change.
-          style={{ position: "absolute", inset: 0 }}
-          zoomControl
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            opacity={0.55}
-          />
-          {backdrop && (
-            <GeoJSON data={backdrop} style={{ fillColor: NO_DATA_COLOR, fillOpacity: 0.15, color: "#94a3b8", weight: 0.5 }} />
-          )}
-          {councilFeatures && (
-            <GeoJSON
-              key={JSON.stringify(Object.keys(infoByKey))}
-              ref={geoLayerRef}
-              data={councilFeatures}
-              style={styleFeature}
-              onEachFeature={onEachFeature}
-            />
-          )}
-          <FitToCouncilBounds geoLayerRef={geoLayerRef} ready={!!councilFeatures} />
-          <InvalidateSizeOnResize />
-        </MapContainer>
-
-        {backdropError && <MapSetupOverlay />}
-
-        {!backdropError && backdrop && "features" in backdrop && (
-          <>
-            <MapLegend analysed={list.length} total={(backdrop as GeoJSON.FeatureCollection).features.length} />
-            {hovered && <HoverCard name={hovered.name} info={hovered.info} />}
-          </>
+    <div className="map-page">
+      <MapContainer
+        center={WA_CENTER}
+        zoom={WA_ZOOM}
+        // `height: "100%"` doesn't reliably resolve here — this is a
+        // pre-existing bug found while testing 5.5/5.7/5.8, not
+        // introduced by them: react-leaflet's MapContainer freezes its
+        // `style` prop on first render (useState, no setter — see
+        // MapContainer.js), and the resulting .leaflet-container
+        // computes to height:0 despite .map-page (position: relative)
+        // having a fully resolved, non-percentage height at every
+        // ancestor in the chain — confirmed live in headless Chromium.
+        // Absolute-filling the already-positioned parent sidesteps
+        // percentage-height resolution entirely rather than depending
+        // on it, and doesn't need .map-page's own CSS to change.
+        style={{ position: "absolute", inset: 0 }}
+        zoomControl
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          opacity={0.55}
+        />
+        {backdrop && (
+          <GeoJSON data={backdrop} style={{ fillColor: NO_DATA_COLOR, fillOpacity: 0.15, color: "#94a3b8", weight: 0.5 }} />
         )}
-      </div>
-      <CouncilList list={list} infoByKey={infoByKey} />
-    </>
+        {councilFeatures && (
+          <GeoJSON
+            key={JSON.stringify(Object.keys(infoByKey))}
+            ref={geoLayerRef}
+            data={councilFeatures}
+            style={styleFeature}
+            onEachFeature={onEachFeature}
+          />
+        )}
+        <FitToCouncilBounds geoLayerRef={geoLayerRef} ready={!!councilFeatures} />
+        <InvalidateSizeOnResize />
+      </MapContainer>
+
+      {backdropError && <MapSetupOverlay />}
+
+      {!backdropError && backdrop && "features" in backdrop && (
+        <>
+          <MapLegend analysed={list.length} total={(backdrop as GeoJSON.FeatureCollection).features.length} />
+          {hovered && mousePos && <HoverCard name={hovered.name} info={hovered.info} pos={mousePos} />}
+        </>
+      )}
+    </div>
   );
 }

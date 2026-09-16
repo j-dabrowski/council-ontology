@@ -34,11 +34,14 @@ analysed council's own `rating.json` (the overall governance band, `MAP_PAGE_PLA
 Phase 1 — a severity floor over a stable base, not an average, gated on data coverage) and
 colours its boundary polygon by that band, reusing `RatingBand.tsx`'s own green/yellow/red/
 insufficient tokens so the map and each council's Overview page can never show a different
-verdict for the same council. Hover/tap shows the band, the counts, and a scripted reason;
-click navigates to that council's report. A keyboard-navigable list below the map covers
-readers a Leaflet polygon can't reach. As more councils are onboarded (`council boundary
-<key>`, `docs/pipeline/PIPELINE.md`) the map fills in and becomes the product's discovery
-surface — readers find their council on the map and drill into its report.
+verdict for the same council. Hover/tap shows the band, the counts, and a scripted reason
+in a card that follows the pointer rather than sitting in a fixed corner; click navigates
+to that council's report. (A keyboard-navigable list below the map was built and then
+removed at the product owner's request 2026-09-16 — a Leaflet polygon still isn't reachable
+by keyboard or a screen reader, so that gap is open again, not closed a different way.) As
+more councils are onboarded (`council boundary <key>`, `docs/pipeline/PIPELINE.md`) the map
+fills in and becomes the product's discovery surface — readers find their council on the
+map and drill into its report.
 
 **Data needed:**
 - Council boundary GeoJSON for each council (publicly available from data.wa.gov.au)
