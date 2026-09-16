@@ -71,14 +71,18 @@ export default function App() {
               <Route path="digest" element={<Navigate to="../watch" replace />} />
               <Route path="method" element={<MethodPage />} />
               <Route path="evidence" element={<Navigate to="../method" replace />} />
-              <Route path="map" element={<MapPage />} />
               <Route path="record" element={<RecordPage />} />
             </Route>
             {/* Council-list-aware (their own "coverage" content) but not
                 council-scoped pages — no reason a link to either should carry
                 one council's context, and doing so would just recreate the
                 "/:council" vs "/about" ambiguity this shape was chosen to
-                avoid. */}
+                avoid. /map belongs here too (2026-09-16): it colours every
+                analysed council's own boundary at once, it isn't one
+                council's report — MAP_PAGE_PLAN.md Decision 5 ("/map ...
+                does not move under the council subnav") said so from the
+                start; it had been nested under /c/:council by mistake. */}
+            <Route path="/map" element={<MapPage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
             <Route path="*" element={<DefaultCouncilRedirect />} />

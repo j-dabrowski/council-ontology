@@ -524,7 +524,8 @@ a:hover { text-decoration: underline; }
 
 .map-hover-cta {
   font-size: 0.82rem;
-  color: var(--link);
+  font-style: italic;
+  color: var(--text-dim);
 }
 
 .map-hover-nodata {

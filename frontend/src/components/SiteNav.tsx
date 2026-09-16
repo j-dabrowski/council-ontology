@@ -12,7 +12,7 @@ export function SiteNav() {
   return (
     <nav className="site-nav" aria-label="Main navigation">
       <NavLink to={`/c/${council}`} end className={cls}>Report</NavLink>
-      <NavLink to={`/c/${council}/map`} className={cls}>Map</NavLink>
+      <NavLink to="/map" className={cls}>Map</NavLink>
       <NavLink to="/about" className={cls}>About</NavLink>
       <NavLink to="/contact" className={cls}>Contact</NavLink>
     </nav>
