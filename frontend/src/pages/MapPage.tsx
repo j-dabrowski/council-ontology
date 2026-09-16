@@ -6,18 +6,48 @@ import type { Feature, GeoJsonObject } from "geojson";
 import { useCouncilList, CouncilListEntry } from "../councils";
 import { getMode } from "../devMode";
 import { RatingData, RatingBandId } from "../api";
+import ratingConfig from "@rating-config";
 
 // Governance rating band → the same CSS custom properties RatingBand.tsx's
 // stylesheet already defines (index.css's --rating-*-t tokens), so a
 // council's map colour always matches its own rating band elsewhere on the
-// site — never a second, independently-tuned colour scale.
+// site — never a second, independently-tuned colour scale. Text only
+// (the hover card's score label and supportive/critical counts): these
+// tokens are tuned per-theme for contrast against a page background, which
+// is correct for prose but not for a fill.
 const BAND_COLOR: Record<RatingBandId, string> = {
   green: "var(--rating-green-t)",
   yellow: "var(--rating-yellow-t)",
   red: "var(--rating-red-t)",
   insufficient: "var(--rating-insufficient-t)",
 };
+// Fills only (the polygon itself, the legend dot, the council-list dot) —
+// the --rating-*-swatch tokens, fixed in both themes on purpose (a map
+// region shouldn't visibly darken just because the reader's OS is in light
+// mode).
+const BAND_FILL_COLOR: Record<RatingBandId, string> = {
+  green: "var(--rating-green-swatch)",
+  yellow: "var(--rating-yellow-swatch)",
+  red: "var(--rating-red-swatch)",
+  insufficient: "var(--rating-insufficient-swatch)",
+};
 const NO_DATA_COLOR = "#cbd5e1";
+
+// The legend's band names come from config/rating.json — the same "Broadly
+// clean"/"Mixed record"/"Governance concerns"/"Insufficient record" wording
+// RatingBand.tsx and the hover card already show, via the @rating-config
+// alias (same pattern as @registry for test_registry.json). Never a raw
+// colour name ("Green"/"Yellow"/"Red") or a second, independently-worded
+// label typed here — one band, one name, everywhere it appears.
+interface RatingConfigShape {
+  bands: { id: string; label: string }[];
+  coverage_gate: { band_id: string; label: string };
+}
+const RATING_CONFIG = ratingConfig as unknown as RatingConfigShape;
+const BAND_LABEL: Record<RatingBandId, string> = {
+  ...(Object.fromEntries(RATING_CONFIG.bands.map((b) => [b.id, b.label])) as Record<RatingBandId, string>),
+  [RATING_CONFIG.coverage_gate.band_id as RatingBandId]: RATING_CONFIG.coverage_gate.label,
+};
 
 interface CouncilMapInfo {
   key: string;
@@ -112,16 +142,20 @@ function MapLegend({ analysed, total }: { analysed: number; total: number }) {
     <div className="map-legend">
       <div className="map-legend-title">Governance rating</div>
       <div className="map-legend-row">
-        <span className="map-legend-dot" style={{ background: BAND_COLOR.green }} />
-        <span>Green</span>
+        <span className="map-legend-dot" style={{ background: BAND_FILL_COLOR.green }} />
+        <span>{BAND_LABEL.green}</span>
       </div>
       <div className="map-legend-row">
-        <span className="map-legend-dot" style={{ background: BAND_COLOR.yellow }} />
-        <span>Yellow</span>
+        <span className="map-legend-dot" style={{ background: BAND_FILL_COLOR.yellow }} />
+        <span>{BAND_LABEL.yellow}</span>
       </div>
       <div className="map-legend-row">
-        <span className="map-legend-dot" style={{ background: BAND_COLOR.red }} />
-        <span>Red</span>
+        <span className="map-legend-dot" style={{ background: BAND_FILL_COLOR.red }} />
+        <span>{BAND_LABEL.red}</span>
+      </div>
+      <div className="map-legend-row">
+        <span className="map-legend-dot" style={{ background: BAND_FILL_COLOR.insufficient }} />
+        <span>{BAND_LABEL.insufficient}</span>
       </div>
       <div className="map-legend-row">
         <span className="map-legend-dot" style={{ background: NO_DATA_COLOR }} />
@@ -155,7 +189,7 @@ function CouncilList({ list, infoByKey }: {
               <a href={`#/c/${c.key}`} className="map-council-list-link">
                 <span
                   className="map-council-list-dot"
-                  style={{ background: band ? BAND_COLOR[band] : NO_DATA_COLOR }}
+                  style={{ background: band ? BAND_FILL_COLOR[band] : NO_DATA_COLOR }}
                   aria-hidden="true"
                 />
                 <span className="map-council-list-name">{c.display_name}</span>
@@ -250,7 +284,7 @@ export function MapPage() {
         next[c.key] = {
           key: c.key,
           displayName: c.display_name,
-          color: rating ? BAND_COLOR[rating.band] : NO_DATA_COLOR,
+          color: rating ? BAND_FILL_COLOR[rating.band] : NO_DATA_COLOR,
           rating,
         };
       }

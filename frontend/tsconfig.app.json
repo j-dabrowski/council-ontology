@@ -18,7 +18,8 @@
     "baseUrl": ".",
     "paths": {
       "@registry": ["../config/test_registry.json"],
-      "@patterns": ["../config/private_name_patterns.json"]
+      "@patterns": ["../config/private_name_patterns.json"],
+      "@rating-config": ["../config/rating.json"]
     },
 
     /* Linting */

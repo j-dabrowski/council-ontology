@@ -99,6 +99,18 @@
   --rating-insufficient-bg: var(--nil-bg);
   --rating-insufficient-bd: var(--nil-bd);
 
+  /* Swatch/fill variant of the same four bands (MapPage.tsx) — deliberately
+     NOT the --rating-*-t tokens above: those are tuned per-theme for text
+     contrast (so they go darker/more muted in light mode, correctly, for
+     legible prose), but a map polygon fill or a legend dot isn't text —
+     it just needs to look the same vivid colour in both themes, the way a
+     coloured map region always does regardless of page theme. Fixed
+     values, not redefined in the dark-mode block below, on purpose. */
+  --rating-green-swatch: #22c55e;
+  --rating-yellow-swatch: #f59e0b;
+  --rating-red-swatch: #ef4444;
+  --rating-insufficient-swatch: #64748b;
+
   /* Data-accent colours — adjusted for light-mode contrast */
   --note:   #92400e;   /* amber text (WCAG AA on white) */
   --stripe: #f59e0b;   /* amber decorative border stripe */

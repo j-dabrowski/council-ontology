@@ -196,6 +196,12 @@ export default defineConfig({
       // their regexes from one definition instead of a hand-copied one
       // that can drift. See frontend/src/guardrail.tsx.
       '@patterns': resolve(__dirname, '../config/private_name_patterns.json'),
+      // config/rating.json's band vocabulary (MAP_PAGE_PLAN.md Phase 1) —
+      // same pattern as @registry: one config file, read by both
+      // src/rating_config.py and the frontend, so a legend/label never
+      // invents its own wording for what a band means. See MapPage.tsx's
+      // MapLegend.
+      '@rating-config': resolve(__dirname, '../config/rating.json'),
     },
   },
   server: {
