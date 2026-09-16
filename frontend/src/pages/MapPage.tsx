@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
+import { MapContainer, TileLayer, GeoJSON, useMap } from "react-leaflet";
 import type { Layer, Path, GeoJSON as LeafletGeoJSON } from "leaflet";
 import type { Feature, GeoJsonObject } from "geojson";
 import { useCouncilList, CouncilListEntry } from "../councils";
@@ -40,8 +40,52 @@ function lgaName(props: Record<string, unknown>): string {
   );
 }
 
+function isCoarsePointer(): boolean {
+  return typeof window !== "undefined" && !!window.matchMedia?.("(pointer: coarse)").matches;
+}
+
 const WA_CENTER: [number, number] = [-26.5, 121.8];
 const WA_ZOOM = 5;
+
+// react-leaflet's MapContainer measures its container's size once, via
+// Leaflet's own construction-time _onResize — before .map-page's CSS
+// height is guaranteed to have actually taken effect (confirmed live: the
+// container's own DOM box was correct, but Leaflet's cached internal size
+// wasn't, leaving its SVG overlay pane rendered far wider than the visible
+// map at a narrow viewport). invalidateSize() forces a fresh read; the
+// resize listener covers a real orientation/window-size change too, since
+// Leaflet only listens for that on the window it was constructed against.
+function InvalidateSizeOnResize() {
+  const map = useMap();
+  useEffect(() => {
+    map.invalidateSize();
+    const onResize = () => map.invalidateSize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [map]);
+  return null;
+}
+
+// Default view (5.5): fit bounds to the union of the council layer's own
+// features, not a hardcoded metro box — opens on Perth while there's one
+// analysed council, and opens correctly wherever they are once there are
+// several, all without this file ever naming a region. WA_CENTER/WA_ZOOM
+// stay as the fallback for an empty council list (no bounds to fit).
+function FitToCouncilBounds({ geoLayerRef, ready }: {
+  geoLayerRef: React.RefObject<LeafletGeoJSON | null>;
+  ready: boolean;
+}) {
+  const map = useMap();
+  useEffect(() => {
+    if (!ready) return;
+    map.invalidateSize();
+    const bounds = geoLayerRef.current?.getBounds();
+    if (bounds && bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [32, 32], maxZoom: 11 });
+    }
+  }, [ready, map, geoLayerRef]);
+  return null;
+}
 
 // Shown when the cross-council backdrop hasn't been built yet.
 function MapSetupOverlay() {
@@ -87,6 +131,41 @@ function MapLegend({ analysed, total }: { analysed: number; total: number }) {
         <strong>{analysed}</strong> of {total} WA councils analysed
       </div>
     </div>
+  );
+}
+
+// 5.8: a keyboard-navigable list beneath the map — a Leaflet polygon isn't
+// reachable by keyboard or a screen reader, so without this the discovery
+// surface is unusable for some readers. Also the fallback when map tiles
+// fail to load: every council the map itself would show, as plain links.
+function CouncilList({ list, infoByKey }: {
+  list: CouncilListEntry[];
+  infoByKey: Record<string, CouncilMapInfo>;
+}) {
+  if (list.length === 0) return null;
+  return (
+    <nav className="map-council-list" aria-label="Councils by governance rating">
+      <h2 className="map-council-list-title">Councils</h2>
+      <ul>
+        {list.map((c) => {
+          const band = infoByKey[c.key]?.rating?.band;
+          const label = infoByKey[c.key]?.rating?.band_label ?? "Not yet analysed";
+          return (
+            <li key={c.key}>
+              <a href={`#/c/${c.key}`} className="map-council-list-link">
+                <span
+                  className="map-council-list-dot"
+                  style={{ background: band ? BAND_COLOR[band] : NO_DATA_COLOR }}
+                  aria-hidden="true"
+                />
+                <span className="map-council-list-name">{c.display_name}</span>
+                <span className="map-council-list-band">{label}</span>
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
@@ -212,7 +291,23 @@ export function MapPage() {
           setHovered(null);
         },
         click: () => {
-          if (key) navigateRef.current(`/c/${key}`);
+          if (!key) return;
+          // 5.7: touch has no hover state, so a coarse pointer gets a tap
+          // equivalent instead of the desktop hover card — first tap shows
+          // the same info a mouseover would, second tap on the same
+          // council navigates. A fine pointer (mouse) still navigates on a
+          // single click, since hover already previewed it.
+          if (isCoarsePointer()) {
+            setHovered((prev) => {
+              if (prev?.name === name) {
+                navigateRef.current(`/c/${key}`);
+                return prev;
+              }
+              return { name, info: infoByKey[key] ?? null };
+            });
+            return;
+          }
+          navigateRef.current(`/c/${key}`);
         },
       });
     },
@@ -220,40 +315,56 @@ export function MapPage() {
   );
 
   return (
-    <div className="map-page">
-      <MapContainer
-        center={WA_CENTER}
-        zoom={WA_ZOOM}
-        style={{ height: "100%", width: "100%" }}
-        zoomControl
-      >
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          opacity={0.55}
-        />
-        {backdrop && (
-          <GeoJSON data={backdrop} style={{ fillColor: NO_DATA_COLOR, fillOpacity: 0.15, color: "#94a3b8", weight: 0.5 }} />
-        )}
-        {councilFeatures && (
-          <GeoJSON
-            key={JSON.stringify(Object.keys(infoByKey))}
-            ref={geoLayerRef}
-            data={councilFeatures}
-            style={styleFeature}
-            onEachFeature={onEachFeature}
+    <>
+      <div className="map-page">
+        <MapContainer
+          center={WA_CENTER}
+          zoom={WA_ZOOM}
+          // `height: "100%"` doesn't reliably resolve here — this is a
+          // pre-existing bug found while testing 5.5/5.7/5.8, not
+          // introduced by them: react-leaflet's MapContainer freezes its
+          // `style` prop on first render (useState, no setter — see
+          // MapContainer.js), and the resulting .leaflet-container
+          // computes to height:0 despite .map-page (position: relative)
+          // having a fully resolved, non-percentage height at every
+          // ancestor in the chain — confirmed live in headless Chromium.
+          // Absolute-filling the already-positioned parent sidesteps
+          // percentage-height resolution entirely rather than depending
+          // on it, and doesn't need .map-page's own CSS to change.
+          style={{ position: "absolute", inset: 0 }}
+          zoomControl
+        >
+          <TileLayer
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            opacity={0.55}
           />
+          {backdrop && (
+            <GeoJSON data={backdrop} style={{ fillColor: NO_DATA_COLOR, fillOpacity: 0.15, color: "#94a3b8", weight: 0.5 }} />
+          )}
+          {councilFeatures && (
+            <GeoJSON
+              key={JSON.stringify(Object.keys(infoByKey))}
+              ref={geoLayerRef}
+              data={councilFeatures}
+              style={styleFeature}
+              onEachFeature={onEachFeature}
+            />
+          )}
+          <FitToCouncilBounds geoLayerRef={geoLayerRef} ready={!!councilFeatures} />
+          <InvalidateSizeOnResize />
+        </MapContainer>
+
+        {backdropError && <MapSetupOverlay />}
+
+        {!backdropError && backdrop && "features" in backdrop && (
+          <>
+            <MapLegend analysed={list.length} total={(backdrop as GeoJSON.FeatureCollection).features.length} />
+            {hovered && <HoverCard name={hovered.name} info={hovered.info} />}
+          </>
         )}
-      </MapContainer>
-
-      {backdropError && <MapSetupOverlay />}
-
-      {!backdropError && backdrop && "features" in backdrop && (
-        <>
-          <MapLegend analysed={list.length} total={(backdrop as GeoJSON.FeatureCollection).features.length} />
-          {hovered && <HoverCard name={hovered.name} info={hovered.info} />}
-        </>
-      )}
-    </div>
+      </div>
+      <CouncilList list={list} infoByKey={infoByKey} />
+    </>
   );
 }

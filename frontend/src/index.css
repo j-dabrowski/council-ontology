@@ -571,6 +571,94 @@ a:hover { text-decoration: underline; }
   overflow-x: auto;
 }
 
+/* Keyboard-navigable council list beneath the map (5.8) — a plain, scrolling
+   list below .map-page, not another absolutely-positioned overlay: a
+   Leaflet polygon isn't reachable by keyboard or a screen reader, and this
+   is also what a reader sees if map tiles fail to load. */
+.map-council-list {
+  padding: 20px 24px 40px;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.map-council-list-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-hi);
+  margin: 0 0 12px;
+}
+
+.map-council-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.map-council-list-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: inherit;
+}
+
+.map-council-list-link:hover,
+.map-council-list-link:focus-visible {
+  border-color: var(--link-bd);
+  background: var(--link-bg);
+}
+
+.map-council-list-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  flex: none;
+}
+
+.map-council-list-name {
+  font-weight: 600;
+  color: var(--text-hi);
+}
+
+.map-council-list-band {
+  margin-left: auto;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Phone width (5.7): a full first-viewport map leaves the keyboard list
+   scrolled entirely out of view and crowds the legend/hover card into a
+   360-400px strip — shrink the map and stack the overlays instead of
+   letting them collide. */
+@media (max-width: 480px) {
+  .map-page {
+    height: 60vh;
+  }
+
+  .map-legend {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    min-width: 0;
+  }
+
+  .map-hover-card {
+    left: 12px;
+    right: 12px;
+    top: 12px;
+    max-width: none;
+  }
+
+  .map-council-list {
+    padding: 16px 16px 32px;
+  }
+}
+
 /* ── Static pages (About, Contact) ──────────────────────────────────────── */
 
 .static-page {
