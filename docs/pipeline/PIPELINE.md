@@ -937,18 +937,31 @@ python scripts/dedup_councillors.py --apply  # merge confirmed duplicates
   2017, 2021, 2023 all extracted cleanly (`scripts/extract_wa_elections.py
   perth`, 146 rows / 12 elections). Unlike Cambridge, Perth's 2017 result
   *is* present in the statewide report.
-- **Minutes/agenda corpus, not elections:** `PerthScraper`'s
-  `_EARLIEST_ARCHIVE_YEAR = 2015` is *not* evidence the council's records
-  start there — the City of Perth is over a century old, and its election
-  results alone go back to at least 1999 (above). 2015 is only the earliest
-  year link the scraper found in perth.wa.gov.au's own year-archive
-  navigation (`/council/council-meetings/2015-meetings` is the oldest one
-  listed). Whether earlier minutes/agendas exist elsewhere on the site (a
-  different URL pattern, a document library, site search) or only via the
-  Wayback Machine was never checked — unlike Cambridge, which has a
-  confirmed Wayback CDX fallback path for its own post-sitemap gap. Treat
-  pre-2015 Perth coverage as unverified, not confirmed absent, before a
-  future session commits to 2015 as the corpus start date.
+- **Minutes/agenda corpus, not elections — resolved 2026-09-18:**
+  `PerthScraper`'s `_EARLIEST_ARCHIVE_YEAR = 2015` bounds the *current
+  site's own* year-archive navigation, not the council's actual history.
+  Before the Sitecore CMS, minutes lived at perth.wa.gov.au/cou_minutes/
+  — 404 on the live site now, but archived by the Wayback Machine.
+  `PerthScraper._discover_wayback_legacy()` (added 2026-09-18) now covers
+  this: **council-level Ordinary/Special minutes 1996-2006** (234 docs)
+  plus **five named committees' minutes 2005-2007** (Design Advisory,
+  Finance and Budget, Marketing/Sponsorship/International Relations — 94
+  docs), each committee name confirmed by reading its own PDF cover page,
+  not guessed. Verified end-to-end (discovery → classification →
+  download → real PDF bytes) 2026-09-18.
+  - Five more committee-prefix codes (gp, mk, pk, pl, wk — 121 docs) exist
+    in the same Wayback-archived folder but their sample PDFs had no
+    extractable cover-page text to confirm a name against, so they're
+    labelled generically (`"Committee (XX) — unconfirmed name"`) — a
+    human should confirm these names against the actual documents once
+    they're extracted, rather than guessing from the 2-3 letter code.
+  - **Still an open gap: roughly 2008-2014.** No working source found —
+    Wayback CDX was searched across that whole span (both the dead legacy
+    `/cou_minutes/` path and the modern Sitecore path's own crawl
+    history, which only starts ~2019) and came up empty. Not confirmed
+    absent, just not found with the sources tried; a future session could
+    try the site's own internal search, a direct records request, or a
+    deeper Wayback sweep before concluding nothing survives.
 
 ### Onboarding note (Perth, 2026-09-18)
 

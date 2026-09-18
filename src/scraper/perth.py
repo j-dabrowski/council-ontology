@@ -66,9 +66,37 @@ Discovery strategy (confirmed 2026-09-18, SECOND_COUNCIL_PLAN.md 5.2):
   resolves to a real type (minutes/agenda/addendum/briefing_notes) and
   drops "unknown" outright — the structured Details list makes the
   keyword/date fallback in is_meeting_document() unnecessary.
+
+Pre-2015 source (added 2026-09-18):
+
+  `_EARLIEST_ARCHIVE_YEAR = 2015` bounds the *live site's* own year-archive
+  navigation, not the council's actual history (over a century old; its
+  election results alone go back to 1999 — see PIPELINE.md's Perth gaps
+  note). Before the current Sitecore CMS, minutes lived at
+  perth.wa.gov.au/cou_minutes/ — 404 on the live site now, confirmed by
+  hand — but archived by the Wayback Machine. `_discover_wayback_legacy()`
+  queries the CDX API for that dead prefix and fetches matches via
+  Wayback's `if_` (identity, no UI chrome) endpoint, which is not
+  Cloudflare-protected — no Playwright needed for this source. Confirmed
+  coverage (checked by hand against actual PDF content, not assumed):
+  council-level Ordinary/Special minutes 1996-2006
+  (`website_conmins<year>/`, MN/SM prefix), plus five named committees'
+  minutes 2005-2007 (`CommitteeMinutes/`) — Design Advisory (da/dac),
+  Finance and Budget (fb), Marketing/Sponsorship/International Relations
+  (mp/mps). Five more committee-prefix codes (gp, mk, pk, pl, wk) appear
+  in the same folder but their sample PDFs had no extractable cover-page
+  text to confirm a name against, so they're labelled generically
+  ("Committee (XX) — unconfirmed name") rather than guessed.
+
+  This is NOT a complete pre-2015 corpus. No working source was found for
+  roughly 2008-2014 — searched (Wayback CDX across that whole span, the
+  modern Sitecore path's own Wayback history, the site's dead legacy
+  paths) and came up empty, not verified absent. Treat that stretch as an
+  open gap, not "nothing exists," per PIPELINE.md's Perth gaps note.
 """
 
 import logging
+import re
 import time
 from datetime import date, datetime
 
@@ -89,6 +117,40 @@ _BROWSER_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 )
+
+# --- Pre-2015 legacy source (module docstring "Pre-2015 source") ----------
+
+_WAYBACK_CDX = "https://web.archive.org/cdx/search/cdx"
+_LEGACY_URL_PREFIX = "perth.wa.gov.au/cou_minutes/"
+
+# Council-level minutes: .../website_conmins<YEAR>/mn<YYMMDD>...pdf (Ordinary)
+# or sm<YYMMDD>...pdf (Special) — both casings of the folder name and of
+# the mn/sm prefix appear across years, hence IGNORECASE rather than
+# separate patterns.
+_LEGACY_COUNCIL_RE = re.compile(r"/(?:website_)?conmins\d{4}/(mn|sm)(\d{2})(\d{2})(\d{2})", re.IGNORECASE)
+# Committee minutes: .../CommitteeMinutes/<prefix><YYMMDD>[mins][sp].pdf —
+# prefix is 2-3 letters, not always followed by literal "mins" (e.g.
+# "mps051129.pdf" has no "mins" at all), so anchor on prefix+date only.
+_LEGACY_COMMITTEE_RE = re.compile(r"/CommitteeMinutes/([a-z]{2,3})(\d{2})(\d{2})(\d{2})", re.IGNORECASE)
+
+# Names confirmed 2026-09-18 by reading each committee's own PDF cover
+# page via Wayback (title block: "MINUTES / <COMMITTEE NAME> / <date>").
+# gp/mk/pk/pl/wk also appear in CommitteeMinutes/ but their sample PDFs
+# had no extractable cover-page text (image-only pages) — left unnamed
+# rather than guessed; see module docstring.
+_LEGACY_COMMITTEE_NAMES = {
+    "da": "Design Advisory Committee",
+    "dac": "Design Advisory Committee",
+    "fb": "Finance and Budget Committee",
+    "mp": "Marketing, Sponsorship and International Relations Committee",
+    "mps": "Marketing, Sponsorship and International Relations Committee",
+}
+
+
+def _legacy_year(yy: int) -> int:
+    # This legacy archive's confirmed range is 1996-2007 — no century
+    # ambiguity: 90-99 -> 19xx, 00-07 -> 20xx.
+    return 1900 + yy if yy >= 90 else 2000 + yy
 
 
 def _year_archive_slug(year: int) -> str:
@@ -221,6 +283,17 @@ class PerthScraper(BaseCouncilScraper):
 
     BASE_URL = BASE_URL
 
+    # Legacy (pre-2015) filenames never spell "minutes"/"agenda" as words —
+    # e.g. "mn960123.pdf", "da070510mins.pdf", "mps051129.pdf" — so they'd
+    # otherwise classify "unknown". No AGENDA_SHORTHAND_RE: the legacy
+    # archive has no agenda-equivalent documents at all, only post-meeting
+    # minutes, for either council or committee meetings.
+    MINUTES_SHORTHAND_RE = re.compile(
+        r"^(mn|sm)\d{6}"
+        r"|^(da|dac|fb|mp|mps|gp|mk|pk|pl|wk)\d{6}",
+        re.IGNORECASE,
+    )
+
     def __init__(
         self,
         since_year: int | None = None,
@@ -253,7 +326,7 @@ class PerthScraper(BaseCouncilScraper):
         seen: set[str] = set()
 
         with sync_playwright() as pw:
-            for year in range(current_year, since_year - 1, -1):
+            for year in range(current_year, max(since_year, _EARLIEST_ARCHIVE_YEAR) - 1, -1):
                 if year == current_year:
                     year_docs = self._discover_current_year(pw)
                 else:
@@ -262,6 +335,16 @@ class PerthScraper(BaseCouncilScraper):
                     if d.source_url not in seen:
                         seen.add(d.source_url)
                         docs.append(d)
+
+        # Below _EARLIEST_ARCHIVE_YEAR the live site has nothing (no
+        # year-archive page exists) — that's a limit of the current CMS's
+        # own navigation, not evidence the council's records start there
+        # (PIPELINE.md's Perth gaps note). The pre-Sitecore CMS's minutes
+        # are dead on the live site but archived by the Wayback Machine.
+        for d in self._discover_wayback_legacy(client, since_year):
+            if d.source_url not in seen:
+                seen.add(d.source_url)
+                docs.append(d)
 
         logger.info("Discovered %d minutes/agenda PDFs total", len(docs))
         return docs
@@ -344,4 +427,76 @@ class PerthScraper(BaseCouncilScraper):
             docs.extend(
                 _pdf_docs_from(details_cell, meeting_date, meeting_type, self.classify_document_type)
             )
+        return docs
+
+    def _discover_wayback_legacy(self, client: httpx.Client, since_year: int) -> list[MinutesDocument]:
+        """Pre-2015 source — see module docstring "Pre-2015 source".
+
+        Not Cloudflare-protected (Wayback, not perth.wa.gov.au directly),
+        so this uses the httpx `client` `discover()` already receives —
+        no Playwright browser needed for this source.
+        """
+        if since_year >= _EARLIEST_ARCHIVE_YEAR:
+            return []
+
+        try:
+            resp = client.get(
+                _WAYBACK_CDX,
+                params={
+                    "url": _LEGACY_URL_PREFIX,
+                    "matchType": "prefix",
+                    "output": "json",
+                    "collapse": "urlkey",
+                    "filter": "mimetype:application/pdf",
+                    "limit": "2000",
+                },
+                timeout=60,
+            )
+            resp.raise_for_status()
+            rows = resp.json()
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Wayback CDX query failed for legacy Perth minutes: %s", exc)
+            return []
+
+        data_rows = rows[1:] if rows and rows[0] and rows[0][0] == "urlkey" else rows
+
+        docs: list[MinutesDocument] = []
+        for row in data_rows:
+            timestamp, original = row[1], row[2]
+
+            m = _LEGACY_COUNCIL_RE.search(original)
+            if m:
+                kind, yy, mm, dd = m.groups()
+                meeting_type = (
+                    "Ordinary Council Meeting" if kind.lower() == "mn" else "Special Council Meeting"
+                )
+            else:
+                m = _LEGACY_COMMITTEE_RE.search(original)
+                if not m:
+                    continue
+                prefix, yy, mm, dd = m.groups()
+                meeting_type = _LEGACY_COMMITTEE_NAMES.get(
+                    prefix.lower(), f"Committee ({prefix.upper()}) — unconfirmed name"
+                )
+
+            try:
+                meeting_date = date(_legacy_year(int(yy)), int(mm), int(dd))
+            except ValueError:
+                logger.debug("Unparseable legacy date in %s", original)
+                continue
+            if meeting_date.year < since_year:
+                continue
+
+            docs.append(
+                MinutesDocument(
+                    council_short_name="perth",
+                    meeting_date=meeting_date,
+                    meeting_type=meeting_type,
+                    source_url=f"https://web.archive.org/web/{timestamp}if_/{original}",
+                )
+            )
+
+        logger.info(
+            "Wayback legacy source: %d Perth minutes/committee PDFs (1996-2007 archive)", len(docs)
+        )
         return docs
