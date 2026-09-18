@@ -955,22 +955,32 @@ python scripts/dedup_councillors.py --apply  # merge confirmed duplicates
     labelled generically (`"Committee (XX) — unconfirmed name"`) — a
     human should confirm these names against the actual documents once
     they're extracted, rather than guessing from the 2-3 letter code.
-  - **2009-2013 — partially closed 2026-09-18.** Before the Sitecore CMS,
+  - **2007-2013 — mostly closed 2026-09-18.** Before the Sitecore CMS,
     the site ran an intermediate CMS whose "About Council Meetings" page
     (found via a Wayback snapshot of the ~2010 site) admitted it only
     kept the *most recent* meeting's documents online, with older ones
     served from a flat `perth.wa.gov.au/documentdb/<id>` URL space shared
     with every other kind of city document — not a per-council archive.
     `PerthScraper._discover_documentdb_legacy()` embeds a static table of
-    119 confirmed (id, date, type) entries found this way, spanning
-    2009-02-23 to 2013-02-28 — genuinely scattered (whatever Wayback
-    happened to crawl of ~1400 candidate IDs), not a complete record of
-    every meeting in that window. A full liveness check of all 119 wasn't
-    completed — Wayback became unreliable under the request volume this
-    investigation had already put through it — but the discovery logic
-    itself is verified correct end-to-end; a couple of entries are
-    confirmed genuinely gone (dead links, not investigation gaps) and
-    left in the table since `download()` already skips failures cleanly.
+    153 confirmed (id, date, type) entries found two ways:
+    - **2007-2008 (34 entries): complete.** A Wayback snapshot of the
+      site's own "2008 and earlier Council Minutes Archive" page lists
+      these ids directly under explicit year headings — one entry per
+      meeting, council-level minutes only (no agenda equivalent on that
+      page).
+    - **2009-2013 (119 entries): scattered, not complete.** No per-council
+      folder to query here, so each candidate id's Content-Disposition
+      header had to be checked individually via Wayback (~1400 candidates
+      checked). Spans 2009-02-23 to 2013-02-28 but reflects whatever
+      Wayback happened to crawl, not a full record of every meeting in
+      that window.
+    A full liveness check of all 153 wasn't completed — Wayback became
+    unreliable under the request volume this investigation had already
+    put through it — but the discovery logic itself is verified correct
+    end-to-end (real downloads succeeded for several entries across both
+    batches). A handful of entries are confirmed genuinely gone (dead
+    links, not investigation gaps) and left in the table since
+    `download()` already skips failures cleanly.
   - **Still an open gap: most of 2013 onward, and all of 2014.** No
     working source found — Wayback CDX was searched across that whole
     span (the documentdb ID space runs out around Feb 2013; the modern

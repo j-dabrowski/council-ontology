@@ -88,11 +88,15 @@ Pre-2015 source (added 2026-09-18):
   text to confirm a name against, so they're labelled generically
   ("Committee (XX) — unconfirmed name") rather than guessed.
 
+  A third source, `_discover_documentdb_legacy()`, closes 2007-2013
+  (partially — see its own comment above `_DOCUMENTDB_ENTRIES`).
+
   This is NOT a complete pre-2015 corpus. No working source was found for
-  roughly 2008-2014 — searched (Wayback CDX across that whole span, the
-  modern Sitecore path's own Wayback history, the site's dead legacy
-  paths) and came up empty, not verified absent. Treat that stretch as an
-  open gap, not "nothing exists," per PIPELINE.md's Perth gaps note.
+  most of 2013 onward or for 2014 — searched (Wayback CDX across that
+  whole span, the modern Sitecore path's own Wayback history, the site's
+  dead legacy paths) and came up empty, not verified absent. Treat that
+  stretch as an open gap, not "nothing exists," per PIPELINE.md's Perth
+  gaps note.
 """
 
 import logging
@@ -156,34 +160,41 @@ def _legacy_year(yy: int) -> int:
     return 1900 + yy if yy >= 90 else 2000 + yy
 
 
-# --- 2009-2013 source: perth.wa.gov.au/documentdb/<id> (added 2026-09-18) --
+# --- 2007-2013 source: perth.wa.gov.au/documentdb/<id> (added 2026-09-18) --
 #
-# Between the /cou_minutes/ archive above (dead ~2007/2008) and the
+# Between the /cou_minutes/ archive above (dead ~2006/2007) and the
 # Sitecore CMS's own year-archive pages (starts 2015), Perth ran a CMS
 # that served each document at a flat, sequential-ID URL —
 # perth.wa.gov.au/documentdb/<id> — shared across every kind of city
 # document, not just council ones (confirmed IDs run 0-3733+ and the vast
 # majority are unrelated to Council). Also dead on the live site now.
 #
-# Unlike the other two legacy sources, documentdb has no per-council
-# folder or filename convention to structure-match against — the ID
-# alone means nothing, and finding which IDs are Council minutes/agenda
-# required fetching each one's Content-Disposition header via Wayback
-# (~1400 requests, ~15-20 minutes) rather than a single CDX query. Given
-# that cost and that this is a dead, frozen historical site (unlikely to
-# gain new Wayback snapshots), the confirmed results are embedded here as
-# a static table rather than re-run live on every scrape — the same
-# "REPORTS is a hand-found, hardcoded list" pattern
+# Two ways these 153 entries were found:
+# - **2007-2008 (34 entries, council-level minutes only):** a Wayback
+#   snapshot of the site's own "2008 and earlier Council Minutes Archive"
+#   page lists these ids directly under explicit year headings — no
+#   per-id guessing needed, the archive page itself states the date.
+# - **2009-2013 (119 entries, council + committee):** documentdb has no
+#   per-council folder or filename convention here — the ID alone means
+#   nothing, and finding which IDs are Council minutes/agenda required
+#   fetching each candidate's Content-Disposition header via Wayback
+#   (~1400 requests, ~15-20 minutes) rather than a single CDX query.
+#
+# Given that cost and that this is a dead, frozen historical site
+# (unlikely to gain new Wayback snapshots), all 153 confirmed results are
+# embedded here as a static table rather than re-run live on every
+# scrape — the same "REPORTS is a hand-found, hardcoded list" pattern
 # scripts/extract_wa_elections.py already uses for the (also frozen)
 # Elections WA page indices.
 #
-# Coverage found this way (checked by hand, 2026-09-18): scattered but
-# real documents from 2009-02-23 through 2013-02-28 — NOT exhaustive.
-# Unlike the folder-based /cou_minutes/ archive, this reflects whatever
-# Wayback happened to crawl of a flat 3700-ID space, so treat gaps within
-# this range (e.g. very little from mid-2012 on) as "not crawled", not
-# "no meeting held". Still no source found for the remainder of 2013 or
-# for 2014 — see PIPELINE.md's Perth gaps note.
+# Coverage (checked by hand, 2026-09-18): 2007-01-30 through 2013-02-28.
+# The 2007-2008 portion is a complete council-level minutes record (one
+# entry per meeting, from the archive page's own listing). The 2009-2013
+# portion is scattered — whatever Wayback happened to crawl of a flat
+# ~3700-ID space — so treat gaps within that stretch (e.g. very little
+# from mid-2012 on) as "not crawled", not "no meeting held". Still no
+# source found for the remainder of 2013 or for 2014 — see PIPELINE.md's
+# Perth gaps note.
 #
 # Columns: (documentdb id, Wayback timestamp, meeting date ISO, prefix,
 # is_agenda, is_special). Meeting type is derived from prefix via
@@ -206,6 +217,52 @@ def _legacy_year(yy: int) -> int:
 # and logs a warning without aborting the run, so a handful of dead
 # entries here is expected, harmless noise, not a bug to chase.
 _DOCUMENTDB_ENTRIES: list[tuple[int, str, str, str, bool, bool]] = [
+    # 2007-2008: council-level Ordinary/Special minutes only, sourced from a
+    # different page than the rest of this table — a Wayback snapshot of
+    # "2008 and earlier Council Minutes Archive"
+    # (perth.wa.gov.au/web/Council/Council-and-Committee-Meetings/
+    # 2008-and-earlier-Council-Minutes-Archive/), which lists these 34
+    # documentdb ids directly under explicit "2007"/"2008" headings — no
+    # per-id Content-Disposition check needed, since the archive page itself
+    # states the date and that it's Council minutes. Timestamps resolved
+    # from the same documentdb CDX dump used for the 2009-2013 rows below.
+    # No agenda equivalent found on this page (title says "Minutes Archive").
+    (621, "20090609132429", "2008-01-29", "council", False, False),  # 29th January
+    (647, "20090609132931", "2008-02-19", "council", False, False),  # 19th February
+    (682, "20090609133052", "2008-03-11", "council", False, False),  # 11th March
+    (720, "20090226222953", "2008-04-01", "council", False, False),  # 1st April
+    (754, "20090609133039", "2008-04-22", "council", False, False),  # 22nd April
+    (782, "20090609132536", "2008-05-13", "council", False, False),  # 13th May
+    (816, "20090609132744", "2008-06-03", "council", False, False),  # 3rd June
+    (825, "20090609133700", "2008-06-05", "council", False, True),  # 5th June (special)
+    (853, "20090609132516", "2008-06-24", "council", False, False),  # 24th June
+    (873, "20090609133304", "2008-07-15", "council", False, False),  # 15th July
+    (918, "20090609132417", "2008-08-05", "council", False, False),  # 5th August
+    (949, "20090609132635", "2008-08-26", "council", False, False),  # 26th August
+    (981, "20090609133230", "2008-09-16", "council", False, False),  # 16th September
+    (1007, "20090609132758", "2008-10-07", "council", False, False),  # 7th October
+    (1041, "20090609133357", "2008-10-28", "council", False, False),  # 28th October
+    (1071, "20090609132319", "2008-11-18", "council", False, False),  # 18th November
+    (1099, "20090609133758", "2008-12-16", "council", False, False),  # 16th December
+    (363, "20080723051007", "2007-01-30", "council", False, False),  # 30th January
+    (362, "20080723050020", "2007-02-20", "council", False, False),  # 20th February
+    (361, "20080723050449", "2007-03-13", "council", False, False),  # 13th March
+    (360, "20080723050201", "2007-04-03", "council", False, False),  # 3rd April
+    (359, "20080723051559", "2007-04-24", "council", False, False),  # 24th April
+    (358, "20080723050259", "2007-05-15", "council", False, False),  # 15th May
+    (127, "20070831013220", "2007-06-05", "council", False, False),  # 5th June
+    (128, "20070831013246", "2007-06-07", "council", False, True),  # 7th June (special)
+    (153, "20080723050538", "2007-06-26", "council", False, False),  # 26th June
+    (207, "20080723050913", "2007-07-17", "council", False, False),  # 17th July
+    (242, "20080723050107", "2007-08-07", "council", False, False),  # 7th August
+    (281, "20080723050821", "2007-08-28", "council", False, False),  # 28th August
+    (312, "20080723051333", "2007-09-18", "council", False, False),  # 18th September
+    (336, "20080723050719", "2007-10-09", "council", False, False),  # 9th October
+    (440, "20080723050629", "2007-10-30", "council", False, True),  # 30th October (special)
+    (478, "20080723050354", "2007-11-20", "council", False, False),  # 20th November
+    (576, "20080723051207", "2007-12-18", "council", False, False),  # 18th December
+    # 2009-2013: scattered council + committee docs, found via per-id
+    # Content-Disposition checks (module docstring "documentdb id space").
     (1171, "20090917195405", "2009-02-23", "pk", False, False),  # pk_minutes_090223.pdf
     (1173, "20090917195532", "2009-02-24", "mp", False, False),  # mp_minutes_090224.pdf
     (1172, "20091004062701", "2009-02-24", "gp", False, False),  # gp_minutes_090224.pdf
@@ -681,7 +738,7 @@ class PerthScraper(BaseCouncilScraper):
         return docs
 
     def _discover_documentdb_legacy(self, since_year: int) -> list[MinutesDocument]:
-        """2009-2013 source — see module docstring "_DOCUMENTDB_ENTRIES"
+        """2007-2013 source — see module docstring "_DOCUMENTDB_ENTRIES"
         comment above. Static table, not a live query — see that comment
         for why. Pure in-memory filtering, no network call at all.
 
@@ -724,5 +781,5 @@ class PerthScraper(BaseCouncilScraper):
                 )
             )
 
-        logger.info("documentdb legacy source: %d Perth minutes/agenda PDFs (2009-2013, partial)", len(docs))
+        logger.info("documentdb legacy source: %d Perth minutes/agenda PDFs (2007-2013, partial)", len(docs))
         return docs
