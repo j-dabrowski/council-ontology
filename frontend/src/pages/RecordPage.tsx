@@ -733,10 +733,10 @@ export function RecordPage() {
   const trendsData = useData(api.trends);
 
   return (
-    <div className="static-page">
+    <div className="static-page record-page">
       <CouncilHeader />
       <div className="static-hero">
-        <h1 className="static-h1">The record</h1>
+        <h1 className="static-h1">Lookup</h1>
         <p className="static-lead">
           A place to look up what's on the public record — by street, motion, contractor, or councillor.
         </p>

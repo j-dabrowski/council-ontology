@@ -63,7 +63,7 @@ export function CouncilHeader() {
         <NavLink to={`/c/${council}`} end className={cls}>Overview</NavLink>
         <NavLink to={`/c/${council}/analysis`} className={cls}>Analysis</NavLink>
         <NavLink to={`/c/${council}/watch`} className={cls}>History</NavLink>
-        <NavLink to={`/c/${council}/record`} className={cls}>Look Up</NavLink>
+        <NavLink to={`/c/${council}/record`} className={cls}>Lookup</NavLink>
         <NavLink to={`/c/${council}/method`} className={cls}>Method</NavLink>
       </nav>
     </div>

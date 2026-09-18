@@ -12,7 +12,7 @@ export function SiteNav() {
   return (
     <nav className="site-nav" aria-label="Main navigation">
       {/* No `end`: "Report" covers the whole council-scoped section
-          (Overview/Analysis/History/Look Up/Method under "/c/:council/*"),
+          (Overview/Analysis/History/Lookup/Method under "/c/:council/*"),
           not just the index page — it should stay highlighted on
           /c/<council>/analysis etc., not go blank the moment you leave
           Overview. */}

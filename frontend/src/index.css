@@ -615,6 +615,20 @@ a:hover { text-decoration: underline; }
   .static-page { padding: 32px 20px 64px; }
 }
 
+/* RecordPage is the one .static-page that renders CouncilHeader as its
+   first child (About/Contact have no header and want the full top
+   padding above their own h1) — zero that out so the header sits flush,
+   same as every other council report page (OverviewPage/AnalysisPage/
+   WatchPage/MethodPage all render CouncilHeader inside .app, which has
+   no top padding either). */
+.record-page {
+  padding-top: 0;
+}
+
+@media (max-width: 700px) {
+  .record-page { padding-top: 0; }
+}
+
 .static-hero {
   margin-bottom: 48px;
   padding-bottom: 40px;
