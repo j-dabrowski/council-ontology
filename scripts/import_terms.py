@@ -22,6 +22,20 @@ Name matching: exact match attempted first, then first-given-name-only fallback
 (handles "Alan John Langer" → "Alan Langer", "Gary Norman Mack" → "Gary Mack").
 Middle names and parentheticals are stripped in the fallback.
 
+Elections-format rows with no match create a new Councillor row (same slug
+convention as extractor.py's _get_or_create_councillor()) rather than
+erroring — this is what makes terms seeding actually runnable *before* any
+extraction has populated the councillors table (PIPELINE.md's "Council
+Setup: Terms Seeding" is meant to run before Level 0, when a brand-new
+council has zero councillor rows). Terms-format rows still error on no
+match — that format is for hand-edited corrections against councillors
+extraction has already created, where a silent stub would more likely mask
+a typo than represent a genuinely new person. Auto-created stubs are
+expected to need de-duplicating (different name spellings for the same
+person across election years) — that's what `dedup_councillors.py` is
+for; always preview a fresh council's import with a dry run and read the
+dedup preview before applying either.
+
 Existing terms for each affected councillor+council pair are REPLACED.
 This makes the import idempotent — re-run after editing the CSV.
 
@@ -34,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import re
 import sqlite3
 from datetime import date
 from pathlib import Path
@@ -41,6 +56,12 @@ from pathlib import Path
 DB = Path(__file__).parent.parent / "data" / "council.db"
 
 _REQUIRED = {"councillor_id", "given_name", "family_name", "term_start", "term_end"}
+
+
+def _slugify(given: str, family: str) -> str:
+    """Same slug convention as extractor.py's _get_or_create_councillor()."""
+    slug_input = f"{given}-{family}" if given else family
+    return re.sub(r"[^a-z0-9]+", "-", slug_input.lower()).strip("-")
 
 
 def _ensure_columns(conn: sqlite3.Connection) -> None:
@@ -71,16 +92,25 @@ def run(council_slug: str, csv_path: Path, apply: bool = False) -> None:
     council_id, council_name = council_row
     print(f"Council: {council_name} (id={council_id})")
 
-    # Build a name→id lookup for fallback matching
-    name_index: dict[tuple[str, str], int] = {
-        (r[1].strip().lower(), r[2].strip().lower()): r[0]
-        for r in conn.execute("SELECT id, given_name, family_name FROM councillors")
-    }
+    # Build a name→id lookup for fallback matching, and a slug→id index
+    # (existing stored slugs, not recomputed) to catch collisions against
+    # newly auto-created rows below.
+    name_index: dict[tuple[str, str], int] = {}
+    slug_index: dict[str, int] = {}
+    for cid, g, f, slug in conn.execute("SELECT id, given_name, family_name, slug FROM councillors"):
+        name_index[((g or "").strip().lower(), (f or "").strip().lower())] = cid
+        slug_index[slug] = cid
 
     valid_rows: list[dict] = []
     errors: list[str] = []
     warnings: list[str] = []
     skipped_non_elected = 0
+    created: list[str] = []
+    # Placeholder (negative) ids for auto-created councillors during a dry
+    # run, so the preview can show what would be created without writing
+    # anything — real ids are assigned in the --apply pass below.
+    pending_new: dict[int, tuple[str, str]] = {}
+    _next_pending_id = -1
 
     with open(csv_path, newline="", encoding="utf-8-sig") as f:
         reader = csv.DictReader(f)
@@ -143,10 +173,28 @@ def run(council_slug: str, csv_path: Path, apply: bool = False) -> None:
                                 f"as '{first_given} {family}' (middle name stripped)"
                             )
                     if resolved_id is None:
-                        errors.append(
-                            f"  Row {row_num}: no match for '{given} {family}'"
-                        )
-                        continue
+                        if elections_format:
+                            slug = _slugify(given, family)
+                            existing_id = slug_index.get(slug)
+                            if existing_id is not None:
+                                resolved_id = existing_id
+                                name_index[(given.lower(), family.lower())] = existing_id
+                                warnings.append(
+                                    f"  Row {row_num}: matched '{given} {family}' "
+                                    f"by slug '{slug}' (name spelling differs)"
+                                )
+                            else:
+                                resolved_id = _next_pending_id
+                                pending_new[_next_pending_id] = (given, family)
+                                slug_index[slug] = _next_pending_id
+                                name_index[(given.lower(), family.lower())] = _next_pending_id
+                                created.append(f"  Row {row_num}: new councillor '{given} {family}' (slug={slug})")
+                                _next_pending_id -= 1
+                        else:
+                            errors.append(
+                                f"  Row {row_num}: no match for '{given} {family}'"
+                            )
+                            continue
                 else:
                     errors.append(
                         f"  Row {row_num}: need councillor_id or given_name+family_name"
@@ -193,6 +241,11 @@ def run(council_slug: str, csv_path: Path, apply: bool = False) -> None:
         print(f"Skipped {skipped_non_elected} non-elected candidates.")
 
     # Report
+    if created:
+        print(f"\nNew councillors ({len(created)}){' [DRY RUN — not yet written]' if not apply else ''}:")
+        for c in created:
+            print(c)
+
     if warnings:
         print(f"\nWarnings ({len(warnings)}):")
         for w in warnings:
@@ -209,11 +262,14 @@ def run(council_slug: str, csv_path: Path, apply: bool = False) -> None:
         print("Nothing to import.")
         return
 
-    # Build display name lookup
+    # Build display name lookup (existing rows + this run's pending creates,
+    # keyed by their negative placeholder id for preview purposes)
     name_lookup = {
         r[0]: f"{r[1] or ''} {r[2] or ''}".strip()
         for r in conn.execute("SELECT id, given_name, family_name FROM councillors")
     }
+    for pid, (g, f) in pending_new.items():
+        name_lookup[pid] = f"{g} {f}".strip() + " [new]"
 
     print(f"\n{'[DRY RUN] ' if not apply else ''}Terms to import:")
     for r in valid_rows:
@@ -230,6 +286,23 @@ def run(council_slug: str, csv_path: Path, apply: bool = False) -> None:
         return
 
     _ensure_columns(conn)
+
+    # Create any auto-detected new councillors first, remapping their
+    # negative placeholder ids in valid_rows to the real inserted ids.
+    if pending_new:
+        id_remap: dict[int, int] = {}
+        for pid, (g, f) in pending_new.items():
+            slug = _slugify(g, f)
+            cur = conn.execute(
+                "INSERT INTO councillors (given_name, family_name, slug) VALUES (?, ?, ?)",
+                (g, f, slug),
+            )
+            id_remap[pid] = cur.lastrowid
+        for r in valid_rows:
+            if r["councillor_id"] in id_remap:
+                r["councillor_id"] = id_remap[r["councillor_id"]]
+        conn.commit()
+        print(f"Created {len(id_remap)} new councillor row(s).")
 
     # Group by councillor_id to delete-then-insert per councillor
     affected_ids = sorted({r["councillor_id"] for r in valid_rows})

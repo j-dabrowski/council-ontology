@@ -100,3 +100,43 @@ def seed_cambridge(session: Session) -> None:
     session.add(cambridge)
     session.commit()
     print(f"Seeded: {CAMBRIDGE_NAME}")
+
+
+def seed_council(
+    session: Session,
+    *,
+    short_name: str,
+    name: str,
+    website: str | None = None,
+    minutes_url: str | None = None,
+    state: str = "WA",
+) -> None:
+    """Seed a `Council` row for any council after Cambridge, driven by the
+    caller's `COUNCILS` registry entry (SECOND_COUNCIL_PLAN.md 5.2's
+    generalisation of `seed_cambridge()` — every subsequent council goes
+    through this rather than a new hardcoded per-council function).
+    Idempotent — a no-op if a row with this short_name already exists.
+
+    Takes plain fields rather than the registry dict itself so this module
+    never imports from src.cli (which imports src.storage.database) —
+    callers pass `COUNCILS[key]["display_name"]`/`["source_url"]` etc.
+    `seed_cambridge()` above is kept as its own function rather than
+    rewritten to call this one — its extra migration logic for a
+    previously-wrong name doesn't generalise, and it's cheaper to leave a
+    proven-correct function alone than force it through a new shape.
+    """
+    from src.models import Council
+
+    existing = session.query(Council).filter_by(short_name=short_name).first()
+    if existing:
+        return
+    council = Council(
+        name=name,
+        short_name=short_name,
+        state=state,
+        website=website,
+        minutes_url=minutes_url,
+    )
+    session.add(council)
+    session.commit()
+    print(f"Seeded: {name}")

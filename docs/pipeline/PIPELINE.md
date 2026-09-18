@@ -924,6 +924,37 @@ python scripts/dedup_councillors.py --apply  # merge confirmed duplicates
   **To fill:** contact the Town of Cambridge (admin@cambridge.wa.gov.au) or check
   council annual reports from those years.
 
+### Known gaps (Perth)
+
+- **2019**: no ordinary election — the City of Perth was governed by WA
+  state-appointed commissioners from March 2018 to October 2021 (the elected
+  council was dismissed following a state government intervention), so the
+  2019 statewide report has no City of Perth section at all (confirmed
+  2026-09-18: searched every page of the 2019 report for "PERTH"; only "City
+  of South Perth" appears). Not a data gap to fill — there is nothing to
+  import for that year.
+- Otherwise complete: 1999, 2001, 2003, 2005, 2007, 2009, 2011, 2013, 2015,
+  2017, 2021, 2023 all extracted cleanly (`scripts/extract_wa_elections.py
+  perth`, 146 rows / 12 elections). Unlike Cambridge, Perth's 2017 result
+  *is* present in the statewide report.
+
+### Onboarding note (Perth, 2026-09-18)
+
+`scripts/import_terms.py` originally only matched election-CSV rows against
+councillors that already exist in the `councillors` table — it never created
+new ones, which meant terms seeding could not actually run "before Level 0"
+for a genuinely new council (zero councillor rows exist before extraction
+has run). Extended so an elections-format row with no name match now
+auto-creates a stub Councillor (same slug convention as
+`extractor.py`'s `_get_or_create_councillor()`), gated so `--apply` is
+required to actually write — a dry run just previews what would be created.
+Perth's import created 34 new councillors / 52 terms with zero dedup
+conflicts (`scripts/dedup_councillors.py` found 0 merges touching any of
+them). `src/storage/database.py` also gained `seed_council()`, a
+registry-driven generalisation of `seed_cambridge()`
+(SECOND_COUNCIL_PLAN.md 5.2) — used to seed Perth's own `Council` row,
+another prerequisite the documented order didn't spell out.
+
 ### Other states / councils
 
 Each state's electoral commission publishes results differently:
