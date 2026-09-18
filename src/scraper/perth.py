@@ -134,16 +134,19 @@ _LEGACY_COUNCIL_RE = re.compile(r"/(?:website_)?conmins\d{4}/(mn|sm)(\d{2})(\d{2
 _LEGACY_COMMITTEE_RE = re.compile(r"/CommitteeMinutes/([a-z]{2,3})(\d{2})(\d{2})(\d{2})", re.IGNORECASE)
 
 # Names confirmed 2026-09-18 by reading each committee's own PDF cover
-# page via Wayback (title block: "MINUTES / <COMMITTEE NAME> / <date>").
-# gp/mk/pk/pl/wk also appear in CommitteeMinutes/ but their sample PDFs
-# had no extractable cover-page text (image-only pages) — left unnamed
-# rather than guessed; see module docstring.
+# page via Wayback (title block: "MINUTES / <COMMITTEE NAME> / <date>"),
+# or (ldap) a standard WA planning-body acronym spelled out in its own
+# filenames ("City of Perth LDAP"). gp/mk/pk/pl/wk/em/ad also appear in
+# the legacy sources below but their sample PDFs had no extractable
+# cover-page text (image-only pages) — left unnamed rather than guessed;
+# see module docstring.
 _LEGACY_COMMITTEE_NAMES = {
     "da": "Design Advisory Committee",
     "dac": "Design Advisory Committee",
     "fb": "Finance and Budget Committee",
     "mp": "Marketing, Sponsorship and International Relations Committee",
     "mps": "Marketing, Sponsorship and International Relations Committee",
+    "ldap": "Local Development Assessment Panel",
 }
 
 
@@ -151,6 +154,178 @@ def _legacy_year(yy: int) -> int:
     # This legacy archive's confirmed range is 1996-2007 — no century
     # ambiguity: 90-99 -> 19xx, 00-07 -> 20xx.
     return 1900 + yy if yy >= 90 else 2000 + yy
+
+
+# --- 2009-2013 source: perth.wa.gov.au/documentdb/<id> (added 2026-09-18) --
+#
+# Between the /cou_minutes/ archive above (dead ~2007/2008) and the
+# Sitecore CMS's own year-archive pages (starts 2015), Perth ran a CMS
+# that served each document at a flat, sequential-ID URL —
+# perth.wa.gov.au/documentdb/<id> — shared across every kind of city
+# document, not just council ones (confirmed IDs run 0-3733+ and the vast
+# majority are unrelated to Council). Also dead on the live site now.
+#
+# Unlike the other two legacy sources, documentdb has no per-council
+# folder or filename convention to structure-match against — the ID
+# alone means nothing, and finding which IDs are Council minutes/agenda
+# required fetching each one's Content-Disposition header via Wayback
+# (~1400 requests, ~15-20 minutes) rather than a single CDX query. Given
+# that cost and that this is a dead, frozen historical site (unlikely to
+# gain new Wayback snapshots), the confirmed results are embedded here as
+# a static table rather than re-run live on every scrape — the same
+# "REPORTS is a hand-found, hardcoded list" pattern
+# scripts/extract_wa_elections.py already uses for the (also frozen)
+# Elections WA page indices.
+#
+# Coverage found this way (checked by hand, 2026-09-18): scattered but
+# real documents from 2009-02-23 through 2013-02-28 — NOT exhaustive.
+# Unlike the folder-based /cou_minutes/ archive, this reflects whatever
+# Wayback happened to crawl of a flat 3700-ID space, so treat gaps within
+# this range (e.g. very little from mid-2012 on) as "not crawled", not
+# "no meeting held". Still no source found for the remainder of 2013 or
+# for 2014 — see PIPELINE.md's Perth gaps note.
+#
+# Columns: (documentdb id, Wayback timestamp, meeting date ISO, prefix,
+# is_agenda, is_special). Meeting type is derived from prefix via
+# _LEGACY_COMMITTEE_NAMES (falling back to a generic "unconfirmed name"
+# label) or, for prefix "council", Ordinary/Special Council Meeting per
+# is_special. All of these filenames spell "minutes"/"agenda" as literal
+# words already, so classify_document_type() labels them correctly with
+# no shorthand-regex changes needed.
+#
+# Reliability note (2026-09-18): the discovery logic and URL construction
+# are verified correct (confirmed end-to-end for several entries — real
+# PDF bytes downloaded), but a full liveness sweep of all 119 pinned
+# (id, timestamp) pairs was not completed — Wayback became unreliable
+# under the request volume this investigation had already put through it
+# today (most retries came back as connection errors, not real 404s, so
+# this is not a measurement of the true failure rate). At least two
+# entries are confirmed genuinely gone as of today (ids 1179, 2794 —
+# real HTTP 404, not a connection error) and are left in the table rather
+# than pruned — BaseCouncilScraper.download() already skips a failed URL
+# and logs a warning without aborting the run, so a handful of dead
+# entries here is expected, harmless noise, not a bug to chase.
+_DOCUMENTDB_ENTRIES: list[tuple[int, str, str, str, bool, bool]] = [
+    (1171, "20090917195405", "2009-02-23", "pk", False, False),  # pk_minutes_090223.pdf
+    (1173, "20090917195532", "2009-02-24", "mp", False, False),  # mp_minutes_090224.pdf
+    (1172, "20091004062701", "2009-02-24", "gp", False, False),  # gp_minutes_090224.pdf
+    (1184, "20090917202429", "2009-03-03", "pl", False, False),  # pl_minutes_090303.pdf
+    (1183, "20091004214113", "2009-03-03", "fb", False, False),  # fb_minutes_090303.pdf
+    (1188, "20090917202315", "2009-03-05", "da", False, False),  # da_minutes_090305.pdf
+    (1190, "20090917202945", "2009-03-10", "council", False, False),  # Council_Minutes_090310.pdf
+    (1180, "20090917202907", "2009-03-10", "council", True, False),  # Council_Agenda_090310.pdf
+    (1179, "20090917203204", "2009-03-10", "council", True, False),  # Council_Agenda_index_090310.pdf
+    (1197, "20090917203051", "2009-03-17", "gp", False, False),  # gp_minutes_090317.pdf
+    (1187, "20091004214034", "2009-03-17", "gp", True, False),  # gp_agenda_090317.pdf
+    (1186, "20091004212929", "2009-03-17", "mp", True, False),  # mp_agenda_090317.pdf
+    (1191, "20090917202157", "2009-03-24", "pl", True, False),  # pl_agenda_090324.pdf
+    (1319, "20090619100646", "2009-05-19", "mp", False, False),  # mp_minutes_090519.pdf
+    (1321, "20090619095859", "2009-06-02", "council", False, False),  # Council_Minutes_090602.pdf
+    (1318, "20090619100626", "2009-06-08", "wk", False, False),  # wk_minutes_090608.pdf
+    (1314, "20090613181647", "2009-06-08", "pk", False, False),  # pk_minutes_090608.pdf
+    (1317, "20090619100424", "2009-06-09", "gp", False, False),  # gp_minutes_090609.pdf
+    (1315, "20090613183120", "2009-06-16", "pl", True, False),  # pl_agenda_090616.pdf
+    (1339, "20090629141742", "2009-06-16", "fb", False, False),  # fb_minutes_090616.pdf
+    (1338, "20090629141720", "2009-06-18", "da", False, False),  # da_minutes_090618.pdf
+    (1326, "20090619100446", "2009-06-23", "council", True, False),  # Council_agenda_090623.pdf
+    (1342, "20090629141255", "2009-06-30", "mp", True, False),  # mp_agenda_090630.pdf
+    (1464, "20090916031941", "2009-09-08", "pl", False, False),  # pl_minutes_090908.pdf
+    (1463, "20090916032555", "2009-09-08", "fb", False, False),  # fb_minutes_090908.pdf
+    (1468, "20090920205351", "2009-09-22", "gp", True, False),  # gp_agenda_090922.pdf
+    (1469, "20090920205430", "2009-09-22", "mp", True, False),  # mp_agenda_090922.pdf
+    (1479, "20090930085547", "2009-09-22", "mp", False, False),  # mp_minutes_090922.pdf
+    (1480, "20090930085645", "2009-09-22", "gp", False, False),  # gp_minutes_090922.pdf
+    (1477, "20110402214414", "2009-09-29", "pl", True, False),  # pl_agenda_090929.pdf
+    (1629, "20110303123720", "2010-01-27", "council", False, False),  # Council_Minutes_100127.pdf
+    (1648, "20110303124816", "2010-02-16", "council", False, False),  # Council_Minutes_100216.pdf
+    (1656, "20110303124957", "2010-02-22", "pk", False, False),  # pk_minutes_100222.pdf
+    (1659, "20110303125226", "2010-02-23", "mp", False, False),  # mp_minutes_100223.pdf
+    (1654, "20110303125730", "2010-03-02", "pl", True, False),  # pl_agenda_100302.pdf
+    (1662, "20110303125859", "2010-03-02", "pk", False, False),  # pk_minutes_100302sp.pdf
+    (1668, "20110303125818", "2010-03-02", "pl", False, False),  # pl_minutes_100302.pdf
+    (1667, "20110303125631", "2010-03-02", "fb", False, False),  # fb_minutes_100302.pdf
+    (1674, "20110303125958", "2010-03-04", "da", False, False),  # da_minutes_100304.pdf
+    (1664, "20110303130114", "2010-03-09", "council", True, False),  # Council_agenda_100309.pdf
+    (1663, "20110303130039", "2010-03-09", "council", True, False),  # Council_agenda_index_100309.pdf
+    (1672, "20110303130456", "2010-03-16", "mp", True, False),  # mp_agenda_100316.pdf
+    (1795, "20110303134418", "2010-05-25", "wk", False, False),  # wk_minutes_100525.pdf
+    (1800, "20110303134500", "2010-05-27", "da", False, False),  # da_minutes_100527.pdf
+    (1818, "20110303134824", "2010-06-01", "council", False, False),  # Council_minutes_100601.pdf
+    (1811, "20110303135047", "2010-06-03", "council", False, True),  # Council_Special_Minutes_100603.pdf
+    (1805, "20110303135130", "2010-06-08", "mp", True, False),  # mp_agenda_100608.pdf
+    (1812, "20110303135412", "2010-06-08", "gp", False, False),  # gp_minutes_100608.pdf
+    (1813, "20110303135223", "2010-06-08", "mp", False, False),  # mp_minutes_100608.pdf
+    (1815, "20110303135453", "2010-06-09", "pk", False, False),  # pk_minutes_100609.pdf
+    (1807, "20110303135738", "2010-06-15", "pl", True, False),  # pl_agenda_100615.pdf
+    (1820, "20110303135644", "2010-06-15", "fb", False, False),  # fb_minutes_100615.pdf
+    (1822, "20110303140133", "2010-06-22", "council", True, False),  # Council_agenda_100622.pdf
+    (1827, "20110303140340", "2010-06-22", "em", False, False),  # em_minutes_100622.pdf
+    (1828, "20110303140705", "2010-06-29", "gp", True, False),  # gp_agenda_100629.pdf
+    (1830, "20110303140535", "2010-06-29", "mp", True, False),  # mp_agenda_100629.pdf
+    (2002, "20110312054759", "2010-09-14", "council", False, False),  # Council_Minutes_100914.pdf
+    (1990, "20110312054911", "2010-09-20", "pk", False, False),  # pk_minutes_100920.pdf
+    (1996, "20110312055036", "2010-09-20", "wk", False, False),  # wk_minutes_100920.pdf
+    (1983, "20110312055349", "2010-09-21", "mp", True, False),  # mp_agenda_100921_schedules.pdf
+    (1984, "20110312055607", "2010-09-21", "gp", True, False),  # gp_agenda_100921.pdf
+    (1982, "20110312055239", "2010-09-21", "mp", True, False),  # mp_agenda_100921.pdf
+    (1985, "20110312055712", "2010-09-21", "gp", True, False),  # gp_agenda_100921_schedules.pdf
+    (1989, "20110312055831", "2010-09-21", "gp", False, False),  # gp_minutes_100921.pdf
+    (2004, "20110312055458", "2010-09-21", "mp", False, False),  # mp_minutes_100921.pdf
+    (1993, "20110312060024", "2010-09-28", "pl", True, False),  # pl_agenda_100928.pdf
+    (1994, "20110312060124", "2010-09-28", "pl", True, False),  # pl_agenda_100928_schedules 1.pdf
+    (1995, "20110312060240", "2010-09-28", "pl", True, False),  # pl_agenda_100928_schedules 2.pdf
+    (2007, "20110312065318", "2010-10-05", "council", True, False),  # Council_agenda_101005.pdf
+    (2634, "20120404023221", "2010-11-18", "council", True, True),  # Special Council Meeting agenda 18.11.10.pdf
+    (2159, "20110303145310", "2010-12-14", "council", False, False),  # Council_minutes_101214.pdf
+    (2181, "20110303145715", "2011-01-17", "wk", False, False),  # wk_minutes_110117.pdf
+    (2180, "20110303145638", "2011-01-17", "pk", False, False),  # pk_minutes_110117.pdf
+    (2169, "20110303145800", "2011-01-18", "mp", True, False),  # mp_agenda_110118.pdf
+    (2170, "20110303145859", "2011-01-18", "mp", True, False),  # mp_agenda_110118_schedules.pdf
+    (2172, "20110303150141", "2011-01-18", "gp", True, False),  # gp_agenda_110118_schedules.pdf
+    (2171, "20110303150041", "2011-01-18", "gp", True, False),  # gp_agenda_110118.pdf
+    (2176, "20110303150418", "2011-01-25", "pl", True, False),  # pl_agenda_110125.pdf
+    (2177, "20110303150529", "2011-01-25", "pl", True, False),  # pl_agenda_110125_schedules.pdf
+    (2307, "20120324194529", "2011-03-22", "mp", False, False),  # mp_minutes_110322.pdf
+    (2304, "20120324210433", "2011-03-29", "fb", False, False),  # fb_minutes_110329.pdf
+    (2303, "20120324173306", "2011-03-29", "pl", False, False),  # pl_minutes_110329.pdf
+    (2306, "20120324183808", "2011-03-31", "da", False, False),  # da_minutes_110331.pdf
+    (2318, "20120324151539", "2011-04-11", "pk", False, False),  # pk_minutes_110411.pdf
+    (2308, "20120413035834", "2011-04-12", "mp", True, False),  # mp_agenda_110412.pdf
+    (2309, "20120413033824", "2011-04-12", "mp", True, False),  # mp_agenda_110412_schedules.pdf
+    (2311, "20120413032932", "2011-04-12", "gp", True, False),  # gp_agenda_110412_schedules.pdf
+    (2310, "20120413033807", "2011-04-12", "gp", True, False),  # gp_agenda_110412.pdf
+    (2321, "20120324194554", "2011-04-12", "gp", False, False),  # gp_minutes_110412.pdf
+    (2316, "20120413033852", "2011-04-19", "pl", True, False),  # pl_agenda_110419.pdf
+    (2317, "20120413032326", "2011-04-19", "pl", True, False),  # pl_agenda_110419_schedules.pdf
+    (2463, "20120324141115", "2011-07-04", "pk", False, False),  # pk_minutes_110704.pdf
+    (2445, "20120408203317", "2011-07-05", "mp", True, False),  # mp_agenda_110705.pdf
+    (2468, "20120324174708", "2011-07-05", "gp", False, False),  # gp_minutes_110705.pdf
+    (2469, "20120324151510", "2011-07-05", "wk", False, False),  # wk_minutes_110705.pdf
+    (2474, "20120324215703", "2011-07-05", "mp", False, False),  # mp_minutes_110705.pdf
+    (2464, "20120408204559", "2011-07-12", "pl", True, False),  # pl_agenda_110712.pdf
+    (2465, "20120408203437", "2011-07-12", "pl", True, False),  # pl_agenda_110712_schedules.pdf
+    (2477, "20120408204352", "2011-07-19", "council", True, False),  # Council_agenda_index_110719.pdf
+    (2476, "20120408204332", "2011-07-19", "council", True, False),  # Council_agenda_110719.pdf
+    (2617, "20120326034035", "2011-09-20", "council", False, False),  # Council_Minutes_110920.pdf
+    (2630, "20120324203951", "2011-09-27", "mp", False, False),  # mp_minutes_110927.pdf
+    (2607, "20120404030421", "2011-10-04", "ad", True, False),  # ad_agenda_111004.pdf
+    (2627, "20120324230741", "2011-10-04", "fb", False, False),  # fb_minutes_111004.pdf
+    (2628, "20120324183750", "2011-10-04", "ad", False, False),  # ad_minutes_111004.pdf
+    (2629, "20120324183656", "2011-10-04", "pl", False, False),  # pl_minutes_111004.pdf
+    (2635, "20120325003846", "2011-10-06", "da", False, False),  # da_minutes_111006.pdf
+    (2621, "20120404023320", "2011-10-11", "council", True, False),  # Council_agenda_111011.pdf
+    (2643, "20120404023354", "2011-10-25", "gp", True, False),  # gp_agenda_111025.pdf
+    (2644, "20120404022627", "2011-10-25", "gp", True, False),  # gp_agenda_111025_schedules.pdf
+    (2645, "20120404025112", "2011-10-25", "mp", True, False),  # mp_agenda_111025.pdf
+    (2771, "20120327092801", "2012-01-24", "fb", False, False),  # fb_minutes_120124.pdf
+    (2794, "20120327054837", "2012-01-31", "council", False, False),  # Council_Minutes_120131.pdf
+    (2784, "20120327042346", "2012-02-14", "pl", True, False),  # pl_agenda_120214_schedules.pdf
+    (2798, "20120327023632", "2012-02-21", "council", True, False),  # Council_agenda_120221.pdf
+    (2799, "20120327043513", "2012-02-21", "council", True, False),  # Council_agenda_index_120221.pdf
+    (3455, "20130423115736", "2012-12-11", "council", False, False),  # Council Minutes 11 December 2012.pdf
+    (3446, "20130423051548", "2013-02-28", "ldap", True, False),  # 20130228 - City of Perth LDAP - Agenda - No 8.pdf
+    (3481, "20130423051617", "2013-02-28", "ldap", False, False),  # 20130228 - City of Perth LDAP - Minutes - No 8.pdf
+]
 
 
 def _year_archive_slug(year: int) -> str:
@@ -339,9 +514,13 @@ class PerthScraper(BaseCouncilScraper):
         # Below _EARLIEST_ARCHIVE_YEAR the live site has nothing (no
         # year-archive page exists) — that's a limit of the current CMS's
         # own navigation, not evidence the council's records start there
-        # (PIPELINE.md's Perth gaps note). The pre-Sitecore CMS's minutes
-        # are dead on the live site but archived by the Wayback Machine.
+        # (PIPELINE.md's Perth gaps note). Two dead-CMS legacy sources,
+        # both archived by the Wayback Machine rather than the live site.
         for d in self._discover_wayback_legacy(client, since_year):
+            if d.source_url not in seen:
+                seen.add(d.source_url)
+                docs.append(d)
+        for d in self._discover_documentdb_legacy(since_year):
             if d.source_url not in seen:
                 seen.add(d.source_url)
                 docs.append(d)
@@ -499,4 +678,51 @@ class PerthScraper(BaseCouncilScraper):
         logger.info(
             "Wayback legacy source: %d Perth minutes/committee PDFs (1996-2007 archive)", len(docs)
         )
+        return docs
+
+    def _discover_documentdb_legacy(self, since_year: int) -> list[MinutesDocument]:
+        """2009-2013 source — see module docstring "_DOCUMENTDB_ENTRIES"
+        comment above. Static table, not a live query — see that comment
+        for why. Pure in-memory filtering, no network call at all.
+
+        The documentdb/<id> URL path is a bare number — unlike the other
+        two sources, nothing in it spells "minutes"/"agenda", so
+        classify_document_type() would call every one of these "unknown".
+        Appending a synthesised `#<type>_<date>.pdf` URL fragment fixes
+        that: fragments are never sent to the server (confirmed — httpx
+        still fetches the right bytes), but classify_document_type() reads
+        it as part of the "filename" it inspects, same as a real one
+        would. The real original filename (which does vary — e.g.
+        "pk_minutes_090223.pdf") is preserved in the _DOCUMENTDB_ENTRIES
+        table as an inline comment for anyone auditing this by hand.
+        """
+        if since_year >= _EARLIEST_ARCHIVE_YEAR:
+            return []
+
+        docs: list[MinutesDocument] = []
+        for doc_id, timestamp, iso_date, prefix, is_agenda, is_special in _DOCUMENTDB_ENTRIES:
+            meeting_date = date.fromisoformat(iso_date)
+            if meeting_date.year < since_year:
+                continue
+            if prefix == "council":
+                meeting_type = "Special Council Meeting" if is_special else "Ordinary Council Meeting"
+            else:
+                meeting_type = _LEGACY_COMMITTEE_NAMES.get(
+                    prefix, f"Committee ({prefix.upper()}) — unconfirmed name"
+                )
+            kind = "agenda" if is_agenda else "minutes"
+            fragment = f"{prefix}_{kind}_{iso_date.replace('-', '')}.pdf"
+            docs.append(
+                MinutesDocument(
+                    council_short_name="perth",
+                    meeting_date=meeting_date,
+                    meeting_type=meeting_type,
+                    source_url=(
+                        f"https://web.archive.org/web/{timestamp}if_/"
+                        f"http://www.perth.wa.gov.au/documentdb/{doc_id}#{fragment}"
+                    ),
+                )
+            )
+
+        logger.info("documentdb legacy source: %d Perth minutes/agenda PDFs (2009-2013, partial)", len(docs))
         return docs

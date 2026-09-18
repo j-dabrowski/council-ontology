@@ -955,13 +955,30 @@ python scripts/dedup_councillors.py --apply  # merge confirmed duplicates
     labelled generically (`"Committee (XX) — unconfirmed name"`) — a
     human should confirm these names against the actual documents once
     they're extracted, rather than guessing from the 2-3 letter code.
-  - **Still an open gap: roughly 2008-2014.** No working source found —
-    Wayback CDX was searched across that whole span (both the dead legacy
-    `/cou_minutes/` path and the modern Sitecore path's own crawl
-    history, which only starts ~2019) and came up empty. Not confirmed
-    absent, just not found with the sources tried; a future session could
-    try the site's own internal search, a direct records request, or a
-    deeper Wayback sweep before concluding nothing survives.
+  - **2009-2013 — partially closed 2026-09-18.** Before the Sitecore CMS,
+    the site ran an intermediate CMS whose "About Council Meetings" page
+    (found via a Wayback snapshot of the ~2010 site) admitted it only
+    kept the *most recent* meeting's documents online, with older ones
+    served from a flat `perth.wa.gov.au/documentdb/<id>` URL space shared
+    with every other kind of city document — not a per-council archive.
+    `PerthScraper._discover_documentdb_legacy()` embeds a static table of
+    119 confirmed (id, date, type) entries found this way, spanning
+    2009-02-23 to 2013-02-28 — genuinely scattered (whatever Wayback
+    happened to crawl of ~1400 candidate IDs), not a complete record of
+    every meeting in that window. A full liveness check of all 119 wasn't
+    completed — Wayback became unreliable under the request volume this
+    investigation had already put through it — but the discovery logic
+    itself is verified correct end-to-end; a couple of entries are
+    confirmed genuinely gone (dead links, not investigation gaps) and
+    left in the table since `download()` already skips failures cleanly.
+  - **Still an open gap: most of 2013 onward, and all of 2014.** No
+    working source found — Wayback CDX was searched across that whole
+    span (the documentdb ID space runs out around Feb 2013; the modern
+    Sitecore path's own crawl history only starts ~2019) and came up
+    empty. Not confirmed absent, just not found with the sources tried;
+    a future session could try the site's own internal search, a direct
+    records request, or a deeper Wayback sweep before concluding nothing
+    survives.
 
 ### Onboarding note (Perth, 2026-09-18)
 
