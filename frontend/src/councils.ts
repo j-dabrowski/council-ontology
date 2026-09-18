@@ -108,18 +108,35 @@ export function useCorpusSpan(): string | null {
   return list.find((c) => c.key === council)?.corpus_span ?? null;
 }
 
+// Module-level cache, outside any component — CouncilHeader is rendered
+// fresh inside each page component (OverviewPage/AnalysisPage/WatchPage/
+// MethodPage/RecordPage each mount their own <CouncilHeader/>), not from a
+// single persistent layout, so it fully unmounts and remounts on every
+// page navigation. Without this cache, useCouncilList() below started
+// every one of those remounts from `list: []`, which is exactly what made
+// CouncilHeader fall through to rendering the raw route key ("cambridge")
+// for the instant before the re-fetch resolved — a real, visible flicker
+// on every navigation, not just first load. Cleared implicitly on a full
+// reload (e.g. DevModeSwitch's mode toggle, which reloads the page), so a
+// stale list from the wrong mode can't survive a mode switch.
+let _councilListCache: CouncilListEntry[] | null = null;
+
 // Shared loading state for the two places that need to know the whole list
 // before rendering anything useful: the bare-"/" / invalid-council redirect
 // in App.tsx, and CouncilHeader's selector (which also needs `loading` to
 // avoid flashing a one-entry-then-two-entries dropdown).
 export function useCouncilList(): { list: CouncilListEntry[]; loading: boolean } {
-  const [list, setList] = useState<CouncilListEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [list, setList] = useState<CouncilListEntry[]>(_councilListCache ?? []);
+  const [loading, setLoading] = useState(_councilListCache === null);
 
   useEffect(() => {
+    if (_councilListCache !== null) return;
     let cancelled = false;
     fetchCouncilList()
-      .then((rows) => { if (!cancelled) { setList(rows); setLoading(false); } })
+      .then((rows) => {
+        _councilListCache = rows;
+        if (!cancelled) { setList(rows); setLoading(false); }
+      })
       .catch(() => { if (!cancelled) { setList([]); setLoading(false); } });
     return () => { cancelled = true; };
   }, []);
