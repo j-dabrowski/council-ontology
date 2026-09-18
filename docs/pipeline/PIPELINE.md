@@ -937,6 +937,18 @@ python scripts/dedup_councillors.py --apply  # merge confirmed duplicates
   2017, 2021, 2023 all extracted cleanly (`scripts/extract_wa_elections.py
   perth`, 146 rows / 12 elections). Unlike Cambridge, Perth's 2017 result
   *is* present in the statewide report.
+- **Minutes/agenda corpus, not elections:** `PerthScraper`'s
+  `_EARLIEST_ARCHIVE_YEAR = 2015` is *not* evidence the council's records
+  start there — the City of Perth is over a century old, and its election
+  results alone go back to at least 1999 (above). 2015 is only the earliest
+  year link the scraper found in perth.wa.gov.au's own year-archive
+  navigation (`/council/council-meetings/2015-meetings` is the oldest one
+  listed). Whether earlier minutes/agendas exist elsewhere on the site (a
+  different URL pattern, a document library, site search) or only via the
+  Wayback Machine was never checked — unlike Cambridge, which has a
+  confirmed Wayback CDX fallback path for its own post-sitemap gap. Treat
+  pre-2015 Perth coverage as unverified, not confirmed absent, before a
+  future session commits to 2015 as the corpus start date.
 
 ### Onboarding note (Perth, 2026-09-18)
 
