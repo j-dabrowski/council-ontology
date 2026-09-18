@@ -99,6 +99,23 @@ COUNCILS = {
         "source_url": "https://www.cambridge.wa.gov.au",
         "scraper": "src.scraper.cambridge:CambridgeScraper",
     },
+    "perth": {
+        "short_name": "Perth",
+        "display_name": "City of Perth",
+        # Perth's own materials (agendas, minutes, council.wa.gov.au) call
+        # it "City of Perth" throughout, never "Town of Perth"/"Perth
+        # Council" — confirmed against its council-meetings pages
+        # (SECOND_COUNCIL_PLAN.md 5.2). Perth is unusual among WA local
+        # governments in holding city status without an elected Lord
+        # Mayor-style structure of its own separate from "Council" — the
+        # formal name is just "City of Perth", so name_suffix is empty
+        # rather than "Council" (contrast Cambridge's "Town of Cambridge
+        # Council" framing).
+        "name_prefix": "City of",
+        "name_suffix": "",
+        "source_url": "https://www.perth.wa.gov.au",
+        "scraper": "src.scraper.perth:PerthScraper",
+    },
     # Synthetic — no scraper, never real data. `synthetic: True` (not the
     # name "testville") is what every gate keys on: `council publish`
     # refuses it (src/publish_gate.py), and it's the only council

@@ -25,8 +25,8 @@ stack_overview.md
 .claude/
                                                                                             
 # Generated data — too large or transient
-data/raw/cambridge/*.pdf
-data/council.db                                                                           
+data/raw/*/*.pdf
+data/council.db
 data/eval/eval_*.json
 data/eval/eval_*.txt                                                                      
 data/eval/latest.json
