@@ -197,8 +197,15 @@ class BaseCouncilScraper(ABC):
 
     def _url_to_filename(self, url: str) -> str:
         digest = hashlib.md5(url.encode()).hexdigest()[:8]
-        suffix = url.split("?")[0].rsplit(".", 1)[-1]
-        suffix = suffix if suffix.lower() in {"pdf", "docx", "html"} else "pdf"
+        suffix = url.split("?")[0].rsplit(".", 1)[-1].lower()
+        # Always lowercase: several downstream consumers (census.py,
+        # inventory.py, cli.py's own doc-count/extraction paths) glob for
+        # "*.pdf" case-sensitively. A source URL with an uppercase ".PDF"
+        # extension (common on Perth's site, never seen on Cambridge's)
+        # would otherwise write a file those globs silently never see —
+        # found 2026-09-19 when census.py scanned 928/1501 Perth PDFs
+        # with no error, just silently skipping the other 573.
+        suffix = suffix if suffix in {"pdf", "docx", "html"} else "pdf"
         return f"{digest}.{suffix}"
 
     def _manifest_path(self) -> Path:
