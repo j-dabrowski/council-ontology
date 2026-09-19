@@ -16,6 +16,23 @@ const VALENCE_FILL: Record<string, string> = {
 };
 const HIGHLIGHT_FILL = "#fbbf24";
 
+// Numeric axis tick labels for the generic battery panel had no
+// tickFormatter/interval — recharts' bare `unit` prop just appends the
+// unit string to whatever raw number it generates, which collides with
+// its neighbours once the range needs many decimal places or a value runs
+// into the thousands/millions (docs/uplift/migration/01-known-defects.md
+// G-35, affects all 14 generic-fallback tests since they share this one
+// component). Compact, unit-aware formatting instead of the raw number.
+function formatAxisTick(value: number, unit: string): string {
+  const abs = Math.abs(value);
+  let num: string;
+  if (abs >= 1_000_000) num = `${(value / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
+  else if (abs >= 1_000) num = `${(value / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
+  else if (Number.isInteger(value)) num = String(value);
+  else num = value.toFixed(1);
+  return `${num}${unit}`;
+}
+
 function ChartView({ chart, valence, onLabelClick }: {
   chart: TestChart; valence: string; onLabelClick?: (label: string) => void;
 }) {
@@ -40,7 +57,11 @@ function ChartView({ chart, valence, onLabelClick }: {
           style={onLabelClick ? { cursor: "pointer" } : undefined}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" vertical={false} />
           <XAxis dataKey="x" tick={{ fontSize: 12 }} />
-          <YAxis unit={unit} tick={{ fontSize: 12 }} width={44} />
+          <YAxis
+            tick={{ fontSize: 12 }}
+            width={52}
+            tickFormatter={(v: number) => formatAxisTick(v, unit)}
+          />
           <Tooltip
             contentStyle={{ background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 6 }}
             formatter={(v?: number | string | readonly (number | string)[]) => [`${v ?? 0}${unit}`, ""]}
@@ -59,7 +80,11 @@ function ChartView({ chart, valence, onLabelClick }: {
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={bars} layout="vertical" margin={{ top: 4, right: 56, bottom: 4, left: 8 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--grid)" horizontal={false} />
-        <XAxis type="number" unit={unit} tick={{ fontSize: 12 }} />
+        <XAxis
+          type="number"
+          tick={{ fontSize: 12 }}
+          tickFormatter={(v: number) => formatAxisTick(v, unit)}
+        />
         <YAxis type="category" dataKey="label" tick={{ fontSize: 12 }} width={130} />
         <Tooltip
           cursor={{ fill: "var(--cursor)" }}
