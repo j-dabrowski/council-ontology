@@ -212,13 +212,16 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
       <div className="objection-callout">
         <span className="objection-callout-diff">{factor ? `${factor}×` : "—"}</span>
         <span className="objection-callout-text">
-          Declaring an interest makes a councillor about <strong>{factor}× more likely</strong> to
-          recuse ({data.declared_recusal_pct}% vs {data.baseline_recusal_pct}% baseline, n=
+          A councillor recuses about <strong>{factor}× more often</strong> on a vote where they've
+          declared an interest than on an ordinary vote
+          ({data.declared_recusal_pct}% vs {data.baseline_recusal_pct}% baseline, n=
           {data.declared_total.toLocaleString()}/{data.baseline_total.toLocaleString()}) — yet they
           still stay in the chamber and vote roughly <strong>three times out of four</strong>. And
-          when they do vote, they side against the motion <em>less</em> often than usual (
-          {data.declared_against_pct}% vs {data.baseline_against_pct}%): a declared-interest vote
-          leans toward letting the matter through.
+          when they do vote, they side against the motion <em>less</em> often than on an ordinary
+          vote ({data.declared_against_pct}% vs {data.baseline_against_pct}%) — an association, not
+          proof the declared interest is what shifted the vote: declared-interest items skew toward
+          planning/sponsorship/funding matters, which carry their own, different baseline approval
+          rates regardless of any declaration.
         </span>
       </div>
 

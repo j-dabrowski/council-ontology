@@ -117,11 +117,12 @@ export function ObjectionDosePanel({ test }: { test: ResolvedTest }) {
           {many && none ? `${(many.refusal_pct / none.refusal_pct).toFixed(1)}×` : "—"}
         </span>
         <span className="objection-callout-text">
-          A lone objection barely registers — refusal rises only from{" "}
-          <strong>{none?.refusal_pct}%</strong> to <strong>{lone?.refusal_pct}%</strong>. But once{" "}
-          <strong>five or more</strong> neighbours object, the refusal rate jumps to{" "}
-          <strong>{many?.refusal_pct}%</strong>. It isn't the act of objecting that moves council —
-          it's the <em>numbers</em>.
+          Refusal barely moves with a single objector — from{" "}
+          <strong>{none?.refusal_pct}%</strong> to <strong>{lone?.refusal_pct}%</strong> — but rises to{" "}
+          <strong>{many?.refusal_pct}%</strong> once <strong>five or more</strong> neighbours object.
+          That's an association between objector count and refusal, not proof the objections
+          themselves changed the decision: a non-compliant application could independently attract
+          both more objectors and a higher refusal rate.
         </span>
       </div>
 

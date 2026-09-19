@@ -891,11 +891,13 @@ def _t_objection_dose(session, council_id, pc, meeting_id=None) -> TestResult:
         headline=(f"Refusal {'climbs' if responsive else 'stays flat or inverted'} "
                   f"{lo_pct if lo_pct is not None else '—'}% → {hi_pct if hi_pct is not None else '—'}% "
                   "from no objectors to 5+"),
-        verdict=("A clean dose–response: a lone objection is noise, but coordinated numbers move "
-                 "outcomes — engagement works, even if a single letter does not."
+        verdict=("Refusal is higher on applications that drew 5+ objectors than on applications "
+                 "with none — an observational association, not proof that the objections "
+                 "themselves changed the outcome: a non-compliant application could independently "
+                 "attract both more objectors and a higher refusal rate."
                  if responsive else
-                 "Refusal doesn't track objector volume the way a working dose-response would "
-                 "predict — coordinated community numbers aren't moving outcomes here."),
+                 "Refusal doesn't rise with objector volume the way a working dose-response "
+                 "would predict — objector numbers alone don't track with the outcome here."),
         n=d.total_decided,
         base_rate=f"{lo.refusal_pct if lo else '—'}% refusal with no objectors",
         era="all decided applications",
