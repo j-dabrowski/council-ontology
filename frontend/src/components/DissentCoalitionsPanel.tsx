@@ -57,8 +57,8 @@ export function DissentCoalitionsPanel() {
             </tr>
           </thead>
           <tbody>
-            {data.coalitions.slice(0, 10).map((c, i) => (
-              <tr key={i}>
+            {data.coalitions.slice(0, 10).map((c) => (
+              <tr key={`${c.id_a}-${c.id_b}`}>
                 <td>{c.name_a}</td>
                 <td>{c.name_b}</td>
                 <td style={{ textAlign: "right", color: "#f59e0b", fontWeight: 600 }}>

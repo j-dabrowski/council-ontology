@@ -279,6 +279,7 @@ export interface RecordCouncillorsData {
 }
 
 export interface DissenterProfile {
+  councillor_id: number;
   name: string;
   total_votes_on_carried: number;
   against_count: number;
@@ -288,7 +289,9 @@ export interface DissenterProfile {
 }
 
 export interface DissentPair {
+  id_a: number;
   name_a: string;
+  id_b: number;
   name_b: string;
   shared_dissent: number;
 }

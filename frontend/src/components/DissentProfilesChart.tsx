@@ -54,13 +54,24 @@ export function DissentProfilesChart() {
   if (loading) return <LoadingCard />;
   if (error || !data) return <ErrorCard msg={error} />;
 
-  const chartData = data.profiles
-    .filter((p) => p.total_votes_on_carried >= 50)
-    .map((p) => ({
-      ...p,
-      shortName: surname(p.name),
-      pct: +(p.dissent_rate * 100).toFixed(1),
-    }))
+  const qualifying = data.profiles.filter((p) => p.total_votes_on_carried >= 50);
+  // One entity per real person (docs/uplift/migration/01-known-defects.md
+  // G-07): a bare surname collides across distinct real councillors who
+  // share a family name (this corpus has several), so a colliding surname
+  // gets a given-name initial appended — keyed by councillor_id, never by
+  // the display label itself.
+  const surnameCounts = new Map<string, number>();
+  for (const p of qualifying) {
+    const s = surname(p.name);
+    surnameCounts.set(s, (surnameCounts.get(s) ?? 0) + 1);
+  }
+  const chartData = qualifying
+    .map((p) => {
+      const s = surname(p.name);
+      const initial = p.name.trim().split(/\s+/)[0]?.[0];
+      const shortName = (surnameCounts.get(s) ?? 0) > 1 && initial ? `${s} ${initial}.` : s;
+      return { ...p, shortName, pct: +(p.dissent_rate * 100).toFixed(1) };
+    })
     // Show top 20 by dissent rate to keep the chart readable
     .slice(0, 20);
 
@@ -105,7 +116,7 @@ export function DissentProfilesChart() {
           <Tooltip content={<CustomTooltip />} />
           <Bar dataKey="pct" name="Dissent %" radius={[0, 3, 3, 0]}>
             {chartData.map((entry, i) => (
-              <Cell key={i} fill={dissenterColor(entry)} />
+              <Cell key={entry.councillor_id ?? i} fill={dissenterColor(entry)} />
             ))}
           </Bar>
         </BarChart>

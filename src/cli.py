@@ -2342,6 +2342,7 @@ def _generate_snapshots(
     _write("dissent", {
         "profiles": [
             {
+                "councillor_id": p.councillor_id,
                 "name": p.name,
                 "total_votes_on_carried": p.total_votes_on_carried,
                 "against_count": p.against_count,
@@ -2353,7 +2354,9 @@ def _generate_snapshots(
         ],
         "coalitions": [
             {
+                "id_a": c.id_a,
                 "name_a": c.name_a,
+                "id_b": c.id_b,
                 "name_b": c.name_b,
                 "shared_dissent": c.shared_dissent,
             }
