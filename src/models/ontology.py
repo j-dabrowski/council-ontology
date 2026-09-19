@@ -438,6 +438,34 @@ class InterestDeclaration(Base):
     item_reference: Mapped[Optional[str]] = mapped_column(String(200))
 
 
+class Contradiction(Base):
+    """One detected internal self-contradiction (docs/uplift/migration/
+    05-verification.md V-2) — a free, zero-model labelled negative: the
+    minutes constrain themselves, and something in the extracted record
+    violates that constraint. Never asserts which side (extraction vs.
+    source) is wrong, only that the two facts can't both be true. Feeds
+    `03-critic-agents.md`'s C-05 extraction sceptic as one of its stated
+    inputs."""
+
+    __tablename__ = "contradictions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    council_id: Mapped[int] = mapped_column(ForeignKey("councils.id"))
+    # One of: absent_and_voted, orphan_declaration, out_of_term_vote,
+    # mover_seconder_absent, tally_exceeds_chamber — kept as a plain string,
+    # not an enum, so a new class doesn't need a migration to add.
+    contradiction_class: Mapped[str] = mapped_column(String(50), index=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"))
+    motion_id: Mapped[Optional[int]] = mapped_column(ForeignKey("motions.id"))
+    councillor_id: Mapped[Optional[int]] = mapped_column(ForeignKey("councillors.id"))
+    declaration_id: Mapped[Optional[int]] = mapped_column(ForeignKey("interest_declarations.id"))
+    detail: Mapped[str] = mapped_column(Text)
+    detected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        return f"<Contradiction {self.contradiction_class} meeting={self.meeting_id}>"
+
+
 class Tender(Base):
     __tablename__ = "tenders"
 

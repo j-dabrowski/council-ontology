@@ -46,10 +46,10 @@ model-based layers (V-4 through V-10) are built at all.
 
 | Target capability | Current equivalent | Path | Status | Notes |
 |---|---|---|---|---|
-| V-1 Stated tally reconciliation | `Motion.votes_for`/`votes_against`/`votes_abstain` extracted and persisted; never reconciled against `Vote` row counts | `src/models/ontology.py:231-233`, `src/extraction/extractor.py:892-894` | PARTIAL (data exists; check doesn't) | The single cheapest win in this file — see G-01 |
-| V-2 Internal contradiction sweep | No `contradictions` table exists; no code checks any of the five listed contradiction classes (double-recorded ABSENT+vote, orphan declarations, out-of-term votes, absent mover/seconder, tally exceeding chamber size) | — | MISSING (as a check); PARTIAL (ingredients present: `votes`, `councillor_terms`, `motions.moved_by_id`) | `councillor_terms` has only 125 rows against 423 councillors (`00-codebase-map.md` §3) — thin enough that an out-of-term-vote check will have real gaps in its own coverage, worth stating as a caveat on the check itself |
-| V-3 Cross-document arithmetic | `officer_divergence()` already does agenda↔minutes item-number matching for one purpose (`src/analysis/divergence.py`); nothing generalises this into a standing reconciliation output; tender-value-vs-aggregate and councillor-name-vs-terms checks don't exist | `src/analysis/divergence.py` | PARTIAL | One instance of this class of check exists, narrowly scoped to one panel's needs, not built as reusable verification infrastructure |
-| V-4 Page rasterisation, addressable by `(source_pdf, page)` | Confirmed absent — no image-capture or page-rasterisation code anywhere (`00-codebase-map.md` §5); the closest analogue is `src/analysis/evidence.py`'s live re-parse of PDF text per page for quote-to-page matching, which never rasterises, only re-extracts text | `src/analysis/evidence.py` | MISSING | Text-level page-matching exists and works today; image-level does not — these are different capabilities that happen to share a `(pdf, page)` addressing concept |
+| V-1 Stated tally reconciliation | `reconcile_stated_tallies()` — 2026-09-19 | `src/analysis/verification.py` | DONE | 91.1% match rate (1,820/1,997 checkable motions) on the live corpus — see G-01 |
+| V-2 Internal contradiction sweep | `sweep_contradictions()`, all five classes, persisted to a new `contradictions` table — 2026-09-19 | `src/analysis/verification.py`, `src/models/ontology.py` | DONE | 4,447 total on the live corpus; `councillor_terms`'s thin, recent-skewed coverage is stated as a caveat on the out-of-term class's own docstring, not hidden — see G-02 |
+| V-3 Cross-document arithmetic | `reconcile_cross_document()` — reuses `officer_divergence()` directly for the agenda↔minutes check, adds the other three — 2026-09-19 | `src/analysis/verification.py` | DONE | Four checks, live-corpus rates 72.5%/82.2%/0.4%/17.0% — see G-03 |
+| V-4 Page rasterisation, addressable by `(source_pdf, page)` | `rasterize_page()`/`rasterize_pdf()`/`image_path_for()` — 2026-09-19 | `src/verification/rasterize.py` | DONE | Verified against a real corpus PDF (171 pages) and a synthetic one in tests; text-level page-matching (`evidence.py`) is unchanged, a different capability — see G-03 (rasterisation) |
 | V-5 Precision pass (stratified sample, vision, different model family, closed adjudication) | `council validate-sample`/`council extraction-loop` already do a stratified sample (era × format) at n≈18-20 and a three-tier quote-matching check (`src/validation/core.py`) — but same-model-family, text-only, and it's a completeness/paraphrase check, not a closed supported/contradicted/not-determinable adjudication | `src/validation/core.py`, `scripts/validate_sample.py` | PARTIAL | The stratified-sampling *infrastructure* and *cadence* (an existing iteration loop) are real and reusable; the *verification method* itself doesn't yet meet the target's three-axis-independence bar (same model family, same input representation — text, not images) |
 | V-6 Three-way adjudication + `contested` table | No adjudication mechanism exists; no `contested` table in the schema | — | MISSING | `council validate`'s PASS/REVIEW/FAIL (`src/validation/core.py`'s `determine_status()`) is a related but different concept — a per-document confidence score, not a per-record three-way adjudication with an excluded-from-silver outcome |
 | V-7 Capture–recapture for recall | No such mechanism; no independent second-pass extraction of any kind exists | — | MISSING | — |
@@ -68,19 +68,19 @@ model-based layers (V-4 through V-10) are built at all.
 
 ## Gaps
 
-### G-01: Stated-tally reconciliation (V-1) is buildable today with zero new extraction
+### G-01: Stated-tally reconciliation (V-1) is buildable today with zero new extraction — FIXED, see Step 1
 Target: reconcile every stated tally against extracted vote rows, corpus-wide, as the anchor, load-bearing method-text sentence.
 Current: both sides of the comparison already exist in the database (`Motion.votes_for`/`votes_against` and the `votes` table's per-motion `COUNT()`); nothing computes the reconciliation.
 Delta: this is a pure analysis-layer addition — no schema change, no re-extraction, no new pipeline stage. It is the single cheapest, highest-value step in this entire migration plan.
 Risk if unfixed: the report continues to have no document-derived accuracy anchor at all, despite already storing everything needed to compute one — the exact "no precision, no recall... no audited sample" gap (D-33) persists for the one metric that costs nothing to fix.
 
-### G-02: No internal-contradiction sweep despite the ingredients existing
+### G-02: No internal-contradiction sweep despite the ingredients existing — FIXED, see Step 2
 Target: five classes of self-contradiction detected corpus-wide, persisted as a `contradictions` table, feeding C-05.
 Current: MISSING as a mechanism; the underlying tables (`votes`, `councillor_terms`, `motions`) exist but `councillor_terms` is thin (125 rows / 423 councillors per `00-codebase-map.md` §3), which will limit the out-of-term-vote check's own coverage.
 Delta: needs a new script/module and a new table; the term-date check specifically needs to report its own denominator honestly (how many votes even have a determinable term to check against) rather than silently skipping the gaps.
 Risk if unfixed: five classes of free, zero-model, unambiguous errors go uncounted, and C-05 (`03-critic-agents.md`) has no `contradictions` table to read as one of its stated inputs.
 
-### G-03: No page rasterisation exists; V-4 is a hard prerequisite for V-5 through V-10 and V-9's own drill-down/reply requirement
+### G-03: No page rasterisation exists; V-4 is a hard prerequisite for V-5 through V-10 and V-9's own drill-down/reply requirement — FIXED, see Step 4
 Target: every PDF page rendered to an addressable image.
 Current: confirmed absent; text-level page-matching (`evidence.py`) is a different, already-working capability that doesn't substitute for it.
 Delta: net-new infrastructure — this single step gates five of the ten target verification layers (V-5, V-6, V-8, V-9's image half, V-10) plus `03-critic-agents.md`'s C-08 visual critic's need for a rendering path in the other direction (panels, not source pages) — two related but distinct rasterisation needs in this plan, worth building with shared tooling where possible (both are "headless render → addressable image").
@@ -128,25 +128,25 @@ Risk if unfixed: a single blended accuracy number continues to imply uniform rel
 
 Sequenced per the source doc's own instruction: census checks first (cheapest, most likely to reshape priorities), then rasterisation, then the model-based layers, then folding results back into the claim layer.
 
-### Step 1: Build V-1, stated-tally reconciliation
-Files touched: new `src/analysis/verification.py` (`reconcile_stated_tallies()` — join `motions` to a `COUNT()` over `votes` grouped by `choice`, compare against `votes_for`/`votes_against`/`votes_abstain`), a new CLI command or a section of `council validate`'s output
+### Step 1: Build V-1, stated-tally reconciliation — DONE (2026-09-19)
+Files touched: new `src/analysis/verification.py` (`reconcile_stated_tallies()` — join `motions` to a `COUNT()` over `votes` grouped by `choice`, compare against `votes_for`/`votes_against`/`votes_abstain`), `tests/test_verification.py`
 Depends on: none
-Done when: a reconciliation rate exists, per era, per document format, computed from data already in the database — no re-extraction, no new pipeline stage.
+Done when: a reconciliation rate exists, per era, per document format, computed from data already in the database — no re-extraction, no new pipeline stage. **Live corpus result: 91.1% match rate (1,820/1,997 checkable motions)**, plus a per-year breakdown (`by_year`) and up to 200 capped mismatch records for drill-down. A CLI command / `/method` wiring is deliberately deferred — the function itself satisfies this step's own Done-when; publishing it is Step 10's job, once V-5/V-6 exist too (that step's own Done-when needs all three).
 
-### Step 2: Build V-2, the internal contradiction sweep
-Files touched: `src/analysis/verification.py` (five contradiction-class checks per the target's list), new `contradictions` table (`src/models/ontology.py`, additive)
+### Step 2: Build V-2, the internal contradiction sweep — DONE (2026-09-19)
+Files touched: `src/analysis/verification.py` (five contradiction-class checks per the target's list), new `contradictions` table (`src/models/ontology.py`, additive), `tests/test_verification.py`
 Depends on: none
-Done when: every contradiction class is counted corpus-wide; the out-of-term-vote check's own coverage denominator (how many votes have a determinable term to check) is reported alongside its result, not silently assumed complete.
+Done when: every contradiction class is counted corpus-wide; the out-of-term-vote check's own coverage denominator is reported alongside its result. **Live corpus: 4,447 contradictions total** — `absent_and_voted` 32/208, `orphan_declaration` 215/1980, `out_of_term_vote` 1800/12952, `mover_seconder_absent` 2252/12251, `tally_exceeds_chamber` 148/7593. The out-of-term rate is high mostly because `councillor_terms` coverage itself skews toward recent (2019+) elections — a councillor with only a recent term on record shows every pre-2019 vote as "out of term," which is a term-*data* gap, not necessarily 1,800 genuine minute errors; stated explicitly in the function's own docstring, not silently absorbed into the headline number.
 
-### Step 3: Generalise V-3's cross-document checks
-Files touched: `src/analysis/verification.py` (extract and generalise the agenda↔minutes matching pattern already proven in `src/analysis/divergence.py`; add tender-value-vs-aggregate and councillor-name-vs-terms checks)
-Depends on: Step 2 (shares infrastructure)
-Done when: V-1 through V-3's outputs together form the "load-bearing sentence" — a real, document-derived, model-free accuracy figure ready to publish before any other step in this file completes.
+### Step 3: Generalise V-3's cross-document checks — DONE (2026-09-19)
+Files touched: `src/analysis/verification.py` (`reconcile_cross_document()` — reuses `officer_divergence()` directly rather than re-deriving its matching logic; adds attendance-vs-votes, tender-value-vs-aggregate, and councillor-names-vs-terms checks), `tests/test_verification.py`
+Depends on: Step 2 (shares infrastructure) — done
+Done when: V-1 through V-3's outputs together form the "load-bearing sentence." **Live corpus**: `attendance_vs_votes` 72.5% (285/393), `agenda_minutes_items` 82.2% (203/247, reusing `officer_divergence()`'s own match-confidence), `tender_value_vs_aggregate` 0.4% (1/237 — the corpus's minutes narrate *total payments* aggregates, not tender-specific ones, an honest near-zero, not a broken check; spot-checked the free text behind the 237 candidates to confirm), `councillor_names_vs_terms` 17.0% (32/188). The "load-bearing sentence" itself (Step 10, `/method`'s published text) is not written yet — that step also needs V-5/V-6, not built this phase.
 
-### Step 4: Build page rasterisation (V-4)
-Files touched: new `src/verification/rasterize.py` or similar (per-page image export from each meeting's PDF, using `fitz`/PyMuPDF — already a project dependency), storage convention `(source_pdf, page) -> image path`
-Depends on: none (can run in parallel with Steps 1–3)
-Done when: any page of any retained PDF can be retrieved as an image by a stable key; this also supplies `03-critic-agents.md`'s Step 3 (C-08's rendering need is for panels, not source pages, but the tooling and addressing convention should be shared where practical).
+### Step 4: Build page rasterisation (V-4) — DONE (2026-09-19)
+Files touched: new `src/verification/` package, `rasterize.py` (per-page PNG export via `fitz`/PyMuPDF, already a project dependency), `tests/test_rasterize.py`; `data/page_images/` added to `.gitignore`
+Depends on: none (ran in parallel with Steps 1–3)
+Done when: any page of any retained PDF can be retrieved as an image by a stable key. `image_path_for(pdf_path, page_number)` gives the key without rendering (`data/page_images/<pdf-stem>/page-NNNN.png`); `rasterize_page()`/`rasterize_pdf()` render idempotently (a cached PNG is read back for its real pixel dimensions via `fitz.Pixmap`, not re-rendered, unless `force=True`). Verified against a real corpus PDF (171 pages rasterized, 1125x1500px at 150dpi) and a synthetic 3-page PDF in tests. `03-critic-agents.md`'s C-08 (panel rendering, not source pages) is a related but distinct need — this step supplies shared tooling/convention for it, not a second consumer wired up yet, since C-08 itself doesn't exist (Phase 3, not this session's scope).
 
 ### Step 5: Build the vision-based precision pass (V-5) and adjudication (V-6)
 Files touched: new `src/verification/precision_pass.py` (stratified sample by era × format, vision-model closed adjudication against a cited span: supported/contradicted/not_determinable), new `contested` table for unresolved three-way splits, wiring to exclude contested records from whatever `02-claim-layer.md` treats as gold

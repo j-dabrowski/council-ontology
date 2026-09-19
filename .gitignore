@@ -48,6 +48,7 @@ data/sample_validation/
 data/validation/
 data/batch_jobs/
 data/llm_archive/
+data/page_images/
 data/raw/terms/
 
 # scripts/geocode_sites.py (MAP_PAGE_PLAN.md Phase 4.5/4.6) — a cache and a
