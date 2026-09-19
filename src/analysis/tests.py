@@ -365,17 +365,23 @@ def _t_recusal_trend(session, council_id, pc) -> TestResult:
     # band around the pre-era baseline is treated as no clear trend.
     declined = r.must_leave_post_pct < r.must_leave_pre_pct - 5
     improved = r.must_leave_post_pct > r.must_leave_pre_pct + 5
-    thin_financial = r.financial_post_n < 5
+    # Same pre->post era pair as the headline (docs/uplift/migration/
+    # 01-known-defects.md G-24) — used to compare inquiry->post, a second,
+    # independent inconsistency from D-24's financial-vs-all-must-leave
+    # denominator difference: a reader checking this panel's own internal
+    # consistency would otherwise find two different comparisons on one claim.
+    thin_financial = r.financial_post_n < 5 or r.financial_pre_n < 5
     if declined:
         valence, grade = CRITICAL, G_CONCERN
         headline = (f"Must-leave recusal fell from {r.must_leave_pre_pct}% before scrutiny to "
                     f"{r.must_leave_post_pct}% after (peaked at {r.must_leave_inquiry_pct}% during it)")
-        financial_move = f"{r.financial_inquiry_pct}%→{r.financial_post_pct}% (n={r.financial_post_n})"
+        financial_move = (f"{r.financial_pre_pct}%→{r.financial_post_pct}% "
+                          f"(n={r.financial_pre_n}→{r.financial_post_n})")
         if thin_financial:
             verdict = (f"Financial-only recusal (leaving is mandatory) moved {financial_move} over the "
-                       "same window — too few post-scrutiny financial declarations to confirm or rule "
+                       "same window — too few pre/post-scrutiny financial declarations to confirm or rule "
                        "out a confound from a shift in which interest type gets declared.")
-        elif r.financial_post_pct < r.financial_inquiry_pct - 5:
+        elif r.financial_post_pct < r.financial_pre_pct - 5:
             verdict = (f"Survives the obvious confound: financial-only recusal (leaving is mandatory) also "
                        f"declined, {financial_move} — not just a shift in which interest type gets declared.")
         else:

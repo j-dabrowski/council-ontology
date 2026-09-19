@@ -2905,6 +2905,8 @@ def _generate_snapshots(
         "must_leave_inquiry_n": rct.must_leave_inquiry_n,
         "must_leave_post_pct": rct.must_leave_post_pct,
         "must_leave_post_n": rct.must_leave_post_n,
+        "financial_pre_pct": rct.financial_pre_pct,
+        "financial_pre_n": rct.financial_pre_n,
         "financial_inquiry_pct": rct.financial_inquiry_pct,
         "financial_inquiry_n": rct.financial_inquiry_n,
         "financial_post_pct": rct.financial_post_pct,

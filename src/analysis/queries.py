@@ -3537,7 +3537,13 @@ class RecusalTrendStats:
     must_leave_inquiry_n: int
     must_leave_post_pct: float
     must_leave_post_n: int
-    # financial-only (the confound-beater): recusal even where leaving is mandatory
+    # financial-only (the confound-beater): recusal even where leaving is mandatory.
+    # pre/post are the same two eras the headline (must_leave_pre/post_pct)
+    # compares — added so the confound-check sentence can use the identical
+    # era pair as the headline it's a caveat on, instead of inquiry->post
+    # (docs/uplift/migration/01-known-defects.md G-24).
+    financial_pre_pct: float
+    financial_pre_n: int
     financial_inquiry_pct: float
     financial_inquiry_n: int
     financial_post_pct: float
@@ -3699,6 +3705,7 @@ def recusal_compliance_trend(
     ml_pre_pct, ml_pre_n = _era_pct(ml, "pre")
     ml_inq_pct, ml_inq_n = _era_pct(ml, "inquiry")
     ml_post_pct, ml_post_n = _era_pct(ml, "post")
+    fin_pre_pct, fin_pre_n = _era_pct(("financial",), "pre")
     fin_inq_pct, fin_inq_n = _era_pct(("financial",), "inquiry")
     fin_post_pct, fin_post_n = _era_pct(("financial",), "post")
     imp_post_pct, imp_post_n = _era_pct(("impartiality",), "post")
@@ -3715,6 +3722,7 @@ def recusal_compliance_trend(
         must_leave_pre_pct=ml_pre_pct, must_leave_pre_n=ml_pre_n,
         must_leave_inquiry_pct=ml_inq_pct, must_leave_inquiry_n=ml_inq_n,
         must_leave_post_pct=ml_post_pct, must_leave_post_n=ml_post_n,
+        financial_pre_pct=fin_pre_pct, financial_pre_n=fin_pre_n,
         financial_inquiry_pct=fin_inq_pct, financial_inquiry_n=fin_inq_n,
         financial_post_pct=fin_post_pct, financial_post_n=fin_post_n,
         impartiality_post_declared=imp_post_n,

@@ -209,15 +209,16 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
 
           <div className="objection-callout">
             <span className="objection-callout-diff">
-              {data.financial_inquiry_pct}%→{data.financial_post_pct}%
+              {data.financial_pre_pct}%→{data.financial_post_pct}%
             </span>
             <span className="objection-callout-text">
               Even on <strong>financial conflicts</strong> — where the law <em>requires</em> a member to
-              leave the room — recusal held at <strong>{data.financial_inquiry_pct}%</strong> during the
-              {" "}{data.era_label} and <strong>{data.financial_post_pct}%</strong> after it.
-              {data.financial_post_n <= 3 && (
-                <> The only post-{window![1] + 1} financial-conflict declaration(s) on record
-                  {" "}(n={data.financial_post_n}) are too few to assess a trend either way on
+              leave the room — recusal was <strong>{data.financial_pre_pct}%</strong> before the
+              {" "}{data.era_label} and <strong>{data.financial_post_pct}%</strong> after it — the same
+              before/after comparison as the headline above, not before/during.
+              {(data.financial_post_n <= 3 || data.financial_pre_n <= 3) && (
+                <> Too few financial-conflict declarations on record
+                  {" "}(n={data.financial_pre_n}→{data.financial_post_n}) to assess a trend either way on
                   financial conflicts alone.</>
               )}
             </span>

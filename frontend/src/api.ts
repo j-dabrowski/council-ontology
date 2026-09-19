@@ -573,6 +573,8 @@ export interface RecusalData {
   must_leave_inquiry_n: number;
   must_leave_post_pct: number;
   must_leave_post_n: number;
+  financial_pre_pct: number;
+  financial_pre_n: number;
   financial_inquiry_pct: number;
   financial_inquiry_n: number;
   financial_post_pct: number;
