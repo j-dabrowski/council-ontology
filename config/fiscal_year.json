@@ -1,0 +1,5 @@
+{
+  "_comment": "Local-government fiscal year start month, per council (1=Jan .. 12=Dec). WA councils (Local Government Act 1995 s6.2) run 1 Jul-30 Jun, so 7 is the WA default. Only add a per-council override below if a future council sits in a different jurisdiction.",
+  "default_start_month": 7,
+  "overrides": {}
+}

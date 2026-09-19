@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 DEFAULT_PATH = Path(__file__).resolve().parent.parent / "config" / "council_eras.json"
+FISCAL_YEAR_PATH = Path(__file__).resolve().parent.parent / "config" / "fiscal_year.json"
 
 
 @dataclass(frozen=True)
@@ -43,3 +44,16 @@ def era_window_for(council_short_name: str, path: Path = DEFAULT_PATH) -> EraWin
     """`council_short_name` is `Council.short_name` (e.g. "Cambridge",
     "Testville") — matched case-insensitively against the config's keys."""
     return load_council_eras(path).get(council_short_name.lower())
+
+
+def fiscal_year_start_month(council_short_name: str, path: Path = FISCAL_YEAR_PATH) -> int:
+    """The calendar month (1-12) this council's fiscal year starts on
+    (docs/uplift/migration/01-known-defects.md Step 2). Defaults to 7 (WA's
+    1 Jul-30 Jun local-government year, LGA 1995 s6.2) if the config is
+    missing or the council has no override — every council in this project
+    is WA-jurisdiction today, so `overrides` is empty until that changes."""
+    if not path.exists():
+        return 7
+    data = json.loads(path.read_text())
+    overrides = {k.lower(): v for k, v in data.get("overrides", {}).items()}
+    return overrides.get(council_short_name.lower(), data.get("default_start_month", 7))

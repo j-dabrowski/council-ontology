@@ -58,6 +58,7 @@ from src.analysis.queries import (
     _normalise_contractor,
 )
 from src.analysis.divergence import officer_divergence
+from src.council_eras import fiscal_year_start_month
 from src.test_registry import RegistryRow, load_test_registry
 
 # ── valence + grade vocabulary ──────────────────────────────────────────────
@@ -1439,41 +1440,61 @@ def _t_unanimity_trend_meeting(session, council_id, meeting_id) -> TestResult:
 
 
 def _t_eoy_spending(session, council_id, pc) -> TestResult:
+    """[finance.eoy_spending] Fiscal-year-anchored, not calendar-year: WA local
+    government runs 1 Jul-30 Jun (LGA 1995 s6.2, `src.council_eras.
+    fiscal_year_start_month`), so the "use it or lose it" test is the two
+    months immediately before that boundary (May/June for a Jul-start year),
+    not a hardcoded December (docs/uplift/migration/01-known-defects.md G-01)."""
+    from src.models import Council
+
     rows = [(a, m) for a, _n, _y, m in _tender_rows(session, council_id) if a and m]
     if not rows:
         return _nodata("finance.eoy_spending", "End-of-year spending spike",
                        "Financial (3.1)", "ICAC generic risk",
                        "Do tender awards/dollars spike at the end of the budget cycle?",
                        scope=[SCOPE_WHOLE_CORPUS])
-    dec_amt = sum(a for a, m in rows if m == 12)
+    council = session.query(Council).filter(Council.id == council_id).first()
+    start_month = fiscal_year_start_month(council.short_name) if council else 7
+    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    # Calendar months in fiscal-year order, e.g. start_month=7 -> [7,8,...,12,1,...,6]
+    fy_order = [(start_month - 1 + i) % 12 + 1 for i in range(12)]
+    eoy_months = set(fy_order[-2:])  # the two months immediately before the FY boundary
+
     tot_amt = sum(a for a, _m in rows)
-    dec_n = sum(1 for _a, m in rows if m == 12)
-    dec_share = round(dec_amt / tot_amt * 100) if tot_amt else 0
-    expected = round(100 / 12)
-    spike = dec_share >= expected * 2
-    months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    eoy_amt = sum(a for a, m in rows if m in eoy_months)
+    eoy_n = sum(1 for _a, m in rows if m in eoy_months)
+    eoy_share = round(eoy_amt / tot_amt * 100) if tot_amt else 0
+    expected = round(200 / 12)  # two months' even share
+    spike = eoy_share >= expected * 2
+
     by_month = [0.0] * 12
     for a, m in rows:
         if 1 <= m <= 12:
             by_month[m - 1] += a / 1e6
+    peak_idx = max(range(12), key=lambda i: by_month[i])
+    peak_label = month_names[peak_idx]
+    eoy_labels = ", ".join(month_names[m - 1] for m in fy_order[-2:])
+
     chart = _bars(
-        [(months[i], round(by_month[i], 1)) for i in range(12)],
-        unit="$M", highlight_label="Dec",
+        [(month_names[m - 1], round(by_month[m - 1], 1)) for m in fy_order],
+        unit="$M", highlight_label=peak_label,
     )
     return TestResult(
         test_id="finance.eoy_spending",
         title="Is there an end-of-year 'use it or lose it' spike?",
         genre="Financial (3.1)",
         principle="CIPFA-F — financial management",
-        question="Do tender dollars cluster into the final months of the budget cycle?",
+        question="Do tender dollars cluster into the final months of the fiscal year?",
         valence=CRITICAL if spike else NEUTRAL,
         grade=G_CONCERN if spike else G_OBSERVATION,
-        headline=f"December holds {dec_share}% of tender dollars ({dec_n} awards) vs ~{expected}% expected",
-        verdict=("A modest end-of-year bump consistent with normal capital timing, not a dramatic "
-                 "use-it-or-lose-it dump." if not spike
-                 else "December spending is well above an even spread; warrants explanation."),
+        headline=(f"{eoy_labels} (fiscal year-end) hold {eoy_share}% of tender dollars "
+                  f"({eoy_n} awards) vs ~{expected}% expected; {peak_label} is the single "
+                  "highest-dollar month"),
+        verdict=("A modest fiscal year-end bump consistent with normal capital timing, not a "
+                 "dramatic use-it-or-lose-it dump." if not spike
+                 else f"{eoy_labels} spending is well above an even spread; warrants explanation."),
         n=len(rows),
-        base_rate=f"~{expected}% if evenly spread",
+        base_rate=f"~{expected}% if evenly spread across {eoy_labels}",
         era="1995–2026",
         detail_panel="eoy",
         chart=chart,

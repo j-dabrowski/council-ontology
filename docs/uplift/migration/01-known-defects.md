@@ -30,7 +30,7 @@ resolved further here.
 | D-id | Target capability | Current equivalent | Status | Notes |
 |---|---|---|---|---|
 | D-01 | Fiscal-year-anchored spend analysis (WA year: 1 Jul–30 Jun) | `_t_eoy_spending`, `src/analysis/tests.py:1441-1481` — buckets by raw calendar month, hardcodes `highlight_label="Dec"` | WRONG | No fiscal-year config exists anywhere; `src/council_eras.py` handles scrutiny eras, not fiscal years |
-| D-02 | Exactly 12 month-bars rendered | `_t_eoy_spending` (`tests.py:1454-1462`) + `BatteryTestPanel.tsx:55` | UNVERIFIED | Backend unconditionally emits 12 bars; no drop/merge path found in current code — see G-02 |
+| D-02 | Exactly 12 month-bars rendered | `_t_eoy_spending` (`tests.py:1454-1462`) + `BatteryTestPanel.tsx:55` | RESOLVED (2026-09-19 verification) | Confirmed by direct code reading, not a live draft: `by_month` is a fixed `[0.0]*12` array populated for `range(12)` unconditionally; `_bars()` (`tests.py:148-158`) is a straight passthrough with no drop/merge; `BatteryTestPanel.tsx`'s `ChartView` renders exactly `chart.bars.length` items with no filter. All 12 bars always render — see G-02 |
 | D-03 | One reconciled tender-total population across panels | `_tender_rows()` (`tests.py:182-190`, undeduped) vs `tender_concentration()` (`queries.py:2103-2246`, deduped) | WRONG | Two real, different populations; neither panel declares which |
 | D-04 | Every panel's n traceable to one declared population + filter chain | No such mechanism anywhere in `src/analysis/` | MISSING | Confirmed: every `_t_*` function writes its own ad hoc filter chain independently |
 | D-05 | One canonical display label per contractor, shared by every chart | `_normalise_contractor()` (`queries.py:2052`) + `display_name` dict (`:2188-2189`) used by `tender_concentration()`; `_t_procurement_incumbency` (`tests.py:1165,1186`) re-derives its own via `.title()` on the normalised key | WRONG | Second, inferior implementation of the same problem `tender_concentration()` already solved |
@@ -79,11 +79,11 @@ Current: `_t_eoy_spending` (`tests.py:1441-1481`) buckets by calendar month and 
 Delta: no fiscal-year config exists anywhere in `src/`; the function asserts a false fiscal fact in its own headline text.
 Risk if unfixed: a genuine July use-it-or-lose-it pattern is invisible; the panel tests, and fails, the wrong month.
 
-### G-02: 12-month chart may render fewer than 12 bars
+### G-02: 12-month chart may render fewer than 12 bars — RESOLVED, does not reproduce
 Target: every month has a bar, or a documented reason why not.
-Current: backend unconditionally emits 12; no drop/merge path found in current code (`tests.py:1454-1462`, `BatteryTestPanel.tsx:55`).
-Delta: unverified against current data — needs a fresh `council draft` run to check the live payload before assuming fixed or still live.
-Risk if unfixed: unknown until re-verified; carried as open.
+Current: backend unconditionally emits 12 bars (`by_month = [0.0]*12`, populated over `range(12)` with no conditional skip, `tests.py:1454-1462`); `_bars()` (`tests.py:148-158`) does a bare list comprehension over whatever pairs it's given, no length check; `BatteryTestPanel.tsx`'s `ChartView` renders `bars.map(...)` over `chart.bars` verbatim, no filter/threshold.
+Delta: none — verified 2026-09-19 by reading the full path from data assembly to render, not a live draft (Step 1's own "Files touched: none" already anticipated this). No drop/merge path exists anywhere in the current pipeline, so there is nothing that could produce fewer than 12 bars.
+Risk if unfixed: none — not a live defect. No code change made.
 
 ### G-03: Two tender-total populations presented as comparable
 Target: one reconciled, deduplicated tender-dollar population feeds every panel that states a total.

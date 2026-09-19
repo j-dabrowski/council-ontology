@@ -88,7 +88,7 @@ class CorpusProfile:
     confidential_premium: float = 1.8   # confidential tender $ vs open tender $ (>1 pricier)
     tender_gaming: bool = False          # bunch tenders just under the $250k tender threshold
     incumbency_overlap: bool = False     # a frequent repeat winner is also a top-10 $ recipient
-    eoy_spike: bool = False              # December tender $ spikes vs an even spread
+    eoy_spike: bool = False              # fiscal year-end (May/Jun) tender $ spikes vs an even spread
     # conflict / recusal
     recusal_pre: float = 0.75            # P(stepped out | declared, must-leave) by era
     recusal_inquiry: float = 0.55
@@ -380,7 +380,7 @@ def _tender_amount(rng: random.Random, profile: CorpusProfile, year: int, month:
             size_tier = "large"
     if is_confidential:
         base *= profile.confidential_premium
-    if profile.eoy_spike and month == 12:
+    if profile.eoy_spike and month in (5, 6):  # WA fiscal year-end (LGA 1995 s6.2: 1 Jul-30 Jun)
         base *= 3.0
     return round(base, 2), is_confidential, size_tier
 
