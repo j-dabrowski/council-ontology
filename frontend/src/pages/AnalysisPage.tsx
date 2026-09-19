@@ -4,6 +4,7 @@ import { SiteFooter } from "../components/SiteFooter";
 import { Card, LoadingCard, ErrorCard } from "../components/InterestsChart";
 import { SeverityChip } from "../components/SeverityChip";
 import { ObjectionResponse } from "../components/ObjectionResponse";
+import { ReplyStatus } from "../components/ReplyStatus";
 import { RedactedText } from "../guardrail";
 import { useData } from "../hooks/useData";
 import { api, ScorecardData, CouncillorsData } from "../api";
@@ -52,6 +53,7 @@ export function AnalysisPage() {
                     </div>
                     <PanelBody test={t} cllrData={cllrData} />
                     {t.valence === "critical" && <ObjectionResponse test={t} />}
+                    <ReplyStatus test={t} />
                   </Card>
                 </section>
               );

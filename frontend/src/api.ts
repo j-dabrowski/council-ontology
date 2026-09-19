@@ -764,6 +764,18 @@ export interface TestChart {
   points?: { x: number; y: number }[];
 }
 
+// S9 right of reply (src/reply_packets.py) — null until a packet has been
+// sent for this claim. Only meaningful for a claim naming an individual;
+// every current battery test is institutional (no named_entities), so this
+// is null everywhere today. Built and typed now anyway, per docs/uplift/
+// migration/01-known-defects.md G-34's own instruction, rather than waiting
+// for the first named-individual claim to exist.
+export interface TestReply {
+  sent_at: string;
+  response: string | null;
+  declined: boolean;
+}
+
 export interface ScorecardTest {
   test_id: string;
   title: string;
@@ -780,6 +792,7 @@ export interface ScorecardTest {
   detail_panel: string | null;
   series: { x: number; y: number }[];
   chart: TestChart | null;
+  reply: TestReply | null;
 }
 
 // The overall governance rating (docs/frontend/MAP_PAGE_PLAN.md Phase 1) —

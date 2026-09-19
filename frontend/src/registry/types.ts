@@ -3,7 +3,7 @@
 // See docs/frontend/TEST_REGISTRY_PLAN.md Part B for the field-by-field
 // rationale; nothing here should diverge from that plan without updating it.
 
-import type { TestChart, Valence } from "../api"
+import type { TestChart, TestReply, Valence } from "../api"
 
 export type { Valence }
 
@@ -74,6 +74,7 @@ export interface ResolvedTest extends TestRegistryEntry {
   scope: string[]
   chart: TestChart | null
   series: { x: number; y: number }[]
+  reply: TestReply | null
 }
 
 export const CATEGORY_ORDER: TestCategory[] = [

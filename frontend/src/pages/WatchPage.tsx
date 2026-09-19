@@ -37,6 +37,7 @@ function resolveException(exc: WatchException): ResolvedTest | null {
     scope: [],
     chart: null,
     series: [],
+    reply: null,
   };
 }
 

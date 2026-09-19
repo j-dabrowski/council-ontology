@@ -49,6 +49,7 @@ export function resolveTests(snapshotTests: ScorecardTest[]): ResolvedTest[] {
       scope: snap.scope ?? [],
       chart: snap.chart,
       series: snap.series,
+      reply: snap.reply ?? null,
     })
   }
 
