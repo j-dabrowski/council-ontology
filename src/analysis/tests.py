@@ -165,6 +165,20 @@ def _line(points, unit: str = "", refline: dict | None = None) -> dict:
     return {"kind": "line", "unit": unit, "refline": refline, "points": list(points)}
 
 
+def _capped_pct(numerator: float, denominator: float, decimals: int = 1) -> float:
+    """`round(numerator / denominator * 100, decimals)`, but capped to 0
+    decimal places whenever `denominator` (the n behind the percentage) is
+    below 30 — a bare `round(x, 1)` implies a precision the sample can't
+    support (docs/uplift/migration/01-known-defects.md G-14). Interim
+    n-based heuristic, not a real CI-based cap: the full fix needs the
+    claim object's confidence interval (`02-claim-layer.md`, tracked as
+    Step 24 in `01-known-defects.md`)."""
+    if not denominator:
+        return 0.0
+    d = 0 if denominator < 30 else decimals
+    return round(numerator / denominator * 100, d)
+
+
 # ── helpers ─────────────────────────────────────────────────────────────────
 def _minutes_motions(session: Session, council_id: int, meeting_id: int | None = None):
     """(outcome, votes_against, year) for every motion in minutes, or just
@@ -555,10 +569,10 @@ def _t_transparency_meeting(session, council_id, meeting_id, pc=None) -> TestRes
     corpus = corpus_cache[cache_key]
     total = sum(y.total for y in this.years)
     conf = sum(y.confidential for y in this.years)
-    pct = round(100 * conf / total, 1) if total else 0.0
+    pct = _capped_pct(conf, total)
     corpus_total = sum(y.total for y in corpus.years)
     corpus_conf = sum(y.confidential for y in corpus.years)
-    corpus_pct = round(100 * corpus_conf / corpus_total, 1) if corpus_total else 0.0
+    corpus_pct = _capped_pct(corpus_conf, corpus_total)
     era = _meeting_label(session, meeting_id)
     return TestResult(
         test_id="transparency.confidential_share", title="How much of this meeting was closed to the public?",
@@ -582,7 +596,7 @@ def _t_officer_divergence(session, council_id, pc, meeting_id=None) -> TestResul
     pairs = pc.get("divergence") or officer_divergence(session, council_id, None, None)
     total = len(pairs)
     diverged = sum(1 for p in pairs if p.diverged)
-    comp = round((total - diverged) / total * 100, 1) if total else None
+    comp = _capped_pct(total - diverged, total) if total else None
     # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): near-total
     # ratification (>=85%) is the "chamber is theatre" concern; genuine,
     # regular departure means the vote is where the decision actually gets
@@ -1392,9 +1406,9 @@ def _t_unanimity_trend(session, council_id, pc, meeting_id=None) -> TestResult:
     for y in sorted(by_year):
         items = by_year[y]
         if len(items) >= 30:
-            series.append({"x": y, "y": round(sum(items) / len(items) * 100, 1)})
+            series.append({"x": y, "y": _capped_pct(sum(items), len(items))})
     total = [v for items in by_year.values() for v in items]
-    overall = round(sum(total) / len(total) * 100, 1) if total else None
+    overall = _capped_pct(sum(total), len(total)) if total else None
     return TestResult(
         test_id="governance.unanimity_trend",
         title="How often does the chamber actually split?",
@@ -1537,8 +1551,8 @@ def _t_freshman(session, council_id, pc) -> TestResult:
         else:
             late_diss += is_against
             late_n += 1
-    er = round(early_diss / early_n * 100, 1) if early_n else None
-    lr = round(late_diss / late_n * 100, 1) if late_n else None
+    er = _capped_pct(early_diss, early_n) if early_n else None
+    lr = _capped_pct(late_diss, late_n) if late_n else None
     # Pooled early-vs-late is confounded by cohort era (freshmen cluster in the
     # turbulent modern years); the rigorous per-councillor test was a clean null.
     return TestResult(
@@ -1583,8 +1597,8 @@ def _t_election_cycle(session, council_id, pc) -> TestResult:
         else:
             oth_d += is_against
             oth_n += 1
-    wr = round(win_d / win_n * 100, 1) if win_n else None
-    orr = round(oth_d / oth_n * 100, 1) if oth_n else None
+    wr = _capped_pct(win_d, win_n) if win_n else None
+    orr = _capped_pct(oth_d, oth_n) if oth_n else None
     return TestResult(
         test_id="governance.election_cycle",
         title="Do councillors grandstand before elections?",
@@ -1613,8 +1627,8 @@ def _t_deputation_dissent(session, council_id, pc, meeting_id=None) -> TestResul
     rows = _meeting_contestation(session, council_id)
     with_d = [c for mid, c in rows if mid in dep_meetings]
     without_d = [c for mid, c in rows if mid not in dep_meetings]
-    wr = round(sum(with_d) / len(with_d) * 100, 1) if with_d else None
-    orr = round(sum(without_d) / len(without_d) * 100, 1) if without_d else None
+    wr = _capped_pct(sum(with_d), len(with_d)) if with_d else None
+    orr = _capped_pct(sum(without_d), len(without_d)) if without_d else None
     return TestResult(
         test_id="engagement.deputation_dissent",
         title="Do public deputations make for stormier meetings?",
@@ -1689,10 +1703,10 @@ def _t_attendance(session, council_id, pc, meeting_id=None) -> TestResult:
     absent = sum(1 for ch, _di, _d in rows if ch == VoteChoice.ABSENT)
     recusal_abs = sum(1 for ch, di, _d in rows if ch == VoteChoice.ABSENT and di)
     genuine_abs = absent - recusal_abs
-    pct = round(absent / total * 100, 1) if total else 0.0
+    pct = _capped_pct(absent, total) if total else 0.0
     rec_share = round(recusal_abs / absent * 100) if absent else 0
     gen_share = 100 - rec_share
-    genuine_pct = round(genuine_abs / total * 100, 2) if total else 0.0
+    genuine_pct = _capped_pct(genuine_abs, total, decimals=2) if total else 0.0
     # chart: composition of the ABSENT rows — lawful recusal vs genuine absence
     chart = _bars(
         [("Recusal (declared)", recusal_abs), ("Genuine absence", genuine_abs)],
@@ -2060,10 +2074,10 @@ def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResu
     # the one closed least of all themes measured, not assumed to be.
     dev_is_least_closed = dev[0] == least_closed[0]
     chart = _bars(
-        [(t[0], round(t[2] / t[1] * 100, 1) if t[1] else 0) for t in theme_stat],
+        [(t[0], _capped_pct(t[2], t[1]) if t[1] else 0) for t in theme_stat],
         unit="%", highlight_label="Named development",
     )
-    dev_pct = round(dev[2] / dev[1] * 100, 1) if dev[1] else 0.0
+    dev_pct = _capped_pct(dev[2], dev[1]) if dev[1] else 0.0
     return TestResult(
         test_id="transparency.confidential_topics",
         title="What subject matter gets closed — and is it the contentious stuff?",
@@ -2085,7 +2099,7 @@ def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResu
                  "as often as, or more than, other themes; confidentiality doesn't cleanly track lawful "
                  "grounds over contentious topics here."),
         n=conf_total,
-        base_rate=f"{round(base, 1)}% of all items confidential",
+        base_rate=f"{_capped_pct(conf_total, total)}% of all items confidential",
         era="1995–2026",
         data_ok=True,
         detail_panel="confidential-topics",
@@ -2248,7 +2262,7 @@ def _t_question_responsiveness_meeting(session, council_id, meeting_id, pc=None)
             n=0, era=era, detail_panel="question-responsiveness", scope=[SCOPE_SINGLE_MEETING],
             stat={"value": 0, "denominator": None, "unit": "count"}, digest_floor=0.0,
         )
-    on_notice_pct = round(100 * r.on_notice / total, 1)
+    on_notice_pct = _capped_pct(r.on_notice, total)
     return TestResult(
         test_id="engagement.question_responsiveness", title="Were public questions answered this meeting?",
         genre="Process / engagement (3.4)", principle="CIPFA-B",
