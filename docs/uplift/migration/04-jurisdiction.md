@@ -29,7 +29,7 @@ against.
 
 | Target capability | Current equivalent | Path | Status | Notes |
 |---|---|---|---|---|
-| Jurisdiction config: `framework_refs` as structured `{instrument, section}` data | Three independent hardcoded string-literal copies of Nolan/CIPFA labels | `config/test_registry.json` (`principles` array), `src/analysis/tests.py` (`principle=` field, dozens of call sites), `frontend/src/components/OverviewPanel.tsx:38-80` | WRONG | Already fully traced in `01-known-defects.md` G-28; restated here as the field this config would replace |
+| Jurisdiction config: `framework_refs` as structured `{instrument, section}` data | `config/frameworks.json`'s `primary_instruments` table now exists (the seven WA instruments); `framework_refs` itself is `02-claim-layer.md`'s deliverable, not built yet. The three duplicate Nolan/CIPFA copies are deduped — 2026-09-19 | `config/frameworks.json`, `src/frameworks.py`, `config/test_registry.json` (now the sole per-test `principles` source) | PARTIAL (config exists; the claim-object field that resolves against it doesn't yet) | Dedup traced in `01-known-defects.md` G-28, closed there; this file's own Steps 1-2 built the WA-instrument config the future field will resolve against |
 | Primary WA instruments table (LGA_1995, ADMIN_REGS, FG_REGS, CONDUCT_REGS, MODEL_CODE_2021, DLGSC, SAT) | No structured instrument registry anywhere; WA statutory awareness exists only as prose inside two places: `system_prompt.txt:233` (cites LGA 1995 s5.65 for `interest_type` classification) and a code comment at `queries.py:3429-3438` (cites s5.69) | `src/extraction/system_prompt.txt`, `src/analysis/queries.py` | MISSING (as structured config); PARTIAL (as uncited prose awareness) | Two of seven instruments have any representation at all, and both are uncited comments, not resolvable config |
 | Nolan/CIPFA demoted to optional secondary mapping, not deleted | Currently primary and exclusive — no secondary/subordinate rendering concept exists | — | WRONG | Demotion, not deletion, is the target — a simpler change than a full removal |
 | Statute corpus for C-03 (chunked, versioned, point-in-time, provenance-shaped) | No legal or guidance text corpus exists anywhere in the repo — confirmed by exhaustive grep for "statute", "legislation.org.au", "austlii", "Model Code of Conduct 2021", "Conduct Regulations 2007"; only near-hit is a passing unrelated phrase in `docs/pipeline/DATA_ENRICHMENT.md:146` | — | MISSING | Net-new corpus-building work; nothing to migrate from |
@@ -42,18 +42,18 @@ against.
 | Delegate declarations (reg 34C basis for "correctly") | `_t_delegate_body_conflict`'s "correctly" claim has no citation anywhere (`01-known-defects.md` G-30) | `src/analysis/tests.py` | MISSING | — |
 | Officer recommendations graded by SAT precedent, not a fixed default | `officer_divergence()`'s valence is one hardcoded direction (near-total ratification is always CRITICAL) applied to every item category uniformly, planning included, with no jurisdiction-critic input at all (`01-known-defects.md` G-25) | `src/analysis/divergence.py`, `src/analysis/tests.py` | WRONG | The target explicitly says this should be "derived from the jurisdiction critic's finding, not assumed" — that critic doesn't exist (`03-critic-agents.md` G-03) |
 | Unminuted briefing forums as a corpus-level method-section limitation | Zero mentions anywhere in `Investigator_prompt.txt`/`pipeline/PIPELINE.md`, despite the pipeline already recognising "Briefing Forum" as a document type (`01-known-defects.md` G-26) | `docs/investigator/Investigator_prompt.txt` | MISSING | — |
-| Era boundaries (2007 Conduct Regs, 2021 Model Code, 2020 COVID, 2018–2021 Inquiry) each defined once, not repeated | `config/council_eras.json` defines exactly one window (the Inquiry, 2018–2021, per-council) — confirmed by reading the file directly; the other three era boundaries (2007, 2021 Model Code, 2020 COVID) have **zero** representation anywhere in `src/` or `config/` | `config/council_eras.json`, `src/council_eras.py` | PARTIAL | One of four boundaries is config-driven at all; the mechanism (a config file + loader) already exists and is a direct template for adding the other three |
+| Era boundaries (2007 Conduct Regs, 2021 Model Code, 2020 COVID, 2018–2021 Inquiry) each defined once, not repeated | All four now config-driven — 2026-09-19 | `config/council_eras.json`, `src/council_eras.py` | DONE | `EraWindow`/`load_council_eras()` extended to a nested `{council: {window_name: EraWindow}}` shape; the three new boundaries added for Cambridge, the `baselineshire` fixture, and (WA-wide facts, not council-specific) Perth/South Perth ahead of their corpora existing |
 | Comparator councils (difference-in-differences against the Inquiry) | Architecturally single-council: every `council_id`-typed query function in `queries.py` (35 of them) takes exactly one council id; Perth is registered but not yet extracted (`01-known-defects.md` G-21) | `src/analysis/queries.py`, pipeline track | MISSING | Explicitly scoped by the target itself as a corpus-expansion workstream sequenced against `06` (pipeline), not started ad hoc here |
 
 ---
 
 ## Gaps
 
-### G-01: Framework identity is prose in three places, not resolvable config
+### G-01: Framework identity is prose in three places, not resolvable config — FIXED (2026-09-19)
 Target: `framework_refs` resolves against a jurisdiction config naming the seven WA instruments; Nolan/CIPFA rendered as a subordinate secondary mapping.
-Current: three independent hardcoded Nolan/CIPFA copies (`01-known-defects.md` G-28); zero structured representation of any WA instrument.
-Delta: this is both a data-migration task (extract the three hardcoded copies into one source) and a net-new-content task (write the WA instrument table, since nothing to migrate from exists for it).
-Risk if unfixed: every `principle=` field continues to assert a framework this council isn't assessed against, and `02-claim-layer.md`'s `framework_refs` field (once built) has nothing real to resolve against.
+Current: `config/frameworks.json`'s `primary_instruments` names all seven WA instruments; `secondary_mapping` holds Nolan/CIPFA, demoted not deleted. The three hardcoded Nolan/CIPFA copies (`01-known-defects.md` G-28) are deduped to one source (`config/test_registry.json`'s `principles`), which `tests.py` and `OverviewPanel.tsx` both now read.
+Delta: both halves closed — the data-migration half (dedup) and the net-new-content half (the WA instrument table). `framework_refs` itself (the claim-object field that will resolve `{instrument, section}` pairs against this config) is `02-claim-layer.md`'s own deliverable, not built this phase.
+Risk if unfixed: n/a for the two halves closed here. `02-claim-layer.md`'s `framework_refs` now has a real config to resolve against once it's built.
 
 ### G-02: No statute corpus exists for retrieval
 Target: full text of the seven instruments, chunked by section, point-in-time versioned across the 1995–2026 corpus window, plus DLGSC guidance and SAT precedent, tagged by role (binding/interpretive/precedent).
@@ -85,11 +85,11 @@ Current: MISSING, restated from `01-known-defects.md` G-26 — the pipeline reco
 Delta: pure prose addition to `Investigator_prompt.txt`; no code change.
 Risk if unfixed: per the source doc, the single largest structural gap in the report.
 
-### G-07: Only one of four relevant era boundaries is config-driven
+### G-07: Only one of four relevant era boundaries is config-driven — FIXED (2026-09-19)
 Target: the Inquiry window, the 2007 Conduct Regs, the 2021 Model Code, and the 2020 COVID/remote-meeting period are each defined once, in config, and available to any analysis that needs them.
-Current: `config/council_eras.json` + `src/council_eras.py` already do exactly this for the Inquiry window alone — a real, working, per-council config mechanism with a loader, confirmed to have already replaced a formerly-hardcoded version of itself once (per that module's own docstring).
-Delta: the mechanism doesn't need inventing, only extending — add three more keys to the same config shape.
-Risk if unfixed: any future analysis touching the 2007/2021/2020 boundaries will hardcode them independently, exactly as the Inquiry window itself used to be hardcoded before `council_eras.json` existed — a recurrence of a problem already solved once for a different boundary.
+Current: all four are config-driven. `EraWindow`/`load_council_eras()`/`era_window_for()` extended to a nested `{council: {window_name: EraWindow}}` shape — `era_window_for(short_name)` (no `window_name`) still means "inquiry" exactly as before, so the one existing caller needed zero changes; `era_window_for(short_name, "model_code_2021" | "conduct_regs_2007" | "covid_2020")` reaches the three new ones.
+Delta: the mechanism didn't need inventing, only extending, as this gap's own framing anticipated.
+Risk if unfixed: n/a — closed. No `_t_*` function reads the three new boundaries yet (none currently need to), so the risk this gap named (independent future hardcoding) is pre-empted, not yet exercised.
 
 ### G-08: Inquiry-window analyses have no comparator, architecturally
 Target: at least two neighbouring councils, converting DIRECTIONAL findings into defensible difference-in-differences results.
@@ -101,20 +101,20 @@ Risk if unfixed: unchanged from `01-known-defects.md` G-21's own risk statement.
 
 ## Implementation steps
 
-### Step 1: Extract the three hardcoded Nolan/CIPFA copies into one config source
-Files touched: new `config/frameworks.json` (or extend `config/test_registry.json`), `src/analysis/tests.py` (`principle=` literals replaced with a lookup), `frontend/src/components/OverviewPanel.tsx` (its own hardcoded list replaced with the same lookup, fetched from the published config rather than duplicated)
-Depends on: none — this step is pure de-duplication and can run before any WA content is written
-Done when: exactly one file defines the Nolan/CIPFA mapping; the other two locations read from it.
-
-### Step 2: Build the WA primary-instruments config
-Files touched: `config/frameworks.json` (add the seven-instrument table: `LGA_1995`, `ADMIN_REGS`, `FG_REGS`, `CONDUCT_REGS`, `MODEL_CODE_2021`, `DLGSC`, `SAT`, each with key/instrument-name/relevance), demote Nolan/CIPFA to a `secondary_mapping` field on the same config rather than deleting it
-Depends on: Step 1 (same config file)
-Done when: `02-claim-layer.md`'s `framework_refs` field has a real config to resolve `{instrument, section}` pairs against.
-
-### Step 3: Add the remaining three era boundaries to the existing config mechanism
-Files touched: `config/council_eras.json` (add `model_code_2021`, `conduct_regs_2007`, `covid_2020` keys alongside the existing Inquiry window, per council), `src/council_eras.py` (extend `EraWindow`/`load_council_eras()` to handle multiple named windows per council rather than the current single-window-per-council shape)
+### Step 1: Extract the three hardcoded Nolan/CIPFA copies into one config source — DONE (2026-09-19)
+Files touched: `src/analysis/tests.py` (`run_test_battery()` now overwrites each generator's `principle=` from `config/test_registry.json`'s own `principles` field, the same discipline already applied to `title`/`question` — the generator's own literal is never read anywhere once this runs), `frontend/src/components/OverviewPanel.tsx` (its 8 freestanding hand-typed citations replaced with `principleFor(testId)`, resolved from `REGISTRY_BY_ID` — the same static config, not a duplicated copy)
 Depends on: none
-Done when: any `_t_*` function needing the 2020, 2007, or 2021 boundary reads it from `council_eras.json`, not a literal.
+Done when: exactly one file defines the Nolan/CIPFA mapping; the other two locations read from it. Chose the "extend `config/test_registry.json`" alternative explicitly offered by this step, since `principle`/`principles` were confirmed write-only/unused everywhere except the registry's own `principles` field (a `grep` for `.principle` reads, not writes, found zero hits in either the Python or frontend codebase) — making it authoritative rather than building a second, parallel per-test mapping in a new file. Verified live in a browser: `OverviewPanel.tsx`'s tiles now show the real registry citation for each tile's actual test (e.g. `governance.power_spread`'s tile correctly reads "CIPFA-B · Nolan Accountability", not the old hand-typed "CIPFA · principle B").
+
+### Step 2: Build the WA primary-instruments config — DONE (2026-09-19)
+Files touched: new `config/frameworks.json` (the seven-instrument table: `LGA_1995`, `ADMIN_REGS`, `FG_REGS`, `CONDUCT_REGS`, `MODEL_CODE_2021`, `DLGSC`, `SAT`, each with name/relevance), Nolan/CIPFA demoted to a `secondary_mapping` field on the same config (verbatim from `Investigator_prompt.txt` Parts 1.1/1.2 — not deleted, not re-derived); new `src/frameworks.py` loader (`primary_instruments()`, `instrument(key)`, `secondary_mapping()`), `tests/test_frameworks.py`
+Depends on: Step 1 (same config file — Step 1 ended up not needing `frameworks.json` itself, since `test_registry.json` already covered the per-test mapping; this step creates `frameworks.json` fresh for the WA-instrument table, with Nolan/CIPFA's demoted copy alongside it)
+Done when: `02-claim-layer.md`'s `framework_refs` field has a real config to resolve `{instrument, section}` pairs against — the config and loader exist; `framework_refs` itself doesn't yet (that field is `02-claim-layer.md`'s own deliverable, a later phase).
+
+### Step 3: Add the remaining three era boundaries to the existing config mechanism — DONE (2026-09-19)
+Files touched: `config/council_eras.json` (added `model_code_2021`, `conduct_regs_2007`, `covid_2020` alongside the existing `inquiry` window for Cambridge and the `baselineshire` fixture; added the same three WA-wide boundaries for Perth and South Perth too, even though their corpora aren't extracted yet, so the boundary is already correct once they are — `inquiry` stays Cambridge/baselineshire-only, a genuinely council-specific fact, not added for Perth/South Perth), `src/council_eras.py` (`EraWindow.to_year` now `int | None` for a still-in-force window like Model Code 2021; `load_council_eras()`/`era_window_for()` extended to a nested `{council: {window_name: EraWindow}}` shape, with `window_name` defaulting to `"inquiry"` so the one existing caller, `queries.py`'s `_council_era_window()`, needed zero changes), `tests/test_council_eras.py` (new — no test file existed for this module before)
+Depends on: none
+Done when: any `_t_*` function needing the 2020, 2007, or 2021 boundary reads it from `council_eras.json`, not a literal. The config and loader now support this; no `_t_*` function reads the new boundaries yet (none currently need to — the three boundaries exist for future tests, e.g. a conduct-regime comparison, to read rather than hardcode). Verified the existing `inquiry`-window callers (`_t_recusal_trend`, `_t_question_responsiveness`) still resolve correctly against the live corpus after the shape change (unchanged output vs. before this step).
 
 ### Step 4: Copy the s5.69 detection pattern to build a s5.68 detector
 Files touched: `src/analysis/queries.py` (`_council_resolution_permitted()` or similar, alongside `_ministerial_approved()`), a new field on `interest_declarations` (additive column, e.g. `s5_68_permission_granted`, `s5_68_resolution_quote`) or on the future `declaration_fact` gold table if `02-claim-layer.md`'s Step 2 has landed by the time this runs

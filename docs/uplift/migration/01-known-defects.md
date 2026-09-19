@@ -235,11 +235,11 @@ Current: added to `Investigator_prompt.txt` Part 0.4, with the Part 3 "declared-
 Delta: was a net-new caveat, doc-only per this step's scope — same live-panel caveat gap as G-26 above (`_t_recusal_trend`/`_t_recusal_overall` don't carry it in their own verdict text yet).
 Risk if unfixed: n/a in the methodology doc; the live-panel gap remains open.
 
-### G-28: UK frameworks cited where WA statutory language already exists uncited
+### G-28: UK frameworks cited where WA statutory language already exists uncited — dedup done, citation redesign still pending
 Target: every `principle=` field cites an instrument this council is actually assessed against.
-Current: Nolan/CIPFA hardcoded independently in `config/test_registry.json`, `tests.py`, and `OverviewPanel.tsx` (three unsynced copies); meanwhile `system_prompt.txt:233` already cites LGA 1995 s5.65 and `queries.py:3429-3438` already has a working s5.69 detector, both uncited in any output-facing label.
-Delta: the WA legal-framework redesign itself belongs to `04-jurisdiction.md`; this gap is scoped to *tracing* the three-way duplication and confirming that some WA statutory awareness already exists in computation, just not in citation.
-Risk if unfixed: every `principle=` field asserts a legal basis this council isn't assessed against — see `04-jurisdiction.md` for the replacement design.
+Current: the three-way duplication is closed (`04-jurisdiction.md` Steps 1-2, 2026-09-19) — `config/test_registry.json`'s `principles` is now the sole source `tests.py` and `OverviewPanel.tsx` both read from, and `config/frameworks.json` holds the seven WA instruments Nolan/CIPFA will eventually be demoted alongside in citation, not just in a config file. Every `principle=`/`principles` value still names Nolan/CIPFA, not a WA instrument — `system_prompt.txt:233`'s LGA 1995 s5.65 citation and `queries.py:3429-3438`'s working s5.69 detector remain uncited in any output-facing label.
+Delta: the actual citation swap (making `principle=` cite `LGA_1995`/etc. instead of Nolan/CIPFA) is `04-jurisdiction.md`'s Step 8, blocked on that file's jurisdiction critic (`03-critic-agents.md`) for the underlying legal judgment — an engineer relabelling citations without that judgment isn't the fix the source doc asks for.
+Risk if unfixed: every `principle=` field still asserts a legal basis this council isn't primarily assessed against — reduced risk of *drift* now that there's one source, not three, but the citation itself is unchanged until Step 8.
 
 ### G-29: s5.68 council-resolution exception has no detector
 Target: a council resolution under s5.68 permitting a member to remain and vote is distinguished from an undeclared conflict.

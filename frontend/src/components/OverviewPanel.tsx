@@ -3,6 +3,7 @@ import { api, OverviewData, ScorecardData } from "../api";
 import { useCorpusSpan } from "../councils";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
 import { GlossaryText } from "./Glossary";
+import { REGISTRY_BY_ID } from "../registry";
 
 // SECOND_COUNCIL_PLAN.md Phase 3.5: this panel used to be a hand-written
 // synthesis for this project's first corpus — a thesis paragraph, a
@@ -20,7 +21,20 @@ interface StatTile {
   n: number;
   stat: string;
   label: string;
-  principle: string;
+  // The real test_id this tile's figure comes from — its `principle` is
+  // resolved from config/test_registry.json's own `principles` array
+  // (docs/uplift/migration/04-jurisdiction.md G-01/Step 1), never typed
+  // here as a second, independently-drifting copy of the same citation.
+  testId: string;
+}
+
+// A registry row's `principles` array is a single source of truth: reading
+// it here means this panel's citations can never quietly diverge from the
+// same test's citation everywhere else it's shown (ScorecardPanel, the
+// deep-dive panels, tests.py's own TestResult.principle — all now sourced
+// from this same file, see tests.py's run_test_battery()).
+function principleFor(testId: string): string {
+  return REGISTRY_BY_ID[testId]?.principles.join(" · ") ?? "";
 }
 
 export function OverviewPanel() {
@@ -36,49 +50,49 @@ export function OverviewPanel() {
       n: 1,
       stat: `${d.recusal_inquiry_pct}% → ${d.recusal_post_pct}%`,
       label: "recusal on serious conflicts, during vs after this council's scrutiny window",
-      principle: "Nolan · Accountability, Openness",
+      testId: "conflict.recusal_trend",
     },
     {
       n: 2,
       stat: `${d.win_min_pct}–${d.win_max_pct}%`,
       label: `spread in contested-vote win rates between councillors (${d.n_contested.toLocaleString()} contested votes; ${d.base_carry_pct}% of all motions carry)`,
-      principle: "CIPFA · principle B",
+      testId: "governance.power_spread",
     },
     {
       n: 3,
       stat: `${d.declared_stay_pct}%`,
       label: "of declared conflicts, the councillor stays and votes anyway",
-      principle: "Nolan · Integrity, Objectivity",
+      testId: "conflict.recusal_management",
     },
     {
       n: 4,
       stat: `${d.tenure_top_years} yrs`,
       label: `longest-serving councillor (median ${d.tenure_median_years} yrs; ${d.tenure_15plus} served 15+)`,
-      principle: "CIPFA · principle A",
+      testId: "governance.incumbency",
     },
     {
       n: 5,
       stat: `${d.officer_compliance_pct}%`,
       label: `of officer recommendations adopted unchanged (${d.officer_matched - d.officer_diverged} of ${d.officer_matched} matched items)`,
-      principle: "CIPFA · principle F",
+      testId: "governance.officer_ratification",
     },
     {
       n: 6,
       stat: `${d.dose_0_refusal_pct}% → ${d.dose_5plus_refusal_pct}%`,
       label: "planning refusal rate: no objectors vs 5+ coordinated objectors",
-      principle: "CIPFA · principle B",
+      testId: "planning.objection_responsiveness",
     },
     {
       n: 7,
       stat: `$${d.tender_redacted_m}M`,
       label: `of $${d.tender_total_m}M in tenders redacted (${d.tender_top10_share_pct}% to top-10 firms)`,
-      principle: "CIPFA · principles F, G",
+      testId: "procurement.concentration",
     },
     {
       n: 8,
       stat: `${d.confidential_pre_pct}%`,
       label: "confidential business before this council's scrutiny window",
-      principle: "Nolan · Openness, Accountability · CIPFA · F, G",
+      testId: "transparency.confidential_share",
     },
   ];
 
@@ -108,7 +122,7 @@ export function OverviewPanel() {
           <div key={it.n} className="overview-insight">
             <div className="overview-insight-stat">{it.stat}</div>
             <div className="overview-insight-statlabel">{it.label}</div>
-            <span className="overview-insight-principle"><GlossaryText text={it.principle} /></span>
+            <span className="overview-insight-principle"><GlossaryText text={principleFor(it.testId)} /></span>
           </div>
         ))}
       </div>

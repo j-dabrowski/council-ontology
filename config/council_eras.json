@@ -1,12 +1,80 @@
 {
   "cambridge": {
-    "label": "Authorised Inquiry",
-    "from": 2018,
-    "to": 2021
+    "inquiry": {
+      "label": "Authorised Inquiry",
+      "from": 2018,
+      "to": 2021
+    },
+    "conduct_regs_2007": {
+      "label": "Rules of Conduct Regulations 2007 (WA)",
+      "from": 2007,
+      "to": 2021
+    },
+    "model_code_2021": {
+      "label": "Model Code of Conduct 2021 (WA)",
+      "from": 2021,
+      "to": null
+    },
+    "covid_2020": {
+      "label": "COVID-19 / remote-meeting rules",
+      "from": 2020,
+      "to": 2020
+    }
   },
   "baselineshire": {
-    "label": "Baseline Review",
-    "from": 2018,
-    "to": 2021
+    "inquiry": {
+      "label": "Baseline Review",
+      "from": 2018,
+      "to": 2021
+    },
+    "conduct_regs_2007": {
+      "label": "Rules of Conduct Regulations 2007 (WA)",
+      "from": 2007,
+      "to": 2021
+    },
+    "model_code_2021": {
+      "label": "Model Code of Conduct 2021 (WA)",
+      "from": 2021,
+      "to": null
+    },
+    "covid_2020": {
+      "label": "COVID-19 / remote-meeting rules",
+      "from": 2020,
+      "to": 2020
+    }
+  },
+  "perth": {
+    "conduct_regs_2007": {
+      "label": "Rules of Conduct Regulations 2007 (WA)",
+      "from": 2007,
+      "to": 2021
+    },
+    "model_code_2021": {
+      "label": "Model Code of Conduct 2021 (WA)",
+      "from": 2021,
+      "to": null
+    },
+    "covid_2020": {
+      "label": "COVID-19 / remote-meeting rules",
+      "from": 2020,
+      "to": 2020
+    }
+  },
+  "south perth": {
+    "conduct_regs_2007": {
+      "label": "Rules of Conduct Regulations 2007 (WA)",
+      "from": 2007,
+      "to": 2021
+    },
+    "model_code_2021": {
+      "label": "Model Code of Conduct 2021 (WA)",
+      "from": 2021,
+      "to": null
+    },
+    "covid_2020": {
+      "label": "COVID-19 / remote-meeting rules",
+      "from": 2020,
+      "to": 2020
+    }
   }
 }

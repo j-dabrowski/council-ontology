@@ -1,0 +1,56 @@
+{
+  "_comment": "Jurisdiction config (docs/uplift/migration/04-jurisdiction.md Steps 1-2). primary_instruments is the WA statutory framework this council is actually assessed against — the future framework_refs claim-object field (02-claim-layer.md) will resolve {instrument, section} pairs against this table. secondary_mapping is Nolan/CIPFA, demoted here (not deleted) since it's a real, recognised governance standard, just not the primary jurisdiction one for a WA council. config/test_registry.json's own `principles` field remains the single source of truth for which citation each battery test actually states (docs/uplift/migration/04-jurisdiction.md Step 1) — this file does not duplicate that per-test mapping, only the underlying instrument/principle definitions.",
+
+  "primary_instruments": {
+    "LGA_1995": {
+      "name": "Local Government Act 1995 (WA)",
+      "relevance": "The primary statute — general conduct obligations, financial interest disclosure (s5.65), council-resolution exceptions (s5.68), meeting procedure."
+    },
+    "ADMIN_REGS": {
+      "name": "Local Government (Administration) Regulations 1996 (WA)",
+      "relevance": "Meeting procedure, minute-keeping, and administrative detail under the Act."
+    },
+    "FG_REGS": {
+      "name": "Local Government (Functions and General) Regulations 1996 (WA)",
+      "relevance": "Tendering, procurement thresholds, and delegation detail — the WA analogue of a procurement-integrity framework."
+    },
+    "CONDUCT_REGS": {
+      "name": "Local Government (Rules of Conduct) Regulations 2007 (WA)",
+      "relevance": "The conduct-standard instrument in force for the pre-2021 era of this corpus; superseded in scope by MODEL_CODE_2021, not repealed retroactively — era-boundary relevant (see config/council_eras.json's conduct_regs_2007 key)."
+    },
+    "MODEL_CODE_2021": {
+      "name": "Local Government (Model Code of Conduct) Regulations 2021 (WA)",
+      "relevance": "The current conduct-standard instrument — era-boundary relevant (see config/council_eras.json's model_code_2021 key)."
+    },
+    "DLGSC": {
+      "name": "Department of Local Government, Sport and Cultural Industries (WA)",
+      "relevance": "Interpretive guidance issuer, not a binding instrument itself — cited for how a provision is expected to be applied, not as the legal basis."
+    },
+    "SAT": {
+      "name": "State Administrative Tribunal (WA)",
+      "relevance": "Precedent body — decisions here are persuasive on how a provision (e.g. reg 34C on delegate declarations) has actually been read, not binding statute."
+    }
+  },
+
+  "secondary_mapping": {
+    "_comment": "Demoted, not deleted (docs/uplift/migration/04-jurisdiction.md G-01) — a real, widely-recognised governance standard (UK CSPL / CIPFA-SOLACE), just not the primary jurisdiction one for a WA council. Definitions verbatim from docs/investigator/Investigator_prompt.txt Parts 1.1/1.2 — the same source frontend/src/components/Glossary.tsx's tooltip dictionary uses, kept in sync by hand across the two runtimes (Python config vs. frontend TS), not by a shared loader.",
+    "nolan": {
+      "selflessness": "Decisions solely in the public interest, not for self, family, or friends.",
+      "integrity": "No obligations to outsiders who might influence you.",
+      "objectivity": "Decisions on merit, without bias.",
+      "accountability": "Submit to whatever scrutiny is appropriate.",
+      "openness": "Act and decide transparently; restrict information only with good reason.",
+      "honesty": "Truthful.",
+      "leadership": "Model these principles and challenge breaches in others."
+    },
+    "cipfa": {
+      "A": "Integrity, ethical values, rule of law — codes of conduct, interest declarations, whistleblowing arrangements.",
+      "B": "Openness and comprehensive stakeholder engagement.",
+      "C": "Defining outcomes in terms of sustainable economic/social/environmental benefits.",
+      "D": "Determining the interventions to achieve those outcomes (incl. value for money).",
+      "E": "Developing capacity — of the entity and of its leadership.",
+      "F": "Managing risks and performance through robust internal control and strong public financial management.",
+      "G": "Transparency, reporting and audit to deliver accountability."
+    }
+  }
+}

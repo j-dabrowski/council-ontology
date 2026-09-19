@@ -2445,6 +2445,17 @@ def run_test_battery(session: Session, council_id: int,
             # fields checking the text actually displayed.
             r.title = row.title_technical
             r.question = row.question_technical
+            # Same discipline for principle (docs/uplift/migration/
+            # 04-jurisdiction.md G-01/Step 1): config/test_registry.json's
+            # `principles` is the one place this project already treats as
+            # authoritative for this kind of static per-test metadata
+            # (docs/MAP.md: "the registry row ... tests.py still owns the
+            # computation"). Each generator's own `principle=` literal is
+            # never read anywhere once this overwrite runs — kept in the
+            # generator only as inline documentation of what the test is
+            # about, not as a second source of truth a reader could see
+            # drift from the registry.
+            r.principle = " · ".join(row.principles)
             results.append(r)
         except Exception as exc:  # a broken test must not sink the battery
             results.append(TestResult(
