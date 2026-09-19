@@ -1,0 +1,50 @@
+{
+  "filename": "df561414.pdf",
+  "scanned_at": "2026-05-28T16:03:33.913119+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 10996,
+  "text_window_chars": 10996,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1999-05-04",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "ATTENDANCE",
+      "OPENING OF THE MEETING BY THE CHIEF EXECUTIVE OFFICER",
+      "PRAYER",
+      "APOLOGIES",
+      "SWEARING IN CEREMONY",
+      "ADDRESS BY MAYOR",
+      "ADDRESS BY MINISTER",
+      "ELECTION OF DEPUTY MAYOR",
+      "ADOPTION OF MEETING SCHEDULE",
+      "APPOINTMENT OF STANDING COMMITTEE MEMBERS",
+      "APPOINTMENT OF COUNCIL DELEGATES AND REPRESENTATIVES",
+      "APPOINTMENT OF COUNCIL WORKING GROUPS",
+      "CLOSURE"
+    ],
+    "motion_count": 3,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 28,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 4,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

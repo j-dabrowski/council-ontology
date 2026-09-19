@@ -1,0 +1,51 @@
+{
+  "filename": "adf9c937.pdf",
+  "scanned_at": "2026-05-28T15:54:37.700198+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 533184,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2003-03-25",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Declaration of Opening/Announcement of Visitors",
+      "Record of Attendance/Apologies/Leave of Absence",
+      "Questions from Elected Members of Which Previous Notice Has Been Given",
+      "Public Question Time",
+      "Applications for Leave of Absence",
+      "Petitions/Deputations/Presentations",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without Discussion",
+      "Committee Reports",
+      "Elected Members Motions of which Previous Notice has been Given",
+      "Representation on Statutory Authorities and Public Bodies",
+      "Late Items",
+      "Confidential Items",
+      "Closure"
+    ],
+    "motion_count": 2,
+    "planning_count": 16,
+    "interest_count": 0,
+    "public_question_count": 4,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 2,
+    "budget_item_count": 5,
+    "committee_report_count": 4,
+    "delegated_decision_count": 2,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 103,
+    "census_estimated_planning": 11,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

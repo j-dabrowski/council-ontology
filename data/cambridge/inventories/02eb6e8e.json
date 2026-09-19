@@ -1,0 +1,43 @@
+{
+  "filename": "02eb6e8e.pdf",
+  "scanned_at": "2026-05-28T15:25:15.127237+00:00",
+  "status": "ok",
+  "cache_hit": true,
+  "full_text_chars": 31051,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2018-03-07",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Question Time",
+      "CR18.13 Review of Local Government Act 1995 - Submission to Department of Local Government, Sport and Cultural Industries",
+      "Replenishment of Perry Lakes",
+      "Closure"
+    ],
+    "motion_count": 5,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 1,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 1,
+    "confidential_item_count": 1,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 9,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

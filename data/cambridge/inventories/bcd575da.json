@@ -1,0 +1,45 @@
+{
+  "filename": "bcd575da.pdf",
+  "scanned_at": "2026-05-28T15:57:14.355014+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 35915,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2022-08-03",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "OPENING",
+      "ATTENDANCE",
+      "QUESTION TIME",
+      "DECLARATION OF MEMBERS AND OFFICER INTERESTS",
+      "REPORTS",
+      "5.1 DRAFT BUDGET 2022-2023 FOR PUBLIC COMMENT",
+      "5.2 ESTABLISHMENT OF CEO RECRUITMENT PANEL",
+      "CLOSURE"
+    ],
+    "motion_count": 2,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 3,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 12,
+    "census_estimated_planning": 2,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

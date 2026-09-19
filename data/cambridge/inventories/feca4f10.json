@@ -1,0 +1,47 @@
+{
+  "filename": "feca4f10.pdf",
+  "scanned_at": "2026-05-28T16:08:45.471494+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 491505,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2025-03-11",
+    "meeting_type": "Special Council Meeting",
+    "section_headings": [
+      "Official Opening",
+      "Attendance / Apologies / Leave of Absence",
+      "Public Question Time",
+      "Disclosures of Interest",
+      "Reports",
+      "Council Reports",
+      "Planning and Community Services",
+      "Infrastructure and Works",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 4,
+    "planning_count": 1,
+    "interest_count": 8,
+    "public_question_count": 9,
+    "deputation_count": 1,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 1,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 12,
+    "census_estimated_planning": 4,
+    "census_estimated_interests": 12,
+    "window_truncated": true,
+    "flags": []
+  }
+}

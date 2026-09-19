@@ -1,0 +1,6 @@
+{
+  "filename": "6a18a6e0.pdf",
+  "status": "error",
+  "error": "1 validation error for DocumentInventory\nother_content\n  Input should be a valid string [type=string_type, input_value={'local_planning_policy_amendments': 3}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.12/v/string_type",
+  "scanned_at": "2026-05-28T15:41:12.818986+00:00"
+}

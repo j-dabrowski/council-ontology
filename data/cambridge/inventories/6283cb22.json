@@ -1,0 +1,44 @@
+{
+  "filename": "6283cb22.pdf",
+  "scanned_at": "2026-05-28T15:38:26.298519+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 11600,
+  "text_window_chars": 11600,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1998-12-01",
+    "meeting_type": "Annual General Meeting of Electors",
+    "section_headings": [
+      "ATTENDANCE",
+      "APOLOGIES",
+      "LEAVE OF ABSENCE",
+      "REPORTS",
+      "GARDEN AWARDS PRESENTATION",
+      "GENERAL BUSINESS",
+      "CLOSURE"
+    ],
+    "motion_count": 4,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 8,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 4,
+    "census_estimated_planning": 1,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

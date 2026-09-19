@@ -1,0 +1,44 @@
+{
+  "filename": "7a4d8189.pdf",
+  "scanned_at": "2026-05-28T15:44:17.759466+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 74915,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2005-05-18",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Prayer and Declaration of Opening",
+      "Attendance",
+      "Public Question Time",
+      "Announcements by the Mayor Without Discussion",
+      "CCS05.30 - Business Plan \u2013 Redevelopment of Perry Lakes Stadium Site",
+      "CCS05.31 - Request for Tender No. TAC03-04 \u2013 Redevelopment of Perry Lakes Stadium Site",
+      "Closure"
+    ],
+    "motion_count": 3,
+    "planning_count": 0,
+    "interest_count": 2,
+    "public_question_count": 5,
+    "deputation_count": 4,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 1,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": "major land transaction approval under Local Government Act 1995 Section 3.59"
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 17,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 4,
+    "window_truncated": true,
+    "flags": []
+  }
+}

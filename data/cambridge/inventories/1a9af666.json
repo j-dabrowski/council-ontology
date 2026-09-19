@@ -1,0 +1,47 @@
+{
+  "filename": "1a9af666.pdf",
+  "scanned_at": "2026-05-28T15:27:12.583968+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 28428,
+  "text_window_chars": 28428,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2009-12-10",
+    "meeting_type": "Annual General Meeting of Electors",
+    "section_headings": [
+      "Opening and Welcome",
+      "Attendance",
+      "Apologies (Elected Members)",
+      "Procedural Matters",
+      "Apologies (Electors)",
+      "Annual Report for the 2008/2009 Financial Year",
+      "Garden Awards Presentation",
+      "General Business - Questions submitted by Electors (Written Questions)",
+      "General Business - Questions raised by Electors at the Meeting",
+      "Closure"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 19,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": "Garden Awards Competition and presentation (awards presented in 6 categories)"
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 1,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

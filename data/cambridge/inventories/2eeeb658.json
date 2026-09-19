@@ -1,0 +1,47 @@
+{
+  "filename": "2eeeb658.pdf",
+  "scanned_at": "2026-05-28T15:29:26.668473+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 11528,
+  "text_window_chars": 11528,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1999-06-01",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "ATTENDANCE",
+      "PRAYER",
+      "APOLOGIES",
+      "MEMBERS ON AND APPLICATIONS FOR LEAVE OF ABSENCE",
+      "ANNOUNCEMENTS BY THE MAYOR WITHOUT DISCUSSION",
+      "QUESTION TIME",
+      "DECLARATIONS OF MEMBERS' INTERESTS",
+      "CONFIDENTIAL REPORTS",
+      "CONFIDENTIAL ITEM: 1999/2000 DRAFT BUDGET",
+      "CLOSURE"
+    ],
+    "motion_count": 5,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 1,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 7,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

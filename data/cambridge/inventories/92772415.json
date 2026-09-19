@@ -1,0 +1,44 @@
+{
+  "filename": "92772415.pdf",
+  "scanned_at": "2026-05-28T15:48:40.169884+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 24053,
+  "text_window_chars": 24053,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2019-02-06",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Question Time",
+      "Declaration of Members Interests",
+      "Reports",
+      "Lake Monger Community Shed - Project and Funding Agreement",
+      "Closure"
+    ],
+    "motion_count": 3,
+    "planning_count": 1,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 1,
+    "petition_count": 0,
+    "appointment_count": 1,
+    "tender_count": 0,
+    "confidential_item_count": 3,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 2,
+    "census_estimated_planning": 7,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

@@ -1,0 +1,53 @@
+{
+  "filename": "e33964de.pdf",
+  "scanned_at": "2026-05-28T16:03:59.328760+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 593225,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "1999-04-27",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Attendance",
+      "Prayer",
+      "Apologies",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without discussion",
+      "Question Time",
+      "Declarations of Members' Interests",
+      "Questions of which due notice has been given without discussion",
+      "Deputations/Petitions and Memorials",
+      "Orders of the Day",
+      "Committee Reports",
+      "Motions of which due notice has been given",
+      "Representation on Statutory Authorities and Public Bodies",
+      "Urgent Business",
+      "Items Deferred Until Later in the Meeting",
+      "Closure"
+    ],
+    "motion_count": 8,
+    "planning_count": 32,
+    "interest_count": 1,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 2,
+    "appointment_count": 5,
+    "tender_count": 1,
+    "confidential_item_count": 1,
+    "budget_item_count": 3,
+    "committee_report_count": 4,
+    "delegated_decision_count": 2,
+    "building_permit_count": 2,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 110,
+    "census_estimated_planning": 32,
+    "census_estimated_interests": 1,
+    "window_truncated": true,
+    "flags": []
+  }
+}

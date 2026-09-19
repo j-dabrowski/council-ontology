@@ -1,0 +1,52 @@
+{
+  "filename": "12529790.pdf",
+  "scanned_at": "2026-05-28T15:26:08.384622+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 319622,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2021-10-12",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Public Question Time",
+      "Petitions",
+      "Deputations",
+      "Applications for Leave of Absence",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without Discussion",
+      "Committee Reports",
+      "Council Reports",
+      "Motions of Which Notice has been Given",
+      "Questions of Which Due Notice has been Given",
+      "Urgent Business",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 7,
+    "planning_count": 3,
+    "interest_count": 0,
+    "public_question_count": 1,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 2,
+    "confidential_item_count": 3,
+    "budget_item_count": 3,
+    "committee_report_count": 2,
+    "delegated_decision_count": 2,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 52,
+    "census_estimated_planning": 4,
+    "census_estimated_interests": 1,
+    "window_truncated": true,
+    "flags": []
+  }
+}

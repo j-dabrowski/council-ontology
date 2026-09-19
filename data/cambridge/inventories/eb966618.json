@@ -1,0 +1,43 @@
+{
+  "filename": "eb966618.pdf",
+  "scanned_at": "2026-05-28T16:05:48.531295+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 34371,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2021-08-10",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "OPENING",
+      "ATTENDANCE",
+      "QUESTION TIME",
+      "DECLARATION OF MEMBERS AND OFFICER INTERESTS",
+      "BUDGET FOR THE YEAR ENDING 30 JUNE 2022 \u2013 CONSIDERATION OF SUBMISSIONS AND ADOPTION",
+      "CLOSURE"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 13,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 7,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

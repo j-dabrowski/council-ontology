@@ -1,0 +1,48 @@
+{
+  "filename": "5985bc09.pdf",
+  "scanned_at": "2026-05-28T15:36:34.507358+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 10655,
+  "text_window_chars": 10655,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2011-07-05",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Public Question Time",
+      "Petitions",
+      "Deputations",
+      "Announcements by the Mayor without Discussion",
+      "Reports",
+      "Draft Budget for Year Ending 30 June 2012",
+      "Confidential Report",
+      "Waste Collection and/or Processing Services - Tender T02-11",
+      "Closure"
+    ],
+    "motion_count": 4,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 1,
+    "confidential_item_count": 1,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 6,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

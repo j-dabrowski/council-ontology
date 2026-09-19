@@ -1,0 +1,49 @@
+{
+  "filename": "4dcc2866.pdf",
+  "scanned_at": "2026-05-28T15:35:00.606461+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 6032,
+  "text_window_chars": 6032,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1996-11-12",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "ATTENDANCE",
+      "PRAYER",
+      "APOLOGIES",
+      "CONFIRMATION OF MINUTES",
+      "ANNOUNCEMENTS BY THE MAYOR WITHOUT DISCUSSION",
+      "QUESTION TIME",
+      "DECLARATION OF MEMBERS' INTERESTS",
+      "QUESTIONS OF WHICH DUE NOTICE HAS BEEN GIVEN WITHOUT DISCUSSION",
+      "PETITIONS AND MEMORIALS",
+      "REPORTS",
+      "MOTIONS OF WHICH DUE NOTICE HAS BEEN GIVEN",
+      "CLOSURE"
+    ],
+    "motion_count": 5,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 1,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 1,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 4,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

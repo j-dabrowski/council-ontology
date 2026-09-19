@@ -1,0 +1,41 @@
+{
+  "filename": "1aac637d.pdf",
+  "scanned_at": "2026-05-28T15:27:15.419793+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 8963,
+  "text_window_chars": 8963,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1997-09-18",
+    "meeting_type": "Special Meeting of Electors",
+    "section_headings": [
+      "ATTENDANCE",
+      "APOLOGIES",
+      "QUARRY AMPHITHEATRE",
+      "CLOSURE"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 14,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 1,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 1,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

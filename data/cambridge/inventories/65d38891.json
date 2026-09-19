@@ -1,0 +1,45 @@
+{
+  "filename": "65d38891.pdf",
+  "scanned_at": "2026-05-28T15:39:26.087702+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 151399,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2025-12-02",
+    "meeting_type": "Committee Meeting",
+    "section_headings": [
+      "Official Opening",
+      "Attendance / Apologies / Leave of Absence",
+      "Confirmation of Minutes",
+      "Disclosures of Interest",
+      "Terms of Reference",
+      "Reports - Annual Financial Statements 2024-25",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 1,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 13,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

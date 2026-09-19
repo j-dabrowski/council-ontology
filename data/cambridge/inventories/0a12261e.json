@@ -1,0 +1,53 @@
+{
+  "filename": "0a12261e.pdf",
+  "scanned_at": "2026-05-28T15:25:24.903800+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 422933,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2020-12-15",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Public Question Time",
+      "Petitions",
+      "Deputations",
+      "Applications for Leave of Absence",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without Discussion",
+      "Committee Reports",
+      "Development Committee",
+      "Community and Resources Committee",
+      "Council Reports",
+      "Urgent Business",
+      "Motions of Which Notice has been Given",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 13,
+    "planning_count": 14,
+    "interest_count": 8,
+    "public_question_count": 5,
+    "deputation_count": 0,
+    "petition_count": 2,
+    "appointment_count": 1,
+    "tender_count": 0,
+    "confidential_item_count": 3,
+    "budget_item_count": 3,
+    "committee_report_count": 2,
+    "delegated_decision_count": 2,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 93,
+    "census_estimated_planning": 35,
+    "census_estimated_interests": 15,
+    "window_truncated": true,
+    "flags": []
+  }
+}

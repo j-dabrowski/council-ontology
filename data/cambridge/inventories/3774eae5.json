@@ -1,0 +1,46 @@
+{
+  "filename": "3774eae5.pdf",
+  "scanned_at": "2026-05-28T15:30:18.316714+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 12229,
+  "text_window_chars": 12229,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2017-12-20",
+    "meeting_type": "Annual General Meeting of Electors",
+    "section_headings": [
+      "Opening and Welcome",
+      "Attendance",
+      "Apologies (Elected Members)",
+      "Procedural Matters",
+      "Apologies (Electors)",
+      "Annual Report for the 2016/2017 Financial Year",
+      "Garden Awards Presentation",
+      "General Business",
+      "Closure"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 7,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": "Garden Awards presentation with multiple award categories and winners"
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 1,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

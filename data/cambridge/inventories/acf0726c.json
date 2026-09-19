@@ -1,0 +1,48 @@
+{
+  "filename": "acf0726c.pdf",
+  "scanned_at": "2026-05-28T15:54:18.136778+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 27039,
+  "text_window_chars": 27039,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2021-10-19",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Swearing In Ceremony",
+      "Question Time",
+      "Declaration of Interests",
+      "Election of Deputy Mayor",
+      "Appointment of Standing Committees",
+      "Appointment of Occasional Committee",
+      "Appointment of Council Delegates and Representatives",
+      "Appointment of Representatives to Council Working Groups",
+      "Closure"
+    ],
+    "motion_count": 12,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 21,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 15,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 1,
+    "window_truncated": false,
+    "flags": []
+  }
+}

@@ -1,0 +1,75 @@
+====================================================================
+  CENSUS SUMMARY
+  Generated: 2026-05-28 07:56 UTC
+====================================================================
+
+  Total documents:         537
+  Total chars:           175,782,379
+  Average chars/doc:         327,341
+
+  Extraction status:
+    OK:                    536
+    Empty:                   1
+    Error:                   0
+
+  Size buckets:
+    tiny   (<10k):          90
+    small  (10-50k):        85
+    medium (50-200k):       42
+    large  (200k+):        319
+    failed:                  1
+
+  By decade:
+    1990s:                  97
+    2000s:                 149
+    2010s:                 163
+    2020s:                 128
+
+  Estimated entity totals (across OK documents):
+    Motions:            29,066
+    Planning items:      5,707
+    Interest decls:      1,653
+
+  Keyword group hit counts:
+    motions                  68,488
+    budget                   65,177
+    planning                 59,489
+    votes                    36,408
+    community                16,689
+    procedural               10,076
+    interests                 1,908
+
+  Flagged documents:
+    extraction_empty (1):
+      c1cdc1fa.pdf
+    high_da_count (43):
+      0e1192ef.pdf
+      0fd866db.pdf
+      2420cee0.pdf
+      2ee61e54.pdf
+      34449c77.pdf
+      ... and 38 more
+    large_document (319):
+      0064743e.pdf
+      01a8f1a1.pdf
+      027212fc.pdf
+      02d8761d.pdf
+      03e85360.pdf
+      ... and 314 more
+    no_motion_keywords (18):
+      0dbb7deb.pdf
+      19d59805.pdf
+      1a524c2c.pdf
+      1c6a4fcc.pdf
+      345566f3.pdf
+      ... and 13 more
+    tiny_document (90):
+      032365bd.pdf
+      04e0d4b8.pdf
+      0876766c.pdf
+      0ba7e056.pdf
+      0dbb7deb.pdf
+      ... and 85 more
+    zero_keyword_hits (1):
+      46698696.pdf
+====================================================================

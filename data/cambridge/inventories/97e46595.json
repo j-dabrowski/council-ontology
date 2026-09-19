@@ -1,0 +1,44 @@
+{
+  "filename": "97e46595.pdf",
+  "scanned_at": "2026-05-28T15:49:25.121201+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 248748,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2026-03-03",
+    "meeting_type": "Committee Meeting",
+    "section_headings": [
+      "Official Opening",
+      "Attendance / Apologies / Leave of Absence",
+      "Confirmation of Minutes",
+      "Disclosures of Interest",
+      "Reports",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 0,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 4,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 22,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

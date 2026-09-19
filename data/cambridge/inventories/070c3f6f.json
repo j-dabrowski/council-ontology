@@ -1,0 +1,48 @@
+{
+  "filename": "070c3f6f.pdf",
+  "scanned_at": "2026-05-28T15:25:15.129882+00:00",
+  "status": "ok",
+  "cache_hit": true,
+  "full_text_chars": 11912,
+  "text_window_chars": 11912,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2015-10-20",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Swearing in Ceremony",
+      "Address by Mayor",
+      "Election of Deputy Mayor",
+      "Adoption of Meeting Schedule",
+      "Appointment of Standing Committee Members",
+      "Appointment of Occasional Committee",
+      "Appointment of Council Delegates and Representatives",
+      "Appointment of Representatives to Council Working Groups",
+      "Closure"
+    ],
+    "motion_count": 8,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 35,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 8,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

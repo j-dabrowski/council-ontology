@@ -1,0 +1,53 @@
+{
+  "filename": "39bd4b09.pdf",
+  "scanned_at": "2026-05-28T15:30:45.381722+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 531771,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2008-05-27",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Public Question Time",
+      "Petitions",
+      "Deputations",
+      "Applications for Leave of Absence",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without Discussion",
+      "Committee Reports",
+      "Development Committee",
+      "Infrastructure and Community Committee",
+      "Governance and Corporate Committee",
+      "Council Reports",
+      "Urgent Business",
+      "Motions of Which Previous Notice has been Given",
+      "Confidential Reports"
+    ],
+    "motion_count": 11,
+    "planning_count": 9,
+    "interest_count": 5,
+    "public_question_count": 10,
+    "deputation_count": 0,
+    "petition_count": 1,
+    "appointment_count": 1,
+    "tender_count": 0,
+    "confidential_item_count": 1,
+    "budget_item_count": 5,
+    "committee_report_count": 3,
+    "delegated_decision_count": 2,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 98,
+    "census_estimated_planning": 9,
+    "census_estimated_interests": 8,
+    "window_truncated": true,
+    "flags": []
+  }
+}

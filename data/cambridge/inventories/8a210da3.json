@@ -1,0 +1,51 @@
+{
+  "filename": "8a210da3.pdf",
+  "scanned_at": "2026-05-28T15:46:55.651546+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 333673,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2000-05-23",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Declaration of Opening / Announcement of Visitors",
+      "Record of Attendance / Apologies / Leave of Absence",
+      "Questions of which Due Notice has been Given without Discussion",
+      "Public Question Time",
+      "Applications for Leave of Absence",
+      "Petitions / Deputations / Presentations",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without Discussion",
+      "Committee Reports",
+      "Motions of which Due Notice has been Given",
+      "Representation on Statutory Authorities and Public Bodies",
+      "Urgent Business",
+      "Confidential Items",
+      "Closure"
+    ],
+    "motion_count": 5,
+    "planning_count": 8,
+    "interest_count": 0,
+    "public_question_count": 4,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 1,
+    "tender_count": 1,
+    "confidential_item_count": 0,
+    "budget_item_count": 3,
+    "committee_report_count": 3,
+    "delegated_decision_count": 1,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 81,
+    "census_estimated_planning": 7,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

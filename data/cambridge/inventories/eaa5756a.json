@@ -1,0 +1,47 @@
+{
+  "filename": "eaa5756a.pdf",
+  "scanned_at": "2026-05-28T16:05:46.580226+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 17427,
+  "text_window_chars": 17427,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2001-09-04",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Declaration of Opening and Announcement of Visitors",
+      "Record of Attendance/Apologies/Leave of Absence",
+      "Questions of Which Due Notice Has Been Given Without Discussion",
+      "Public Question Time",
+      "Applications for Leave of Absence",
+      "Petitions/Deputations/Presentations",
+      "Confirmation of Minutes",
+      "Announcements by the Presiding Member Without Discussion",
+      "Reports - Tender No. 17-2001/2002 Construction of Cambridge Library and Community Amenities",
+      "Closure"
+    ],
+    "motion_count": 4,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 1,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 1,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 5,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

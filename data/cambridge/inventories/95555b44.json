@@ -1,0 +1,46 @@
+{
+  "filename": "95555b44.pdf",
+  "scanned_at": "2026-05-28T15:49:09.569547+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 24062,
+  "text_window_chars": 24062,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2016-12-12",
+    "meeting_type": "Annual General Meeting",
+    "section_headings": [
+      "Opening and Welcome",
+      "Attendance",
+      "Apologies (Elected Members)",
+      "Procedural Matters",
+      "Apologies (Electors)",
+      "Annual Report for the 2015/2016 Financial Year",
+      "Garden Awards Presentation",
+      "General Business - Questions Submitted by Electors",
+      "Closure"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 31,
+    "deputation_count": 0,
+    "petition_count": 1,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": "Garden Awards - Annual Recognition Program"
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 2,
+    "census_estimated_planning": 1,
+    "census_estimated_interests": 1,
+    "window_truncated": false,
+    "flags": []
+  }
+}

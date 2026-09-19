@@ -1,0 +1,49 @@
+{
+  "filename": "b3ea7e9a.pdf",
+  "scanned_at": "2026-05-28T15:55:35.231219+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 361600,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2024-11-08",
+    "meeting_type": "Committee Meeting",
+    "section_headings": [
+      "Official Opening",
+      "Attendance / Apologies / Leave of Absence",
+      "Confirmation of Minutes",
+      "Disclosures of Interest",
+      "Terms of Reference",
+      "Reports",
+      "Policies recommended for Rescission",
+      "Policies recommended for Amendment",
+      "Policies recommended for Continuation",
+      "Code of Conduct for Employees",
+      "Policy Review Program Update",
+      "Closure"
+    ],
+    "motion_count": 12,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": "Policy review program covering rescission, amendment, and continuation of council policies; Audit and Risk Committee Terms of Reference; Employee Code of Conduct review"
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 20,
+    "census_estimated_planning": 2,
+    "census_estimated_interests": 19,
+    "window_truncated": true,
+    "flags": []
+  }
+}

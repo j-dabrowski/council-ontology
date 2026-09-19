@@ -1,0 +1,49 @@
+{
+  "filename": "7c78a18b.pdf",
+  "scanned_at": "2026-05-28T15:44:47.298383+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 15518,
+  "text_window_chars": 15518,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1995-10-23",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "ATTENDANCE",
+      "PRAYER",
+      "APOLOGIES",
+      "PROTOCOL, PROCEDURES AND OPERATIONS OF THE TOWN",
+      "Standing Orders",
+      "Committee System",
+      "Dealing with the Public - Press Releases/Public Statements: The Role of The Mayor and Councillors",
+      "Ocean Gardens Retirement Estate",
+      "Land between Oceanic Drive and The Boulevard",
+      "Wembley Golf Complex Redevelopment",
+      "Council Dinner and Staff Christmas Function",
+      "CLOSURE"
+    ],
+    "motion_count": 4,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 4,
+    "census_estimated_planning": 1,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

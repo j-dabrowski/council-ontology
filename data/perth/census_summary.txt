@@ -1,0 +1,79 @@
+====================================================================
+  CENSUS SUMMARY
+  Generated: 2026-09-18 17:51 UTC
+====================================================================
+
+  Total documents:         928
+  Total chars:           307,510,229
+  Average chars/doc:         331,368
+
+  Extraction status:
+    OK:                    924
+    Empty:                   4
+    Error:                   0
+
+  Size buckets:
+    tiny   (<10k):          68
+    small  (10-50k):       173
+    medium (50-200k):      282
+    large  (200k+):        401
+    failed:                  4
+
+  By decade:
+    1990s:                  92
+    2000s:                 409
+    2010s:                 136
+    2020s:                 291
+
+  Estimated entity totals (across OK documents):
+    Motions:            22,143
+    Planning items:      9,150
+    Interest decls:      1,273
+
+  Keyword group hit counts:
+    budget                  175,486
+    motions                  77,604
+    planning                 47,295
+    votes                    44,796
+    community                12,655
+    agenda                    8,368
+    procedural                8,335
+    interests                 1,877
+
+  Flagged documents:
+    extraction_empty (4):
+      26f24de6.pdf
+      83135e29.pdf
+      a1c7d524.pdf
+      d810a80e.pdf
+    high_da_count (123):
+      00cff970.pdf
+      0342c24d.pdf
+      04d904f5.pdf
+      05e4fdee.pdf
+      09153caa.pdf
+      ... and 118 more
+    large_document (401):
+      01207887.pdf
+      02bf80ac.pdf
+      0348fd80.pdf
+      0358fb21.pdf
+      03c5be6d.pdf
+      ... and 396 more
+    no_motion_keywords (17):
+      02517ad8.pdf
+      0456686e.pdf
+      079d9387.pdf
+      08b5fb40.pdf
+      44c6c5b3.pdf
+      ... and 12 more
+    tiny_document (68):
+      02517ad8.pdf
+      07807036.pdf
+      079d9387.pdf
+      07a416ff.pdf
+      08b5fb40.pdf
+      ... and 63 more
+    zero_keyword_hits (1):
+      26f7f634.pdf
+====================================================================

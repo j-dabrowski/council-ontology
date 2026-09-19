@@ -1,0 +1,45 @@
+{
+  "filename": "f00693f1.pdf",
+  "scanned_at": "2026-05-28T16:06:36.417918+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 78091,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2020-04-09",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Question Time",
+      "Declaration of Members Interests",
+      "Town of Cambridge COVID-19 \u2013 Recovery and Relief Plan \u2013 Progress Report No: 2",
+      "Appointment of Senior Counsel \u2013 Judicial Review to the Supreme Court of Western Australia \u2013 JDAP Decision Concerning Abbotsford Hospital, West Leederville",
+      "CEO Annual Leave Approval",
+      "Closure"
+    ],
+    "motion_count": 12,
+    "planning_count": 0,
+    "interest_count": 3,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 1,
+    "tender_count": 0,
+    "confidential_item_count": 1,
+    "budget_item_count": 3,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 22,
+    "census_estimated_planning": 1,
+    "census_estimated_interests": 7,
+    "window_truncated": true,
+    "flags": []
+  }
+}

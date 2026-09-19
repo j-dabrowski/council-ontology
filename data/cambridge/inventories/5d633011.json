@@ -1,0 +1,45 @@
+{
+  "filename": "5d633011.pdf",
+  "scanned_at": "2026-05-28T15:37:05.017980+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 26905,
+  "text_window_chars": 26905,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2005-11-24",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Prayer and Declaration of Opening",
+      "Attendance",
+      "Public Question Time",
+      "Petitions/Deputations",
+      "Announcements by the Mayor without Discussion",
+      "Item Referred from Council Meeting 22 November 2005",
+      "Matters for Discussion",
+      "Closure"
+    ],
+    "motion_count": 10,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 6,
+    "deputation_count": 1,
+    "petition_count": 0,
+    "appointment_count": 1,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 15,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

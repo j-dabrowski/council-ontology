@@ -1,0 +1,46 @@
+{
+  "filename": "d8fc367f.pdf",
+  "scanned_at": "2026-05-28T16:02:05.810990+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 23234,
+  "text_window_chars": 23234,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1999-11-25",
+    "meeting_type": "Annual General Meeting",
+    "section_headings": [
+      "Attendance",
+      "Apologies",
+      "Procedural Matters",
+      "Annual Report for the 1998/99 Financial Year",
+      "Garden Awards Presentation",
+      "General Business",
+      "Questions",
+      "Further Questions",
+      "Closure"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 13,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 3,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 1,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

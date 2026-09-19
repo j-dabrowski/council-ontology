@@ -1,0 +1,53 @@
+{
+  "filename": "ae41fdf0.pdf",
+  "scanned_at": "2026-05-28T15:54:46.130946+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 429730,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2022-12-20",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance/Apologies/Leave of Absence",
+      "Public Question Time",
+      "Petitions",
+      "Deputations",
+      "Applications for Leave of Absence",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor Without Discussion",
+      "Disclosures of Interest",
+      "Standing Committee Reports",
+      "Reports",
+      "Motions of Which Due Notice Has Been Given",
+      "Questions of Which Due Notice Has Been Given",
+      "Urgent Business",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 1,
+    "planning_count": 9,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 4,
+    "budget_item_count": 2,
+    "committee_report_count": 3,
+    "delegated_decision_count": 2,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 12,
+    "census_estimated_planning": 21,
+    "census_estimated_interests": 1,
+    "window_truncated": true,
+    "flags": []
+  }
+}

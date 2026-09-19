@@ -1,0 +1,41 @@
+{
+  "filename": "41d49d1b.pdf",
+  "scanned_at": "2026-05-28T15:32:39.472319+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 16454,
+  "text_window_chars": 16454,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "1997-09-26",
+    "meeting_type": "Special Meeting of Electors",
+    "section_headings": [
+      "Attendance",
+      "Apologies",
+      "Wembley Underground Power Pilot Project \u2013 Special Electors' Meeting",
+      "Closure"
+    ],
+    "motion_count": 0,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 25,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 0,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

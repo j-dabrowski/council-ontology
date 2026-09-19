@@ -1,0 +1,31 @@
+{
+  "generated_at": "2026-05-28T16:34:53.750321+00:00",
+  "total_inventoried": 537,
+  "total_ok": 535,
+  "total_errors": 2,
+  "meeting_type_distribution": {
+    "Ordinary Council Meeting": 331,
+    "Special Meeting": 133,
+    "Committee Meeting": 26,
+    "Annual General Meeting of Electors": 17,
+    "Annual General Meeting": 10,
+    "Special Council Meeting": 9,
+    "Special Meeting of Electors": 7,
+    "Meeting Agenda Briefing Forum": 2
+  },
+  "average_counts": {
+    "motions": 7.5,
+    "planning": 8.3,
+    "interests": 0.9,
+    "petitions": 0.4,
+    "budget_items": 2.4
+  },
+  "flagged_documents": [
+    {
+      "filename": "d2af2d23.pdf",
+      "flags": [
+        "l1_mismatch_full_doc"
+      ]
+    }
+  ]
+}

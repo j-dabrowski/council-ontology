@@ -1,0 +1,47 @@
+{
+  "filename": "c07e9abb.pdf",
+  "scanned_at": "2026-05-28T15:58:00.559205+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 5913,
+  "text_window_chars": 5913,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2004-10-25",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Declaration of Opening",
+      "Record of Attendance/Apologies/Leave of Absence",
+      "Public Question Time",
+      "Petitions, Deputations and Presentations",
+      "Declarations of Interest",
+      "Reports",
+      "Meeting Behind Closed Doors",
+      "Redevelopment of Perry Lakes Stadium Site \u2013 Expression of Interest Evaluation and Recommendation",
+      "Redevelopment of Perry Lakes Stadium Site - Request for Tender Document",
+      "Closure"
+    ],
+    "motion_count": 3,
+    "planning_count": 0,
+    "interest_count": 1,
+    "public_question_count": 0,
+    "deputation_count": 2,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 2,
+    "confidential_item_count": 1,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 4,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 1,
+    "window_truncated": false,
+    "flags": []
+  }
+}

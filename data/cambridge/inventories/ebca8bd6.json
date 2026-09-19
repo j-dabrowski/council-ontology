@@ -1,0 +1,46 @@
+{
+  "filename": "ebca8bd6.pdf",
+  "scanned_at": "2026-05-28T16:05:55.835192+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 15667,
+  "text_window_chars": 15667,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2013-12-17",
+    "meeting_type": "Annual General Meeting of Electors",
+    "section_headings": [
+      "Opening and Welcome",
+      "Attendance",
+      "Apologies (Elected Members)",
+      "Procedural Matters",
+      "Apologies (Electors)",
+      "Annual Report for the 2012/2013 Financial Year",
+      "Garden Awards Presentation",
+      "General Business - Questions Submitted by Electors",
+      "Closure"
+    ],
+    "motion_count": 1,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 15,
+    "deputation_count": 1,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 3,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

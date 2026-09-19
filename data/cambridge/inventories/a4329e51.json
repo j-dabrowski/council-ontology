@@ -1,0 +1,48 @@
+{
+  "filename": "a4329e51.pdf",
+  "scanned_at": "2026-05-28T15:52:48.014971+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 8904,
+  "text_window_chars": 8904,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2005-05-10",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Prayer and Declaration of Opening",
+      "Attendance",
+      "Mayor's Welcome and Address",
+      "Swearing in Ceremony",
+      "Election of Deputy Mayor",
+      "Adoption of Meeting Schedule",
+      "Appointment of Standing Committee Members",
+      "Appointment of Council Delegates and Representatives",
+      "Appointment of Council Working Groups",
+      "Late Items",
+      "Closure"
+    ],
+    "motion_count": 3,
+    "planning_count": 0,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 25,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 3,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}

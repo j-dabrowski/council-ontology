@@ -1,0 +1,42 @@
+{
+  "filename": "42035b0a.pdf",
+  "scanned_at": "2026-05-28T15:32:49.583317+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 182175,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2015-07-01",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "OPENING",
+      "ATTENDANCE",
+      "QUESTION TIME",
+      "AMENDMENT 31 TO TOWN PLANNING SCHEME NO. 1 - HOUSING OPTIONS",
+      "CLOSURE"
+    ],
+    "motion_count": 1,
+    "planning_count": 1,
+    "interest_count": 4,
+    "public_question_count": 42,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 8,
+    "census_estimated_planning": 1,
+    "census_estimated_interests": 3,
+    "window_truncated": true,
+    "flags": []
+  }
+}

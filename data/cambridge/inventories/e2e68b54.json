@@ -1,0 +1,53 @@
+{
+  "filename": "e2e68b54.pdf",
+  "scanned_at": "2026-05-28T16:03:52.694633+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 345485,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2022-10-25",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "OPENING",
+      "ATTENDANCE/APOLOGIES/LEAVE OF ABSENCE",
+      "PUBLIC QUESTION TIME",
+      "PETITIONS",
+      "DEPUTATIONS",
+      "APPLICATIONS FOR LEAVE OF ABSENCE",
+      "CONFIRMATION OF MINUTES",
+      "ANNOUNCEMENTS BY THE MAYOR WITHOUT DISCUSSION",
+      "DISCLOSURES OF INTEREST",
+      "STANDING COMMITTEE REPORTS",
+      "REPORTS",
+      "MOTIONS OF WHICH DUE NOTICE HAS BEEN GIVEN",
+      "QUESTIONS OF WHICH DUE NOTICE HAS BEEN GIVEN",
+      "URGENT BUSINESS",
+      "CONFIDENTIAL REPORTS",
+      "CLOSURE"
+    ],
+    "motion_count": 1,
+    "planning_count": 9,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 6,
+    "tender_count": 1,
+    "confidential_item_count": 1,
+    "budget_item_count": 3,
+    "committee_report_count": 2,
+    "delegated_decision_count": 2,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 11,
+    "census_estimated_planning": 27,
+    "census_estimated_interests": 5,
+    "window_truncated": true,
+    "flags": []
+  }
+}

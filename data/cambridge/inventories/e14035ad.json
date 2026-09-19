@@ -1,0 +1,44 @@
+{
+  "filename": "e14035ad.pdf",
+  "scanned_at": "2026-05-28T16:03:42.376211+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 40940,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2016-01-28",
+    "meeting_type": "Special Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Question Time",
+      "Reports",
+      "4.1 Underground Power: Consideration for Round 6 Funding Applications",
+      "4.2 New City Beach Secondary School - Site Options and Proposed Community Engagement Approach",
+      "Closure"
+    ],
+    "motion_count": 4,
+    "planning_count": 1,
+    "interest_count": 0,
+    "public_question_count": 1,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 2,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 10,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 2,
+    "window_truncated": true,
+    "flags": []
+  }
+}

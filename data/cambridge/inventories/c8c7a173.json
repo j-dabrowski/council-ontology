@@ -1,0 +1,48 @@
+{
+  "filename": "c8c7a173.pdf",
+  "scanned_at": "2026-05-28T15:59:52.472479+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 152197,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2022-12-12",
+    "meeting_type": "Committee Meeting",
+    "section_headings": [
+      "Declaration of Opening",
+      "Record of Attendance/Apologies/Leave of Absence",
+      "Public Question Time",
+      "Deputations and Petitions",
+      "Confirmation of Minutes",
+      "Declaration of Members' Interests",
+      "Reports - Infrastructure",
+      "Reports - Community Services",
+      "Reports - Corporate and Commercial Services",
+      "Reports - Governance and Office of the CEO",
+      "Closure"
+    ],
+    "motion_count": 8,
+    "planning_count": 0,
+    "interest_count": 3,
+    "public_question_count": 4,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 2,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 17,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 4,
+    "window_truncated": true,
+    "flags": []
+  }
+}

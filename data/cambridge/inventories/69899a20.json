@@ -1,0 +1,44 @@
+{
+  "filename": "69899a20.pdf",
+  "scanned_at": "2026-05-28T15:39:50.545606+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 85486,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2022-11-15",
+    "meeting_type": "Committee Meeting",
+    "section_headings": [
+      "DECLARATION OF OPENING",
+      "RECORD OF ATTENDANCE/APOLOGIES/LEAVE OF ABSENCE",
+      "PUBLIC QUESTION TIME",
+      "DEPUTATIONS AND PETITIONS",
+      "CONFIRMATION OF MINUTES",
+      "DECLARATION OF MEMBERS' INTERESTS",
+      "REPORTS"
+    ],
+    "motion_count": 0,
+    "planning_count": 5,
+    "interest_count": 0,
+    "public_question_count": 0,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 0,
+    "committee_report_count": 0,
+    "delegated_decision_count": 1,
+    "building_permit_count": 28,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 1,
+    "census_estimated_planning": 14,
+    "census_estimated_interests": 0,
+    "window_truncated": true,
+    "flags": []
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "filename": "42bbab4e.pdf",
+  "scanned_at": "2026-05-28T15:32:51.759648+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 389553,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2019-07-23",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Public Question Time",
+      "Petitions",
+      "Deputations",
+      "Applications for Leave of Absence",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without Discussion",
+      "Committee Reports",
+      "Development Committee",
+      "Council Reports",
+      "Urgent Business",
+      "Motions of Which Notice has been Given",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 4,
+    "planning_count": 15,
+    "interest_count": 2,
+    "public_question_count": 21,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 1,
+    "tender_count": 0,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 1,
+    "delegated_decision_count": 1,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 59,
+    "census_estimated_planning": 68,
+    "census_estimated_interests": 7,
+    "window_truncated": true,
+    "flags": []
+  }
+}

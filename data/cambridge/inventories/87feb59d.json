@@ -1,0 +1,53 @@
+{
+  "filename": "87feb59d.pdf",
+  "scanned_at": "2026-05-28T15:46:34.111537+00:00",
+  "status": "ok",
+  "cache_hit": false,
+  "full_text_chars": 458871,
+  "text_window_chars": 30036,
+  "window_truncated": true,
+  "inventory": {
+    "meeting_date": "2017-06-27",
+    "meeting_type": "Ordinary Council Meeting",
+    "section_headings": [
+      "Opening",
+      "Attendance",
+      "Public Question Time",
+      "Petitions",
+      "Deputations",
+      "Applications for Leave of Absence",
+      "Confirmation of Minutes",
+      "Announcements by the Mayor without Discussion",
+      "Committee Reports - Development Committee",
+      "Committee Reports - Community and Resources Committee",
+      "Committee Reports - Audit Committee",
+      "Council Reports",
+      "Urgent Business",
+      "Motions of Which Previous Notice has been Given",
+      "Confidential Reports",
+      "Closure"
+    ],
+    "motion_count": 6,
+    "planning_count": 8,
+    "interest_count": 0,
+    "public_question_count": 13,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 1,
+    "tender_count": 2,
+    "confidential_item_count": 3,
+    "budget_item_count": 5,
+    "committee_report_count": 3,
+    "delegated_decision_count": 2,
+    "building_permit_count": 1,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 82,
+    "census_estimated_planning": 4,
+    "census_estimated_interests": 4,
+    "window_truncated": true,
+    "flags": []
+  }
+}

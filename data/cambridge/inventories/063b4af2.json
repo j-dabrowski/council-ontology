@@ -1,0 +1,42 @@
+{
+  "filename": "063b4af2.pdf",
+  "scanned_at": "2026-05-28T15:25:15.129295+00:00",
+  "status": "ok",
+  "cache_hit": true,
+  "full_text_chars": 27803,
+  "text_window_chars": 27803,
+  "window_truncated": false,
+  "inventory": {
+    "meeting_date": "2024-04-17",
+    "meeting_type": "Special Meeting of Electors",
+    "section_headings": [
+      "Official Opening",
+      "Attendance / Apologies / Leave of Absence",
+      "Public Question Time",
+      "Motions from Electors",
+      "Closure"
+    ],
+    "motion_count": 2,
+    "planning_count": 1,
+    "interest_count": 0,
+    "public_question_count": 11,
+    "deputation_count": 0,
+    "petition_count": 0,
+    "appointment_count": 0,
+    "tender_count": 1,
+    "confidential_item_count": 0,
+    "budget_item_count": 1,
+    "committee_report_count": 0,
+    "delegated_decision_count": 0,
+    "building_permit_count": 0,
+    "other_content": null
+  },
+  "census_comparison": {
+    "available": true,
+    "census_estimated_motions": 1,
+    "census_estimated_planning": 0,
+    "census_estimated_interests": 0,
+    "window_truncated": false,
+    "flags": []
+  }
+}
