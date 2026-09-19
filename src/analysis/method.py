@@ -670,6 +670,17 @@ def _build_surname_collision(session: Session, council_id: int, generated_at: st
         "genuine_matches": genuine_matches,
         "unresolved_matches": unresolved_matches,
         "dedup_note": dedup_note,
+        # Chance baseline (docs/uplift/migration/01-known-defects.md G-31):
+        # estimated from this corpus's own surname-vs-proper-noun overlap
+        # rate (see decider_supplier_conflict()/_surname_chance_baseline()
+        # docstrings), not an assumed constant. below_chance is null iff the
+        # reference pool was empty (no comparison possible).
+        "expected_collisions_under_chance": dsc.expected_collisions_under_chance,
+        "chance_baseline_reference_n": dsc.chance_baseline_reference_n,
+        "below_chance": (
+            len(dsc.collisions) <= dsc.expected_collisions_under_chance
+            if dsc.chance_baseline_reference_n else None
+        ),
         "limits": [
             "Surname matching cannot detect a connection through a "
             "differently-named entity — a councillor with an interest in a "

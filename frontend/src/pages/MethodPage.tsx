@@ -386,7 +386,23 @@ function SurnameCollisionCase({ sc }: { sc: MethodEntityResolution["surname_coll
           <span className="method-metric-value-label">Raw candidate matches</span>
           <span className="method-metric-value-num">{sc.naive_matches.toLocaleString()}</span>
         </div>
+        {sc.chance_baseline_reference_n > 0 && (
+          <div className="method-metric-value">
+            <span className="method-metric-value-label">Expected under chance</span>
+            <span className="method-metric-value-num">{sc.expected_collisions_under_chance.toLocaleString()}</span>
+          </div>
+        )}
       </div>
+      {sc.below_chance !== null && (
+        <p className="chart-note">
+          Estimated from this corpus's own surname-vs-real-name overlap rate
+          ({sc.chance_baseline_reference_n.toLocaleString()} reference names) — {sc.naive_matches} raw
+          match(es) is {sc.below_chance ? "at or below" : "above"} what pure name overlap alone would
+          predict, so {sc.below_chance
+            ? "this is reported as a null result, not a finding"
+            : "this warrants closer reading"}.
+        </p>
+      )}
       <p className="chart-note">{sc.limits[2]}</p>
 
       {sc.resolved.map((c) => (

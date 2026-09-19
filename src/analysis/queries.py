@@ -2318,6 +2318,70 @@ class DeciderSupplierConflict:
     named_awards: int                # deduped named (non-Respondent, non-NULL) minutes tenders (Limb 2)
     surnames_tested: int
     collisions: list[SurnameCollision] = field(default_factory=list)
+    # Chance baseline for the raw collision count (docs/uplift/migration/
+    # 01-known-defects.md G-31) — see _surname_chance_baseline() for the
+    # method. 0.0/0 when the reference pool is empty (no comparison possible).
+    expected_collisions_under_chance: float = 0.0
+    chance_baseline_reference_n: int = 0
+
+
+def _surname_chance_baseline(
+    session: Session,
+    council_id: int,
+    surnames: list[tuple[int, str | None, str]],
+    n_named_awards: int,
+) -> tuple[float, int]:
+    """Expected number of raw surname collisions under chance
+    (docs/uplift/migration/01-known-defects.md G-31), estimated from this
+    corpus's own data rather than an assumed constant.
+
+    For each tested surname, estimates its per-name chance-hit rate against
+    an independent reference population of real proper-noun strings from
+    the SAME corpus and extraction pipeline — planning applicant names,
+    which have no causal path to a tender award and so approximate "a real
+    name string with no relationship to this councillor." Multiplying each
+    surname's empirical hit rate by `n_named_awards` and summing over all
+    tested surnames gives a Poisson-style expected count: what the raw
+    collision count would look like if these surnames had no real
+    connection to tender winners at all, only ordinary word/name overlap.
+
+    This is an approximation, not a rigorous linguistic model — it assumes
+    tender-winner business names and planning-applicant names share a
+    similar name-collision rate, which is plausible (both are real-world
+    proper nouns from the same jurisdiction and era) but unverified.
+    """
+    import re as _re_baseline
+    from src.models import PlanningApplication
+
+    ref_names = [
+        n for (n,) in (
+            session.query(PlanningApplication.applicant_name)
+            .join(Motion, PlanningApplication.motion_id == Motion.id)
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(
+                Meeting.council_id == council_id,
+                PlanningApplication.applicant_name.isnot(None),
+            )
+            .distinct()
+            .all()
+        )
+        if n and n.strip()
+    ]
+    if not ref_names or not surnames:
+        return 0.0, len(ref_names)
+
+    lowered_refs = [n.lower() for n in ref_names]
+    total_rate = 0.0
+    for _cid, _given, family in surnames:
+        s = (family or "").lower().strip()
+        if not s:
+            continue
+        pattern = r"\b" + _re_baseline.escape(s) + r"\b"
+        hits = sum(1 for n in lowered_refs if _re_baseline.search(pattern, n))
+        total_rate += hits / len(lowered_refs)
+
+    expected = total_rate * n_named_awards
+    return round(expected, 2), len(ref_names)
 
 
 def decider_supplier_conflict(
@@ -2492,6 +2556,9 @@ def decider_supplier_conflict(
                     surname=family,
                 ))
 
+    expected_chance, chance_ref_n = _surname_chance_baseline(
+        session, council_id, surnames, len(named_rows)
+    )
     return DeciderSupplierConflict(
         tender_motions=len(tender_motion_ids),
         votes_on_tender_motions=votes_on_tm,
@@ -2501,6 +2568,8 @@ def decider_supplier_conflict(
         named_awards=len(named_rows),
         surnames_tested=len(surnames),
         collisions=collisions,
+        expected_collisions_under_chance=expected_chance,
+        chance_baseline_reference_n=chance_ref_n,
     )
 
 

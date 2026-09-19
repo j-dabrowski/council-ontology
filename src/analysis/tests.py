@@ -1085,27 +1085,40 @@ def _t_decider_supplier_conflict(session, council_id, pc, meeting_id=None) -> Te
     # unfounded CRITICAL. Institutional either way — no name enters this
     # test's own text (the drill-down panel carries the names).
     n_collisions = len(r.collisions)
-    if n_collisions == 0:
+    # Chance baseline (docs/uplift/migration/01-known-defects.md G-31): a raw
+    # collision count on its own has no way to say whether it's notable —
+    # below the expected-under-chance count, it's reported as a null result,
+    # not a finding, however small the raw count is.
+    below_chance = n_collisions <= r.expected_collisions_under_chance
+    chance_note = (f" A chance baseline estimated from this corpus's own naming patterns "
+                   f"(see /method) expects about {r.expected_collisions_under_chance} such "
+                   f"collisions by pure name overlap alone — {n_collisions} is "
+                   f"{'at or below' if below_chance else 'above'} that baseline."
+                   if r.chance_baseline_reference_n else "")
+    if n_collisions == 0 or below_chance:
         valence, grade = SUPPORTIVE, G_STRENGTH
         headline = (f"Tender-award votes declare an interest just {r.declared_pct}% of the time "
-                    f"(below the {r.base_declared_pct}% chamber base) — no raw decider↔winner "
-                    f"surname matches across {r.named_awards} named awards")
+                    f"(below the {r.base_declared_pct}% chamber base) — "
+                    + (f"no raw decider↔winner surname matches across {r.named_awards} named awards"
+                       if n_collisions == 0 else
+                       f"{n_collisions} raw surname collision(s) across {r.named_awards} named "
+                       "awards, at or below the chance baseline"))
         verdict = ("The join that would expose procurement capture — a councillor tied to a tender "
-                   "winner with no declaration on the award — finds nothing. Converges with the "
-                   "supplier-side credits and the decider-side tests (recusal management) as a "
-                   "fourth independent procurement-integrity result — read within its coverage "
+                   "winner with no declaration on the award — finds nothing above chance. Converges "
+                   "with the supplier-side credits and the decider-side tests (recusal management) "
+                   "as a fourth independent procurement-integrity result — read within its coverage "
                    "limit, since only separately-moved tender-award motions are visible, not "
-                   "consent-agenda'd awards.")
+                   "consent-agenda'd awards." + chance_note)
     else:
         valence, grade = NEUTRAL, G_OBSERVATION
         headline = (f"Tender-award votes declare an interest just {r.declared_pct}% of the time "
                     f"(below the {r.base_declared_pct}% chamber base) — {n_collisions} raw "
                     f"decider↔winner surname collision(s) across {r.named_awards} named awards, "
-                    "unconfirmed")
+                    "above the chance baseline, unconfirmed")
         verdict = (f"{n_collisions} raw surname collision(s) were found between a tender winner "
                    "and a voting councillor — a name match against a councillor's surname, not a "
                    "confirmed relationship; resolving one needs the underlying minute text (see "
-                   "the drill-down for names, firms, and provenance).")
+                   "the drill-down for names, firms, and provenance)." + chance_note)
     return TestResult(
         test_id="procurement.decider_supplier_conflict",
         title="Do tender deciders share an undeclared connection with the winner?",

@@ -1010,6 +1010,9 @@ export interface MethodSurnameCollision {
   genuine_matches: number;
   unresolved_matches: number;
   dedup_note: string | null;
+  expected_collisions_under_chance: number;
+  chance_baseline_reference_n: number;
+  below_chance: boolean | null;
   limits: string[];
 }
 
