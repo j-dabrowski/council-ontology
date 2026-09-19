@@ -42,6 +42,11 @@ class VoteChoice(str, enum.Enum):
     ABSENT = "absent"
 
 
+class AttendanceStatus(str, enum.Enum):
+    PRESENT = "present"
+    APOLOGY = "apology"
+
+
 class MotionOutcome(str, enum.Enum):
     CARRIED = "carried"
     LOST = "lost"
@@ -270,6 +275,32 @@ class Vote(Base):
 
     def __repr__(self) -> str:
         return f"<Vote councillor={self.councillor_id} motion={self.motion_id} {self.choice}>"
+
+
+class MeetingAttendance(Base):
+    """A councillor's presence/apology record for a meeting — extracted
+    alongside every meeting (`councillors_present`/`councillors_apology`,
+    `src/extraction/schemas.py`) but previously discarded before persistence
+    (docs/uplift/migration/01-known-defects.md G-09). Distinct from
+    `Vote.choice == ABSENT`, which conflates recusal with genuine
+    non-attendance at the source — this table is the only signal that can
+    measure non-attendance independent of vote-tally rows."""
+
+    __tablename__ = "meeting_attendance"
+    __table_args__ = (
+        UniqueConstraint("meeting_id", "councillor_id", name="uq_meeting_attendance"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meetings.id"))
+    councillor_id: Mapped[int] = mapped_column(ForeignKey("councillors.id"))
+    status: Mapped[AttendanceStatus] = mapped_column(Enum(AttendanceStatus), nullable=False)
+
+    meeting: Mapped["Meeting"] = relationship()
+    councillor: Mapped["Councillor"] = relationship()
+
+    def __repr__(self) -> str:
+        return f"<MeetingAttendance councillor={self.councillor_id} meeting={self.meeting_id} {self.status}>"
 
 
 class PlanningApplication(Base):

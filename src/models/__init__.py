@@ -1,6 +1,7 @@
 from .ontology import (
     ApplicationStatus,
     Appointment,
+    AttendanceStatus,
     Base,
     BudgetItem,
     BuildingPermit,
@@ -14,6 +15,7 @@ from .ontology import (
     InterestDeclaration,
     InterestDeclarationType,
     Meeting,
+    MeetingAttendance,
     Motion,
     MotionOutcome,
     OtherItem,
@@ -33,6 +35,7 @@ from .ontology import (
 __all__ = [
     "ApplicationStatus",
     "Appointment",
+    "AttendanceStatus",
     "Base",
     "BudgetItem",
     "BuildingPermit",
@@ -46,6 +49,7 @@ __all__ = [
     "InterestDeclaration",
     "InterestDeclarationType",
     "Meeting",
+    "MeetingAttendance",
     "Motion",
     "MotionOutcome",
     "OtherItem",

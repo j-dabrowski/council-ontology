@@ -27,7 +27,7 @@ from src.extraction.schemas import (
     ExtractedPublicQuestion,
     ExtractedTender,
 )
-from src.models import Base, Council, ExtractionEvidence
+from src.models import AttendanceStatus, Base, Council, ExtractionEvidence, MeetingAttendance
 from src.storage.database import _enable_wal_and_fk
 
 
@@ -124,7 +124,7 @@ EXPECTED_TABLES = {
     "public_questions", "deputations", "petitions", "appointments",
     "committee_reports", "budget_items", "interest_declarations",
     "tenders", "delegated_decisions", "building_permits",
-    "other_items", "extraction_evidence", "relationships",
+    "other_items", "extraction_evidence", "relationships", "meeting_attendance",
 }
 
 
@@ -162,6 +162,13 @@ def _make_meeting() -> ExtractedMeeting:
         council_name="Test Council",
         meeting_type="Ordinary Council Meeting",
         meeting_date=date(2023, 3, 15),
+        councillors_present=[
+            ExtractedCouncillor(given_name="John", family_name="Smith"),
+            ExtractedCouncillor(given_name="Mary", family_name="Jones"),
+        ],
+        councillors_apology=[
+            ExtractedCouncillor(given_name="Peter", family_name="Brown"),
+        ],
         motions=[
             ExtractedMotion(
                 item_number="1",
@@ -364,3 +371,40 @@ def test_save_extraction_meeting_upsert(session, council_id):
     id1 = save_extraction(session, council_id, extracted)
     id2 = save_extraction(session, council_id, extracted)
     assert id1 == id2
+
+
+# ---------------------------------------------------------------------------
+# save_extraction — attendance (docs/uplift/migration/01-known-defects.md G-09)
+# ---------------------------------------------------------------------------
+
+
+def test_save_extraction_persists_attendance(session, council_id):
+    save_extraction(session, council_id, _make_meeting(), text=SOURCE_TEXT)
+    rows = session.query(MeetingAttendance).all()
+    present_names = {r.councillor.family_name for r in rows if r.status == AttendanceStatus.PRESENT}
+    apology_names = {r.councillor.family_name for r in rows if r.status == AttendanceStatus.APOLOGY}
+    assert present_names == {"Smith", "Jones"}
+    assert apology_names == {"Brown"}
+
+
+def test_save_extraction_attendance_reextraction_no_duplicates(session, council_id):
+    """Re-extracting the same meeting clears and rewrites attendance, not duplicates it."""
+    extracted = _make_meeting()
+    save_extraction(session, council_id, extracted, text=SOURCE_TEXT)
+    save_extraction(session, council_id, extracted, text=SOURCE_TEXT)
+    assert session.query(MeetingAttendance).count() == 3
+
+
+def test_save_extraction_attendance_dedupes_conflicting_status(session, council_id):
+    """A councillor listed in both present and apology (a bad extraction) keeps
+    one row — present, since it's processed first — not a unique-constraint crash."""
+    extracted = ExtractedMeeting(
+        meeting_type="Ordinary Council Meeting",
+        meeting_date=date(2023, 7, 1),
+        councillors_present=[ExtractedCouncillor(given_name="Alex", family_name="Doe")],
+        councillors_apology=[ExtractedCouncillor(given_name="Alex", family_name="Doe")],
+    )
+    save_extraction(session, council_id, extracted)
+    rows = session.query(MeetingAttendance).all()
+    assert len(rows) == 1
+    assert rows[0].status == AttendanceStatus.PRESENT

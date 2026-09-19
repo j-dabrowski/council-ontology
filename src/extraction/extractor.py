@@ -771,6 +771,7 @@ def save_extraction(
     from src.models import (
         ApplicationStatus,
         Appointment,
+        AttendanceStatus,
         BudgetItem,
         BuildingPermit,
         CommitteeReport,
@@ -781,6 +782,7 @@ def save_extraction(
         InterestDeclaration,
         InterestDeclarationType,
         Meeting,
+        MeetingAttendance,
         Motion,
         MotionOutcome,
         OtherItem,
@@ -848,7 +850,7 @@ def save_extraction(
         for _Model in (
             PublicQuestion, Deputation, Petition, Appointment, CommitteeReport,
             BudgetItem, InterestDeclaration, Tender, DelegatedDecision,
-            BuildingPermit, OtherItem, ExtractionEvidence,
+            BuildingPermit, OtherItem, ExtractionEvidence, MeetingAttendance,
         ):
             session.query(_Model).filter_by(meeting_id=mid).delete(synchronize_session=False)
         session.flush()
@@ -878,6 +880,26 @@ def save_extraction(
                 quote_text=quote,
                 char_offset=offset,
                 char_length=length,
+            ))
+
+    # Attendance (docs/uplift/migration/01-known-defects.md G-09): extracted
+    # on every document but previously discarded before this point. One row
+    # per councillor per meeting — a councillor named in both lists (a bad
+    # extraction, since a person can't be both present and apologised) keeps
+    # whichever status is seen first rather than violating the unique
+    # constraint.
+    seen_attendance: set[int] = set()
+    for status, roster in (
+        (AttendanceStatus.PRESENT, extracted.councillors_present),
+        (AttendanceStatus.APOLOGY, extracted.councillors_apology),
+    ):
+        for ec in roster:
+            councillor = _get_or_create_councillor(session, ec.given_name, ec.family_name)
+            if councillor.id in seen_attendance:
+                continue
+            seen_attendance.add(councillor.id)
+            session.add(MeetingAttendance(
+                meeting_id=meeting.id, councillor_id=councillor.id, status=status,
             ))
 
     for em in extracted.motions:
