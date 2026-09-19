@@ -42,6 +42,7 @@ from src.models import (
 )
 from src.analysis.queries import (
     conflict_recusal_stats,
+    contractor_display_names,
     councillor_tenure,
     decider_supplier_conflict,
     delegate_body_conflict,
@@ -1159,8 +1160,9 @@ def _t_threshold_gaming(session, council_id, pc) -> TestResult:
 
 def _t_procurement_incumbency(session, council_id, pc) -> TestResult:
     # Is any supplier BOTH a frequent repeat-winner AND a big-dollar incumbent?
+    rows = list(_tender_rows(session, council_id))
     by_firm: dict[str, dict] = {}
-    for a, name, y, _m in _tender_rows(session, council_id):
+    for a, name, y, _m in rows:
         if not name:
             continue
         key = _normalise_contractor(name)
@@ -1176,15 +1178,20 @@ def _t_procurement_incumbency(session, council_id, pc) -> TestResult:
                        "Integrity / procurement (3.3)", "ICAC supplier-panel risk",
                        "Do the same firms keep winning the big-dollar work?",
                        scope=[SCOPE_WHOLE_CORPUS])
+    # Same canonical display label tender_concentration() shows for the same
+    # firm (docs/uplift/migration/01-known-defects.md G-05) — not `.title()`
+    # on the destructively-normalised key, which mangled spellings like
+    # "CJD Equipment" into "Cjdequipment".
+    display = contractor_display_names(name for _a, name, _y, _m in rows if name)
     top_dollars = sorted(by_firm.values(), key=lambda r: r["amt"], reverse=True)[:10]
     top_dollar_keys = {id(r) for r in top_dollars}
     most_recurring = max(by_firm.items(), key=lambda kv: len(kv[1]["years"]))
-    most_recurring_name = most_recurring[0].title()
+    most_recurring_name = display.get(most_recurring[0], most_recurring[0])
     overlap = any(len(r["years"]) >= 4 and id(r) in top_dollar_keys for r in by_firm.values())
     # chart: the most-recurring firms by distinct years won (recurrence ≠ big dollars)
     top_recurring = sorted(by_firm.items(), key=lambda kv: len(kv[1]["years"]), reverse=True)[:10]
     chart = _bars(
-        [(k.title()[:22], len(v["years"])) for k, v in top_recurring],
+        [(display.get(k, k)[:22], len(v["years"])) for k, v in top_recurring],
         unit=" yrs",
     )
     return TestResult(

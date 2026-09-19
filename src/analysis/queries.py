@@ -2059,6 +2059,27 @@ def _normalise_contractor(name: str) -> str:
     return n
 
 
+def contractor_display_names(names) -> dict[str, str]:
+    """Map each `_normalise_contractor()` key to one canonical display
+    spelling — the longest original spelling seen for that key — so every
+    panel that names a contractor shows the same label for the same firm
+    (docs/uplift/migration/01-known-defects.md G-05: `tender_concentration()`
+    already did this inline; `_t_procurement_incumbency` used to re-derive
+    its own via `.title()` on the destructively-normalised key instead,
+    producing spellings like "Totaleden")."""
+    display: dict[str, str] = {}
+    for name in names:
+        name = (name or "").strip()
+        if not name:
+            continue
+        key = _normalise_contractor(name)
+        if not key:
+            continue
+        if len(name) > len(display.get(key, "")):
+            display[key] = name
+    return display
+
+
 def _normalise_tender_ref(ref: str | None) -> str:
     """Collapse spacing/hyphen variants so 'RFT 2023-16' == 'RFT202316' == 'RFT2023-16'."""
     if not ref:
@@ -2167,7 +2188,7 @@ def tender_concentration(
     redacted_amount = 0.0
     agg_amount: dict[str, float] = defaultdict(float)
     agg_count: dict[str, int] = defaultdict(int)
-    display_name: dict[str, str] = {}
+    display_name = contractor_display_names(awarded_to for _tid, awarded_to, *_r in rows)
     # raw award rows per contractor key, for the drill-down on the top contractors
     awards_by_key: dict[str, list[tuple]] = defaultdict(list)
 
@@ -2184,9 +2205,6 @@ def tender_concentration(
         agg_amount[key] += amount
         agg_count[key] += 1
         awards_by_key[key].append((tid, amount, desc, ref, bool(conf), mdate))
-        # Keep the longest spelling seen as the display label
-        if awarded_to.strip() and len(awarded_to.strip()) > len(display_name.get(key, "")):
-            display_name[key] = awarded_to.strip()
 
     named_amount = sum(agg_amount.values())
     named_awards = sum(agg_count.values())
