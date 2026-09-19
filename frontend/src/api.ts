@@ -1217,6 +1217,15 @@ export interface MethodData {
   };
   extraction_batch: MethodExtractionBatch;
   entity_resolution: MethodEntityResolution;
+  model_version: MethodSourcedValue<{ models: string[] }> & {
+    extraction_date_range?: [string | null, string | null];
+    documents_with_recoverable_model?: number;
+    documents_without_recoverable_model?: number;
+    documents_missing_extraction_timestamp?: number;
+  };
+  human_audit: MethodSourcedValue<{
+    reviewed: number; total_markers: number; correct: number; correct_pct: number;
+  }>;
 }
 
 export const api = {

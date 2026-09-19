@@ -499,11 +499,13 @@ the whole-batch `SNAPSHOT_TIER`/`derive_claim_tier` mechanism above:
 (`docs/frontend/METHOD_PAGE_PLAN.md`, built 2026-09-07).** Also a real
 snapshot — `_generate_snapshots()` writes it via `build_method_record()`
 (`src/analysis/method.py`), joining `manifest.snapshots`/`file_hashes` the
-same way `watch.json` does. Every figure on `/method` traces to one of five
+same way `watch.json` does. Every figure on `/method` traces to one of seven
 files under `data/` (census, inventories, sample validation, full-corpus
-validation, extraction errors) or the live database, each carrying its own
-`generated_at` next to it — a missing or unparseable source renders as an
-explicit gap (`{"value": null, "reason": "source_missing"}`), never a zero.
+validation, extraction errors, the LLM archive index for model version,
+`audit_report.md` for the Level-6 human-audited sample) or the live
+database, each carrying its own `generated_at` next to it — a missing or
+unparseable source renders as an explicit gap
+(`{"value": null, "reason": "source_missing"}`), never a zero.
 It's not claim-derived — no `TestResult`, no `unit_of_analysis`, no
 `named_entities` — so it's deliberately left out of
 `CLAIM_DERIVED_SNAPSHOTS`.

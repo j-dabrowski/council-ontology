@@ -87,6 +87,8 @@ function FreshnessTable({ data }: { data: MethodData }) {
     { file: "data/extraction_errors.json", generatedAt: data.extraction_batch.generated_at },
     { file: "data/validation/summary.json", generatedAt: data.validation.full_corpus_split.generated_at },
     { file: "data/sample_validation/report.txt", generatedAt: data.validation.sample_split.generated_at },
+    { file: "data/llm_archive/index.json", generatedAt: data.model_version.generated_at },
+    { file: "data/audit_report.md", generatedAt: data.human_audit.generated_at },
   ];
   return (
     <table className="method-table method-freshness-table">
@@ -548,6 +550,56 @@ function ExtractionBatchCard({ batch }: { batch: MethodExtractionBatch }) {
   );
 }
 
+function ModelVersionCard({ mv }: { mv: MethodData["model_version"] }) {
+  if (mv.value === null) {
+    return <p className="chart-note">Model version: not available — {mv.reason ?? "no data"}.</p>;
+  }
+  const total = (mv.documents_with_recoverable_model ?? 0) + (mv.documents_without_recoverable_model ?? 0);
+  return (
+    <div className="method-batch">
+      <p className="chart-note">
+        Extracted with <strong>{mv.value.models.join(", ") || "unknown model"}</strong>
+        {mv.extraction_date_range?.[0] && mv.extraction_date_range?.[1] && (
+          <> between {formatDate(mv.extraction_date_range[0])} and {formatDate(mv.extraction_date_range[1])}</>
+        )}.
+      </p>
+      {total > 0 && (
+        <p className="chart-note">
+          <strong>{mv.documents_with_recoverable_model}</strong> of {total} extracted documents have a
+          recoverable model identity (from the archived LLM response); {mv.documents_without_recoverable_model}{" "}
+          do not.
+          {(mv.documents_missing_extraction_timestamp ?? 0) > 0 && (
+            <> A further {mv.documents_missing_extraction_timestamp} document(s) have no extraction
+              timestamp at all — an older gap, predating this field.</>
+          )}
+        </p>
+      )}
+      <p className="chart-note"><code>{mv.source}</code></p>
+    </div>
+  );
+}
+
+function HumanAuditCard({ audit }: { audit: MethodData["human_audit"] }) {
+  if (audit.value === null) {
+    return (
+      <p className="chart-note">
+        Human-audited sample: not available — {audit.reason === "human_review_pending"
+          ? `${audit.n ?? 0} item(s) generated for review, none reviewed yet`
+          : (audit.reason ?? "no data")}.
+      </p>
+    );
+  }
+  return (
+    <div className="method-batch">
+      <p className="chart-note">
+        <strong>{audit.value.correct}</strong> of {audit.value.reviewed} human-reviewed item(s) confirmed
+        correct ({audit.value.correct_pct}%), out of {audit.value.total_markers} generated for review.
+      </p>
+      <p className="chart-note"><code>{audit.source}</code></p>
+    </div>
+  );
+}
+
 // §4: not asserted, demonstrated — cites the current battery's own counts
 // from scorecard.json (data.summary) rather than typing "2" and "10" as
 // prose, so this paragraph can't drift from what the scorecard actually
@@ -681,6 +733,10 @@ export function MethodPage() {
           />
           <h4 className="method-split-label">Last extraction batch</h4>
           <ExtractionBatchCard batch={data.extraction_batch} />
+          <h4 className="method-split-label">Model version</h4>
+          <ModelVersionCard mv={data.model_version} />
+          <h4 className="method-split-label">Human-audited sample</h4>
+          <HumanAuditCard audit={data.human_audit} />
         </div>
 
         <div className="static-section">

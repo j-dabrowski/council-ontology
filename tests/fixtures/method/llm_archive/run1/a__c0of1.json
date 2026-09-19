@@ -1,0 +1,13 @@
+{
+  "custom_id": "a__c0of1",
+  "pdf_path": "data/raw/fixture/a.pdf",
+  "chunk_idx": 0,
+  "n_chunks": 1,
+  "document_type": "minutes",
+  "meeting_date_hint": "2020-03-01",
+  "model": "claude-haiku-4-5-20251001",
+  "archived_at": "2020-01-05T00:00:00Z",
+  "source": "batch",
+  "status": "ok",
+  "raw_response": "{}"
+}

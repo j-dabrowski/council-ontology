@@ -10,7 +10,7 @@ the one block computed from the database rather than a fixture file.
 """
 import json
 import re
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 import pytest
@@ -178,6 +178,79 @@ def test_missing_source_file_is_null_with_reason_not_a_zero(session):
         "value": None, "source": str(FULL_FIXTURE / "extraction_errors.json"),
         "generated_at": None, "n": None, "reason": "source_missing",
     }
+
+
+def test_model_version_reports_recoverable_and_unrecoverable_documents(session):
+    """FULL_FIXTURE's llm_archive covers one meeting (a.pdf); a second,
+    otherwise-identical meeting with no archived chunk is the unrecoverable
+    case (docs/uplift/migration/01-known-defects.md G-33)."""
+    council_id = _council(session)
+    session.add(Meeting(
+        council_id=council_id, meeting_date=date(2020, 3, 1),
+        meeting_type="Ordinary Council Meeting", document_type="minutes",
+        minutes_pdf_path="data/raw/fixture/a.pdf",
+        extracted_at=datetime(2020, 1, 5),
+    ))
+    session.add(Meeting(
+        council_id=council_id, meeting_date=date(2021, 5, 1),
+        meeting_type="Ordinary Council Meeting", document_type="minutes",
+        minutes_pdf_path="data/raw/fixture/b.pdf",
+        extracted_at=datetime(2021, 1, 1),
+    ))
+    session.add(Meeting(
+        council_id=council_id, meeting_date=date(2019, 1, 1),
+        meeting_type="Ordinary Council Meeting", document_type="minutes",
+    ))  # no extracted_at at all — a different, older gap
+    session.flush()
+
+    record = build_method_record(
+        session, council_id, "fixture", "2020-06-01T00:00:00+00:00",
+        data_dir=FULL_FIXTURE,
+    )
+    mv = record["model_version"]
+    assert mv["value"] == {"models": ["claude-haiku-4-5-20251001"]}
+    assert mv["n"] == 2
+    assert mv["documents_with_recoverable_model"] == 1
+    assert mv["documents_without_recoverable_model"] == 1
+    assert mv["documents_missing_extraction_timestamp"] == 1
+
+
+def test_model_version_missing_index_is_null_with_reason(session):
+    council_id = _council(session)
+    _seed_meetings(session, council_id)
+    record = build_method_record(
+        session, council_id, "fixture", "2020-06-01T00:00:00+00:00",
+        data_dir=MALFORMED_FIXTURE,
+    )
+    assert record["model_version"]["value"] is None
+    assert record["model_version"]["reason"] == "source_missing"
+
+
+def test_human_audit_counts_filled_and_unfilled_markers(session):
+    council_id = _council(session)
+    _seed_meetings(session, council_id)
+    record = build_method_record(
+        session, council_id, "fixture", "2020-06-01T00:00:00+00:00",
+        data_dir=FULL_FIXTURE,
+    )
+    audit = record["human_audit"]
+    assert audit["n"] == 2  # total markers in the fixture (1 filled, 1 unfilled)
+    assert audit["value"] == {
+        "reviewed": 1, "total_markers": 2, "correct": 1, "correct_pct": 100.0,
+    }
+    assert audit["generated_at"] == "2020-01-06"
+
+
+def test_human_audit_all_unfilled_reports_pending_not_a_fabricated_rate(session):
+    council_id = _council(session)
+    _seed_meetings(session, council_id)
+    record = build_method_record(
+        session, council_id, "fixture", "2020-06-01T00:00:00+00:00",
+        data_dir=MALFORMED_FIXTURE,
+    )
+    # MALFORMED_FIXTURE has no audit_report.md at all.
+    assert record["human_audit"]["value"] is None
+    assert record["human_audit"]["reason"] == "source_missing"
 
 
 def test_malformed_source_file_degrades_without_crashing_other_sections(session):

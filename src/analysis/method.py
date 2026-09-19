@@ -297,6 +297,8 @@ def build_method_record(
         ),
         "extraction_batch": _build_extraction_batch(extraction_errors, EXTRACTION_ERRORS_REL),
         "entity_resolution": _build_entity_resolution(session, council_id, generated_at),
+        "model_version": _build_model_version(session, council_id, council_key, data_dir),
+        "human_audit": _build_human_audit(data_dir),
     }
 
 
@@ -479,6 +481,121 @@ def _build_extraction_batch(extraction_errors: dict | None, extraction_errors_re
             "the last recorded extraction batch, not a corpus-wide rate — "
             "attempted against however many documents are in the database now"
         ),
+    }
+
+
+def _archived_pdf_paths(data_dir: Path) -> set[str]:
+    """Every source `pdf_path` with at least one successfully archived LLM
+    response, read directly from the archive chunk files (not
+    `index.json`, which only ever lists batch runs — confirmed by scanning
+    the archive directly that every entry today is `source: "batch"`, but
+    this reads the archive itself rather than assuming that stays true)."""
+    archive_root = data_dir / "llm_archive"
+    paths: set[str] = set()
+    if not archive_root.exists():
+        return paths
+    for cf in archive_root.rglob("*.json"):
+        if cf.name in ("index.json", "manifest.json"):
+            continue
+        entry = _load_json(cf)
+        if not entry or entry.get("status") == "error":
+            continue
+        p = entry.get("pdf_path")
+        if p:
+            paths.add(p)
+    return paths
+
+
+def _build_model_version(
+    session: Session, council_id: int, council_key: str, data_dir: Path,
+) -> dict:
+    """Which model(s) extracted this corpus, and how much of it is
+    recoverable at all (docs/uplift/migration/01-known-defects.md G-33).
+
+    `data/llm_archive/index.json`'s per-run `model` field is the only
+    surviving model-identity record — it exists per batch run, not per
+    document, and only for documents extracted with an archive_dir set.
+    Sync-extracted documents from before archiving existed have no
+    recoverable model identity. Coverage is a real per-document join
+    against the archive (`_archived_pdf_paths`, the same approach
+    `scripts/backfill_attendance.py` uses), not a coarse count comparison —
+    a document count alone can't say WHICH documents are covered.
+    """
+    index_path = data_dir / "llm_archive" / "index.json"
+    index = _load_json(index_path)
+    if index is None:
+        return _missing(str(index_path))
+
+    council_runs = [e for e in index if e.get("council") == council_key]
+    models = sorted({e["model"] for e in council_runs if e.get("model")})
+    latest_run_at = max((e["created_at"] for e in council_runs if e.get("created_at")), default=None)
+
+    archived_paths = _archived_pdf_paths(data_dir)
+    all_meetings = (
+        session.query(Meeting.minutes_pdf_path, Meeting.extracted_at)
+        .filter(Meeting.council_id == council_id)
+        .all()
+    )
+    timestamped = [(p, d) for p, d in all_meetings if d is not None]
+    total_extracted = len(timestamped)
+    recoverable = sum(1 for p, _ in timestamped if p and p in archived_paths)
+    extracted_ats = [d for _, d in timestamped]
+    return {
+        "value": {"models": models},
+        "source": str(index_path),
+        "generated_at": latest_run_at,
+        "n": total_extracted,
+        "extraction_date_range": [
+            min(extracted_ats).isoformat() if extracted_ats else None,
+            max(extracted_ats).isoformat() if extracted_ats else None,
+        ],
+        "documents_with_recoverable_model": recoverable,
+        "documents_without_recoverable_model": max(total_extracted - recoverable, 0),
+        # Rows with no extracted_at at all — a different, older gap than
+        # "no recoverable model": these predate the field being tracked, so
+        # they're excluded from `n` above rather than silently counted as
+        # either recoverable or not.
+        "documents_missing_extraction_timestamp": len(all_meetings) - total_extracted,
+    }
+
+
+_AUDIT_MARKER_RE = re.compile(r"<!-- AUDIT: (\[Y/N/PARTIAL\]|Y|N|PARTIAL)\s")
+_AUDIT_GENERATED_RE = re.compile(r"^Generated:\s*(\S+)", re.MULTILINE)
+
+
+def _build_human_audit(data_dir: Path) -> dict:
+    """Level-6 human-audited-sample results (docs/uplift/migration/
+    01-known-defects.md G-33) — `data/audit_report.md`'s own
+    `<!-- AUDIT: [Y/N/PARTIAL] -->` markers, filled in by a human reviewer
+    against the source PDF. As of this pass every marker is still the
+    unfilled template (`scripts/audit_report.py` generates the report;
+    filling it in is a manual step nothing has automated) — reported as an
+    explicit pending gap, per this project's own convention of never
+    inventing a number a stated source doesn't actually contain yet.
+    """
+    path = data_dir / "audit_report.md"
+    text = _load_text(path)
+    if text is None:
+        return _missing(str(path))
+
+    markers = _AUDIT_MARKER_RE.findall(text)
+    total = len(markers)
+    filled = [m for m in markers if m != "[Y/N/PARTIAL]"]
+    gen_match = _AUDIT_GENERATED_RE.search(text)
+    generated_at = gen_match.group(1) if gen_match else None
+
+    if not filled:
+        return {
+            "value": None, "source": str(path), "generated_at": generated_at, "n": total,
+            "reason": "human_review_pending",
+        }
+    correct = sum(1 for m in filled if m == "Y")
+    return {
+        "value": {
+            "reviewed": len(filled), "total_markers": total, "correct": correct,
+            "correct_pct": round(100 * correct / len(filled), 1),
+        },
+        "source": str(path), "generated_at": generated_at, "n": total,
     }
 
 
