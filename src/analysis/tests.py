@@ -1364,8 +1364,26 @@ def _t_repeat_applicant(session, council_id, pc) -> TestResult:
         key = "1" if c == 1 else "2-3" if c <= 3 else "4-6" if c <= 6 else "7+"
         buckets[key].extend(items)
     rates = {k: rate(v)[0] for k, v in buckets.items()}
+    # In frequency order (1, 2-3, 4-6, 7+) — dict insertion order, unchanged
+    # since `buckets` and `rates` are never reordered.
     vals = [r for r in rates.values() if r is not None]
-    flat = (max(vals) - min(vals)) <= 14 if vals else True
+    spread = (max(vals) - min(vals)) if vals else 0
+    # A spread alone can't distinguish "no trend" from "a real
+    # non-monotonic dip" that happens to cancel out end-to-end
+    # (docs/uplift/migration/01-known-defects.md G-18): below a negligible
+    # ±5pp band (the same no-clear-trend threshold conflict.recusal_trend
+    # already uses), shape doesn't matter — call it flat outright. Above
+    # that, a consistent step-by-step direction is a real pattern even at
+    # moderate spread, so only a non-monotonic (zigzag) shape stays flat.
+    # A 2-point sequence is trivially "monotonic" either way, so it carries
+    # no shape information — needs >=3 populated buckets to say anything
+    # about trend vs. zigzag.
+    monotonic_trend = (
+        len(vals) >= 3 and vals[0] != vals[-1]
+        and (all(b >= a for a, b in zip(vals, vals[1:]))
+             or all(b <= a for a, b in zip(vals, vals[1:])))
+    )
+    flat = spread <= 5 or (spread <= 14 and not monotonic_trend)
     chart = _bars(
         [("1 app", rates["1"]), ("2–3", rates["2-3"]), ("4–6", rates["4-6"]), ("7+", rates["7+"])],
         unit="%",

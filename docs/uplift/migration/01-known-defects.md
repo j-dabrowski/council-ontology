@@ -46,7 +46,7 @@ resolved further here.
 | D-15 | Ranked sponsorship pairs backed by the computed statistic + correction | `_t_sponsorship` (`tests.py:785-815`) — own comment states headline/verdict are "static prose... not derived from `s` at all"; only `base_rate` is genuinely computed | WRONG | Worse than framed: no ranking-vs-correction problem exists yet because no data-driven ranking ships at all; the prose is simply disconnected |
 | D-16 | Win-rate panel states its own baseline-interpretation | `voting_power()` docstring (`queries.py:1477-1478`) already documents "baseline is the carry rate (~76%)" — but `_t_voting_power`'s headline/verdict (`tests.py:664-669`) never restates it | PARTIAL | Caveat exists only in a Python docstring, never reaches the reader; `base_rate` field carries the number but not the interpretation |
 | D-17 | Selection mechanism for missing dollar-values investigated | `_t_big_dollar_leniency` (`tests.py:1211-1262`) — filters to non-null value, n≥20 floor, `era` field self-declares the filtered population | PARTIAL | Denominator is honestly labelled (real mitigation); the selection-bias question itself is uninvestigated |
-| D-18 | "Flat" requires a monotonicity check, not just min-max spread | `_t_repeat_applicant` (`tests.py:1309-1368`): `flat = (max-min) <= 14` | WRONG | Cannot distinguish "no trend" from "a real non-monotonic dip" |
+| D-18 | "Flat" requires a monotonicity check, not just min-max spread | `_t_repeat_applicant` (`tests.py`) now requires spread<=5pp outright, or spread<=14pp AND no consistent step-by-step direction across >=3 populated buckets | FIXED | A monotonic trend (a real, consistent pattern) is no longer called "flat" just because its total spread is small; a 2-bucket case (no shape to assess) falls back to the plain spread check |
 | D-19 | No causal language on observational comparisons | `_t_objection_dose` verdict (`tests.py:878-882`, softer than quoted but same framing); `ConflictRecusalPanel.tsx:220-221` (verbatim causal phrase, hardcoded in frontend) | PARTIAL / WRONG | The frontend phrase is claim-authoring entirely outside `tests.py` — the S7 gate's text scan never inspects component source |
 | D-20 | Same confound treatment across panels touching the same year | Neither `_t_question_responsiveness` (`tests.py:2108-2183`) nor `_t_transparency`/`_t_confidential_topics` (`:497,1990`) contains any COVID/remote-meeting caveat | MISSING | See source-drift note above — not an inconsistency, a shared absence |
 | D-21 | Inquiry-attributed shifts checked against a comparator council | `_council_era_window()` (`queries.py:3401-3413`), used by 3+ tests; every one of 35 `council_id`-typed query functions takes exactly one council | MISSING | Architecturally single-council; Perth corpus not yet extracted (pipeline track) |
@@ -175,11 +175,11 @@ Current: `_t_big_dollar_leniency` already self-declares its filtered population 
 Delta: the selection-bias question itself (does recording correlate with size/formality) has no missingness analysis anywhere.
 Risk if unfixed: ~9% of the true population drives a graded claim about the other 91%, with no evidence the recorded subset is representative.
 
-### G-18: "Flat" determined by min-max spread, not monotonicity
+### G-18: "Flat" determined by min-max spread, not monotonicity — FIXED
 Target: "no trend" and "a real non-monotonic pattern" are described differently.
-Current: `_t_repeat_applicant`'s `flat = (max-min) <= 14` cannot distinguish the two.
-Delta: a spread-threshold rule is the wrong test for the claim being made; a monotonicity/shape check is a different, correct rule.
-Risk if unfixed: mislabels the shape of the data, not just its magnitude.
+Current: below a ±5pp band (the same no-clear-trend threshold `conflict.recusal_trend` already uses), shape doesn't matter — genuinely negligible either way. Between 5 and 14pp, a consistent step-by-step direction across the (frequency-ordered) buckets is now treated as a real pattern and no longer called "flat," while a non-monotonic zigzag of the same magnitude still is. A 2-populated-bucket case (this corpus's middle frequency bands are sometimes empty) has no shape to assess and falls back to the plain spread check, same as before.
+Delta: closed — verified against the live corpus (82%/72%/84%/83%, a non-monotonic dip-then-recover, correctly still "flat") and the Testville/baseline synthetic fixture (2-point case, correctly still diverges by spread alone).
+Risk if unfixed: n/a — closed.
 
 ### G-19: Causal-sounding language on observational comparisons
 Target: no panel text implies a mechanism where only a correlation was tested.
