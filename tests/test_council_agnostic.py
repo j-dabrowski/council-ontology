@@ -210,18 +210,17 @@ def test_no_leakage(batteries):
 # number of applications with no linked motion (a pre-existing, already-
 # documented coverage gap), not a real number.
 #
-# `conflict.recusal_management` is a third kind of entry: as of this
-# session it's genuinely derived (branches on the real stay-and-vote
-# rate, not a literal), and both fixture profiles still land CRITICAL —
-# honestly, not a hardcode. Impartiality-type declared interests never
-# require stepping out (lawful — see `_MUST_LEAVE_TYPES`), and both
-# profiles' declared interests are ~50% impartiality/other by the
-# fixture's own even split, which drags the *blended* stay rate toward
-# "stay" regardless of either profile's must-leave era trend. That trend
-# is real and does diverge — see `conflict.recusal_trend`, which reports
-# it directly instead of blended — this test's own blended metric just
-# isn't sensitive to it at this fixture's declaration-type mix. A fixture
-# change worth making later, not a code correctness issue now.
+# `conflict.recusal_management` used to be a third kind of entry here: its
+# grade branched on the *blended* stay-and-vote rate (all declared-interest
+# types pooled), which both fixture profiles' ~50% impartiality/other split
+# dragged toward "stay" regardless of either profile's real must-leave era
+# trend — genuinely derived, not hardcoded, just insensitive to the signal
+# at this fixture's declaration-type mix. Fixed 2026-09-19 (docs/uplift/
+# migration/01-known-defects.md G-22): the test now keys off
+# `ConflictRecusalStats.must_leave_recusal_pct` instead, the same
+# financial/proximity-only figure `conflict.recusal_trend` already reported
+# directly — the two fixture profiles now correctly diverge, so this entry
+# was removed from DIRECTION_ALLOW below rather than kept as a stale allow.
 #
 # Every other battery test's valence/grade construction was checked by
 # hand against this exact list (`grep -n "valence=.* if " src/analysis/
@@ -235,10 +234,6 @@ DIRECTION_ALLOW: dict[str, str] = {
         "derived, not hardcoded (branches on raw collision count) — this "
         "fixture's synthetic surnames/firm names don't happen to collide, "
         "so both profiles land SUPPORTIVE on the zero-collision branch"
-    ),
-    "conflict.recusal_management": (
-        "derived, not hardcoded — both fixture profiles land the same side "
-        "of the blended stay-rate metric (see comment above)"
     ),
     "governance.unanimity_trend": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
     "governance.durable_faction": (

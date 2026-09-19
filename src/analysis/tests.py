@@ -94,7 +94,7 @@ ENTITY_RESOLUTION_OPEN_SPLITS = "open-splits"
 
 # COVID/remote-meeting confound caveat (docs/uplift/migration/01-known-defects.md
 # G-20): 2020's remote-meeting rules and emergency procedures were a WA-wide
-# regulatory shock, not a Cambridge-specific one — any era-split or yearly
+# regulatory shock, not specific to any one council — any era-split or yearly
 # value spanning 2020 needs this stated, not just the one panel D-20's
 # original framing happened to check.
 COVID_CONFOUND_CAVEAT = (
@@ -233,7 +233,16 @@ def _t_recusal_overall(session, council_id, pc, meeting_id=None) -> TestResult:
     if meeting_id is not None:
         return _t_recusal_overall_meeting(session, council_id, meeting_id)
     s = pc.get("conflict") or conflict_recusal_stats(session, council_id)
-    stay = round(100 - s.declared_recusal_pct, 1)
+    # Must-leave-only, not the blended declared_recusal_pct (docs/uplift/
+    # migration/01-known-defects.md G-22): the corpus-wide headline/grade
+    # now keys off the same financial/proximity-only compliance question
+    # the per-councillor colour-coding already answers (ConflictRecusalPanel.tsx,
+    # fixed 2026-08-11) — a lawful "impartiality" stay-and-vote can no
+    # longer mask or invert this figure. Falls back to the blended rate
+    # only if the corpus has zero must-leave declarations at all (no
+    # mandatory-conflict data to compute the real question from).
+    have_must_leave = s.must_leave_total > 0
+    stay = round(100 - s.must_leave_recusal_pct, 1) if have_must_leave else round(100 - s.declared_recusal_pct, 1)
     # Computed the same way ConflictRecusalPanel.tsx derives its own headline
     # factor (guarded division against the same two fields), rather than a
     # literal string — confirmed 2026-08-23, defamation review pass 3
@@ -250,16 +259,23 @@ def _t_recusal_overall(session, council_id, pc, meeting_id=None) -> TestResult:
         title="Do councillors step out when they declare a conflict?",
         genre="Integrity / conflict (3.3)",
         principle="Nolan Integrity, Objectivity · CIPFA-A",
-        question="When an interest is declared, is it *managed* — i.e. does the member recuse?",
+        question="When a legally-mandatory (financial/proximity) interest is declared, is it "
+                 "*managed* — i.e. does the member recuse?",
         valence=SUPPORTIVE if managed else CRITICAL,
         grade=G_STRENGTH if managed else G_CONCERN,
-        headline=(f"Declaring lifts recusal {factor}× and members step out {100 - stay}% of the time"
+        headline=(f"Declaring lifts recusal {factor}× and members step out {100 - stay}% of the time "
+                  "on a must-leave conflict"
                   if managed else
-                  f"Declaring lifts recusal {factor}×, but members still stay and vote {stay}% of the time"),
-        verdict=("Disclosure works at both limbs: most declared-interest votes see the member step out."
+                  f"Declaring lifts recusal {factor}×, but members still stay and vote {stay}% of the "
+                  "time on a must-leave conflict"),
+        verdict=("Disclosure works at both limbs on legally-mandatory conflicts: most must-leave "
+                 "declared-interest votes see the member step out. Impartiality declarations, which "
+                 "lawfully permit staying and voting, are excluded from this figure."
                  if managed else
-                 "Disclosure works at the first step; the identify–disclose–manage chain breaks at the manage limb."),
-        n=s.declared_total,
+                 "Disclosure works at the first step; the identify–disclose–manage chain breaks at the "
+                 "manage limb on legally-mandatory (financial/proximity) conflicts. Impartiality "
+                 "declarations, which lawfully permit staying and voting, are excluded from this figure."),
+        n=s.must_leave_total if have_must_leave else s.declared_total,
         base_rate=f"{s.baseline_recusal_pct}% recuse on a normal vote",
         era="1995–2026",
         detail_panel="declared",

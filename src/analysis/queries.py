@@ -1702,6 +1702,15 @@ class ConflictRecusalStats:
     baseline_total: int
     baseline_recusal_pct: float
     baseline_against_pct: float
+    # Corpus-wide must-leave-only split (docs/uplift/migration/01-known-defects.md
+    # G-22): the same financial/proximity-only compliance question the
+    # per-councillor colour-coding already answers (ConflictRecusalPanel.tsx,
+    # fixed 2026-08-11), computed once here so the corpus-wide headline/grade
+    # can key off it too, instead of the blended declared_recusal_pct which
+    # mixes in lawful "impartiality" stay-and-vote declarations.
+    must_leave_total: int = 0
+    must_leave_recused: int = 0
+    must_leave_recusal_pct: float | None = None  # None iff must_leave_total == 0
     profiles: list[RecusalProfile] = field(default_factory=list)
 
 
@@ -1945,6 +1954,19 @@ def conflict_recusal_stats(
         return total, absent, against, cast
 
     d_total, d_absent, d_against, d_cast = _bucket(True)
+    # Corpus-wide must-leave-only split, same scope as d_total (unfiltered by
+    # min_declared, unlike `profiles` below) — built on the same fan-out-safe
+    # link and quote-aware stepped-out check every per-councillor figure uses,
+    # so the two can never independently disagree.
+    all_linked = _linked_declared_votes(session, council_id, from_year, to_year, meeting_id=meeting_id)
+    corpus_ml_total = sum(1 for r in all_linked if r.interest_type in {"financial", "proximity"})
+    corpus_ml_recused = sum(
+        1 for r in all_linked
+        if r.interest_type in {"financial", "proximity"} and _actually_stepped_out(r.choice, r.quote)
+    )
+    corpus_ml_recusal_pct = (
+        round(100 * corpus_ml_recused / corpus_ml_total, 1) if corpus_ml_total else None
+    )
     # The baseline (non-declared) bucket is NOT meeting-scoped even when
     # meeting_id is set: it's the "normal" rate a single meeting's declared-
     # interest behaviour is compared against (ConflictRecusalStats.
@@ -2019,6 +2041,9 @@ def conflict_recusal_stats(
         baseline_total=b_total,
         baseline_recusal_pct=round(100 * b_absent / b_total, 1) if b_total else 0.0,
         baseline_against_pct=round(100 * b_against / b_cast, 1) if b_cast else 0.0,
+        must_leave_total=corpus_ml_total,
+        must_leave_recused=corpus_ml_recused,
+        must_leave_recusal_pct=corpus_ml_recusal_pct,
         profiles=profiles,
     )
 
