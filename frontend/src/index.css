@@ -366,6 +366,18 @@ a:hover { text-decoration: underline; }
   background: var(--link-bg-h);
 }
 
+/* Jurisdiction cue (SiteNav.tsx) — a small, quiet tag, not another nav link */
+.site-nav-jurisdiction {
+  margin-left: 4px;
+  padding: 2px 7px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+}
+
 /* ── Home page ───────────────────────────────────────────────────────────── */
 
 .app {

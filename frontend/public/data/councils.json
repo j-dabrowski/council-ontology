@@ -6,6 +6,7 @@
     "name_prefix": "Town of",
     "name_suffix": "Council",
     "source_url": "https://www.cambridge.wa.gov.au",
+    "state": "WA",
     "corpus_span": "1995\u20132026",
     "published_at": "2026-09-16T13:54:41.831509+00:00",
     "draft_run_id": "draft_20260916_133711"

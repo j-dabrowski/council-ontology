@@ -86,6 +86,7 @@ COUNCILS = {
         # councils.json and every frontend page render; "Cambridge" alone is
         # the internal key/short_name, not what a reader sees.
         "display_name": "Town of Cambridge",
+        "state": "WA",
         # name_prefix/name_suffix: the fixed plain-text scaffolding either
         # side of the CouncilHeader selector ("Town of [Cambridge ▾]
         # Council") — a WA local government's formal name never includes
@@ -102,6 +103,7 @@ COUNCILS = {
     "perth": {
         "short_name": "Perth",
         "display_name": "City of Perth",
+        "state": "WA",
         # Perth's own materials (agendas, minutes, council.wa.gov.au) call
         # it "City of Perth" throughout, never "Town of Perth"/"Perth
         # Council" — confirmed against its council-meetings pages
@@ -119,6 +121,7 @@ COUNCILS = {
     "south_perth": {
         "short_name": "South Perth",
         "display_name": "City of South Perth",
+        "state": "WA",
         # southperth.wa.gov.au calls itself "City of South Perth" throughout
         # (footer, council-meetings page) — no "Town of"/"Council" framing,
         # same shape as Perth's own entry above (see that comment).
@@ -136,6 +139,7 @@ COUNCILS = {
     "testville": {
         "short_name": "Testville",
         "display_name": "Testville",
+        "state": "WA",
         "name_prefix": "",
         "name_suffix": "",
         "source_url": None,
@@ -4071,6 +4075,7 @@ def cmd_draft(args) -> None:
         "name_prefix": _registry_entry.get("name_prefix", ""),
         "name_suffix": _registry_entry.get("name_suffix", ""),
         "source_url": _registry_entry.get("source_url"),
+        "state": _registry_entry.get("state", "WA"),
         "generated_at": generated_at,
         "snapshots": written,
         "file_hashes": file_hashes,

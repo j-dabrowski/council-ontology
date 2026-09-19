@@ -57,6 +57,7 @@ export function CouncilHeader() {
       {span && (
         <p className="site-subtitle">
           Analysis of meeting minutes · <span className="data-note">{span}</span>
+          {current?.state && <> · {current.state}</>}
         </p>
       )}
       <nav className="council-subnav" aria-label="Report sections">

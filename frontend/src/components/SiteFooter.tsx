@@ -12,11 +12,12 @@ export function SiteFooter() {
   const entry = list.find((c) => c.key === council);
   const displayName = entry?.display_name ?? council ?? "this council";
   const sourceUrl = entry?.source_url ?? null;
+  const state = entry?.state ?? null;
 
   return (
     <footer className="site-footer">
       <p>
-        Source: {displayName} council meeting minutes (public record) ·
+        Source: {displayName}{state && `, ${state}`} council meeting minutes (public record) ·
         Data extracted via Anthropic Claude
         {sourceUrl && (
           <>

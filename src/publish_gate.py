@@ -275,6 +275,7 @@ def publish_snapshots(
         "name_prefix": registry_entry.get("name_prefix", ""),
         "name_suffix": registry_entry.get("name_suffix", ""),
         "source_url": registry_entry.get("source_url"),
+        "state": registry_entry.get("state", "WA"),
         "corpus_span": corpus_span,
         "published_at": published_at,
         "draft_run_id": manifest.run_id,

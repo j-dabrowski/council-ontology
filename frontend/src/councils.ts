@@ -50,6 +50,11 @@ export interface CouncilListEntry {
   // on its own.
   name_prefix: string;
   name_suffix: string;
+  // The state/territory this council sits in (docs/uplift/migration/
+  // 01-known-defects.md G-39) — every current council is "WA", but this is
+  // per-council data, never a hardcoded label in a chrome component, so a
+  // future council in a different jurisdiction renders correctly.
+  state: string;
   source_url: string | null;
   corpus_span: string | null;
   published_at: string;
@@ -74,11 +79,12 @@ export async function fetchCouncilList(): Promise<CouncilListEntry[]> {
       key: string; run_id: string; generated_at: string;
       short_name?: string; display_name?: string;
       name_prefix?: string; name_suffix?: string; source_url?: string | null;
+      state?: string;
     }[] = await res.json();
-    // short_name/display_name/name_prefix/name_suffix/source_url come from
-    // the draft's own manifest.json (src/cli.py's cmd_draft, sourced from
-    // the COUNCILS registry) via vite.config.ts's draftOverlay() plugin —
-    // fall back to the raw key/empty scaffolding only for a manifest
+    // short_name/display_name/name_prefix/name_suffix/source_url/state come
+    // from the draft's own manifest.json (src/cli.py's cmd_draft, sourced
+    // from the COUNCILS registry) via vite.config.ts's draftOverlay() plugin
+    // — fall back to the raw key/empty scaffolding only for a manifest
     // written before these fields existed.
     return rows.map((r) => ({
       key: r.key,
@@ -87,6 +93,7 @@ export async function fetchCouncilList(): Promise<CouncilListEntry[]> {
       name_prefix: r.name_prefix ?? "",
       name_suffix: r.name_suffix ?? "",
       source_url: r.source_url ?? null,
+      state: r.state ?? "WA",
       corpus_span: null,
       published_at: r.generated_at,
       draft_run_id: r.run_id,
