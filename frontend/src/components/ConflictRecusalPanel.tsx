@@ -168,9 +168,16 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
 
   const chartHeight = Math.max(320, namedChartData.length * 30);
 
-  // How much more likely is a recusal once an interest is declared?
+  // How much more likely is a recusal once an interest is declared? Uses
+  // the must-leave-only rate, not the blended declared_recusal_pct
+  // (docs/uplift/migration/01-known-defects.md G-22/G-38) — the same
+  // figure _t_recusal_overall's headline/grade now key off, so this panel
+  // states the same number the scorecard does for this test, not a
+  // separately-derived one that can drift from it.
+  const haveMustLeave = data.must_leave_total > 0 && data.must_leave_recusal_pct !== null;
+  const declaredPct = haveMustLeave ? data.must_leave_recusal_pct! : data.declared_recusal_pct;
   const factor = data.baseline_recusal_pct > 0
-    ? Math.round(data.declared_recusal_pct / data.baseline_recusal_pct)
+    ? Math.round(declaredPct / data.baseline_recusal_pct)
     : null;
 
   // Unnamed default view: distribution of recusal rates across the chamber,
@@ -192,15 +199,23 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
 
   return (
     <>
+      {/* No arrow/flow styling between these three stats — each has a
+          different denominator (ordinary non-declared votes; must-leave
+          declared-interest votes; all declared-interest votes), so none of
+          them "flow" into the next (docs/uplift/migration/
+          01-known-defects.md G-38, compounds G-12). A plain divider between
+          every stat, not a chain. */}
       <div className="planning-hero-row">
         <div className="planning-stat">
           <span className="planning-stat-num planning-stat-recent">{data.baseline_recusal_pct}%</span>
-          <span className="planning-stat-label">step out on a normal vote</span>
+          <span className="planning-stat-label">step out on an ordinary (non-declared) vote</span>
         </div>
-        <div className="planning-stat-arrow">→</div>
+        <div className="planning-stat-divider" />
         <div className="planning-stat">
-          <span className="planning-stat-num planning-stat-peak">{data.declared_recusal_pct}%</span>
-          <span className="planning-stat-label">step out when they declare a conflict</span>
+          <span className="planning-stat-num planning-stat-peak">{declaredPct}%</span>
+          <span className="planning-stat-label">
+            step out {haveMustLeave ? "on a must-leave (financial/proximity) conflict" : "when they declare a conflict"}
+          </span>
         </div>
         <div className="planning-stat-divider" />
         <div className="planning-stat">
@@ -212,13 +227,17 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
       <div className="objection-callout">
         <span className="objection-callout-diff">{factor ? `${factor}×` : "—"}</span>
         <span className="objection-callout-text">
-          A councillor recuses about <strong>{factor}× more often</strong> on a vote where they've
-          declared an interest than on an ordinary vote
-          ({data.declared_recusal_pct}% vs {data.baseline_recusal_pct}% baseline, n=
-          {data.declared_total.toLocaleString()}/{data.baseline_total.toLocaleString()}) — yet they
-          still stay in the chamber and vote roughly <strong>three times out of four</strong>. And
-          when they do vote, they side against the motion <em>less</em> often than on an ordinary
-          vote ({data.declared_against_pct}% vs {data.baseline_against_pct}%) — an association, not
+          A councillor recuses about <strong>{factor}× more often</strong>{" "}
+          {haveMustLeave ? "on a must-leave conflict" : "when they declare a conflict"} than on an
+          ordinary vote
+          ({declaredPct}% vs {data.baseline_recusal_pct}% baseline, n=
+          {(haveMustLeave ? data.must_leave_total : data.declared_total).toLocaleString()}/
+          {data.baseline_total.toLocaleString()}) — {" "}
+          {declaredPct < 50
+            ? <>and they still stay in the chamber and vote {(100 - declaredPct).toFixed(0)}% of the time</>
+            : <>and they step out {declaredPct.toFixed(0)}% of the time</>}. When they do vote, they
+          side against the motion <em>less</em> often than on an ordinary vote
+          ({data.declared_against_pct}% vs {data.baseline_against_pct}%) — an association, not
           proof the declared interest is what shifted the vote: declared-interest items skew toward
           planning/sponsorship/funding matters, which carry their own, different baseline approval
           rates regardless of any declaration.

@@ -66,7 +66,7 @@ resolved further here.
 | D-35 | Non-overlapping axis tick labels | `formatAxisTick()` (`BatteryTestPanel.tsx`) — 2026-09-19 | FIXED | Compact, unit-aware `tickFormatter` on both numeric axes (bar chart's X-axis, line chart's Y-axis) — abbreviates thousands/millions, caps decimals — replacing the bare `unit` prop. Verified live in a browser (Playwright): `finance.eoy_spending` ($M bars) and `governance.freshman_effect` (% bars) both render evenly-spaced, non-colliding ticks |
 | D-36 | One-line plain-English "is my council OK?" verdict | `OverviewPanel.tsx:6-17` — a hand-written synthesis **used to exist**, deliberately removed (`SECOND_COUNCIL_PLAN.md` Phase 3.5) because it hardcoded Cambridge-specific conclusions | MISSING (deliberate) | Named, designed replacement (Renderer's synthesis mode) exists but has never run — blocked on a separate track, not an oversight |
 | D-37 | Jargon terms defined at point of use | No glossary/tooltip component exists anywhere in `frontend/src/`; `/method`'s `metric.definition` is a separate, narrower per-metric field | MISSING | — |
-| D-38 | No arrow/flow styling between non-flowing denominators | `ConflictRecusalPanel.tsx:195-210` — literal arrow glyph between two of three differently-denominated stats | WRONG | Confirmed root cause, compounds D-12 |
+| D-38 | No arrow/flow styling between non-flowing denominators | `ConflictRecusalPanel.tsx`'s hero row now uses plain dividers throughout — 2026-09-19 | FIXED | Arrow removed; the "declared" stat also switched to must-leave-only (`ConflictRecusalStats.must_leave_recusal_pct`, now exposed on the "declared" snapshot), matching the corpus-wide fix from G-22 rather than showing a still-blended figure once Steps 12/14 had already settled which number is correct |
 | D-39 | WA/Australia jurisdiction visible wherever Nolan/CIPFA appear | `AboutPage.tsx:149,158` is the only "Western Australia" text anywhere in the frontend; zero hits in `SiteNav`/`SiteFooter`/`CouncilHeader` | PARTIAL | Disambiguator exists exactly once, on a page most readers won't visit first |
 
 ---
@@ -295,11 +295,11 @@ Current: no glossary/tooltip component exists anywhere in `frontend/src/`; the o
 Delta: net-new component.
 Risk if unfixed: every governance-framework label and every derived-statistic term on every panel is unexplained at its point of use.
 
-### G-38: Funnel arrow implies flow between non-flowing denominators
+### G-38: Funnel arrow implies flow between non-flowing denominators — FIXED
 Target: three differently-denominated statistics are not visually chained.
-Current: `ConflictRecusalPanel.tsx:195-210` renders an explicit arrow glyph between two of the three stats (baseline rate → declared rate), with the third (a raw count) merely adjacent.
-Delta: confirmed root cause; directly compounds G-12's substantive validity problem with a layout that visually asserts the false relationship even for a reader who wouldn't otherwise infer it from text.
-Risk if unfixed: — as stated in the source doc.
+Current: the arrow between the baseline and declared stats is gone, replaced with the same plain divider the third stat already used — none of the three "flow" into the next now. The declared stat itself also switched to must-leave-only (a new `must_leave_total`/`must_leave_recused`/`must_leave_recusal_pct` block added to the "declared" snapshot, `src/cli.py`), consistent with `_t_recusal_overall`'s corpus-wide fix (G-22) rather than displaying the still-blended figure the arrow used to sit next to. The callout narrative's hardcoded "stay ... three times out of four" is now computed from the live percentage instead — it would have read as false once the underlying rate moved to 90.2% recusal.
+Delta: closed both the layout defect and the number it was chaining, together — doing the layout fix alone would have left the arrow gone but the panel still showing a stale, inconsistent figure next to the corpus-wide scorecard text for the same test.
+Risk if unfixed: n/a — closed. Verified live in a browser (dev server + Playwright, chromium) with synthetic must-leave data matching the real corpus figures (132/119/90.2%): no arrow, correct 301× factor, correct "step out 90% of the time" text, no console errors.
 
 ### G-39: WA jurisdiction cue absent from site-wide chrome
 Target: a reader landing directly on any analysis panel sees a WA/Australia cue, not just on a separately-navigated About page.

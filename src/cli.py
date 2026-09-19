@@ -2383,6 +2383,13 @@ def _generate_snapshots(
         "baseline_total": recusal.baseline_total,
         "baseline_recusal_pct": recusal.baseline_recusal_pct,
         "baseline_against_pct": recusal.baseline_against_pct,
+        # Corpus-wide must-leave-only split (docs/uplift/migration/
+        # 01-known-defects.md G-22/G-38) — the same figure _t_recusal_overall's
+        # headline/grade now key off, so the panel's own hero stats can match
+        # instead of falling back to the blended declared_recusal_pct above.
+        "must_leave_total": recusal.must_leave_total,
+        "must_leave_recused": recusal.must_leave_recused,
+        "must_leave_recusal_pct": recusal.must_leave_recusal_pct,
         "profiles": [
             {
                 "name": p.name,

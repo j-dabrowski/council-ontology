@@ -345,6 +345,9 @@ export interface ConflictRecusalData {
   baseline_total: number;
   baseline_recusal_pct: number;
   baseline_against_pct: number;
+  must_leave_total: number;
+  must_leave_recused: number;
+  must_leave_recusal_pct: number | null;
   profiles: RecusalProfile[];
 }
 
