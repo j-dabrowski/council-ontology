@@ -268,6 +268,36 @@ These have already produced wrong answers. They are not optional reading.
   / `decision_date` (100% NULL), `councillor_terms` (sparse), and pre-Phase-2
   `minutes_text`/`extracted_at` on older meetings. Confirm a column is populated
   before building on it.
+- **2020 is a WA-wide confound, not a Cambridge-specific signal.** COVID-era
+  remote-meeting rules and emergency procurement/hardship procedures applied
+  to every WA council, not just the one under investigation. Any year-trend,
+  era-split, or "spike" finding whose window includes 2020 needs this stated
+  explicitly — a jump that year could be the state-wide regulatory shock, not
+  a local governance change (docs/uplift/migration/01-known-defects.md G-20;
+  `src/analysis/tests.py`'s `COVID_CONFOUND_CAVEAT` is the shared text three
+  battery tests already append to their verdict for exactly this reason —
+  reuse it, don't hand-write a fresh phrasing).
+- **Unminuted briefing/concept forums are a standing blind spot, not
+  something this pipeline overlooked.** WA councils routinely hold informal
+  briefing forums where councillors discuss items ahead of the formal
+  meeting that ratifies them — some leave partial public notes (the pipeline
+  already recognises "Briefing Forum" as a document type for those), but
+  many leave none at all. Any finding about officer-recommendation
+  ratification, contestation rate, or "low visible contest" is reading only
+  the on-record portion of the decision process; substantive deliberation
+  may have already happened off-record before the vote you're measuring
+  (docs/uplift/migration/01-known-defects.md G-26/04-jurisdiction.md G-06).
+  State this caveat on any finding in that family — don't let a low-contest
+  number read as "no real debate happened."
+- **Recusal-based compliance metrics can only see councillors honest enough
+  to declare.** A recusal or interest-declaration rate measures the
+  behaviour of the subset of councillors who disclosed a conflict in the
+  first place — it structurally cannot detect an undeclared conflict, which
+  is the metric's own worst failure mode. A high or improving recusal rate
+  is evidence of compliance among decliners, not evidence that non-
+  disclosure isn't happening (docs/uplift/migration/01-known-defects.md
+  G-27). State this alongside any recusal-rate finding, especially a
+  favourable one.
 
 ### 0.5 The investigations workflow
 
@@ -583,7 +613,7 @@ fishing. Each is paired with a real example and a data signature.
 |---|---|---|
 | Factionalism / bloc voting | City of Perth | `votes` co-movement clusters (you have this); persistence across terms |
 | Officer–member relationship breakdown | City of Perth | divergence of `officer_recommendation` from `outcome`, concentrated by member/era |
-| Decision actually made upstream (officer capture) | "visible contest is theatre" | ~97% officer-rec ratification rate; where it breaks is the story |
+| Decision actually made upstream (officer capture) | "visible contest is theatre" | ~97% officer-rec ratification rate; where it breaks is the story — but see 0.4's unminuted-briefing-forum caveat before reading a high ratification rate as "no real debate happened" |
 | Soft-kill by process | generic procedural abuse | `motion_text` language: "refer back", "defer", "lay on table", "reconsideration" predicting death independent of merits |
 
 ### 3.3 Integrity / corruption (handle with the most caution — Part 4)
@@ -592,7 +622,7 @@ fishing. Each is paired with a real example and a data signature.
 | Threshold-gaming (values kept just under quote/tender limits) | IBAC Op. Royston; ICAC "order splitting" | `tenders.amount`/`budget_items.amount` bunching just below known thresholds |
 | Incumbent / repeat-winner capture | ICAC supplier-panel risk | `tenders.awarded_to` concentration; win-rate of repeat vs one-shot suppliers |
 | Undeclared conflict between decider and supplier | ICAC/IBAC core finding | join `interest_declarations` × `tenders.awarded_to` × `votes`; *absence* of a declaration where a relationship existed |
-| Declared-but-not-recused voting | SA ICAC "identify, disclose, **manage**" | `votes.declared_interest` = true AND `choice` cast (not abstained) — and did it swing the result? |
+| Declared-but-not-recused voting | SA ICAC "identify, disclose, **manage**" | `votes.declared_interest` = true AND `choice` cast (not abstained) — and did it swing the result? See 0.4's Goodhart caveat: this whole family of metrics only sees who declared, never who didn't |
 | Local-preference policy masking COI | NSW ICAC submission | motions adopting local-supplier weighting + subsequent award concentration |
 | Single-source / direct negotiation | ICAC direct-negotiation guidance | `tenders` with no competitive field; share over time |
 | Missing-record opacity | VAGO/IBAC: poor record-keeping is itself an indicator | data *gaps* — items with award but no value, decisions with no rationale |

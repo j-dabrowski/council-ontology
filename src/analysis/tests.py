@@ -92,6 +92,17 @@ UNIT_INDIVIDUAL = "individual"                           # a claim about named p
 ENTITY_RESOLUTION_CLEAN = "clean"
 ENTITY_RESOLUTION_OPEN_SPLITS = "open-splits"
 
+# COVID/remote-meeting confound caveat (docs/uplift/migration/01-known-defects.md
+# G-20): 2020's remote-meeting rules and emergency procedures were a WA-wide
+# regulatory shock, not a Cambridge-specific one — any era-split or yearly
+# value spanning 2020 needs this stated, not just the one panel D-20's
+# original framing happened to check.
+COVID_CONFOUND_CAVEAT = (
+    " 2020's remote-meeting rules and emergency procedures were a WA-wide regulatory "
+    "shock, not specific to this council — a value spanning that year may reflect that "
+    "shock rather than a local trend."
+)
+
 # scope — declares which granularity this finding-type is MEANINGFUL at, not
 # which granularity it's currently computed at. Every generator today only
 # ever computes over the whole corpus; SCOPE_SINGLE_MEETING marks a test as
@@ -534,7 +545,7 @@ def _t_transparency(session, council_id, pc, meeting_id=None) -> TestResult:
                  "is the scale and timing of that spike, not a habit of secrecy."
                  if spike else
                  "A consistently open baseline with no real spike — the peak year doesn't stand out "
-                 "meaningfully from the long-run rate."),
+                 "meaningfully from the long-run rate.") + COVID_CONFOUND_CAVEAT,
         base_rate=f"{t.pre_era_pct}% two-decade baseline",
         era="1995–2026",
         detail_panel="transparency",
@@ -2117,7 +2128,7 @@ def _t_confidential_topics(session, council_id, pc, meeting_id=None) -> TestResu
                  if dev_is_least_closed else
                  "Named developments — the most politically sensitive category — are closed at least "
                  "as often as, or more than, other themes; confidentiality doesn't cleanly track lawful "
-                 "grounds over contentious topics here."),
+                 "grounds over contentious topics here.") + COVID_CONFOUND_CAVEAT,
         n=conf_total,
         base_rate=f"{_capped_pct(conf_total, total)}% of all items confidential",
         era="1995–2026",
@@ -2199,7 +2210,8 @@ def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> Test
             headline=f"{r.on_notice_pct}% of public questions are taken on notice rather than "
                      "answered live",
             verdict="No configured external-scrutiny window for this council, so this is reported "
-                    "as an overall rate rather than a before/during/after trend.",
+                    "as an overall rate rather than a before/during/after trend."
+                    + COVID_CONFOUND_CAVEAT,
             n=r.answered + r.on_notice,
             base_rate=f"{r.answered_pct}% answered live",
             detail_panel="question-responsiveness",
@@ -2233,6 +2245,7 @@ def _t_question_responsiveness(session, council_id, pc, meeting_id=None) -> Test
         headline = (f"Deferral of public questions held near {r.pre_pct}% before scrutiny and "
                     f"{r.post_pct}% after — no clear trend")
         verdict = "No material change in public-question responsiveness across the scrutiny window."
+    verdict += COVID_CONFOUND_CAVEAT
     return TestResult(
         test_id="engagement.question_responsiveness",
         title="Are residents' questions answered, or quietly 'taken on notice'?",

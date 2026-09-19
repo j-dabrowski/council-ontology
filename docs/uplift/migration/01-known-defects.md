@@ -48,14 +48,14 @@ resolved further here.
 | D-17 | Selection mechanism for missing dollar-values investigated | `_t_big_dollar_leniency` (`tests.py:1211-1262`) — filters to non-null value, n≥20 floor, `era` field self-declares the filtered population | PARTIAL | Denominator is honestly labelled (real mitigation); the selection-bias question itself is uninvestigated |
 | D-18 | "Flat" requires a monotonicity check, not just min-max spread | `_t_repeat_applicant` (`tests.py`) now requires spread<=5pp outright, or spread<=14pp AND no consistent step-by-step direction across >=3 populated buckets | FIXED | A monotonic trend (a real, consistent pattern) is no longer called "flat" just because its total spread is small; a 2-bucket case (no shape to assess) falls back to the plain spread check |
 | D-19 | No causal language on observational comparisons | Fixed 2026-09-19: `_t_objection_dose` verdict (`tests.py`), `ObjectionDosePanel.tsx` (the exact quoted phrase, "It isn't the act of objecting that moves council — it's the numbers"), `ConflictRecusalPanel.tsx`'s "leans toward letting the matter through" | FIXED | The two frontend phrases were claim-authoring entirely outside `tests.py` — the S7 gate's text scan still never inspects component source, a real gate-coverage gap noted for `02-claim-layer.md`/`04-jurisdiction.md`, not closed by this fix |
-| D-20 | Same confound treatment across panels touching the same year | Neither `_t_question_responsiveness` (`tests.py:2108-2183`) nor `_t_transparency`/`_t_confidential_topics` (`:497,1990`) contains any COVID/remote-meeting caveat | MISSING | See source-drift note above — not an inconsistency, a shared absence |
+| D-20 | Same confound treatment across panels touching the same year | `COVID_CONFOUND_CAVEAT` (`tests.py`) now appended to `_t_transparency`, `_t_confidential_topics`, and `_t_question_responsiveness` (every branch, incl. the era-neutral one) — 2026-09-19 | FIXED | See source-drift note above — was a shared absence, not an inconsistency; now a shared, single source-of-truth caveat text |
 | D-21 | Inquiry-attributed shifts checked against a comparator council | `_council_era_window()` (`queries.py:3401-3413`), used by 3+ tests; every one of 35 `council_id`-typed query functions takes exactly one council | MISSING | Architecturally single-council; Perth corpus not yet extracted (pipeline track) |
 | D-22 | Headline leads with must-leave-only rate | `_t_recusal_overall` (`tests.py:205-238`) headline/grade both use the blended `stay` rate | PARTIAL | The *per-councillor* frontend colour-coding already fixed this exact defect (`ConflictRecusalPanel.tsx:39-44`, 2026-08-11); the *corpus-wide* headline/grade in `tests.py` was never updated to match |
 | D-23 | Impartiality-type figures visually separated from the grade they don't affect | `RecusalTrendStats.impartiality_post_*` (`queries.py:3501-3504`) computed correctly, correctly excluded from the grade | PARTIAL | Correctly excluded from computation but juxtaposed with the CRITICAL grade in the same panel with no "does not affect this grade" marker |
 | D-24 | Headline and inline callout compare the same two eras | `_t_recusal_trend` (`tests.py:317-343`) — headline compares pre→post; confound-check compares inquiry→post | WRONG | A second, independent inconsistency beyond the financial-vs-all-must-leave denominator difference D-24 already names |
 | D-25 | Officer-divergence panel discloses detection limits; deferrals split from departures; direction reviewed per category | `officer_divergence()` (`src/analysis/divergence.py:47-192`) | PARTIAL (×2) | Amendment-blindness is in a code comment (`:17-19`), never in the `TestResult`; LOST/DEFERRED collapse into one boolean (`:167-171`); directionality is one hardcoded default for every item category |
-| D-26 | Unminuted deliberative-forum caveat in methodology | Zero mentions anywhere in `Investigator_prompt.txt`/`pipeline/PIPELINE.md`, despite the pipeline already recognising "Briefing Forum" as a document type | MISSING | The team already models briefing forums institutionally; the caveat about the *unminuted* ones was simply never written |
-| D-27 | Goodhart caveat on recusal metric | Zero mentions anywhere in `tests.py`/`queries.py`/`Investigator_prompt.txt` | MISSING | — |
+| D-26 | Unminuted deliberative-forum caveat in methodology | Added to `Investigator_prompt.txt` Part 0.4, cross-referenced from the Part 3 officer-capture row — 2026-09-19 | FIXED | The team already modelled briefing forums institutionally; the caveat about the *unminuted* ones was simply never written |
+| D-27 | Goodhart caveat on recusal metric | Added to `Investigator_prompt.txt` Part 0.4, cross-referenced from the Part 3 declared-but-not-recused row — 2026-09-19 | FIXED | — |
 | D-28 | Framework citations match WA law, not UK | Nolan/CIPFA hardcoded independently in 3 places (`config/test_registry.json`'s `principles`, `tests.py`'s `principle=` literals, `OverviewPanel.tsx:38-80`) | WRONG (citation layer) / PARTIAL (computation layer) | WA statutory awareness already exists uncited in computation: `system_prompt.txt:233` uses s5.65; `queries.py:3429-3438` has a working s5.69 detector |
 | D-29 | s5.68 (council-resolution exception) detected | `_ministerial_approved()` (`queries.py:3429-3438`) detects the *sibling* provision s5.69 via substring match; zero hits for "5.68" anywhere | PARTIAL | Structurally analogous working mechanism exists for s5.69, built after this exact failure mode (lawful conduct mislabelled) was caught once in production |
 | D-30 | Legal citation backing "correctly" claims | `_t_delegate_body_conflict` headline (`tests.py:~427-430`) — "correctly" is a bare adjective, no citation anywhere | MISSING | — |
@@ -187,11 +187,11 @@ Current: three sites rewritten to state an association plus the alternative conf
 Delta: the two frontend instances were claim-authoring entirely outside `tests.py`, on a surface the S7 invariant gate's text scan never inspects (it only scans `TestResult` fields, never component source) — that gate-coverage gap itself is *not* closed by this fix, only the two live instances of it are. Noted for `02-claim-layer.md`/`04-jurisdiction.md` as a real gap: nothing currently stops a future frontend edit from reintroducing causal language undetected.
 Risk if unfixed: n/a for the three fixed sites. The underlying gate gap remains — see Delta.
 
-### G-20: COVID/remote-meeting confound uncaveated on any era-split panel
+### G-20: COVID/remote-meeting confound uncaveated on any era-split panel — FIXED
 Target: any panel whose value could be confounded by 2020 remote-meeting rules, emergency procurement, or hardship policy says so.
-Current: zero mentions of "2020"/"remote"/"COVID"/"pandemic" anywhere in `tests.py`, `queries.py`, or any frontend component.
-Delta: this is a shared absence across every affected panel, not the described inconsistency between two of them (see source-drift note).
-Risk if unfixed: any 2020 spike inside the Authorised Inquiry window risks attribution to "the Inquiry" when it may be a WA-wide external shock.
+Current: `COVID_CONFOUND_CAVEAT` (`tests.py`), one shared string, appended to `_t_transparency`, `_t_confidential_topics`, and every branch of `_t_question_responsiveness` (including the era-neutral one, which still spans 2020). Also added to `docs/investigator/Investigator_prompt.txt` Part 0.4 as a standing caveat for any future test touching a year-trend or era split, with cross-references from the Part 3 officer-capture/recusal criteria rows.
+Delta: was a shared absence across every affected panel, not the described inconsistency between two of them (see source-drift note) — now a single source-of-truth caveat text, not three independently hand-written ones.
+Risk if unfixed: n/a — closed for the three named panels and documented as a standing methodology rule for future ones.
 
 ### G-21: Inquiry treated as a natural experiment with no comparator
 Target: an Inquiry-attributed shift is checked against a comparator council over the same window before being graded as a Cambridge effect.
@@ -223,17 +223,17 @@ Current: amendment-blindness is documented only in a `divergence.py` code commen
 Delta: the first two are disclosure gaps (data/limitation exists, isn't surfaced); the third is an unresolved normative question, not a code defect — flagged for a human decision, not assumed.
 Risk if unfixed: one test_id carries three independent, compounding overstatement risks on what the source doc calls its own most attackable panel category.
 
-### G-26: Unminuted deliberative-forum caveat missing from methodology
+### G-26: Unminuted deliberative-forum caveat missing from methodology — FIXED
 Target: the methodology prompt states that Cambridge (like every WA council) holds unminuted briefing/concept forums where deliberation may occur off-record, reframing officer-ratification/contestation/low-visible-contest findings.
-Current: zero mentions anywhere in `Investigator_prompt.txt` or `pipeline/PIPELINE.md`, despite the pipeline already recognising "Briefing Forum" as a document type for the forums that *do* leave partial public notes.
-Delta: pure caveat-writing gap — the team already models these forums institutionally.
-Risk if unfixed: per the source doc, the largest single structural gap in the report — reframes at least three panels with one missing sentence.
+Current: added to `Investigator_prompt.txt` Part 0.4, with the Part 3 "officer capture" row now pointing back at it explicitly.
+Delta: was a pure caveat-writing gap — the team already modelled these forums institutionally. Doc-only fix, no code change (Step 11's own scope) — the live battery panels (officer_divergence, oversight_body_capture) don't yet carry this caveat in their own `TestResult.verdict` text, unlike G-20's fix; that would be a `tests.py` change beyond this step's stated file list.
+Risk if unfixed: n/a in the methodology doc; the live-panel gap just noted remains open (not this step's scope).
 
-### G-27: No Goodhart caveat on the recusal metric
+### G-27: No Goodhart caveat on the recusal metric — FIXED
 Target: the methodology states the metric can only see councillors honest enough to declare.
-Current: zero mentions anywhere in code or prompt.
-Delta: net-new caveat.
-Risk if unfixed: the metric is presented as measuring compliance when it structurally cannot detect its own worst failure mode.
+Current: added to `Investigator_prompt.txt` Part 0.4, with the Part 3 "declared-but-not-recused voting" row now pointing back at it explicitly.
+Delta: was a net-new caveat, doc-only per this step's scope — same live-panel caveat gap as G-26 above (`_t_recusal_trend`/`_t_recusal_overall` don't carry it in their own verdict text yet).
+Risk if unfixed: n/a in the methodology doc; the live-panel gap remains open.
 
 ### G-28: UK frameworks cited where WA statutory language already exists uncited
 Target: every `principle=` field cites an instrument this council is actually assessed against.
