@@ -629,12 +629,25 @@ def _t_officer_divergence(session, council_id, pc, meeting_id=None) -> TestResul
     pairs = pc.get("divergence") or officer_divergence(session, council_id, None, None)
     total = len(pairs)
     diverged = sum(1 for p in pairs if p.diverged)
+    # LOST and DEFERRED reported separately, not collapsed into one
+    # `diverged` boolean (docs/uplift/migration/01-known-defects.md G-25): a
+    # deferral is a procedural pause, not necessarily council overruling the
+    # officer's substance the way a genuine LOST vote is.
+    lost = sum(1 for p in pairs if p.council_outcome == "lost")
+    deferred = sum(1 for p in pairs if p.council_outcome == "deferred")
     comp = _capped_pct(total - diverged, total) if total else None
     # Derived, not asserted (docs/SECOND_COUNCIL_PLAN.md 1.1): near-total
     # ratification (>=85%) is the "chamber is theatre" concern; genuine,
     # regular departure means the vote is where the decision actually gets
     # made, not upstream in the officer report.
     near_total = comp is not None and comp >= 85
+    # This measure's own detection limit (docs/uplift/migration/
+    # 01-known-defects.md G-25): amending a motion before carrying it counts
+    # as ratification here, not divergence — divergence.py's docstring
+    # already states this; it was never surfaced in the rendered claim.
+    amendment_caveat = (" This can't detect a motion council substantially amended before carrying "
+                         "it — an amended-then-carried motion counts as ratification here, not "
+                         "divergence, since only a LOST or DEFERRED outcome is counted as departure.")
     return TestResult(
         test_id="governance.officer_ratification",
         title="Does the chamber decide, or ratify its officers?",
@@ -644,11 +657,14 @@ def _t_officer_divergence(session, council_id, pc, meeting_id=None) -> TestResul
         valence=CRITICAL if near_total else SUPPORTIVE,
         grade=G_CONCERN if near_total else G_STRENGTH,
         headline=f"Council adopted the officer recommendation {comp}% of the time",
-        verdict=("Near-total ratification means the substantive decision is upstream, in who writes "
-                 "the recommendation — the most important caveat on every voting finding."
-                 if near_total else
-                 "Council departs from the officer recommendation often enough that the vote itself, "
-                 "not just the officer report, is where the substantive decision gets made."),
+        verdict=(("Near-total ratification means the substantive decision is upstream, in who writes "
+                  "the recommendation — the most important caveat on every voting finding."
+                  if near_total else
+                  "Council departs from the officer recommendation often enough that the vote itself, "
+                  "not just the officer report, is where the substantive decision gets made.")
+                 + f" Of {diverged} departure(s): {lost} LOST outright, {deferred} DEFERRED "
+                   "(a procedural pause, not necessarily a rejection of the officer's substance)."
+                 + amendment_caveat),
         n=total,
         base_rate=f"{diverged} departures across {total} matched items",
         era="where officer recs exist (agenda-matched)",
