@@ -15,6 +15,7 @@ from src.extraction.schemas import (
     ExtractedAppointment,
     ExtractedBudgetItem,
     ExtractedBuildingPermit,
+    ExtractedCommunitySubmission,
     ExtractedCouncillor,
     ExtractedCommitteeReport,
     ExtractedDelegatedDecision,
@@ -24,10 +25,11 @@ from src.extraction.schemas import (
     ExtractedMotion,
     ExtractedOtherItem,
     ExtractedPetition,
+    ExtractedPlanningApplication,
     ExtractedPublicQuestion,
     ExtractedTender,
 )
-from src.models import AttendanceStatus, Base, Council, ExtractionEvidence, MeetingAttendance
+from src.models import AttendanceStatus, Base, Council, CommunitySubmission, ExtractionEvidence, MeetingAttendance
 from src.storage.database import _enable_wal_and_fk
 
 
@@ -408,3 +410,39 @@ def test_save_extraction_attendance_dedupes_conflicting_status(session, council_
     rows = session.query(MeetingAttendance).all()
     assert len(rows) == 1
     assert rows[0].status == AttendanceStatus.PRESENT
+
+
+# ---------------------------------------------------------------------------
+# save_extraction — community submission count (G-08)
+# ---------------------------------------------------------------------------
+
+
+def test_save_extraction_persists_submission_count(session, council_id):
+    """A named submission (count=None, read as an implicit 1) and an
+    aggregate-reported group (count=14) persist as distinct rows."""
+    extracted = ExtractedMeeting(
+        meeting_type="Ordinary Council Meeting",
+        meeting_date=date(2023, 8, 1),
+        motions=[
+            ExtractedMotion(
+                item_number="9",
+                title="DA Approval",
+                planning_application=ExtractedPlanningApplication(
+                    reference_number="DA23.9",
+                    community_submissions=[
+                        ExtractedCommunitySubmission(
+                            submitter_name="Jane Doe", position="object"
+                        ),
+                        ExtractedCommunitySubmission(
+                            submitter_name=None, position="object", count=14
+                        ),
+                    ],
+                ),
+            )
+        ],
+    )
+    save_extraction(session, council_id, extracted)
+    rows = session.query(CommunitySubmission).order_by(CommunitySubmission.id).all()
+    assert len(rows) == 2
+    assert rows[0].submitter_name == "Jane Doe" and rows[0].count is None
+    assert rows[1].submitter_name is None and rows[1].count == 14

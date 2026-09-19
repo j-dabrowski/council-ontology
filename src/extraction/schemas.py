@@ -132,6 +132,17 @@ class ExtractedCommunitySubmission(BaseModel):
     submitter_type: Optional[Literal["individual", "organisation", "business"]] = None
     position: Optional[Literal["support", "object", "neutral"]] = None
     summary: Optional[str] = None
+    count: Optional[int] = Field(
+        default=None,
+        description=(
+            "Distinguishes one named individual submission (null/1) from an "
+            "aggregate-reported group with no per-person breakdown, e.g. "
+            "'14 objections received' -> a submitter_name=null row with "
+            "count=14 (docs/uplift/migration/01-known-defects.md G-08). "
+            "Future extractions only — existing rows have no count column "
+            "value and are read as an implicit 1."
+        ),
+    )
 
     @field_validator("submitter_type", mode="before")
     @classmethod

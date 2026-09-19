@@ -44,7 +44,7 @@ OUTPUT SCHEMA:
         "status": "approved"|"refused"|"deferred"|"withdrawn"|"appealed"|"pending" | null,
         "estimated_value": number | null,
         "community_submissions": [
-          {"submitter_name": string|null, "submitter_type": "individual"|"organisation"|"business"|null, "position": "support"|"object"|"neutral"|null, "summary": string|null}
+          {"submitter_name": string|null, "submitter_type": "individual"|"organisation"|"business"|null, "position": "support"|"object"|"neutral"|null, "summary": string|null, "count": integer|null}
         ],
         "source_quotes": [string]
       } | null,
@@ -175,7 +175,7 @@ Planning applications:
 - If a motion relates to a development/planning application (DV, DA, planning scheme amendment, etc.), always populate the `planning_application` object
 - `reference_number`: the DV/DA/application number (e.g. "DV23.42")
 - `status`: set to "approved" if CARRIED, "refused" if LOST, "deferred" if outcome is deferral
-- Extract community submissions (objections/supports) count and any named submitters
+- Extract community submissions (objections/supports): one entry per named submitter (`count: 1` or omit), and a separate entry with `submitter_name: null` and `count` set to the stated total when the minutes report an aggregate figure ("14 submissions received, 2 in support") without naming everyone — never fold a named individual and an unnamed aggregate into the same entry
 
 Councillors:
 - `councillors_present`: list only elected members — Mayor, Deputy Mayor, and Councillors; exclude officers, CEO, directors, and staff

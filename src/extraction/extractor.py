@@ -993,6 +993,7 @@ def save_extraction(
                     submitter_type=es.submitter_type,
                     position=es.position,
                     summary=es.summary,
+                    count=es.count,
                 )
                 session.add(submission)
 

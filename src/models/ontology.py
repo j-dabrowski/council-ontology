@@ -345,6 +345,11 @@ class CommunitySubmission(Base):
     position: Mapped[Optional[str]] = mapped_column(String(20))  # support, object, neutral
     summary: Mapped[Optional[str]] = mapped_column(Text)
     received_date: Mapped[Optional[date]] = mapped_column(Date)
+    # How many real submitters this row represents — null on every row
+    # extracted before docs/uplift/migration/01-known-defects.md G-08's fix,
+    # read as an implicit 1 (one named submission); a non-null value on a
+    # submitter_name=null row is an aggregate-reported group, not one person.
+    count: Mapped[Optional[int]] = mapped_column(Integer)
 
     application: Mapped[Optional["PlanningApplication"]] = relationship(
         back_populates="community_submissions"
