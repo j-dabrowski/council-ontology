@@ -140,6 +140,76 @@ COUNCIL_CONFIGS = {
         "old_era_years": {1999, 2001},
         "output_csv": "data/perth_elections_raw.csv",
     },
+    "south_perth": {
+        "header": "CITY OF SOUTH PERTH",
+        # South Perth elects a popularly-elected Mayor at-large plus two
+        # councillors per ward, four wards. A 2011→2013 boundary
+        # redistribution replaced three old wards (Civic, Como Beach,
+        # McDougall) with one new one (Como) — confirmed 2026-09-19 by
+        # reading every report's own section: Manning/Mill Point/Moresby
+        # never changed name across 1999-2023, but the 2013 report is the
+        # first to show "Como" and the last to show any of the three old
+        # names is 2011. These are kept as SEVEN distinct wards, not
+        # aliased onto each other's post-2013 successor — they had
+        # genuinely different boundaries, unlike Perth's same-ward
+        # relabelling above.
+        "ward_aliases": {
+            "Mayoral": ("Mayor", "Mayor"),  # 1999 report's own heading
+            "Mayor": ("Mayor", "Mayor"),
+            "Civic": ("Civic", "Councillor"),
+            "Como Beach": ("Como Beach", "Councillor"),
+            "McDougall": ("McDougall", "Councillor"),
+            "Manning": ("Manning", "Councillor"),
+            "Mill Point": ("Mill Point", "Councillor"),
+            "Moresby": ("Moresby", "Councillor"),
+            "Como": ("Como", "Councillor"),  # 2013 report onward
+        },
+        "reports": [
+            # 1999's section spans two pages (81-82), same shape as
+            # Perth's — Mayoral/Civic/Como Beach on the first, Manning
+            # (started)/McDougall/Mill Point/Moresby on the second.
+            (1999, f"{BASE}/sites/default/files/content/documents/LG_Election_Report_1999.pdf", [81, 82], "1999-05-01"),
+            # 2001 and 2003: confirmed absent — South Perth appears only in
+            # each report's statewide enrolment/turnout appendix, both
+            # times as "South Perth* ... No election" (2001 p.52, 2003
+            # p.62) — no results section exists for either year to parse.
+            (2005, f"{BASE}/sites/default/files/content/documents/LG_Election_Report_2005_App.pdf", [57, 58], "2005-05-07"),
+            (2007, f"{BASE}/sites/default/files/content/documents/LG_Election_Report_2007.pdf", [121, 122], "2007-10-20"),
+            (2009, f"{BASE}/sites/default/files/content/documents/LG_Election_Report_2009.pdf", [129, 130], "2009-10-17"),
+            (2011, f"{BASE}/sites/default/files/content/documents/LG_Election_Report_2011.pdf", [122, 123], "2011-10-15"),
+            (2013, f"{BASE}/sites/default/files/content/documents/LG_Election_Report_2013.pdf", [130, 131], "2013-10-19"),
+            (2015, f"{BASE}/sites/default/files/content/2015%20Local%20Government%20Ordinary%20Elections%20Report.pdf", [141, 142], "2015-10-17"),
+            # 2017: page 107 (0-indexed) is the report's own MORESBY page —
+            # confirmed present and readable via PyMuPDF (`fitz`), but
+            # pdfplumber's extraction of that one page is corrupted
+            # (character-doubled: "CCaannddiiddaattee") and produces no
+            # usable text — a page-specific PDF rendering quirk, not a
+            # missing section. `extract_pages()` here always uses
+            # pdfplumber (shared with Cambridge/Perth), so rather than
+            # branch the shared extractor for one page, this is left as a
+            # known gap: MORESBY 2017 (HOS/REID/MILNER, Milner elected 16
+            # October 2021) is missing from the output CSV. Confirmed via
+            # fitz 2026-09-19 — recover by hand from that page if ever
+            # needed, don't re-guess it.
+            (2017, f"{BASE}/sites/default/files/2017_LG_Election_Report.pdf", [106], "2017-10-21"),
+            (2019, f"{BASE}/sites/default/files/waec/lg_elections/Reports/2019_LG_Election_Report%20FINAL%20online.pdf", [103, 104], "2019-10-19"),
+            # 2021: this report's own "Elected Unopposed" text renders with
+            # no space ("ElectedUnopposed") wherever it appears — confirmed
+            # 2026-09-19 on South Perth's own MANNING ward (D'SOUZA, Blake,
+            # elected unopposed 18 October 2025) — parse_standard()'s
+            # `Elected\s+Unopposed` match requires the space, so that one
+            # candidate is silently dropped rather than misparsed. This
+            # looks like a report-wide rendering quirk (not South-Perth-
+            # specific) that may also be under-counting unopposed
+            # candidates in the already-shipped Cambridge/Perth 2021 rows —
+            # worth a follow-up check against those two CSVs, out of scope
+            # for onboarding a third council.
+            (2021, f"{BASE}/sites/default/files/2021_LG_Election_Report%20online%20vf.pdf", [109, 110], "2021-10-16"),
+            (2023, f"{BASE}/sites/default/files/LG%202023%20Statewide%20report%20-%20with%20appendices_0.pdf", [168, 169], "2023-10-21"),
+        ],
+        "old_era_years": {1999},
+        "output_csv": "data/south_perth_elections_raw.csv",
+    },
 }
 
 
@@ -186,8 +256,18 @@ def split_name(raw: str) -> tuple[str, str]:
     else:
         tokens = raw.split()
         if len(tokens) >= 2:
-            given = _fix_case(tokens[-1])
-            family = _fix_case(" ".join(tokens[:-1]))
+            # Old-era rows read "SURNAME Firstname [Middlename ...]" — the
+            # same surname-first order as the comma branch above, just
+            # without the comma. Taking the surname as tokens[0] (not the
+            # last token as given name) matters once a given name has more
+            # than one word — found 2026-09-19 in South Perth's 1999 report
+            # ("TRENT Kevin Richard", "MALEY James George"); every
+            # previously-shipped 1999/2001 row for Cambridge/Perth happens
+            # to have a single-word given name, so this branch's old
+            # last-token logic produced the same (correct by coincidence)
+            # answer for both councils and the bug was latent until now.
+            family = _fix_case(tokens[0])
+            given = _fix_case(" ".join(tokens[1:]))
         else:
             family = _fix_case(raw)
             given = ""

@@ -1,0 +1,148 @@
+election_date,ward,role,given_name,family_name,elected,votes
+1999-05-01,Mayor,Mayor,Suzanne,Pierce,TRUE,4882
+1999-05-01,Mayor,Mayor,John,Hardwick,FALSE,4773
+1999-05-01,Civic,Councillor,Cheryl,Dibb,TRUE,1095
+1999-05-01,Civic,Councillor,Bill,Gleeson,FALSE,642
+1999-05-01,Civic,Councillor,Eric,Eisenmann,FALSE,789
+1999-05-01,Como Beach,Councillor,Lauraine,MacPherson,TRUE,
+1999-05-01,Como Beach,Councillor,Peter,Kirwan,TRUE,
+1999-05-01,Manning,Councillor,Graham,Rowe,TRUE,
+1999-05-01,Manning,Councillor,Bill,McGhie,TRUE,
+1999-05-01,McDougall,Councillor,Lance,Rattigan,FALSE,609
+1999-05-01,McDougall,Councillor,Colin,Cala,FALSE,950
+1999-05-01,McDougall,Councillor,Gerry,Arthur,FALSE,731
+1999-05-01,McDougall,Councillor,Roy,Wells,TRUE,1091
+1999-05-01,Mill Point,Councillor,Sally,Cook,TRUE,
+1999-05-01,Moresby,Councillor,Kevin Richard,Trent,FALSE,752
+1999-05-01,Moresby,Councillor,Phillipa,Trowbridge,FALSE,831
+1999-05-01,Moresby,Councillor,James George,Maley,FALSE,581
+1999-05-01,Moresby,Councillor,Claire,Allison,TRUE,913
+2005-05-07,Civic,Councillor,Bill,Gleeson,TRUE,
+2005-05-07,Como Beach,Councillor,Joan,Edwardes,FALSE,242
+2005-05-07,Como Beach,Councillor,Alan,Hopkins,FALSE,340
+2005-05-07,Como Beach,Councillor,Brian,Hearne,TRUE,822
+2005-05-07,Manning,Councillor,Les,Ozsdolay,TRUE,
+2005-05-07,McDougall,Councillor,Colin,Cala,TRUE,
+2005-05-07,Mill Point,Councillor,David,Smith,TRUE,
+2005-05-07,Moresby,Councillor,Kevin,Trent,TRUE,
+2007-10-20,Mayor,Mayor,James,Best,TRUE,
+2007-10-20,Mayor,Mayor,Les,Ozsdolay,FALSE,
+2007-10-20,Mayor,Mayor,Barry,Maddaford,FALSE,
+2007-10-20,Mayor,Mayor,Ron,Regan,FALSE,
+2007-10-20,Civic,Councillor,Geoff,Defrenne,FALSE,
+2007-10-20,Civic,Councillor,Ian,Hasleby,TRUE,
+2007-10-20,Como Beach,Councillor,Jim,Grayden,FALSE,
+2007-10-20,Como Beach,Councillor,Peter,Best,TRUE,
+2007-10-20,Manning,Councillor,Travis,Burrows,TRUE,
+2007-10-20,McDougall,Councillor,Roy,Wells,TRUE,
+2007-10-20,Mill Point,Councillor,Rob,Grayden,TRUE,
+2007-10-20,Mill Point,Councillor,Barry,Maddaford,FALSE,
+2007-10-20,Moresby,Councillor,Sue,Doherty,TRUE,
+2007-10-20,Moresby,Councillor,Murray,Rosenberg,FALSE,
+2009-10-17,Civic,Councillor,Veronica Mary,Lawrance,TRUE,852
+2009-10-17,Civic,Councillor,Bill,Gleeson,FALSE,658
+2009-10-17,Como Beach,Councillor,Brian,Hearne,FALSE,624
+2009-10-17,Como Beach,Councillor,Glenn,Cridland,TRUE,778
+2009-10-17,Manning,Councillor,Les,Ozsdolay,TRUE,
+2009-10-17,McDougall,Councillor,Colin,Cala,TRUE,824
+2009-10-17,McDougall,Councillor,Murray,Rosenberg,FALSE,428
+2009-10-17,Mill Point,Councillor,Betty,Skinner,TRUE,918
+2009-10-17,Mill Point,Councillor,Michael John,Frame,FALSE,655
+2009-10-17,Moresby,Councillor,Kevin Richard,Trent,TRUE,783
+2009-10-17,Moresby,Councillor,Fiona,Reid,FALSE,728
+2011-10-15,Mayor,Mayor,Sue,Doherty,TRUE,4001
+2011-10-15,Mayor,Mayor,Chris,Thomas,FALSE,757
+2011-10-15,Mayor,Mayor,Travis,Burrows,FALSE,2809
+2011-10-15,Civic,Councillor,Ian,Hasleby,TRUE,
+2011-10-15,Como Beach,Councillor,Charlotte,MacMillan,FALSE,200
+2011-10-15,Como Beach,Councillor,Peter John,Best,FALSE,319
+2011-10-15,Como Beach,Councillor,Bill,Gleeson,TRUE,669
+2011-10-15,Manning,Councillor,Frank,Hough,FALSE,411
+2011-10-15,Manning,Councillor,Sharron Lorraine,Hawkins Zeeb,TRUE,818
+2011-10-15,McDougall,Councillor,Peter Aran,Howat,TRUE,
+2011-10-15,Mill Point,Councillor,Robert James,Grayden,TRUE,
+2011-10-15,Moresby,Councillor,Fiona,Reid,TRUE,891
+2011-10-15,Moresby,Councillor,Tanya,Steers,FALSE,311
+2013-10-19,Como,Councillor,Les,Ozsdolay,FALSE,446
+2013-10-19,Como,Councillor,Veronica,Lawrance,TRUE,843
+2013-10-19,Como,Councillor,Bill,Gleeson,FALSE,688
+2013-10-19,Como,Councillor,Hermes,Martini,FALSE,241
+2013-10-19,Como,Councillor,Glenn,Cridland,TRUE,921
+2013-10-19,Manning,Councillor,Colin,Cala,TRUE,
+2013-10-19,Manning,Councillor,Sharron,Hawkins-Zeeb,TRUE,
+2013-10-19,Mill Point,Councillor,Cheryle,Irons,TRUE,1050
+2013-10-19,Mill Point,Councillor,Betty,Skinner,FALSE,592
+2013-10-19,Mill Point,Councillor,Michael,Huston,TRUE,776
+2013-10-19,Mill Point,Councillor,Ian,Hasleby,FALSE,617
+2013-10-19,Mill Point,Councillor,Peter,Best,FALSE,494
+2013-10-19,Mill Point,Councillor,Peter,Howat,FALSE,627
+2013-10-19,Moresby,Councillor,Rob,Ramsden,FALSE,688
+2013-10-19,Moresby,Councillor,Fiona,Reid,TRUE,1188
+2013-10-19,Moresby,Councillor,Kevin,Trent,TRUE,1106
+2015-10-17,Mayor,Mayor,Sue,Doherty,TRUE,5297
+2015-10-17,Mayor,Mayor,Ashley,Buckle,FALSE,546
+2015-10-17,Mayor,Mayor,Sharron,Hawkins - Zeeb,FALSE,1877
+2015-10-17,Como,Councillor,Harry,Goff,FALSE,244
+2015-10-17,Como,Councillor,Eleanor,Scarff,FALSE,183
+2015-10-17,Como,Councillor,Barry,Mather,FALSE,519
+2015-10-17,Como,Councillor,Monica,Chetty,FALSE,249
+2015-10-17,Como,Councillor,Jessica,Black,TRUE,540
+2015-10-17,Manning,Councillor,Colin,Cala,TRUE,
+2015-10-17,Mill Point,Councillor,Ting,Zhang,FALSE,251
+2015-10-17,Mill Point,Councillor,Ian,Hasleby,FALSE,641
+2015-10-17,Mill Point,Councillor,Keryn,Zeeb,FALSE,389
+2015-10-17,Mill Point,Councillor,Ken,Manolas,TRUE,1086
+2015-10-17,Moresby,Councillor,Travis,Burrows,TRUE,1036
+2015-10-17,Moresby,Councillor,Jennifer,Noye,FALSE,721
+2017-10-21,Como,Councillor,Peter,Shewring,FALSE,214
+2017-10-21,Como,Councillor,Tshung,Chang,FALSE,450
+2017-10-21,Como,Councillor,James,Allen,FALSE,173
+2017-10-21,Como,Councillor,Dylan,Botica,FALSE,599
+2017-10-21,Como,Councillor,Bill,Gleeson,FALSE,429
+2017-10-21,Como,Councillor,Tracie,McDougall,TRUE,812
+2017-10-21,Como,Councillor,Ron,Regan,FALSE,295
+2017-10-21,Como,Councillor,Glenn,Cridland,TRUE,850
+2017-10-21,Manning,Councillor,Chris,Muir,FALSE,438
+2017-10-21,Manning,Councillor,Sharron,Hawkins-Zeeb,FALSE,633
+2017-10-21,Manning,Councillor,Carl,Celedin,FALSE,646
+2017-10-21,Manning,Councillor,Blake,D'Souza,TRUE,756
+2017-10-21,Mill Point,Councillor,Mary,Choy,FALSE,1107
+2017-10-21,Mill Point,Councillor,Stephen,Lau,FALSE,484
+2017-10-21,Mill Point,Councillor,Cheryle,Irons,TRUE,1250
+2019-10-19,Mayor,Mayor,Greg,Milner,TRUE,5930
+2019-10-19,Mayor,Mayor,Travis,Burrows,FALSE,3433
+2019-10-19,Como,Councillor,Josef,Herbert,FALSE,981
+2019-10-19,Como,Councillor,Carl Gerard,Celedin,TRUE,1118
+2019-10-19,Manning,Councillor,Seema,Saxena,FALSE,213
+2019-10-19,Manning,Councillor,Andre,Brandis,TRUE,965
+2019-10-19,Manning,Councillor,Eileen,Aitken-Fox,FALSE,492
+2019-10-19,Manning,Councillor,Stuart,Kenny,FALSE,662
+2019-10-19,Mill Point,Councillor,Ken,Manolas,TRUE,1748
+2019-10-19,Mill Point,Councillor,Corey,Da Luz,FALSE,307
+2019-10-19,Mill Point,Councillor,Keryn,Zeeb,FALSE,923
+2019-10-19,Mill Point,Councillor,Cam,Tinley,FALSE,512
+2019-10-19,Mill Point,Councillor,Mary,Choy,TRUE,1588
+2019-10-19,Moresby,Councillor,Samantha,Bradder,FALSE,710
+2019-10-19,Moresby,Councillor,Bill,Gleeson,FALSE,413
+2019-10-19,Moresby,Councillor,Stephen,Russell,TRUE,1025
+2021-10-16,Como,Councillor,Roger,Riachi,FALSE,472
+2021-10-16,Como,Councillor,Fadumo Dahir,Mohamud,FALSE,112
+2021-10-16,Como,Councillor,Jenny,McKay,FALSE,176
+2021-10-16,Como,Councillor,Lucinda,Crisp,FALSE,513
+2021-10-16,Como,Councillor,Glenn,Cridland,TRUE,734
+2021-10-16,Mill Point,Councillor,Mary,Choy,TRUE,1571
+2021-10-16,Mill Point,Councillor,Keryn,Zeeb,FALSE,534
+2021-10-16,Mill Point,Councillor,Fraser Edward,James,FALSE,333
+2021-10-16,Moresby,Councillor,Samantha,Bradder,FALSE,814
+2021-10-16,Moresby,Councillor,Murray,Rosenberg,FALSE,328
+2021-10-16,Moresby,Councillor,Jennifer,Nevard,TRUE,870
+2023-10-21,Mayor,Mayor,Greg,Milner,TRUE,6355
+2023-10-21,Mayor,Mayor,Mary,Choy,FALSE,4092
+2023-10-21,Como,Councillor,Bronwyn,Waugh,TRUE,
+2023-10-21,Manning,Councillor,George,Watts,FALSE,1127
+2023-10-21,Manning,Councillor,Warren,Thorne,FALSE,201
+2023-10-21,Mill Point,Councillor,Cam,Tinley,FALSE,1037
+2023-10-21,Mill Point,Councillor,Nic,Coveney,TRUE,1820
+2023-10-21,Moresby,Councillor,Hayley,Prendiville,TRUE,1272
+2023-10-21,Moresby,Councillor,Stephen,Russell,FALSE,1094
+2023-10-21,Moresby,Councillor,Krissy,McGavin,FALSE,109

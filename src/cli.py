@@ -116,6 +116,17 @@ COUNCILS = {
         "source_url": "https://www.perth.wa.gov.au",
         "scraper": "src.scraper.perth:PerthScraper",
     },
+    "south_perth": {
+        "short_name": "South Perth",
+        "display_name": "City of South Perth",
+        # southperth.wa.gov.au calls itself "City of South Perth" throughout
+        # (footer, council-meetings page) — no "Town of"/"Council" framing,
+        # same shape as Perth's own entry above (see that comment).
+        "name_prefix": "City of",
+        "name_suffix": "",
+        "source_url": "https://southperth.wa.gov.au",
+        "scraper": "src.scraper.south_perth:SouthPerthScraper",
+    },
     # Synthetic — no scraper, never real data. `synthetic: True` (not the
     # name "testville") is what every gate keys on: `council publish`
     # refuses it (src/publish_gate.py), and it's the only council

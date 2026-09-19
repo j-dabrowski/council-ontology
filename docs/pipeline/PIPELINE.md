@@ -990,6 +990,88 @@ python scripts/dedup_councillors.py --apply  # merge confirmed duplicates
     records request, or a deeper Wayback sweep before concluding nothing
     survives.
 
+### Known gaps (South Perth)
+
+- **2001, 2003**: confirmed no election held — South Perth appears in both
+  reports' statewide enrolment/turnout appendix only, each time as
+  "South Perth* ... No election" (2001 report p.52, 2003 report p.62).
+  Not a data gap to fill.
+- **2017**: MORESBY ward's results (HOS/REID/MILNER, Milner elected 16
+  October 2021) are missing. The report's own page for that ward (0-indexed
+  107 of `2017_LG_Election_Report.pdf`) reads fine via PyMuPDF but
+  pdfplumber — the library `scripts/extract_wa_elections.py` uses for every
+  council — extracts it character-doubled ("CCaannddiiddaattee") and
+  unusable. Confirmed a page-specific PDF rendering quirk, not a missing
+  section; recoverable by hand from that page if ever needed.
+- **2021**: MANNING ward's unopposed councillor (D'SOUZA, Blake, elected 18
+  October 2025) is missing. The whole 2021 report renders "Elected
+  Unopposed" with no space ("ElectedUnopposed") wherever it appears in
+  pdfplumber's extraction, which `parse_standard()`'s `Elected\s+Unopposed`
+  match requires — the row is silently dropped rather than misparsed. This
+  looks report-wide, not South-Perth-specific — **worth checking whether
+  it also under-counts unopposed candidates in the already-shipped
+  Cambridge/Perth 2021 rows**, not done as part of this onboarding.
+- **Pre-1999**: not digitised in the Elections WA online archive, same as
+  Cambridge's own pre-1999 gap above.
+- Otherwise complete: 1999, 2005, 2007, 2009, 2011, 2013, 2015, 2019, 2023
+  all extracted cleanly (`scripts/extract_wa_elections.py south_perth`, 147
+  rows / 11 elections). 2013 is a boundary-redistribution year — three old
+  wards (Civic, Como Beach, McDougall, last seen 2011) were replaced by one
+  new one (Como); kept as seven distinct ward values in the CSV rather than
+  aliased onto each other, since they had genuinely different boundaries
+  (`COUNCIL_CONFIGS["south_perth"]["ward_aliases"]` comment).
+- **`split_name()` bug found and fixed while building this council's
+  config (2026-09-19):** the old-era (1999/2001-format) name splitter took
+  the *last* token as the given name and everything before it as the
+  surname — backwards from the "SURNAME Firstname [Middlename]" order
+  those reports actually use, and silently wrong for any 3+-word name
+  (South Perth 1999 has two: "TRENT Kevin Richard", "MALEY James George").
+  Every previously-shipped Cambridge/Perth 1999/2001 row happens to have a
+  single-word given name, so the bug was latent, not previously visible —
+  fixing it changed one already-shipped row: Perth 2001's
+  "Alan / Wilkins Brett" is now correctly "Brett Alan / Wilkins". Neither
+  council's terms have been imported into a local DB yet (`council
+  import-terms ... --apply` was never run for Perth in this environment),
+  so no downstream `Councillor` row needed correcting.
+- **Minutes/agenda corpus, not elections:** `SouthPerthScraper`'s
+  `_EARLIEST_YEAR = 2006` bounds the *live site's* per-year archive
+  (confirmed by hand — 2001-2005 all return only the current year's
+  upcoming-meeting links, nothing of their own). The City of South Perth
+  has existed as a local government since 1901; whether pre-2006 records
+  survive anywhere (Wayback, a dead pre-Sitefinity CMS, physical archives)
+  is **unresearched**, not verified absent — a gap for a future session,
+  same treatment as Perth's own pre-2015 stretch above.
+
+### Onboarding note (South Perth, 2026-09-19)
+
+Registry + scraper (`src/scraper/south_perth.py`, `SouthPerthScraper`) and
+terms extraction (`COUNCIL_CONFIGS["south_perth"]` in
+`scripts/extract_wa_elections.py`) prepared, following the same order as
+Perth's own onboarding note below. southperth.wa.gov.au runs Progress
+Sitefinity — a third CMS, distinct from Cambridge (OpenCities) and Perth
+(Sitecore/Cloudflare) — but unlike Perth has **no bot-protection
+challenge**, so the scraper needs no Playwright dependency; discovery is
+one httpx GET per year via `?year=YYYY`, and document typing reads each
+link's rendered label rather than its (unreliable, often generic)
+filename — see the scraper's own module docstring for the full design
+rationale. Dry-run verified live against the real site 2026-09-19: 741
+minutes/agenda PDFs discovered across 2006-2026 with clean meeting-type
+and document-type classification, zero errors. `council seed-fixture`
+doesn't apply here (that's Testville-only); the `Council` DB row was
+seeded directly via `seed_council()` (no CLI command wraps it yet — same
+gap PIPELINE.md's Perth note below already flagged). Terms CSV generated
+(147 rows/11 elections) but **not yet imported** — `council import-terms
+south_perth data/south_perth_elections_raw.csv --apply` is a deliberate
+next step, not run here, since nothing downstream (extraction, dedup) has
+started yet to give it context. `council boundary south_perth` also not
+run: `scripts/build_boundaries.py` validates a new boundary against that
+council's already-geocoded planning sites, which don't exist before
+extraction — boundary is a post-extraction step for a new council despite
+living in this same "Council Setup" section, not a pre-scrape one.
+No scrape (`council scrape south_perth`) or extraction run yet — next
+steps follow "Subsequent corpora onboarded" above once someone decides to
+actually spend on this council.
+
 ### Onboarding note (Perth, 2026-09-18)
 
 `scripts/import_terms.py` originally only matched election-CSV rows against
