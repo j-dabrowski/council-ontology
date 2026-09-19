@@ -8,6 +8,7 @@ import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { Reveal } from "./DrillDown";
 import { RedactedText } from "../guardrail";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 export function ContestationChart({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.trends());
@@ -91,7 +92,7 @@ export function ContestationChart({ test }: { test: ResolvedTest }) {
       </Reveal>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

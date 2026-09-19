@@ -1622,6 +1622,32 @@ a:hover { text-decoration: underline; }
 .bt-headline-text { font-size: 1.02rem; color: var(--text-hi); font-weight: 500; line-height: 1.4; }
 .bt-meta { color: var(--text-faint); }
 .bt-meta .sc-genre { color: var(--genre); }
+
+/* ── Glossary tooltip (Glossary.tsx) ─────────────────────────────────────── */
+.glossary-term {
+  position: relative;
+  border-bottom: 1px dotted var(--text-faint);
+  cursor: help;
+}
+.glossary-tooltip {
+  position: absolute;
+  z-index: 20;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 260px;
+  padding: 8px 10px;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  font-weight: 400;
+  color: var(--text-hi);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  white-space: normal;
+}
 .bt-nodata {
   padding: 28px 16px; text-align: center; color: var(--text-dim);
   background: var(--sunken); border: 1px dashed var(--nil-bd); border-radius: 8px; font-size: 0.95rem;

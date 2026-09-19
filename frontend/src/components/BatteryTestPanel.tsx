@@ -10,6 +10,7 @@ import { ObjectionResponse } from "./ObjectionResponse";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { RedactedText } from "../guardrail";
+import { Principles } from "./Glossary";
 
 const VALENCE_FILL: Record<string, string> = {
   supportive: "#4ade80", neutral: "#60a5fa", critical: "#f87171",
@@ -183,7 +184,7 @@ export function BatteryTestBody({ test: t, cllrData }: { test: ResolvedTest; cll
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
-        {" · "}{t.principles.join(" · ")}
+        <Principles list={t.principles} />
         {" · "}{t.question_technical}
         {t.n != null && <> · n&nbsp;=&nbsp;{t.n.toLocaleString()}</>}
         {t.base_rate && <> · {t.base_rate}</>}

@@ -7,6 +7,7 @@ import { CouncillorLink, useCouncillor } from "./CouncillorModal";
 import { DrillDown, Reveal, SourceQuote } from "./DrillDown";
 import { surname } from "../surname";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 function edgeKey(a: number, b: number): string {
   return `${a}:${b}`;
@@ -261,7 +262,7 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

@@ -9,6 +9,7 @@ import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 import { DrillDown, Reveal, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 const HIST_ORDER = ["<2y", "2-5y", "5-10y", "10-15y", "15y+"];
 
@@ -175,7 +176,7 @@ export function TenurePanel({ test }: { test: ResolvedTest }) {
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

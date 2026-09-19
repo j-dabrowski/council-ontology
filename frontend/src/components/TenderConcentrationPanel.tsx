@@ -9,6 +9,7 @@ import { LoadingCard } from "./InterestsChart";
 import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 const fmtM = (n: number) => `$${(n / 1e6).toFixed(1)}M`;
 const fmt$ = (n: number) =>
@@ -170,7 +171,7 @@ export function TenderConcentrationPanel({ test }: { test: ResolvedTest }) {
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

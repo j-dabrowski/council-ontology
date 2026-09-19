@@ -5,6 +5,7 @@ import { LoadingCard } from "./InterestsChart";
 import { BatteryTestBody } from "./BatteryTestPanel";
 import { SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 export function DivergencePanel({ test }: { test: ResolvedTest }) {
   const { data, loading, error } = useData(() => api.divergence());
@@ -177,7 +178,7 @@ export function DivergencePanel({ test }: { test: ResolvedTest }) {
       )}
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

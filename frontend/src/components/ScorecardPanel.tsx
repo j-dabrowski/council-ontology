@@ -8,6 +8,7 @@ import { groupByCategory } from "../registry/grouping";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
 import { RedactedText } from "../guardrail";
 import { analysisHref, useScrollToTest } from "../registry/anchors";
+import { Principles } from "./Glossary";
 
 // Mirrors src/analysis/tests.py's battery_summary(): "not computable" comes
 // from data_ok, not valence, since a data_ok:false row's own valence is
@@ -44,7 +45,7 @@ function TestRow({ t, councillorNames }: { t: ResolvedTest; councillorNames: str
         </div>
         <div className="sc-row-meta">
           <span className="sc-genre">{CATEGORY_LABEL[t.category]}</span>
-          <span className="sc-principle">{t.principles.join(" · ")}</span>
+          <span className="sc-principle"><Principles list={t.principles} /></span>
           {t.n != null && <span className="sc-n">n&nbsp;=&nbsp;{t.n.toLocaleString()}</span>}
           {t.era && <span className="sc-era">{t.era}</span>}
           {t.has_deep_dive && (

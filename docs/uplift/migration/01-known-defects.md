@@ -65,7 +65,7 @@ resolved further here.
 | D-34 | "Sent to the Town on [date]; response here" disclosure | New `ReplyStatus.tsx` component, wired into `AnalysisPage.tsx`'s shell — 2026-09-19 | FIXED (rendering); process still not run | `reply` was already serialized to every snapshot (`_dc()` is a full `dataclasses.asdict()`) — the only gap was the frontend never reading it. Verified live in a browser (Playwright) against synthetic reply data injected into the real placeholder JSON, then reverted. The process gap (someone has to actually run `council reply-packets` and record a real response) is unchanged, per this step's own scope |
 | D-35 | Non-overlapping axis tick labels | `formatAxisTick()` (`BatteryTestPanel.tsx`) — 2026-09-19 | FIXED | Compact, unit-aware `tickFormatter` on both numeric axes (bar chart's X-axis, line chart's Y-axis) — abbreviates thousands/millions, caps decimals — replacing the bare `unit` prop. Verified live in a browser (Playwright): `finance.eoy_spending` ($M bars) and `governance.freshman_effect` (% bars) both render evenly-spaced, non-colliding ticks |
 | D-36 | One-line plain-English "is my council OK?" verdict | `OverviewPanel.tsx:6-17` — a hand-written synthesis **used to exist**, deliberately removed (`SECOND_COUNCIL_PLAN.md` Phase 3.5) because it hardcoded Cambridge-specific conclusions | MISSING (deliberate) | Named, designed replacement (Renderer's synthesis mode) exists but has never run — blocked on a separate track, not an oversight |
-| D-37 | Jargon terms defined at point of use | No glossary/tooltip component exists anywhere in `frontend/src/`; `/method`'s `metric.definition` is a separate, narrower per-metric field | MISSING | — |
+| D-37 | Jargon terms defined at point of use | New `Glossary.tsx` (`GLOSSARY`/`Term`/`Principles`), wired into every `principles` render (16 call sites) — 2026-09-19 | PARTIAL (Nolan/CIPFA done; derived-stat terms defined but not yet auto-linked) | `/method`'s `metric.definition` remains a separate, narrower per-metric field, unaffected |
 | D-38 | No arrow/flow styling between non-flowing denominators | `ConflictRecusalPanel.tsx`'s hero row now uses plain dividers throughout — 2026-09-19 | FIXED | Arrow removed; the "declared" stat also switched to must-leave-only (`ConflictRecusalStats.must_leave_recusal_pct`, now exposed on the "declared" snapshot), matching the corpus-wide fix from G-22 rather than showing a still-blended figure once Steps 12/14 had already settled which number is correct |
 | D-39 | WA/Australia jurisdiction visible wherever Nolan/CIPFA appear | Per-council `state` field now flows into `SiteNav`/`SiteFooter`/`CouncilHeader` — 2026-09-19 | FIXED | Added `state` to the `COUNCILS` registry (`src/cli.py`), the draft manifest, and the published `councils.json` (`src/publish_gate.py`); rendered as a small badge in `SiteNav.tsx` (top-right, every page including non-council ones), the `CouncilHeader.tsx` subtitle, and `SiteFooter.tsx`'s source line — never a hardcoded label, so a future council in a different jurisdiction renders correctly |
 
@@ -289,11 +289,11 @@ Current: a hand-written synthesis existed once and was deliberately removed beca
 Delta: not an oversight — a known, named gap blocked on a separate track's calibration.
 Risk if unfixed: unchanged from the source doc's framing; blocked, not forgotten.
 
-### G-37: No glossary or hover-definitions for jargon
+### G-37: No glossary or hover-definitions for jargon — Nolan/CIPFA done, derived-stat terms defined but not yet auto-linked
 Target: CIPFA-A..G, Nolan principles, lift, ×N, DIRECTIONAL, base rate, matched votes, must-leave, impartiality interest, recusal, and blended rate are each defined at the point they appear.
-Current: no glossary/tooltip component exists anywhere in `frontend/src/`; the one static explanatory paragraph in `ScorecardPanel.tsx:120-126` covers the valence ladder only, once, not attached to individual jargon occurrences; `/method`'s `metric.definition` is a separate, narrower field scoped to that page only.
-Delta: net-new component.
-Risk if unfixed: every governance-framework label and every derived-statistic term on every panel is unexplained at its point of use.
+Current: `Glossary.tsx` — a `GLOSSARY` dictionary (Nolan's seven principles and CIPFA-A..G verbatim from `Investigator_prompt.txt` Parts 1.1/1.2, plus definitions for the nine derived-statistic terms), a `Term`/tooltip component (hover or focus, dotted underline, degrades to plain text for an unrecognised token), and `<Principles list={...}>` — a drop-in replacement for the `{principles.join(" · ")}` pattern found identically at 16 call sites across every panel (generic and bespoke alike), each Nolan/CIPFA token now individually hoverable with its definition. Verified live in a browser (dev server + Playwright, chromium): hovering "CIPFA-F" on `finance.eoy_spending` shows its definition, no console errors.
+Delta: the 16-site sweep closes the systematic, always-present case (every panel's principle citation); the other nine D-37 terms are defined in the same dictionary but not yet auto-linked inside arbitrary headline/verdict prose — regex-matching a short common word like "lift" inside free text risks false-positive matches out of context, flagged in the module's own comment as a follow-up needing more tooling than this pass. `ScorecardPanel.tsx`'s valence-ladder paragraph is unchanged (a different, still-valid explanatory mechanism for a different kind of term).
+Risk if unfixed: the systematic case (every governance-framework label on every panel) is closed. The narrower remaining gap (derived-statistic terms inside prose) is unchanged from before this fix.
 
 ### G-38: Funnel arrow implies flow between non-flowing denominators — FIXED
 Target: three differently-denominated statistics are not visually chained.
@@ -423,10 +423,10 @@ Files touched: `frontend/src/components/SiteNav.tsx`, `SiteFooter.tsx`, `Council
 Depends on: none
 Done when: every page, not just About, carries a visible WA/Australia cue alongside the council name.
 
-### Step 22: Build a glossary/tooltip component
-Files touched: new `frontend/src/components/Glossary.tsx` or a tooltip wrapper, wired into every panel that prints a `principle`/jargon term
-Depends on: Step 24/25 (the framework-citation redesign in `04-jurisdiction.md` may change which terms need defining — sequence the glossary's term list after that lands, or accept it will need a follow-up pass)
-Done when: every jargon term listed in D-37 has a definition reachable at its point of use.
+### Step 22: Build a glossary/tooltip component — DONE (2026-09-19), against the current term list
+Files touched: new `frontend/src/components/Glossary.tsx`, wired into every panel that prints a `principle` (16 call sites, `Principles` component replacing the `{principles.join(" · ")}` pattern common to all of them)
+Depends on: built now against the current Nolan/CIPFA jargon list, per explicit instruction not to wait on `04-jurisdiction.md`'s later phases — **flagged for a follow-up pass** once that file's Steps 1-2 (this same session) and its later framework-citation redesign land, since demoting Nolan/CIPFA to a secondary mapping alongside seven WA instruments will add new terms this glossary doesn't define yet.
+Done when: every Nolan/CIPFA jargon term listed in D-37 has a definition reachable at its point of use — done. The nine derived-statistic terms (lift, ×N, DIRECTIONAL, base rate, matched votes, must-leave, impartiality interest, recusal, blended rate) are defined in the same dictionary but not yet auto-linked inside free-text prose — a narrower, explicitly-flagged remainder, not silently dropped.
 
 ### Step 23: Design and add a declared population/grain field to the claim object
 Files touched: cross-references `02-claim-layer.md`'s claim-object schema

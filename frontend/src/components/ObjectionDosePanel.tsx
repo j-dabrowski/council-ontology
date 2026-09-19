@@ -8,6 +8,7 @@ import { api, ObjectionDoseBucket, DoseApp, type EvidenceEntry } from "../api";
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 const LABELS: Record<string, string> = {
   "0": "No objectors",
@@ -172,7 +173,7 @@ export function ObjectionDosePanel({ test }: { test: ResolvedTest }) {
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

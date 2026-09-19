@@ -10,6 +10,7 @@ import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 const TYPE_LABEL: Record<string, string> = {
   financial: "Financial", proximity: "Proximity",
@@ -338,7 +339,7 @@ export function ConflictRecusalPanel({ test }: { test: ResolvedTest }) {
 
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

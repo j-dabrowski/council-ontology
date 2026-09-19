@@ -10,6 +10,7 @@ import { LoadingCard } from "./InterestsChart";
 import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 const ERA_ORDER = ["pre", "inquiry", "post"] as const;
 
@@ -242,7 +243,7 @@ export function QuestionResponsivenessPanel({ test }: { test: ResolvedTest }) {
 
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

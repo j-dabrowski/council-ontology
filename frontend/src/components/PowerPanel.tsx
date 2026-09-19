@@ -11,6 +11,7 @@ import { BatteryTestBody } from "./BatteryTestPanel";
 import { DrillDown, SourceQuote, Reveal } from "./DrillDown";
 import { CouncillorLink, CouncillorTick } from "./CouncillorModal";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 const pct = (v: number) => `${Math.round(v * 100)}%`;
 
@@ -315,7 +316,7 @@ export function PowerPanel({ test }: { test: ResolvedTest }) {
 
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>

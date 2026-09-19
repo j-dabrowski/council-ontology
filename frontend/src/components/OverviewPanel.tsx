@@ -2,6 +2,7 @@ import { useData } from "../hooks/useData";
 import { api, OverviewData, ScorecardData } from "../api";
 import { useCorpusSpan } from "../councils";
 import { Card, LoadingCard, ErrorCard } from "./InterestsChart";
+import { GlossaryText } from "./Glossary";
 
 // SECOND_COUNCIL_PLAN.md Phase 3.5: this panel used to be a hand-written
 // synthesis for this project's first corpus — a thesis paragraph, a
@@ -107,7 +108,7 @@ export function OverviewPanel() {
           <div key={it.n} className="overview-insight">
             <div className="overview-insight-stat">{it.stat}</div>
             <div className="overview-insight-statlabel">{it.label}</div>
-            <span className="overview-insight-principle">{it.principle}</span>
+            <span className="overview-insight-principle"><GlossaryText text={it.principle} /></span>
           </div>
         ))}
       </div>

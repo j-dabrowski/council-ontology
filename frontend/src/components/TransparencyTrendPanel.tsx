@@ -8,6 +8,7 @@ import { api, TransparencyYear, ConfidentialItem, type EvidenceEntry } from "../
 import { LoadingCard, ErrorCard } from "./InterestsChart";
 import { DrillDown, SourceQuote } from "./DrillDown";
 import { CATEGORY_LABEL, type ResolvedTest } from "../registry/types";
+import { Principles } from "./Glossary";
 
 const KIND_LABELS: Record<string, string> = {
   tender: "Tender",
@@ -183,7 +184,7 @@ export function TransparencyTrendPanel({ test }: { test: ResolvedTest }) {
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>
-        {" · "}{test.principles.join(" · ")}
+        <Principles list={test.principles} />
         {" · "}{test.question_technical}
       </p>
     </>
