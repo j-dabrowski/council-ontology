@@ -195,9 +195,14 @@ export function RecusalTrendPanel({ test }: { test: ResolvedTest }) {
             </div>
             <div className="planning-stat-divider" />
             <div className="planning-stat">
+              <span className="badge badge-neutral" style={{ marginBottom: 4, alignSelf: "flex-start" }}>
+                Context only — does not affect the grade above
+              </span>
               <span className="planning-stat-num">{data.impartiality_post_recusal_pct}%</span>
               <span className="planning-stat-label">
-                recusal on the {data.impartiality_post_declared} post-{window![1] + 1} "impartiality" declarations
+                recusal on the {data.impartiality_post_declared} post-{window![1] + 1} "impartiality"
+                declarations — lawful to stay and vote on these, so this figure is excluded from the
+                must-leave grade above
               </span>
             </div>
           </div>
