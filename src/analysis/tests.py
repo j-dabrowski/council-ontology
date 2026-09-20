@@ -893,7 +893,7 @@ def _t_sponsorship(session, council_id, pc) -> TestResult:
         test_id="governance.durable_faction",
         title="Is there a faction that survives across elections?",
         genre="Governance / culture (3.2)",
-        principle="CIPFA-B · the Perth root-cause genre",
+        principle="CIPFA-B · the council-governance-inquiry root-cause genre",
         question="Do voting/sponsorship blocs persist across electoral terms (an entrenched bloc)?",
         valence=NEUTRAL,
         grade=G_OBSERVATION,

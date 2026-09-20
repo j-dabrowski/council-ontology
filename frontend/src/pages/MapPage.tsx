@@ -97,10 +97,11 @@ function InvalidateSizeOnResize() {
 }
 
 // Default view (5.5): fit bounds to the union of the council layer's own
-// features, not a hardcoded metro box — opens on Perth while there's one
-// analysed council, and opens correctly wherever they are once there are
-// several, all without this file ever naming a region. WA_CENTER/WA_ZOOM
-// stay as the fallback for an empty council list (no bounds to fit).
+// features, not a hardcoded metro box — opens on wherever that one council
+// actually is while there's a single analysed council, and opens correctly
+// wherever they are once there are several, all without this file ever
+// naming a region. WA_CENTER/WA_ZOOM stay as the fallback for an empty
+// council list (no bounds to fit).
 function FitToCouncilBounds({ geoLayerRef, ready }: {
   geoLayerRef: React.RefObject<LeafletGeoJSON | null>;
   ready: boolean;
