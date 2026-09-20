@@ -43,6 +43,32 @@ Not owned by one track — gates all of them:
   never reads `Editor_prompt.txt`), does (`docs/GENERATION_SCORING_SPLIT.md`
   §2). Start at `review/REVIEW.md`. Untested as of 2026-08-10 — see that
   file's status note before treating any of it as calibrated.
+- **Claim layer** (`docs/uplift/02-claim-layer.md`'s target architecture,
+  Steps 1-9 of `docs/uplift/migration/02-claim-layer.md`; 2026-09-20) —
+  parallel to `TestResult`/`tests.py`, not yet load-bearing for real
+  output: `src/analysis/claims.py` (the `Claim` schema), `gold.py` (7
+  gold-fact-table views + the `build_population()`/`replay_population_n()`
+  filter-chain replay), `inference.py` (CI/clustering/median/categorical/
+  overlap/trend machinery — no test-specific logic), `claim_linter.py`
+  (the 18-rule deterministic linter, L-01..L-18), and `builder.py` (the
+  **Builder** — `Claim` → deterministic panel data + chart + a structured
+  `NarrativeBrief`, no prose written; see its own docstring for why prose
+  generation is deliberately left to the Renderer/critic-loop below, not
+  duplicated here). `tests.py`'s `_CLAIM_GENERATORS`/`run_claim_battery()`
+  is the `Claim`-object counterpart to `_GENERATORS`/`run_test_battery()` —
+  27 of 29 battery tests covered (`CLAIM_GENERATOR_COVERAGE_GAP` names the
+  2 that aren't: both genuinely no-data on this corpus, not a missing-
+  machinery gap). The linter runs in `council draft` (`claim_lint_report.json`)
+  and in CI (`scripts/claim_battery_report.py` against `testville`) —
+  **both report-only, not blocking**: most claims still carry known,
+  systemic gaps (no `achieved_power` computation anywhere yet, no
+  clustered two-proportion estimator, a real schema gap for two-group
+  comparisons' per-group rates — see `tests/test_claim_migrations_batch2.py`'s
+  docstring). `TestResult` still produces every real published snapshot;
+  retiring it needs the Builder's output actually wired into `council
+  draft`'s snapshot-writing path (not done) and Renderer-generated prose
+  (not built) first — see `docs/TESTING.md`'s "Claim battery report"
+  section for why that cutover isn't safe yet.
 - `render/` — the S10 audience-rendering stage, after a claim has cleared
   S7/S8 (and S9, for any named-individual claim): **Renderer**, two modes
   (plain-language: institutional product → resident-facing summary;
@@ -344,6 +370,8 @@ The non-obvious edges, spelled out:
 | planning the end-to-end order to run all stages (CLI + agents) for a new corpus | `pipeline/PIPELINE.md` ("Longer term → Corpus onboarding order") — design sketch, not built; first-corpus vs subsequent-corpus sequencing |
 | planning for many-council, recurring/scheduled operation (after onboarding) | `pipeline/PIPELINE.md` ("Longer term → Production scale") — design sketch, not built; cross-referenced from `review/CONDUCTOR.md` |
 | implementing (or revising) the 2026-08-23 top-down redesign — claim object, invariant gate, tier products, role changes | `INFORMATION_ARCHITECTURE.md` (the flow) + `AGENT_DESIGN.md` (owners, file deltas, §6 build order) — read the coverage audit row above them first |
+| migrating another battery test to a `Claim` object, or improving the linter/inference machinery | `docs/uplift/migration/02-claim-layer.md` Step 6 — add a `_t_<name>_claim` generator to `tests.py` and register it in `_CLAIM_GENERATORS`; new statistical shapes go in `src/analysis/inference.py`, new rules in `src/analysis/claim_linter.py` |
+| turning a `Claim` into panel-ready data (no prose) | `src/analysis/builder.py`'s `build_panel()` — deterministic only; the actual headline/body is a separate, not-yet-built step (the S10 Renderer or a critic-agent loop), not this module's job |
 | building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX; a panel is registered in `frontend/src/registry/components.tsx` and renders body-only — the analysis page's shell owns the card, severity chip and Objection/Response |
 | building or changing the `/map` page | `frontend/MAP_PAGE_PLAN.md` |
 | adding or replacing a council's boundary polygon | `council boundary <key>` → `config/council_boundaries/<key>.geojson`; `council boundary --backdrop` rebuilds the shared all-WA context layer — documented as a Council Setup step in `pipeline/PIPELINE.md`, same footing as terms seeding |
