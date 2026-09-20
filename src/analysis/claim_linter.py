@@ -70,7 +70,14 @@ DEFAULT_EXTRACTION_PRECISION_THRESHOLD = 0.90
 # without going so loose it stops catching a genuinely wrong figure.
 FIGURE_MATCH_TOLERANCE = 0.6
 
-_NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?%?")
+# (?<!\w) before the optional sign: a "-" directly preceded by a letter or
+# digit is a hyphen inside a compound word ("top-10") or a range
+# ("41-92%"), not a negative sign — found by running this rule against a
+# real generated claim ("top-10 dollar-recipient" was misread as "-10").
+# The optional (?:,\d{3})* group matches comma-grouped thousands ("4,993")
+# as one token instead of splitting at the comma into "4" and "993" — same
+# real-data discovery.
+_NUMBER_RE = re.compile(r"(?<!\w)-?\d{1,3}(?:,\d{3})*(?:\.\d+)?%?")
 _CAUSAL_RE = re.compile(
     r"\b(causes?|drives?|moves?)\b|\bleans? toward\b|\bmakes?\b[^.]{0,40}\bmore likely\b",
     re.IGNORECASE,
@@ -362,7 +369,7 @@ def check_l11(claim: Claim, ctx: LintContext) -> LintResult:
     figures = _known_figures(claim)
     offenders = []
     for match in _NUMBER_RE.finditer(claim.narrative.headline):
-        token = match.group().rstrip("%")
+        token = match.group().rstrip("%").replace(",", "")
         try:
             value = float(token)
         except ValueError:

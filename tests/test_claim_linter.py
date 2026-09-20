@@ -289,6 +289,39 @@ def test_l11_fails_headline_only_number():
     assert check_l11(claim, CTX).status == LintStatus.FAIL
 
 
+def test_l11_does_not_misread_a_hyphenated_compound_as_negative():
+    # "top-10" must read as the positive number 10, not -10 - found by
+    # running this rule against a real generated claim.
+    claim = _claim(
+        numerator=NumeratorDenominator(definition="n", n=10),
+        denominator=NumeratorDenominator(definition="d", n=100),
+        statistic=Statistic(value=0.10),
+        narrative=Narrative(headline="10 firms are in the top-10 dollar-recipient list"),
+    )
+    assert check_l11(claim, CTX).status == LintStatus.PASS
+
+
+def test_l11_does_not_misread_a_range_hyphen_as_negative():
+    # "41-92%" must read as 41 and 92, not 41 and -92.
+    claim = _claim(
+        numerator=NumeratorDenominator(definition="n", n=41),
+        denominator=NumeratorDenominator(definition="d", n=100),
+        statistic=Statistic(value=0.92),
+        narrative=Narrative(headline="Rates span 41-92% between councillors"),
+    )
+    assert check_l11(claim, CTX).status == LintStatus.PASS
+
+
+def test_l11_handles_comma_formatted_thousands():
+    claim = _claim(
+        numerator=NumeratorDenominator(definition="n", n=4993),
+        denominator=NumeratorDenominator(definition="d", n=4993),
+        statistic=Statistic(value=1.0),
+        narrative=Narrative(headline="4,993 recorded public engagements"),
+    )
+    assert check_l11(claim, CTX).status == LintStatus.PASS
+
+
 # ── L-12 ─────────────────────────────────────────────────────────────────
 
 def test_l12_not_applicable_when_narrative_empty():

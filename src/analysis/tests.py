@@ -78,8 +78,15 @@ from src.analysis.claims import (
     Statistic,
 )
 from src.analysis.inference import (
+    chi_square_independence,
     clustered_proportion,
     difference_in_proportions_ci,
+    herfindahl_index,
+    hypergeometric_overlap_test,
+    linear_trend_ci,
+    mann_whitney_test,
+    median_ci,
+    median_difference_ci,
     proportion_ci,
 )
 
@@ -3608,6 +3615,413 @@ def _t_decider_supplier_conflict_claim(session, council_id, pc) -> Claim | None:
     )
 
 
+# ── the 7 of the remaining 10 tests with genuinely new statistical machinery
+# (docs/analysis/inference.py's median/categorical/concentration/overlap/
+# trend additions). The other 3 (single_source, reserve_trajectory,
+# sponsorship) have no underlying data or a hardcoded-prose query — no
+# machinery closes those; not attempted.
+
+def _t_voting_power_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_voting_power`. Upgrades the legacy fixed
+    >15pp-swing heuristic to a real per-person CI comparison: for each
+    long-serving councillor with >=2 term points, back-derive a Wilson CI
+    per term (k rounded from win_rate*n — `PowerTermPoint` doesn't carry a
+    raw win count) and check whether any two of their own terms have
+    non-overlapping CIs — real, not just noisy, movement. Grades on whether
+    at least one councillor shows this."""
+    p = pc.get("power") or voting_power(session, council_id)
+    if not p.over_time:
+        return None
+    n_with_confirmed_turnover = 0
+    n_evaluated = 0
+    turnover_names = []
+    for person in p.over_time:
+        if len(person.points) < 2:
+            continue
+        n_evaluated += 1
+        cis = []
+        for pt in person.points:
+            if pt.n == 0:
+                continue
+            k = round(pt.win_rate * pt.n)
+            cis.append(proportion_ci(k, pt.n))
+        confirmed = any(
+            a.ci_high < b.ci_low or b.ci_high < a.ci_low
+            for i, a in enumerate(cis) for b in cis[i + 1:]
+        )
+        if confirmed:
+            n_with_confirmed_turnover += 1
+            turnover_names.append(person.name)
+    if n_evaluated == 0:
+        return None
+    wins = [pr.win_rate for pr in p.profiles]
+    lo, hi = (round(min(wins) * 100), round(max(wins) * 100)) if wins else (None, None)
+    return Claim(
+        id="governance.power_spread",
+        hypothesis="Does at least one long-serving councillor's win rate shift significantly "
+                   "between their own terms (real turnover, not an ossified hierarchy)?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition="long-serving councillors with contested-vote win rates in 2+ terms",
+            base_table="vote_fact",
+            filter_chain=("councillor has a win-rate point in 2 or more 4-year terms",),
+        ),
+        numerator=NumeratorDenominator(
+            definition="councillors with a statistically confirmed (non-overlapping-CI) shift between two of their own terms",
+            n=n_with_confirmed_turnover,
+        ),
+        denominator=NumeratorDenominator(definition="long-serving councillors evaluated across 2+ terms", n=n_evaluated),
+        grade=GRADE_SUPPORTIVE if n_with_confirmed_turnover > 0 else GRADE_CRITICAL,
+        grade_justification=(
+            f"{n_with_confirmed_turnover}/{n_evaluated} long-serving councillors show a statistically "
+            "confirmed shift between two of their own terms"
+            if n_with_confirmed_turnover > 0 else
+            "no long-serving councillor's term-to-term win-rate CIs are confirmed non-overlapping — "
+            "consistent with (not proof of) a static hierarchy"
+        ),
+        statistic=Statistic(
+            value=n_with_confirmed_turnover / n_evaluated if n_evaluated else None,
+            clustering_unit="councillor",
+        ),
+        narrative=Narrative(
+            headline=f"Contested-vote win rates span {lo}–{hi}% between councillors; "
+                     f"{n_with_confirmed_turnover}/{n_evaluated} long-servers show confirmed term-to-term movement",
+            body=(
+                f"Of {n_evaluated} councillors with win-rate data in 2+ terms, "
+                f"{n_with_confirmed_turnover} show a statistically confirmed shift between two of "
+                f"their own terms" + (f": {', '.join(turnover_names)}." if turnover_names else ".")
+            ),
+            caveats=(
+                "A councillor without confirmed movement may still have moved — this only counts "
+                "movement large enough for two term-level Wilson CIs to stop overlapping, a "
+                "conservative (under-, not over-, counting) bar.",
+            ),
+        ),
+    )
+
+
+def _t_tenure_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_tenure`. Purely descriptive (legacy test
+    carries no good/bad direction) — grade is always neutral. `statistic`
+    carries the median service length in years (not a 0-1 proportion —
+    this claim's natural unit isn't a rate); `numerator`/`denominator`
+    separately carry the long-server share as a real proportion."""
+    t = pc.get("tenure") or councillor_tenure(session, council_id)
+    if not t.profiles:
+        return None
+    years = [p.years for p in t.profiles]
+    est = median_ci(years) if len(years) >= 2 else None
+    n15 = sum(1 for y in years if y >= 15)
+    longest = max(t.profiles, key=lambda p: p.years)
+    return Claim(
+        id="governance.incumbency",
+        hypothesis="What is the distribution of councillor service length, and how many serve 15+ years?",
+        population=Population(
+            grain="(councillor)", definition="councillors with a computed tenure (20+ recorded votes)",
+            base_table="vote_fact", filter_chain=("at least 20 recorded votes",),
+        ),
+        numerator=NumeratorDenominator(definition="councillors serving 15+ years", n=n15),
+        denominator=NumeratorDenominator(definition="councillors with a computed tenure", n=t.n_councillors),
+        grade=GRADE_NEUTRAL,
+        grade_justification="descriptive test, no good/bad direction (per the legacy test's own framing)",
+        statistic=Statistic(
+            value=t.median_years,
+            ci_low=est.ci_low if est else None, ci_high=est.ci_high if est else None,
+            method="bootstrap" if est else "",
+        ),
+        narrative=Narrative(
+            headline=f"Median service {t.median_years} years; {n15} councillors served 15+; "
+                     f"longest {longest.years}y",
+            body=f"Of {t.n_councillors} councillors with a computed tenure, {n15} served 15 years "
+                 f"or more; the longest-serving reached {longest.years} years.",
+            caveats=(
+                "A service-length distribution is a description of chamber composition, not a "
+                "good/bad signal by itself — stability and entrenchment risk are two readings of "
+                "the same number.",
+            ),
+        ),
+    )
+
+
+def _t_tender_concentration_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_tender_concentration`. Purely descriptive
+    (legacy test carries no good/bad direction) — grade is always neutral.
+    The graded `statistic` is the count-based redacted-award share (a real
+    proportion, `TenderConcentration.redacted_awards`/`total_awards`); the
+    Herfindahl index is reported separately in the body — concentration
+    itself has no CI/null (see `herfindahl_index()`'s own docstring)."""
+    t = pc.get("tenders") or tender_concentration(session, council_id)
+    if t.total_awards == 0:
+        return None
+    est = proportion_ci(t.redacted_awards, t.total_awards)
+    remainder = max(0.0, t.named_amount - sum(c.total_amount for c in t.contractors))
+    hhi_shares = [c.total_amount for c in t.contractors] + ([remainder] if remainder > 0 else [])
+    hhi = herfindahl_index(hhi_shares) if hhi_shares and sum(hhi_shares) > 0 else None
+    return Claim(
+        id="procurement.concentration",
+        hypothesis="What share of tender awards have a redacted (non-identifiable) recipient?",
+        population=Population(
+            grain="(meeting, award)", definition="tender awards with a known amount",
+            base_table="tender_fact", filter_chain=("amount is not null",),
+        ),
+        numerator=NumeratorDenominator(definition="tender awards with a redacted/non-identifiable recipient", n=t.redacted_awards),
+        denominator=NumeratorDenominator(definition="tender awards with a known amount", n=t.total_awards),
+        grade=GRADE_NEUTRAL,
+        grade_justification="descriptive test, no good/bad direction (per the legacy test's own framing)",
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"${t.total_amount / 1e6:.1f}M across {t.distinct_named} named firms; "
+                     f"{round(est.value * 100)}% of awards have a redacted recipient",
+            body=f"Of {t.total_awards} tender awards with a known amount, {t.redacted_awards} have a "
+                 f"redacted/non-identifiable recipient. Top-10 named firms take "
+                 f"{round(t.top10_share * 100)}% of named dollars"
+                 + (f"; Herfindahl index (top-15 firms + remainder bucket) is {round(hhi, 3)}." if hhi else "."),
+            caveats=(
+                "Concentration among a broad supplier base is ordinary for big civil contracts, not "
+                "a good/bad signal on its own — the redacted share is the real watch-item, which is "
+                "what this claim grades.",
+            ),
+        ),
+    )
+
+
+def _t_procurement_incumbency_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_procurement_incumbency`. Reframes the
+    legacy "is any firm both a frequent repeat-winner and a top-10
+    dollar-recipient" boolean as a hypergeometric chance-overlap test:
+    under independent random assignment, how likely is this much overlap
+    between the two sets by chance alone?"""
+    rows = list(_tender_rows(session, council_id))
+    by_firm: dict[str, dict] = {}
+    for a, name, y, _m in rows:
+        if not name:
+            continue
+        key = _normalise_contractor(name)
+        if not key or "respondent" in key:
+            continue
+        rec = by_firm.setdefault(key, {"years": set(), "amt": 0.0})
+        if y:
+            rec["years"].add(y)
+        if a:
+            rec["amt"] += a
+    if not by_firm:
+        return None
+    population_size = len(by_firm)
+    frequent_keys = {k for k, v in by_firm.items() if len(v["years"]) >= 4}
+    top_dollar_keys = {
+        k for k, _v in sorted(by_firm.items(), key=lambda kv: kv[1]["amt"], reverse=True)[:10]
+    }
+    observed_overlap = len(frequent_keys & top_dollar_keys)
+    if not frequent_keys or not top_dollar_keys:
+        return None
+    overlap_test = hypergeometric_overlap_test(
+        population_size=population_size, group_a_size=len(frequent_keys),
+        group_b_size=len(top_dollar_keys), observed_overlap=observed_overlap,
+    )
+    surprising = overlap_test.p_value_at_least_observed < 0.05
+    display = contractor_display_names(name for _a, name, _y, _m in rows if name)
+    overlap_names = sorted(display.get(k, k) for k in (frequent_keys & top_dollar_keys))
+    return Claim(
+        id="procurement.incumbency",
+        hypothesis="Is the overlap between frequent repeat-winners (4+ distinct years) and "
+                   "top-10 dollar-recipients larger than chance would predict?",
+        population=Population(
+            grain="(firm)", definition="distinct named contractors with a tender award",
+            base_table="tender_fact", filter_chain=("awarded_to is a named contractor, not a redacted placeholder",),
+        ),
+        numerator=NumeratorDenominator(definition="firms both a frequent repeat-winner and a top-10 dollar-recipient", n=observed_overlap),
+        denominator=NumeratorDenominator(definition="distinct named contractors", n=population_size),
+        grade=GRADE_CRITICAL if surprising else GRADE_SUPPORTIVE,
+        grade_justification=(
+            f"P(overlap >= {observed_overlap}) = {round(overlap_test.p_value_at_least_observed, 4)} under a "
+            f"chance null (expected {round(overlap_test.expected_overlap, 2)}) — "
+            f"{'below' if surprising else 'not below'} the 0.05 threshold"
+        ),
+        statistic=Statistic(value=float(observed_overlap), method="hypergeometric"),
+        narrative=Narrative(
+            headline=(
+                f"{observed_overlap} named contractor(s) are both a frequent repeat-winner and a "
+                f"top-10 dollar-recipient, vs {round(overlap_test.expected_overlap, 1)} expected by chance"
+            ),
+            body=f"Of {population_size} distinct named contractors, {len(frequent_keys)} won in 4+ "
+                 f"distinct years and {len(top_dollar_keys)} are top-10 by dollar value; "
+                 f"{observed_overlap} firm(s) are in both sets" + (f": {', '.join(overlap_names)}." if overlap_names else "."),
+            caveats=(
+                "Repeat-winning alone is not evidence of impropriety — mundane low-value equipment/"
+                "cartage rebids are frequent repeat-winners in every corpus checked so far without "
+                "being big-dollar incumbents.",
+            ),
+        ),
+    )
+
+
+def _t_engagement_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_engagement`. Purely descriptive (legacy
+    test carries no good/bad direction) — grade is always neutral. The
+    graded `statistic` is an OLS trend slope (engagements/year) over the
+    yearly count series, since a raw count has no natural denominator to
+    build a proportion from."""
+    years = public_engagement_by_year(session, council_id)
+    usable = [y for y in years if y.total]
+    if len(usable) < 3:
+        return None
+    trend = linear_trend_ci([y.year for y in usable], [y.total for y in usable])
+    total = sum(y.total for y in years)
+    recent = [y for y in years if y.year >= 2016]
+    recent_avg = round(sum(y.total for y in recent) / len(recent)) if recent else 0
+    return Claim(
+        id="engagement.participation",
+        hypothesis="Is the volume of public participation (questions, deputations, petitions) "
+                   "trending up or down over time?",
+        population=Population(
+            grain="(meeting)", definition="years with at least one recorded public engagement",
+            base_table="question_fact", filter_chain=("year total > 0",),
+        ),
+        numerator=NumeratorDenominator(definition="total recorded public engagements across all years", n=total),
+        denominator=NumeratorDenominator(definition="years with recorded engagement data", n=len(usable)),
+        grade=GRADE_NEUTRAL,
+        grade_justification="descriptive test, no good/bad direction (per the legacy test's own framing)",
+        statistic=Statistic(value=trend.slope, ci_low=trend.ci_low, ci_high=trend.ci_high, method=trend.method),
+        narrative=Narrative(
+            headline=f"{total:,} recorded public engagements across {len(usable)} years, "
+                     f"~{recent_avg}/yr recently, trend {round(trend.slope, 1)}/yr",
+            body=f"Public participation (questions, deputations, petitions) trend: "
+                 f"{round(trend.slope, 1)} engagements/year "
+                 f"(95% CI [{round(trend.ci_low, 1)}, {round(trend.ci_high, 1)}]).",
+            caveats=(
+                "Volume tracks the political temperature rather than a steady civic baseline — a "
+                "trend here is not itself a compliance signal.",
+            ),
+        ),
+    )
+
+
+def _t_confidential_tender_size_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_confidential_tender_size`. Upgrades the
+    legacy median-ratio comparison (no CI, no significance test) to a real
+    bootstrap CI on the median difference plus a Mann-Whitney significance
+    test."""
+    rows = session.query(Tender.amount, Tender.is_confidential) \
+        .join(Meeting, Tender.meeting_id == Meeting.id) \
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                Tender.amount.isnot(None), Tender.amount > 0).all()
+    conf = [a for a, ic in rows if ic]
+    opn = [a for a, ic in rows if not ic]
+    if len(conf) < 2 or len(opn) < 2:
+        return None
+    import statistics as _statistics
+    diff = median_difference_ci(opn, conf, seed=0)
+    mw = mann_whitney_test(opn, conf)
+    pricier = diff.ci_low > 0
+    conf_median, opn_median = _statistics.median(conf), _statistics.median(opn)
+    return Claim(
+        id="transparency.confidential_tender_size",
+        hypothesis="Do confidential tenders carry a significantly higher dollar value than open ones?",
+        population=Population(
+            grain="(meeting, award)", definition="tenders with a known amount, confidential vs. open",
+            base_table="tender_fact", filter_chain=("amount is not null and amount > 0",),
+        ),
+        numerator=NumeratorDenominator(definition="confidential tenders with a known amount", n=len(conf)),
+        denominator=NumeratorDenominator(definition="tenders with a known amount (confidential + open)", n=len(conf) + len(opn)),
+        grade=GRADE_CRITICAL if pricier else GRADE_SUPPORTIVE,
+        grade_justification=(
+            f"confidential-minus-open median-value 95% CI [{round(diff.ci_low)}, {round(diff.ci_high)}] "
+            f"{'excludes' if pricier else 'does not exclude'} zero (Mann-Whitney p={round(mw.p_value, 4)})"
+        ),
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT, reference_definition="open (non-confidential) tenders",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Confidential tenders run a ${conf_median:,.0f} median vs ${opn_median:,.0f} "
+                     f"open (n={len(conf)})",
+            body=f"Of tenders with a known amount, {len(conf)} confidential and {len(opn)} open; "
+                 f"median-value difference {round(diff.value):,} (95% CI [{round(diff.ci_low):,}, "
+                 f"{round(diff.ci_high):,}]).",
+            caveats=(
+                "Confidentiality is often lawful — a higher confidential median is a visibility "
+                "concern, not evidence of impropriety on its own.",
+                "Thin n on the confidential side is common; read as directional at low n.",
+            ),
+        ),
+    )
+
+
+def _t_confidential_topics_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_confidential_topics`. The graded statistic
+    is the "named development" theme's own closure-rate CI, checked
+    against every other theme's CI for confident separation; a
+    `chi_square_independence()` omnibus test over the full theme x
+    confidential table is reported alongside as supporting evidence, not
+    the graded quantity itself (an omnibus test can reject "all themes
+    equal" without telling you which theme differs, or in which
+    direction)."""
+    from src.models import DelegatedDecision, OtherItem
+
+    descs: list[tuple[str, bool]] = []
+    for model in (Tender, OtherItem, DelegatedDecision):
+        for desc, ic in (
+            session.query(model.description, model.is_confidential)
+            .join(Meeting, model.meeting_id == Meeting.id)
+            .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+        ):
+            if _is_nil_placeholder(desc):
+                continue
+            descs.append(((desc or "").lower(), bool(ic)))
+    total = len(descs)
+    conf_total = sum(1 for _d, ic in descs if ic)
+    if not total or not conf_total:
+        return None
+
+    theme_counts: dict[str, tuple[int, int]] = {}  # name -> (confidential, total)
+    for name, pat in _CONF_THEMES:
+        rx = re.compile(pat)
+        items = [ic for d, ic in descs if rx.search(d)]
+        theme_counts[name] = (sum(1 for ic in items if ic), len(items))
+    dev_conf, dev_n = theme_counts["Named development"]
+    others = {k: v for k, v in theme_counts.items() if k != "Named development" and v[1] > 0}
+    if dev_n == 0 or not others:
+        return None
+
+    dev_est = proportion_ci(dev_conf, dev_n)
+    other_ests = {name: proportion_ci(c, n) for name, (c, n) in others.items()}
+    dev_confidently_least = all(dev_est.ci_high < est.ci_low for est in other_ests.values())
+
+    table = [[c, n - c] for c, n in theme_counts.values() if n > 0]
+    chi2 = chi_square_independence(table) if len(table) >= 2 else None
+
+    return Claim(
+        id="transparency.confidential_topics",
+        hypothesis="Is the 'named development' theme confidently the least-closed of the "
+                   "confidentiality themes measured?",
+        population=Population(
+            grain="(meeting, item)", definition="tender/other/delegated-decision items matching a confidentiality theme keyword",
+            base_table="motion_fact", filter_chain=("description matches a theme keyword pattern",),
+        ),
+        numerator=NumeratorDenominator(definition="'named development' items recorded confidential", n=dev_conf),
+        denominator=NumeratorDenominator(definition="items matching the 'named development' theme keyword", n=dev_n),
+        grade=GRADE_SUPPORTIVE if dev_confidently_least else GRADE_CRITICAL,
+        grade_justification=(
+            f"'named development' closure-rate CI [{round(dev_est.ci_low, 2)}, {round(dev_est.ci_high, 2)}] is "
+            + ("entirely below every other theme's CI" if dev_confidently_least else
+               "not confidently below every other theme's CI")
+        ),
+        statistic=Statistic(value=dev_est.value, ci_low=dev_est.ci_low, ci_high=dev_est.ci_high, method=dev_est.method),
+        narrative=Narrative(
+            headline=f"'Named development' items are confidential {round(dev_est.value * 100)}% of the "
+                     f"time (n={dev_n}), {'the least-closed theme' if dev_confidently_least else 'not confirmed least-closed'}",
+            body=f"Of {dev_n} 'named development' items, {dev_conf} were recorded confidential. "
+                 + (f"An omnibus chi-square test across all {len(table)} themes measured found closure "
+                    f"rates differ significantly (p={round(chi2.p_value, 4)})." if chi2 else ""),
+            caveats=(
+                "Keyword-based theme bucketing is coarse; any misclassification biases toward the "
+                "null (over-counting development closures), not toward this claim's conclusion.",
+            ),
+        ),
+    )
+
+
 # ── claim battery (Step 7, docs/uplift/migration/02-claim-layer.md) ─────────
 # The Claim-object counterpart to _GENERATORS/run_test_battery() above. Only
 # 19 of 29 test_ids have a registered claim generator — the other 10 need a
@@ -3637,6 +4051,13 @@ _CLAIM_GENERATORS: dict[str, Callable] = {
     "engagement.question_responsiveness": _t_question_responsiveness_claim,
     "procurement.threshold_gaming": _t_threshold_gaming_claim,
     "procurement.decider_supplier_conflict": _t_decider_supplier_conflict_claim,
+    "governance.power_spread": _t_voting_power_claim,
+    "governance.incumbency": _t_tenure_claim,
+    "procurement.concentration": _t_tender_concentration_claim,
+    "procurement.incumbency": _t_procurement_incumbency_claim,
+    "engagement.participation": _t_engagement_claim,
+    "transparency.confidential_tender_size": _t_confidential_tender_size_claim,
+    "transparency.confidential_topics": _t_confidential_topics_claim,
 }
 
 # test_ids with no claim generator yet, for reporting ("N of 29 checked")
