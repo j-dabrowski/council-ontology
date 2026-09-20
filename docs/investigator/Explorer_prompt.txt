@@ -443,6 +443,25 @@ the entry alone — not this session's reasoning — can see it clears the bar.
 nulls" wrinkle: a session that only logs nulls has still done its whole
 job, because there's no downstream build stage waiting on a Finding.)
 
+**Also append one structured entry per hypothesis tested this session** —
+finding or null alike — to `docs/investigator/hypothesis_registry.json`
+via `src/hypothesis_registry.py`'s `append_entry()`
+(`docs/uplift/migration/02-claim-layer.md` Step 8). This is additive to,
+never a replacement for, the `INVESTIGATIONS.md` prose above: the prose
+stays the human-readable notebook a future session reads; the registry is
+what a claim's `statistic.multiple_comparison.family_size` actually counts
+— it only reflects reality if every hypothesis this session tried gets a
+row, not only the ones that became a Finding. `pre_registered_at` is
+today's date (this session, logging the hypothesis before or as it's
+tested — never backdated); `outcome` is `"reported"` for a Finding bound
+for `INVESTIGATIONS.md`, `"null"` for a tested-and-cleared null,
+`"dropped"` for an INFEASIBLE/structural kill; `claim_id` stays `None`
+until a later Refiner session actually codifies it (Refiner's own job to
+set, via a second `append_entry()` call or a direct edit — not yours to
+guess ahead of that). Give each entry a stable, human-readable `id` (e.g.
+`inv-<next-integer>`, continuing the numbering `INVESTIGATIONS.md`'s own
+`## [N]` headings already use) so a later session can find it.
+
 There are still two kinds of outcome, and they set what a finding needs
 (REFERENCE 0.5):
 - **A candidate for the Scorecard battery** — any standard governance

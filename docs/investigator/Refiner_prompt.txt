@@ -357,7 +357,18 @@ depend on earlier ones holding:
 `INVESTIGATIONS.md` under the original finding's number, recording: the
 `test_id`, the seven-dimension score (pass/fail each, with the specific
 number/check for 1 and 2), and the `queries.py` function name. Mark the
-original finding's status line to note it's now battery-backed.
+original finding's status line to note it's now battery-backed. Also set
+`claim_id = test_id` on hypothesis [N]'s row in
+`docs/investigator/hypothesis_registry.json`
+(`docs/uplift/migration/02-claim-layer.md` Step 8) — load it with
+`src/hypothesis_registry.py`'s `load_registry()`, find the entry whose
+`id` matches the original hypothesis number (e.g. `inv-N`), and
+`save_registry()` the updated list. If no row exists for [N] (a finding
+predating the registry's 2026-09-20 backfill, or a hypothesis Explorer
+tested before this instruction existed), append one via `append_entry()`
+instead of skipping the update — a REFINED finding with no registry row
+would silently under-count `multiple_comparison.family_size` for its own
+test forever.
 
 **Entry point B (retroactive, single test):** same shape — append a
 `[<test_id> REFINED]` note wherever that test's finding lives in

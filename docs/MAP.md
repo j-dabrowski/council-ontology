@@ -173,6 +173,21 @@ one shared reference layer, two protocol documents.
   runs this on every test run, so the register can't silently drift from
   what's actually shipped. Not yet read by Explorer or updated by
   Refiner/Researcher — that wiring is Step 5.
+- `investigator/hypothesis_registry.json` — every hypothesis ever tested,
+  structured (`src/hypothesis_registry.py`: `id, question,
+  pre_registered_at, gold_tables_used, outcome, claim_id, drop_reason`),
+  additive alongside `INVESTIGATIONS.md`'s prose, not a replacement for it
+  (`docs/uplift/migration/02-claim-layer.md` Step 8). This is what a
+  claim's `statistic.multiple_comparison.family_size` actually counts —
+  `Explorer_prompt.txt` appends one row per hypothesis tested (finding or
+  null alike), `Refiner_prompt.txt` sets `claim_id` when a finding is
+  codified into the battery. Backfilled 2026-09-20 from
+  `INVESTIGATIONS.md`'s existing 54 hypothesis entries
+  (`scripts/backfill_hypothesis_registry.py`) — every backfilled row's
+  `pre_registered_at` is the backfill date, not the original investigation
+  date (the real session date is kept separately, in
+  `investigation_session_label`), since a retrospective parse can't
+  honestly claim a hypothesis predated its result.
 
 **Loop (Exploration):** run Explorer prompt → append to INVESTIGATIONS → Stage 3
 self-score → if below threshold, propose edit to `Explorer_prompt.txt` and bump
@@ -308,7 +323,7 @@ The non-obvious edges, spelled out:
 | noting a reusable **cross-corpus** pattern (not just this corpus's gap) | `pipeline/DATA_ENRICHMENT.md` — pattern layer, above the instance; read automatically by the next corpus's typology stage |
 | proposing a new failure/effectiveness genre from real-world precedent | `research/Researcher_prompt.txt` (run) — writes a ready-to-apply file to `research/pending_merges/` when a candidate clears its own 4-dimension check (default; you then paste it into `investigator/Investigator_prompt.txt` Part 3 and `pipeline/DATA_ENRICHMENT.md` yourself), or self-merges directly only if you explicitly ran it in auto-merge mode; `research/PRECEDENT_BANK.md` is the resulting audit log |
 | improving the researcher prompt | `research/RESEARCH_PROTOCOL.md` (benchmark) → bump `research/Researcher_prompt.txt` |
-| running an exploration session (new hypotheses) | `council explore` (`investigator/Explorer_prompt.txt` underneath) → `investigator/INVESTIGATIONS.md` (record) |
+| running an exploration session (new hypotheses) | `council explore` (`investigator/Explorer_prompt.txt` underneath) → `investigator/INVESTIGATIONS.md` (record) + `investigator/hypothesis_registry.json` (structured, one row per hypothesis tested — `src/hypothesis_registry.py`) |
 | codifying a finding into the test battery | `council refine` (`investigator/Refiner_prompt.txt` underneath) → `src/analysis/tests.py` + `queries.py` |
 | adding a governance test, or re-wording its public-facing copy | `config/test_registry.json` — the registry row (id/category/title/question/principles/etc.); `src/analysis/tests.py` still owns the computation |
 | changing what the overall `/map`/Overview-band governance rating means | `config/rating.json` — the bands, floors and coverage gate; `src/analysis/rating.py` still owns the computation (`frontend/MAP_PAGE_PLAN.md` Phase 1) — same split as `test_registry.json` vs `tests.py` |
