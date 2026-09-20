@@ -322,6 +322,20 @@ def test_l11_handles_comma_formatted_thousands():
     assert check_l11(claim, CTX).status == LintStatus.PASS
 
 
+def test_l11_does_not_truncate_a_bare_four_digit_year():
+    # A year like "2003" has no comma grouping - the comma-thousands fix
+    # must not truncate it to "200" via a bare {1,3} digit cap. Found by
+    # running this rule against a real generated claim whose headline
+    # named two era labels ("2003-2007").
+    claim = _claim(
+        numerator=NumeratorDenominator(definition="n", n=2003),
+        denominator=NumeratorDenominator(definition="d", n=2007),
+        statistic=Statistic(value=2003 / 2007),
+        narrative=Narrative(headline="2003 of 2007 recorded"),
+    )
+    assert check_l11(claim, CTX).status == LintStatus.PASS
+
+
 # ── L-12 ─────────────────────────────────────────────────────────────────
 
 def test_l12_not_applicable_when_narrative_empty():

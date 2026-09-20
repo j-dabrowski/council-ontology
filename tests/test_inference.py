@@ -219,6 +219,7 @@ def test_herfindahl_index_rejects_zero_total():
 def test_hypergeometric_overlap_full_overlap_is_surprising():
     # Population of 100 firms, two independent top-10 lists - all 10 overlapping is very unlikely by chance.
     result = hypergeometric_overlap_test(population_size=100, group_a_size=10, group_b_size=10, observed_overlap=10)
+    assert result.observed_overlap == 10
     assert result.expected_overlap == pytest.approx(1.0)
     assert result.p_value_at_least_observed < 0.001
 

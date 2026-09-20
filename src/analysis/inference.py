@@ -323,6 +323,7 @@ def herfindahl_index(amounts: Sequence[float]) -> float:
 
 @dataclass(frozen=True)
 class OverlapResult:
+    observed_overlap: int
     expected_overlap: float
     p_value_at_least_observed: float
 
@@ -343,7 +344,7 @@ def hypergeometric_overlap_test(
         )
     expected = group_a_size * group_b_size / population_size
     p_value = float(stats.hypergeom.sf(observed_overlap - 1, population_size, group_a_size, group_b_size))
-    return OverlapResult(expected_overlap=expected, p_value_at_least_observed=p_value)
+    return OverlapResult(observed_overlap=observed_overlap, expected_overlap=expected, p_value_at_least_observed=p_value)
 
 
 @dataclass(frozen=True)

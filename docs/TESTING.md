@@ -331,18 +331,19 @@ Renderer stage that consumes `Claim` objects for real output before
 never built. Deleting `TestResult` today, at any scope, would break the
 entire rendering/publish pipeline with nothing to replace it.
 
-What *is* real: 26 of the 29 battery tests have a claim-object counterpart
-(`src/analysis/tests.py`'s `_CLAIM_GENERATORS`; the other 3 —
-`procurement.single_source`, `finance.reserve_trajectory`,
-`governance.durable_faction` — have no underlying data or a
-hardcoded-prose query, not a missing-machinery gap). This script runs
-`run_claim_battery()` against the `testville` "baseline" synthetic corpus
-(no `data/council.db` dependency, so it works in CI) and prints a summary:
-how many generators produced a claim, how many returned `None` (no data),
-how many raised, and how many linter FAILs per rule.
+What *is* real: 27 of the 29 battery tests have a claim-object counterpart
+(`src/analysis/tests.py`'s `_CLAIM_GENERATORS`; the other 2 —
+`procurement.single_source`, `finance.reserve_trajectory` — have no
+underlying data on this corpus at all, not a missing-machinery gap;
+`governance.durable_faction`'s hardcoded-prose query was itself redesigned
+to be council-agnostic, see `sponsorship_network()`'s docstring). This
+script runs `run_claim_battery()` against the `testville` "baseline"
+synthetic corpus (no `data/council.db` dependency, so it works in CI) and
+prints a summary: how many generators produced a claim, how many returned
+`None` (no data), how many raised, and how many linter FAILs per rule.
 
 **Always exits 0 — a report, not a gate**, deliberately, same reasoning
-as `council draft`'s own claim-lint step: most of the 26 migrated claims
+as `council draft`'s own claim-lint step: most of the 27 migrated claims
 carry at least one *known, systemic* FAIL today (no `achieved_power`
 computation exists anywhere yet; no clustered two-proportion difference
 estimator exists; the target schema's `numerator`/`denominator` pair

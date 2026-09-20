@@ -31,7 +31,7 @@ const KIND_COLOR: Record<string, string> = {
 };
 
 
-// ── Part 2: deterministic circular node-link diagram of the 2000s network ──
+// ── Part 2: deterministic circular node-link diagram of the most-notable era's network ──
 function OldGuardNetwork({ nodes, edges }: { nodes: SponsorNode[]; edges: SponsorEdge[] }) {
   const { open } = useCouncillor();
   const core = nodes.filter((n) => n.in_core);
@@ -223,12 +223,23 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
         <span className="spon-legend-note">node size = how active · line weight = sponsorship lift</span>
       </div>
       <p className="chart-note">
-        Through {data.oldguard_label} a stable group of long-servers preferentially backed each
-        other's motions — the densest sponsorship cluster on record. But it is <em>not</em> a single
-        voting bloc: several of the strongest ties are{" "}
+        {data.has_durable_faction && data.persistence_era_pair ? (
+          <>
+            This cluster's core membership persisted from {data.persistence_era_pair[0]} into{" "}
+            {data.persistence_era_pair[1]} — an overlap larger than a chance draw from this
+            council's own active sponsors would predict ({data.persistent_core_names.length} name
+            {data.persistent_core_names.length === 1 ? "" : "s"} in common).
+          </>
+        ) : (
+          <>
+            This is the densest single-era sponsorship cluster on record, but the persistence
+            test (below) found no era-to-era overlap large enough to call it a durable bloc — read
+            this diagram as one era's working structure, not an ongoing faction.
+          </>
+        )}{" "}
+        It is <em>not</em> a single voting bloc either way: several of the strongest ties are{" "}
         <span style={{ color: KIND_COLOR.procedural }}>procedural</span> — members who sponsored
         deep into the network yet voted against those same colleagues on divisive items.
-        "Old guard" describes a working establishment, not a unified faction.
       </p>
 
       {/* ── Part 3 — structural history ── */}
@@ -254,11 +265,23 @@ export function SponsorshipNetworkPanel({ test }: { test: ResolvedTest }) {
         ))}
       </div>
       <p className="chart-note">
-        Bars show the size of the largest mutually-sponsoring cluster in each ~4-year electoral term. The old
-        guard <strong>consolidated</strong> across 2000–07 (clusters of 10–11), then <strong>fragmented</strong>
-        {" "}after the 2007 election (down to 4). No comparably durable bloc has formed since: the 2016–19
-        figure is a small hyperactive chamber where nearly everyone sponsored everyone, and 2020–23 reshuffles
-        again.
+        Bars show the size of the largest mutually-sponsoring cluster in each era window (this
+        council's own corpus span, split into ~4-year buckets — not necessarily aligned to real
+        election dates). {data.has_durable_faction && data.persistence_era_pair ? (
+          <>
+            A cluster's core membership survived the {data.persistence_era_pair[0]} →{" "}
+            {data.persistence_era_pair[1]} transition beyond chance overlap — a real durable
+            faction, Bonferroni-corrected across {data.persistence_family_size} consecutive
+            era-pair{data.persistence_family_size === 1 ? "" : "s"} tested.
+          </>
+        ) : (
+          <>
+            No cluster's membership survived a transition between consecutive eras beyond chance
+            overlap, across {data.persistence_family_size} consecutive era-pair
+            {data.persistence_family_size === 1 ? "" : "s"} tested — the structure reshuffles each
+            era rather than ossifying into a durable bloc.
+          </>
+        )}
       </p>
       <p className="chart-note bt-meta">
         <span className="sc-genre">{CATEGORY_LABEL[test.category]}</span>

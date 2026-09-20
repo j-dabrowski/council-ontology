@@ -74,10 +74,13 @@ FIGURE_MATCH_TOLERANCE = 0.6
 # digit is a hyphen inside a compound word ("top-10") or a range
 # ("41-92%"), not a negative sign — found by running this rule against a
 # real generated claim ("top-10 dollar-recipient" was misread as "-10").
-# The optional (?:,\d{3})* group matches comma-grouped thousands ("4,993")
-# as one token instead of splitting at the comma into "4" and "993" — same
-# real-data discovery.
-_NUMBER_RE = re.compile(r"(?<!\w)-?\d{1,3}(?:,\d{3})*(?:\.\d+)?%?")
+# The alternation matches EITHER a proper comma-grouped number ("4,993",
+# requiring at least one ",\d{3}" group so "4" alone doesn't take this
+# branch) OR a plain run of digits with no grouping — a bare 4-digit year
+# like "2003" has no comma, so it needs the second branch; an earlier
+# version of this pattern (\d{1,3}(?:,\d{3})*) let the {1,3} on its own
+# truncate "2003" to "200", found the same way as the two bugs above.
+_NUMBER_RE = re.compile(r"(?<!\w)-?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?%?")
 _CAUSAL_RE = re.compile(
     r"\b(causes?|drives?|moves?)\b|\bleans? toward\b|\bmakes?\b[^.]{0,40}\bmore likely\b",
     re.IGNORECASE,

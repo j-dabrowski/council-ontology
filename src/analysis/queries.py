@@ -17,6 +17,8 @@ from datetime import date, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from src.analysis.inference import OverlapResult, hypergeometric_overlap_test
+
 from src.models import (
     ApplicationStatus,
     Appointment,
@@ -4068,19 +4070,6 @@ def public_question_responsiveness(
 # chamber actually conducts business) / Nolan Openness.
 # ---------------------------------------------------------------------------
 
-# ~4-year WA electoral blocks (biennial Oct odd-year elections, 4-yr terms).
-_SPON_ERAS = [
-    ("1996–99", 1996, 1999),
-    ("2000–03", 2000, 2003),
-    ("2004–07", 2004, 2007),
-    ("2008–11", 2008, 2011),
-    ("2012–15", 2012, 2015),
-    ("2016–19", 2016, 2019),
-    ("2020–23", 2020, 2023),
-]
-_OLDGUARD = ("2000–07", 2000, 2007)
-
-
 @dataclass
 class SponsorEdge:
     era_label: str
@@ -4112,7 +4101,7 @@ class SponsorEra:
     n_active: int
     cluster_size: int          # largest high-lift connected component
     core_names: list[str]
-    structure: str             # short descriptive label
+    structure: str             # computed from cluster_size/n_active, not hand-written per era
 
 
 @dataclass
@@ -4122,11 +4111,29 @@ class SponsorshipNetworkStats:
     procedural: list[SponsorEdge]
     convergence_high_agree: float   # mean contested agreement of high-lift pairs
     convergence_low_agree: float    # ... of low-lift pairs (the base rate)
-    # Part 2 — the 2000s old-guard network
+    # Part 2 — the most-notable sponsorship cluster's own network (field
+    # names kept for frontend compatibility; what feeds them changed —
+    # see `sponsorship_network()`'s docstring). `oldguard_label` names
+    # whichever era the diagram below is drawn from: the second era of the
+    # most-persistent consecutive pair if `has_durable_faction`, else the
+    # single era with the largest cluster corpus-wide (a descriptive
+    # fallback, not a persistence claim).
     oldguard_label: str
     oldguard_unanimous_pct: float
     oldguard_nodes: list[SponsorNode]
     oldguard_edges: list[SponsorEdge]
+    # Part 2b — the actual persistence test (new): does any consecutive
+    # pair of eras share cluster membership beyond a hypergeometric chance
+    # null? Bonferroni-corrected across every consecutive pair tested,
+    # since checking every pair for the best signal is a real multiple-
+    # comparison situation, not one pre-registered test.
+    has_durable_faction: bool
+    persistence_family_size: int             # number of consecutive era-pairs tested
+    persistence_bonferroni_alpha: float       # 0.05 / family_size (0.05 if family_size == 0)
+    persistence_best_result: OverlapResult | None
+    persistence_era_pair: tuple[str, str] | None   # (era_a label, era_b label) of the strongest pair
+    persistence_population_size: int          # active sponsors across that pair's two eras combined
+    persistent_core_names: list[str]          # names common to both eras' clusters, if durable
     # Part 3 — structural history across electoral terms
     eras: list[SponsorEra]
 
@@ -4245,7 +4252,77 @@ def _classify(agree_pct):
     return "mixed"
 
 
+def _sponsorship_era_windows(
+    session: Session, council_id: int, window_years: int = 4,
+) -> list[tuple[str, int, int]]:
+    """Council-agnostic era windows for the sponsorship/durable-faction
+    test: consecutive `window_years`-year buckets spanning THIS council's
+    own minutes corpus, not a fixed historical calendar (the previous
+    version hardcoded 1996-2023, Cambridge's own span, docs/uplift/
+    01-known-defects.md's "needs the query layer redesigned" note).
+
+    These are NOT claimed to align with real WA election dates —
+    `councillor_terms` is too sparse to reconstruct a real electoral
+    calendar reliably (the same conclusion `councillor_tenure()` already
+    reached for a different purpose). They exist only to give the
+    persistence test a consistent, repeatable window size on any
+    council's corpus; a caller wanting real election-aligned windows needs
+    a different, not-yet-built data source.
+
+    Windows are non-overlapping and BOTH bounds inclusive, matching
+    `_year_filter_query()`'s own semantics (`>= from_year`, `<= to_year`,
+    not a half-open range) — an earlier version used `t = y +
+    window_years` as both this window's end and the next window's start,
+    which `_year_filter_query`'s inclusive `to_year` silently double-
+    counted: a meeting in the shared boundary year landed in both windows.
+    Found by a unit test asserting exact era membership, not by
+    inspection.
+    """
+    span = (
+        session.query(func.min(Meeting.meeting_date), func.max(Meeting.meeting_date))
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes")
+        .one()
+    )
+    start_date, end_date = span
+    if start_date is None or end_date is None:
+        return []
+    windows = []
+    y = start_date.year
+    while y <= end_date.year:
+        t = min(y + window_years - 1, end_date.year)
+        label = f"{y}" if t == y else f"{y}–{t}"
+        windows.append((label, y, t))
+        y = t + 1
+    return windows
+
+
+def _sponsorship_structure_label(n_active: int, cluster_size: int) -> str:
+    """A short, computed description of one era's sponsorship structure —
+    replaces the old hand-written per-era narrative (`_STRUCT`), which
+    hardcoded a specific decade-by-decade Cambridge story regardless of
+    what a second council's own data showed."""
+    if n_active == 0:
+        return "no active sponsors"
+    if cluster_size == 0:
+        return "no cluster (lift < 1.8 throughout)"
+    share = cluster_size / n_active
+    if share >= 0.6:
+        return f"broad cluster ({cluster_size}/{n_active} active)"
+    if share >= 0.3:
+        return f"core cluster ({cluster_size}/{n_active} active)"
+    return f"small nucleus ({cluster_size}/{n_active} active)"
+
+
 def sponsorship_network(session: Session, council_id: int) -> SponsorshipNetworkStats:
+    """Working-alliance and durable-faction detection from who-moves/who-
+    seconds-whom. Council-agnostic (docs/uplift/01-known-defects.md's
+    sponsorship gap, closed): era windows are derived from this council's
+    own corpus span (`_sponsorship_era_windows()`), not a hardcoded
+    Cambridge calendar, and "durable faction" is an actual computed
+    hypergeometric overlap test between consecutive eras' clusters
+    (`has_durable_faction`/`persistence_*` fields), not asserted prose
+    about one particular decade.
+    """
     names = {
         cid: f"{gn or ''} {fn or ''}".strip()
         for cid, gn, fn in session.query(
@@ -4257,26 +4334,6 @@ def sponsorship_network(session: Session, council_id: int) -> SponsorshipNetwork
         n = names.get(cid, "")
         return n and "unknown" not in n.lower()
 
-    # ---- Part 1: validated alliances across all electoral eras -------------
-    best: dict[tuple[int, int], dict] = {}   # pair -> strongest-lift instance
-    hi_agree, lo_agree = [], []
-    for label, f, t in _SPON_ERAS:
-        moves, seconds, pair, N = _spon_load(session, council_id, f, t)
-        if N < 200:
-            continue
-        agree = _spon_agreement(session, council_id, f, t)
-        edges, _ = _spon_edges(moves, seconds, pair, N, names, agree)
-        for e in edges:
-            if not (_named(e["a"]) and _named(e["b"])):
-                continue
-            if e["agree_pct"] is not None and e["agree_n"] >= 25:
-                (hi_agree if e["lift"] >= 2.0 else
-                 lo_agree if e["lift"] < 1.0 else []).append(e["agree_pct"])
-            key = (min(e["a"], e["b"]), max(e["a"], e["b"]))
-            cur = best.get(key)
-            if cur is None or e["lift"] > cur["lift"]:
-                best[key] = {**e, "era": label}
-
     def _edge(e):
         return SponsorEdge(
             era_label=e["era"], name_a=e["na"], name_b=e["nb"],
@@ -4285,6 +4342,41 @@ def sponsorship_network(session: Session, council_id: int) -> SponsorshipNetwork
             kind=_classify(e["agree_pct"]),
             id_a=e["a"], id_b=e["b"],
         )
+
+    era_windows = _sponsorship_era_windows(session, council_id)
+
+    # One pass per era — computed once, reused below by both the alliance
+    # detection (Part 1) and the structural/persistence analysis (Parts 2
+    # and 3), which used to independently repeat this exact computation.
+    era_data = []
+    for label, f, t in era_windows:
+        moves, seconds, pair, N = _spon_load(session, council_id, f, t)
+        if N < 50:
+            continue
+        agree = _spon_agreement(session, council_id, f, t)
+        edges, active = _spon_edges(moves, seconds, pair, N, names, agree)
+        edges = [e for e in edges if _named(e["a"]) and _named(e["b"])]
+        comps = _spon_clusters(edges, active)
+        era_data.append({
+            "label": label, "f": f, "t": t, "N": N,
+            "moves": moves, "seconds": seconds, "active": active,
+            "edges": edges, "comps": comps,
+        })
+
+    # ---- Part 1: validated alliances across all eras -----------------------
+    best: dict[tuple[int, int], dict] = {}   # pair -> strongest-lift instance
+    hi_agree, lo_agree = [], []
+    for ed in era_data:
+        if ed["N"] < 200:
+            continue
+        for e in ed["edges"]:
+            if e["agree_pct"] is not None and e["agree_n"] >= 25:
+                (hi_agree if e["lift"] >= 2.0 else
+                 lo_agree if e["lift"] < 1.0 else []).append(e["agree_pct"])
+            key = (min(e["a"], e["b"]), max(e["a"], e["b"]))
+            cur = best.get(key)
+            if cur is None or e["lift"] > cur["lift"]:
+                best[key] = {**e, "era": ed["label"]}
 
     strong = [e for e in best.values() if e["lift"] >= 2.0 and e["agree_n"] >= 30]
     alliances = sorted(
@@ -4299,66 +4391,105 @@ def sponsorship_network(session: Session, council_id: int) -> SponsorshipNetwork
     conv_hi = round(sum(hi_agree) / len(hi_agree), 1) if hi_agree else 0.0
     conv_lo = round(sum(lo_agree) / len(lo_agree), 1) if lo_agree else 0.0
 
-    # ---- Part 2: the 2000s old-guard network -------------------------------
-    label, f, t = _OLDGUARD
-    moves, seconds, pair, N = _spon_load(session, council_id, f, t)
-    agree = _spon_agreement(session, council_id, f, t)
-    og_edges_raw, og_active = _spon_edges(moves, seconds, pair, N, names, agree, min_obs=10)
-    og_edges_raw = [e for e in og_edges_raw if _named(e["a"]) and _named(e["b"])]
-    # unanimity rate of the era
-    carried = (
-        session.query(func.count(Motion.id))
-        .join(Meeting, Motion.meeting_id == Meeting.id)
-        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
-                Motion.outcome == MotionOutcome.CARRIED)
+    # ---- Part 2: durable-faction persistence test ---------------------------
+    # For every CONSECUTIVE pair of eras with a real cluster (size >= 3) in
+    # both, test whether the two clusters' membership overlaps more than a
+    # hypergeometric chance null predicts (both drawn from that pair's
+    # combined pool of active sponsors). Bonferroni-corrected across
+    # however many pairs actually get tested — checking every adjacent
+    # pair for the best signal is a real multiple-comparison situation,
+    # not one pre-registered test.
+    persistence_tests = []
+    for i in range(len(era_data) - 1):
+        a, b = era_data[i], era_data[i + 1]
+        comp_a = a["comps"][0] if a["comps"] else set()
+        comp_b = b["comps"][0] if b["comps"] else set()
+        if len(comp_a) < 3 or len(comp_b) < 3:
+            continue
+        population = a["active"] | b["active"]
+        if not population:
+            continue
+        result = hypergeometric_overlap_test(
+            population_size=len(population), group_a_size=len(comp_a),
+            group_b_size=len(comp_b), observed_overlap=len(comp_a & comp_b),
+        )
+        persistence_tests.append({"era_a": a, "era_b": b, "comp_a": comp_a, "comp_b": comp_b, "result": result})
+
+    family_size = len(persistence_tests)
+    bonferroni_alpha = 0.05 / family_size if family_size else 0.05
+    best_persistence = (
+        min(persistence_tests, key=lambda p: p["result"].p_value_at_least_observed)
+        if persistence_tests else None
     )
-    carried = _year_filter_query(carried, Meeting, f, t).scalar() or 0
-    contested = (
-        session.query(func.count(Motion.id))
-        .join(Meeting, Motion.meeting_id == Meeting.id)
-        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
-                Motion.outcome == MotionOutcome.CARRIED, Motion.votes_against > 0)
+    has_durable_faction = bool(
+        best_persistence and best_persistence["result"].p_value_at_least_observed < bonferroni_alpha
     )
-    contested = _year_filter_query(contested, Meeting, f, t).scalar() or 0
-    unanimous_pct = round((carried - contested) / carried * 100, 1) if carried else 0.0
-    # keep the meaningful edges (lift >= 1.5) for the diagram; cap for readability
-    og_edges = sorted(og_edges_raw, key=lambda e: -e["lift"])
-    og_edges = [e for e in og_edges if e["lift"] >= 1.5][:18]
-    core_ids = {e["a"] for e in og_edges} | {e["b"] for e in og_edges}
-    og_nodes = sorted(
-        [SponsorNode(name=names.get(c, ""), moved=moves[c], seconded=seconds[c],
-                     in_core=c in core_ids)
-         for c in og_active if _named(c)],
-        key=lambda n: -(n.moved + n.seconded),
-    )
-    oldguard_edges = [_edge({**e, "era": label}) for e in og_edges]
+
+    # ---- Part 2b: the network diagram for whichever era is most notable ----
+    # The durable pair's second era if a faction was confirmed; otherwise
+    # the single era with the largest cluster corpus-wide, as a
+    # descriptive (not a persistence) fallback so the diagram isn't just
+    # empty when nothing rises to significance.
+    if best_persistence:
+        source_era = best_persistence["era_b"]
+        persistence_era_pair = (best_persistence["era_a"]["label"], best_persistence["era_b"]["label"])
+        persistence_population_size = len(best_persistence["era_a"]["active"] | best_persistence["era_b"]["active"])
+        persistent_core_names = sorted(
+            names.get(c, "") for c in (best_persistence["comp_a"] & best_persistence["comp_b"])
+        ) if has_durable_faction else []
+    elif era_data:
+        source_era = max(era_data, key=lambda ed: len(ed["comps"][0]) if ed["comps"] else 0)
+        persistence_era_pair = None
+        persistence_population_size = 0
+        persistent_core_names = []
+    else:
+        source_era = None
+        persistence_era_pair = None
+        persistence_population_size = 0
+        persistent_core_names = []
+
+    if source_era is not None:
+        label, f, t = source_era["label"], source_era["f"], source_era["t"]
+        moves, seconds = source_era["moves"], source_era["seconds"]
+        carried = (
+            session.query(func.count(Motion.id))
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                    Motion.outcome == MotionOutcome.CARRIED)
+        )
+        carried = _year_filter_query(carried, Meeting, f, t).scalar() or 0
+        contested = (
+            session.query(func.count(Motion.id))
+            .join(Meeting, Motion.meeting_id == Meeting.id)
+            .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                    Motion.outcome == MotionOutcome.CARRIED, Motion.votes_against > 0)
+        )
+        contested = _year_filter_query(contested, Meeting, f, t).scalar() or 0
+        unanimous_pct = round((carried - contested) / carried * 100, 1) if carried else 0.0
+        og_edges = sorted(source_era["edges"], key=lambda e: -e["lift"])
+        og_edges = [e for e in og_edges if e["lift"] >= 1.5][:18]
+        core_ids = {e["a"] for e in og_edges} | {e["b"] for e in og_edges}
+        og_nodes = sorted(
+            [SponsorNode(name=names.get(c, ""), moved=moves[c], seconded=seconds[c], in_core=c in core_ids)
+             for c in source_era["active"] if _named(c)],
+            key=lambda n: -(n.moved + n.seconded),
+        )
+        oldguard_edges = [_edge({**e, "era": label}) for e in og_edges]
+        oldguard_label = label
+        oldguard_unanimous_pct = unanimous_pct
+    else:
+        og_nodes, oldguard_edges, oldguard_label, oldguard_unanimous_pct = [], [], "", 0.0
 
     # ---- Part 3: structural history across electoral terms -----------------
-    _STRUCT = {
-        "1996–99": "forming",
-        "2000–03": "old guard consolidates",
-        "2004–07": "old guard at its peak",
-        "2008–11": "fragmented",
-        "2012–15": "small nucleus",
-        "2016–19": "broad / hyperactive",
-        "2020–23": "reshuffled, no durable bloc",
-    }
     eras: list[SponsorEra] = []
-    for lab, ff, tt in _SPON_ERAS:
-        mv, sc, pr, NN = _spon_load(session, council_id, ff, tt)
-        if NN < 50:
-            continue
-        ag = _spon_agreement(session, council_id, ff, tt)
-        eds, act = _spon_edges(mv, sc, pr, NN, names, ag)
-        eds = [e for e in eds if _named(e["a"]) and _named(e["b"])]
-        comps = _spon_clusters(eds, act)
-        big = comps[0] if comps else set()
+    for ed in era_data:
+        big = ed["comps"][0] if ed["comps"] else set()
         core = sorted((names.get(c, "") for c in big), key=lambda s: s)
+        n_active = len([a for a in ed["active"] if _named(a)])
         eras.append(SponsorEra(
-            label=lab, year_from=ff, year_to=tt, n_events=NN,
-            n_active=len([a for a in act if _named(a)]),
-            cluster_size=len(big), core_names=core[:8],
-            structure=_STRUCT.get(lab, ""),
+            label=ed["label"], year_from=ed["f"], year_to=ed["t"], n_events=ed["N"],
+            n_active=n_active, cluster_size=len(big), core_names=core[:8],
+            structure=_sponsorship_structure_label(n_active, len(big)),
         ))
 
     return SponsorshipNetworkStats(
@@ -4366,9 +4497,16 @@ def sponsorship_network(session: Session, council_id: int) -> SponsorshipNetwork
         procedural=procedural,
         convergence_high_agree=conv_hi,
         convergence_low_agree=conv_lo,
-        oldguard_label=label,
-        oldguard_unanimous_pct=unanimous_pct,
+        oldguard_label=oldguard_label,
+        oldguard_unanimous_pct=oldguard_unanimous_pct,
         oldguard_nodes=og_nodes,
         oldguard_edges=oldguard_edges,
+        has_durable_faction=has_durable_faction,
+        persistence_family_size=family_size,
+        persistence_bonferroni_alpha=bonferroni_alpha,
+        persistence_best_result=best_persistence["result"] if best_persistence else None,
+        persistence_era_pair=persistence_era_pair,
+        persistence_population_size=persistence_population_size,
+        persistent_core_names=persistent_core_names,
         eras=eras,
     )

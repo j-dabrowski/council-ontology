@@ -724,6 +724,10 @@ export interface SponsorshipData {
   oldguard_unanimous_pct: number;
   oldguard_nodes: SponsorNode[];
   oldguard_edges: SponsorEdge[];
+  has_durable_faction: boolean;
+  persistence_family_size: number;
+  persistence_era_pair: [string, string] | null;
+  persistent_core_names: string[];
   eras: SponsorEra[];
 }
 

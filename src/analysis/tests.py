@@ -876,19 +876,35 @@ def _t_mayoral(session, council_id, pc) -> TestResult:
 
 
 def _t_sponsorship(session, council_id, pc) -> TestResult:
+    """Redesigned (docs/uplift/01-known-defects.md's sponsorship gap,
+    closed): headline/verdict are derived from `sponsorship_network()`'s
+    actual computed persistence test, not a fixed narrative about one
+    particular decade of this council's history — see that function's
+    docstring for the era-window/persistence-test design. Severity stays
+    Observation
+    regardless of the finding either way (sponsorship_network()'s own
+    module docstring: sponsoring an ally is ordinary politics, not
+    impropriety — the point is descriptive)."""
     s = pc.get("sponsorship") or sponsorship_network(session, council_id)
-    # KNOWN GAP, deeper than this test's valence (docs/SECOND_COUNCIL_PLAN.md
-    # 1.1 found this; not yet fixed — same class as B3's _RECUSAL_ERAS /
-    # _DELEGATE_BODIES): headline/verdict below are static prose describing
-    # Cambridge's specific 2000s-old-guard history, not derived from `s` at
-    # all, and the query underneath (sponsorship_network(), src/analysis/
-    # queries.py) hardcodes `_SPON_ERAS`/`_OLDGUARD`/`_STRUCT` — a specific
-    # 1996-2023 electoral-term calendar and a hand-written era-by-era
-    # narrative ("forming", "old guard consolidates", "fragmented", ...).
-    # On a second council this renders the exact same Cambridge sentence
-    # regardless of that council's own sponsorship structure. Needs the
-    # query layer redesigned before this test's own direction can be
-    # meaningfully derived — deferred, not attempted in this pass.
+    if not s.eras:
+        return _nodata("governance.durable_faction", "Is there a faction that survives across elections?",
+                       "Governance / culture (3.2)", "CIPFA-B · the council-governance-inquiry root-cause genre",
+                       "Do voting/sponsorship blocs persist across electoral terms (an entrenched bloc)?",
+                       scope=[SCOPE_WHOLE_CORPUS])
+    era_span = f"{s.eras[0].year_from}–{s.eras[-1].year_to}"
+    if s.has_durable_faction:
+        era_a, era_b = s.persistence_era_pair
+        headline = (f"A sponsorship cluster persisted from {era_a} into {era_b} beyond chance overlap "
+                    f"(p={round(s.persistence_best_result.p_value_at_least_observed, 4)})")
+        verdict = ("Working alliances are real and visible in who-seconds-whom, and the persistence test "
+                   f"found a core group ({', '.join(s.persistent_core_names)}) surviving the {era_a} to "
+                   f"{era_b} transition beyond what chance overlap alone would predict.")
+    else:
+        headline = (f"No sponsorship cluster survives from one era to the next beyond chance, across "
+                    f"{s.persistence_family_size} consecutive era-pair(s) tested")
+        verdict = ("Working alliances are real and visible in who-seconds-whom, but the persistence test "
+                   "found no entrenched faction surviving an electoral transition — the structure "
+                   "reshuffles each era.")
     return TestResult(
         test_id="governance.durable_faction",
         title="Is there a faction that survives across elections?",
@@ -897,12 +913,10 @@ def _t_sponsorship(session, council_id, pc) -> TestResult:
         question="Do voting/sponsorship blocs persist across electoral terms (an entrenched bloc)?",
         valence=NEUTRAL,
         grade=G_OBSERVATION,
-        headline=("A 2000s old-guard sponsorship clique existed and fragmented in 2008; no durable "
-                  "bloc in the modern council"),
-        verdict=("Working alliances are real and visible in who-seconds-whom, but the persistence test "
-                 "found no entrenched modern faction — the structure reshuffles each election."),
+        headline=headline,
+        verdict=verdict,
         base_rate=f"high-sponsor pairs agree {s.convergence_high_agree}% vs {s.convergence_low_agree}% base",
-        era="1996–2023 (electoral terms)",
+        era=f"{era_span} (era windows derived from this council's own corpus span)",
         detail_panel="sponsorship",
         scope=[SCOPE_WHOLE_CORPUS],
     )
@@ -2561,10 +2575,10 @@ def battery_summary(results: list[TestResult]) -> dict:
 # are new, separate functions producing a Claim (src/analysis/claims.py)
 # for the same underlying question, starting with the three tests
 # 02-claim-layer.md's own migration plan flags as the clearest fix (G-01
-# fiscal-year, G-18 flat-classification, G-12 invalid ratio). 26 of the 29
-# battery tests have no claim-object counterpart yet — not attempted this
-# pass; each remaining one needs its own population/comparison/statistic
-# design, same as these three, not a mechanical pattern that generalizes.
+# fiscal-year, G-18 flat-classification, G-12 invalid ratio). Current
+# coverage is CLAIM_GENERATOR_COVERAGE_GAP below, not a count restated
+# here — each test needed its own population/comparison/statistic design,
+# not a mechanical pattern that generalizes.
 #
 # None of these are wired into run_test_battery() or council draft (Step 7)
 # — call them directly, or via lint against them in a standalone script/
@@ -4022,14 +4036,77 @@ def _t_confidential_topics_claim(session, council_id, pc) -> Claim | None:
     )
 
 
+def _t_sponsorship_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_sponsorship`. Same shape as
+    `_t_procurement_incumbency_claim`: the graded statistic is a
+    hypergeometric chance-overlap test, now over the sponsorship query's
+    real, council-agnostic persistence test
+    (`sponsorship_network()`'s `persistence_*` fields) instead of asserted
+    prose about one particular decade."""
+    s = pc.get("sponsorship") or sponsorship_network(session, council_id)
+    if not s.eras or s.persistence_family_size == 0:
+        return None
+    result = s.persistence_best_result
+    era_a, era_b = s.persistence_era_pair
+    return Claim(
+        id="governance.durable_faction",
+        hypothesis="Does any sponsorship cluster's membership persist from one era into the "
+                   "next beyond chance overlap?",
+        population=Population(
+            grain="(person)",
+            definition="active sponsors (mover or seconder, volume-qualified) across a pair of "
+                       "consecutive era windows",
+            base_table="motion_fact",
+            filter_chain=(
+                "era windows derived from this council's own corpus span",
+                f"strongest pair by overlap significance: {era_a} vs {era_b}",
+            ),
+        ),
+        numerator=NumeratorDenominator(
+            definition="sponsors in both eras' high-lift clusters (the observed overlap)",
+            n=result.observed_overlap,
+        ),
+        denominator=NumeratorDenominator(
+            definition="active sponsors across the two eras combined", n=s.persistence_population_size,
+        ),
+        grade=GRADE_CRITICAL if s.has_durable_faction else GRADE_SUPPORTIVE,
+        grade_justification=(
+            f"P(overlap >= {result.observed_overlap}) = {round(result.p_value_at_least_observed, 4)} under a "
+            f"chance null (expected {round(result.expected_overlap, 2)}), Bonferroni α="
+            f"{round(s.persistence_bonferroni_alpha, 4)} across {s.persistence_family_size} consecutive "
+            f"era-pair(s) tested — {'below' if s.has_durable_faction else 'not below'} that threshold"
+        ),
+        statistic=Statistic(value=float(result.observed_overlap), method="hypergeometric"),
+        narrative=Narrative(
+            headline=(
+                f"A sponsorship cluster persisted from {era_a} into {era_b} beyond chance "
+                f"({result.observed_overlap} vs {round(result.expected_overlap, 1)} expected)"
+                if s.has_durable_faction else
+                f"No sponsorship cluster survives {era_a} into {era_b} beyond chance "
+                f"({result.observed_overlap} vs {round(result.expected_overlap, 1)} expected), the "
+                f"strongest of {s.persistence_family_size} consecutive era-pair(s) tested"
+            ),
+            body=f"Active sponsors across {era_a} and {era_b}: {result.observed_overlap} appear in both "
+                 f"eras' high-lift clusters, vs {round(result.expected_overlap, 1)} expected by chance.",
+            caveats=(
+                "Era windows are arbitrary 4-year buckets over this council's own corpus span, not "
+                "confirmed election dates (councillor_terms is too sparse to reconstruct a real "
+                "electoral calendar reliably) - a real term boundary falling mid-bucket would blur "
+                "this test's signal.",
+                f"Bonferroni-corrected across {s.persistence_family_size} consecutive era-pairs tested, "
+                "since checking every adjacent pair for the best signal is a real multiple-comparison "
+                "situation, not one pre-registered test.",
+            ),
+        ),
+    )
+
+
 # ── claim battery (Step 7, docs/uplift/migration/02-claim-layer.md) ─────────
 # The Claim-object counterpart to _GENERATORS/run_test_battery() above. Only
-# 19 of 29 test_ids have a registered claim generator — the other 10 need a
-# genuinely different statistical shape this schema/inference toolkit
-# doesn't cover yet (a median-value comparison, a categorical lift ratio, a
-# set-overlap boolean, a win-rate hierarchy/spread, a raw count trend with
-# no denominator, one still-hardcoded-prose test, and two with no
-# underlying computation at all) — not attempted, not a placeholder.
+# 27 of 29 test_ids have a registered claim generator — the other 2
+# (procurement.single_source, finance.reserve_trajectory) have no
+# underlying computation on this corpus at all (already `_nodata` in the
+# TestResult path) — not attempted, not a placeholder.
 
 _CLAIM_GENERATORS: dict[str, Callable] = {
     "conflict.recusal_management": _t_recusal_overall_claim,
@@ -4058,6 +4135,7 @@ _CLAIM_GENERATORS: dict[str, Callable] = {
     "engagement.participation": _t_engagement_claim,
     "transparency.confidential_tender_size": _t_confidential_tender_size_claim,
     "transparency.confidential_topics": _t_confidential_topics_claim,
+    "governance.durable_faction": _t_sponsorship_claim,
 }
 
 # test_ids with no claim generator yet, for reporting ("N of 29 checked")

@@ -1927,7 +1927,11 @@ def _fake_sponsorship_stats(edge: SponsorEdge) -> SponsorshipNetworkStats:
     return SponsorshipNetworkStats(
         alliances=[edge], procedural=[], convergence_high_agree=80.0,
         convergence_low_agree=40.0, oldguard_label="2000–07",
-        oldguard_unanimous_pct=90.0, oldguard_nodes=[], oldguard_edges=[], eras=[],
+        oldguard_unanimous_pct=90.0, oldguard_nodes=[], oldguard_edges=[],
+        has_durable_faction=False, persistence_family_size=0,
+        persistence_bonferroni_alpha=0.05, persistence_best_result=None,
+        persistence_era_pair=None, persistence_population_size=0,
+        persistent_core_names=[], eras=[],
     )
 
 
@@ -1963,8 +1967,12 @@ def test_durable_faction_resolves_motions_within_the_edges_own_era(session, monk
     )
     session.flush()
 
+    # Era labels are now derived from this council's own corpus span
+    # (`_sponsorship_era_windows()`), non-overlapping and inclusive on both
+    # ends — the meetings above (2005, 2006 in-era; 2015 out) fall in
+    # "2005-2008" and "2013-2015" respectively under that derivation.
     fake_edge = SponsorEdge(
-        era_label="2000–07", name_a="Alice Alliance", name_b="Bob Bond",
+        era_label="2005–2008", name_a="Alice Alliance", name_b="Bob Bond",
         sponsorships=2, lift=3.0, agree_pct=80.0, agree_n=30, kind="alliance",
         id_a=cllr_a, id_b=cllr_b,
     )
@@ -1998,8 +2006,11 @@ def test_durable_faction_caps_and_orders_newest_first(session, monkeypatch):
         ids_by_year[yr] = motion_id
     session.flush()
 
+    # This council's only meetings are 2001-2003, so its one derived era
+    # window (`_sponsorship_era_windows()`) is "2001-2003" (capped at the
+    # corpus's own last year, non-overlapping/inclusive on both ends).
     fake_edge = SponsorEdge(
-        era_label="2000–07", name_a="Repeat Sponsor", name_b="Other Sponsor",
+        era_label="2001–2003", name_a="Repeat Sponsor", name_b="Other Sponsor",
         sponsorships=3, lift=3.0, agree_pct=80.0, agree_n=30, kind="alliance",
         id_a=cllr_a, id_b=cllr_b,
     )

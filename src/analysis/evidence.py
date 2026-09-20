@@ -1956,7 +1956,10 @@ def evidence_for_durable_faction(
     the closest defensible receipt is a sample of the actual motions
     where that specific pair co-sponsored, scoped to the SAME year
     window the edge's own lift/agreement figures were computed over
-    (`_SPON_ERAS`/`_OLDGUARD`, reused directly rather than re-derived).
+    (`_sponsorship_era_windows()`, re-derived from this council's own
+    corpus span the same way `sponsorship_network()` itself does, since
+    era windows are no longer a fixed global list a label could be looked
+    up against).
 
     Only Part 1's alliances/procedural lists (SponsorshipNetworkPanel's
     EdgeRow, individually clickable) get a drill-down in this pass — the
@@ -1968,11 +1971,12 @@ def evidence_for_durable_faction(
     """
     from datetime import date as _date
 
-    from src.analysis.queries import _OLDGUARD, _SPON_ERAS, _year_filter_query, sponsorship_network
+    from src.analysis.queries import _sponsorship_era_windows, _year_filter_query, sponsorship_network
     from src.models import Motion
 
-    era_years: dict[str, tuple[int | None, int | None]] = {label: (f, t) for label, f, t in _SPON_ERAS}
-    era_years[_OLDGUARD[0]] = (_OLDGUARD[1], _OLDGUARD[2])
+    era_years: dict[str, tuple[int | None, int | None]] = {
+        label: (f, t) for label, f, t in _sponsorship_era_windows(session, council_id)
+    }
 
     stats = sponsorship_network(session, council_id)
     edges = [e for e in (stats.alliances + stats.procedural)

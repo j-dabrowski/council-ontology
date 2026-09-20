@@ -136,10 +136,6 @@ LEAKAGE_ALLOW: dict[str, str] = {
     "governance.oversight_body_capture": "era hardcoded '1995-2026, era-pooled'",
     "governance.unanimity_trend": "era hardcoded '1995-2026 (years with >=30 carried motions)'",
     "governance.chair_capture": "era hardcoded '1999-2026 (mayors with dated terms)'",
-    "governance.durable_faction": (
-        "headline hardcoded '...clique existed and fragmented in 2008...'; "
-        "era hardcoded '1996-2023 (electoral terms)'"
-    ),
     "governance.incumbency": "era hardcoded '1995-2026'",
     "governance.freshman_effect": "era hardcoded '1995-2026'",
     "governance.election_cycle": "era hardcoded '1995-2026'",
@@ -236,11 +232,7 @@ DIRECTION_ALLOW: dict[str, str] = {
         "so both profiles land SUPPORTIVE on the zero-collision branch"
     ),
     "governance.unanimity_trend": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
-    "governance.durable_faction": (
-        "deeper than a valence hardcode — headline/verdict are static Cambridge "
-        "prose, and the query layer itself hardcodes an era calendar + narrative "
-        "(see comment in tests.py); not attempted this pass"
-    ),
+    "governance.durable_faction": "no direction by design (see comment in tests.py) — always NEUTRAL",
     "governance.incumbency": "no direction by design (see comment in tests.py) — always NEUTRAL",
     "governance.freshman_effect": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",
     "governance.election_cycle": "hardcoded: valence=NEUTRAL always (descriptive, no branch)",

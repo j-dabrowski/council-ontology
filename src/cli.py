@@ -2992,7 +2992,8 @@ def _generate_snapshots(
     })
 
     # sponsorship network: who BACKED whose motions in a near-unanimous chamber —
-    # validated alliances, the 2000s old-guard network, and the structural arc.
+    # validated alliances, the most-notable cluster's own network, and the
+    # computed durable-faction persistence test (sponsorship_network()'s docstring).
     spon = sponsorship_network(session, council_id)
 
     def _edge(e):
@@ -3015,6 +3016,10 @@ def _generate_snapshots(
             for n in spon.oldguard_nodes
         ],
         "oldguard_edges": [_edge(e) for e in spon.oldguard_edges],
+        "has_durable_faction": spon.has_durable_faction,
+        "persistence_family_size": spon.persistence_family_size,
+        "persistence_era_pair": list(spon.persistence_era_pair) if spon.persistence_era_pair else None,
+        "persistent_core_names": spon.persistent_core_names,
         "eras": [
             {"label": r.label, "year_from": r.year_from, "year_to": r.year_to,
              "n_events": r.n_events, "n_active": r.n_active,
