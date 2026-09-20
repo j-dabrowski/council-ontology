@@ -36,6 +36,9 @@ jobs:
       - name: Run tests
         run: pytest tests/ -q
 
+      - name: Claim battery report (non-blocking — see docs/TESTING.md)
+        run: python scripts/claim_battery_report.py
+
   frontend:
     name: Frontend (lint + typecheck + build)
     runs-on: ubuntu-latest

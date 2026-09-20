@@ -261,7 +261,7 @@ ruff check src/ scripts/ api/ tests/ --fix   # auto-fixes what it safely can
 every `pull_request`:
 
 - **`python`** — `pip install -e ".[dev]"`, `ruff check`, the static
-  content gate below, `pytest tests/ -q`.
+  content gate below, `pytest tests/ -q`, the claim battery report below.
 - **`frontend`** — `npm ci`, `npm run lint` (eslint), `npm run build`
   (`tsc -b && vite build` — typecheck and production bundle in one step).
 
@@ -279,6 +279,7 @@ pip install -e ".[dev]"
 ruff check src/ scripts/ api/ tests/
 python scripts/check_no_hardcoded_content.py
 pytest tests/ -q
+python scripts/claim_battery_report.py
 
 # frontend job
 cd frontend
@@ -313,6 +314,45 @@ green rather than blocking CI on a backlog it exists to track. Phases 1
 empty it file by file; the script itself fails loudly if an `ALLOWLIST`
 entry no longer matches, so a fix has to remove its own entry rather than
 leaving it to rot.
+
+### Claim battery report (`scripts/claim_battery_report.py`)
+
+Added `docs/uplift/migration/02-claim-layer.md` Step 9 — an *attempted*,
+not completed, version of that step. Step 9 as written wants two things:
+the claim linter running in CI, and `TestResult` retired as the primary
+path once every battery test has a claim-object counterpart. Neither is
+fully done, and the second one currently can't be: `Claim` objects
+(`src/analysis/claims.py`) are consumed **only** by the `council draft`
+lint step (`src/cli.py`) — `_generate_snapshots()`, every frontend panel,
+`/method`, evidence export, and `council publish` all still read
+exclusively from `TestResult`. The plan's own architecture assumes a
+Renderer stage that consumes `Claim` objects for real output before
+`TestResult` gets retired (`docs/AGENT_DESIGN.md` §6), and that stage was
+never built. Deleting `TestResult` today, at any scope, would break the
+entire rendering/publish pipeline with nothing to replace it.
+
+What *is* real: 26 of the 29 battery tests have a claim-object counterpart
+(`src/analysis/tests.py`'s `_CLAIM_GENERATORS`; the other 3 —
+`procurement.single_source`, `finance.reserve_trajectory`,
+`governance.durable_faction` — have no underlying data or a
+hardcoded-prose query, not a missing-machinery gap). This script runs
+`run_claim_battery()` against the `testville` "baseline" synthetic corpus
+(no `data/council.db` dependency, so it works in CI) and prints a summary:
+how many generators produced a claim, how many returned `None` (no data),
+how many raised, and how many linter FAILs per rule.
+
+**Always exits 0 — a report, not a gate**, deliberately, same reasoning
+as `council draft`'s own claim-lint step: most of the 26 migrated claims
+carry at least one *known, systemic* FAIL today (no `achieved_power`
+computation exists anywhere yet; no clustered two-proportion difference
+estimator exists; the target schema's `numerator`/`denominator` pair
+can't represent a two-group comparison's per-group rates — see
+`tests/test_claim_migrations_batch2.py`'s docstring). A build failure here
+would only be a *statement about coverage growing*, not about individual
+claim quality, so it doesn't gate the build even on a per-claim generation
+exception — only `run_claim_battery()` itself raising (a genuine
+infrastructure break, not a per-claim issue) would print a `FATAL:` line
+and exit non-zero.
 
 ## Draft & publish workflow
 

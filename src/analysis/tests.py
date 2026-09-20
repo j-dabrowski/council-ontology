@@ -3078,7 +3078,7 @@ def _t_oversight_body_capture_claim(session, council_id, pc) -> Claim | None:
             body=f"{r.n_appointees} distinct councillors have ever sat on an oversight body. "
                  f"Appointees won {r.appointee_won}/{r.appointee_n} contested votes; "
                  f"non-appointees won {r.non_appointee_won}/{r.non_appointee_n}.",
-            caveats=("Era-pooled (1995-2026); a modern-era shift could still hide in the aggregate.",),
+            caveats=("Era-pooled across the whole corpus; a modern-era shift could still hide in the aggregate.",),
         ),
     )
 
