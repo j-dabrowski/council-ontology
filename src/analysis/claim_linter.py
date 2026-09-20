@@ -377,21 +377,46 @@ def check_l11(claim: Claim, ctx: LintContext) -> LintResult:
     return LintResult("L-11", LintStatus.PASS, "all headline figures trace to a structured field")
 
 
+_L12_STOPWORDS = frozenset({"about", "these", "those", "their", "where", "which", "there"})
+
+
+def _content_words(text: str) -> set[str]:
+    """Words of at least 5 letters, lowercased, excluding a small stopword
+    list — used by L-12 as a paraphrase-tolerant proxy for "same topic,"
+    rather than requiring the exact definition string or its first word
+    verbatim (that stricter check produced false positives against
+    naturally-worded prose that legitimately paraphrases the denominator —
+    found by running this rule against claims built from real data,
+    src/analysis/tests.py's Step 6 migration)."""
+    return {w for w in re.findall(r"[a-z]+", text.lower()) if len(w) >= 5 and w not in _L12_STOPWORDS}
+
+
+def _shares_content_word(a_words: set[str], b_words: set[str]) -> bool:
+    """True if any word in `a_words` is a prefix of, or shares a prefix
+    with, any word in `b_words` — a cheap stand-in for stemming that
+    tolerates plurals and common suffixes (award/awards, declare/declared)
+    without pulling in a real stemmer dependency."""
+    return any(w1 == w2 or w1.startswith(w2) or w2.startswith(w1) for w1 in a_words for w2 in b_words)
+
+
 def check_l12(claim: Claim, ctx: LintContext) -> LintResult:
     """`narrative.headline` and `narrative.body` must reference the same
     denominator definition (D-22: headline quotes the blended rate, the
     panel's own footnote disowns it for a different, must-leave-only
-    denominator). Heuristic: the denominator's definition text (or a
-    keyword drawn from it) must appear in both, case-insensitively."""
+    denominator). Heuristic: at least one significant (>=5-letter) word
+    from the denominator's definition must appear (allowing plural/suffix
+    variation) in both headline and body — tolerant of paraphrasing, but
+    still catches a genuinely different denominator being smuggled in
+    (D-22/D-24's actual shape: "blended" vs "must-leave" share no such
+    word)."""
     headline, body = claim.narrative.headline.strip(), claim.narrative.body.strip()
     if not headline or not body:
         return LintResult("L-12", LintStatus.NOT_APPLICABLE, "headline or body not yet populated")
-    definition = claim.denominator.definition.strip().lower()
-    if not definition:
-        return LintResult("L-12", LintStatus.UNVERIFIABLE, "denominator.definition is empty")
-    keyword = definition.split()[0] if definition else ""
-    in_headline = definition in headline.lower() or (keyword and keyword in headline.lower())
-    in_body = definition in body.lower() or (keyword and keyword in body.lower())
+    def_words = _content_words(claim.denominator.definition)
+    if not def_words:
+        return LintResult("L-12", LintStatus.UNVERIFIABLE, "denominator.definition has no matchable content words")
+    in_headline = _shares_content_word(def_words, _content_words(headline))
+    in_body = _shares_content_word(def_words, _content_words(body))
     if not (in_headline and in_body):
         return LintResult(
             "L-12", LintStatus.FAIL,

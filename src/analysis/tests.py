@@ -64,6 +64,7 @@ from src.test_registry import RegistryRow, load_test_registry
 from src.analysis.claims import (
     COMPARISON_BETWEEN_SUBJECT,
     COMPARISON_NONE,
+    COMPARISON_TEMPORAL,
     GRADE_CONCERN,
     GRADE_CRITICAL,
     GRADE_NEUTRAL,
@@ -2709,8 +2710,8 @@ def _t_repeat_applicant_claim(session, council_id, pc) -> Claim | None:
         ),
         statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
         narrative=Narrative(
-            headline=f"Repeat applicants (7+) are approved {round(k2 / n2 * 100)}% of the time vs "
-                     f"{round(k1 / n1 * 100)}% for one-shot applicants",
+            headline=f"Approval among decided applications: repeat applicants (7+) {round(k2 / n2 * 100)}% vs "
+                     f"one-shot {round(k1 / n1 * 100)}%",
             body=(
                 f"Among decided applications with a named applicant, one-shot applicants "
                 f"(n={n1}) were approved {round(k1 / n1 * 100)}% of the time; applicants with 7 "
@@ -2834,5 +2835,762 @@ def _t_recusal_overall_claim(session, council_id, pc) -> Claim | None:
             body=f"Of {n} {population_definition}, the member recused (stepped out) in {k} "
                  f"({round(stat.value * 100)}%).",
             caveats=tuple(caveats),
+        ),
+    )
+
+
+# ── era/period-comparison claims ─────────────────────────────────────────
+# Same shape: a rate before vs. after a scrutiny/election window, upgraded
+# from the legacy fixed-±5pp-band heuristic to a real CI-based significance
+# check via difference_in_proportions_ci(). Raw pre/post counts aren't
+# always exposed by the underlying query object (only pct + n) — where
+# that's true, k is back-derived as round(pct/100*n), a documented
+# approximation (the query object rounds before returning; this is a
+# rounding-of-a-rounding, not a new precision loss class).
+
+def _t_recusal_trend_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_recusal_trend`. Grades on whether the
+    post-scrutiny CI is significantly below/above the pre-scrutiny rate,
+    not a fixed ±5pp band. `k` for each era is back-derived from
+    `must_leave_*_pct`/`_n` (RecusalTrendStats doesn't expose raw recused
+    counts directly) — an approximation, stated as a caveat."""
+    r = pc.get("recusal_trend") or recusal_compliance_trend(session, council_id)
+    if r.inquiry_window is None or r.must_leave_pre_n == 0 or r.must_leave_post_n == 0:
+        return None
+    k_pre = round(r.must_leave_pre_pct / 100 * r.must_leave_pre_n)
+    k_post = round(r.must_leave_post_pct / 100 * r.must_leave_post_n)
+    diff = difference_in_proportions_ci(k_pre, r.must_leave_pre_n, k_post, r.must_leave_post_n)
+    if diff.ci_high < 0:
+        grade, direction = GRADE_CRITICAL, "fell"
+    elif diff.ci_low > 0:
+        grade, direction = GRADE_SUPPORTIVE, "rose"
+    else:
+        grade, direction = GRADE_NEUTRAL, "held near"
+    return Claim(
+        id="conflict.recusal_trend",
+        hypothesis="Did must-leave recusal compliance change around the council's external-scrutiny window?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition="must-leave declared-interest votes, pre- vs. post-scrutiny era",
+            base_table="declaration_fact",
+            filter_chain=(f"era in (pre-scrutiny, post-scrutiny per {r.era_label or 'configured window'})",),
+        ),
+        numerator=NumeratorDenominator(definition="must-leave votes where the member recused, pooled pre+post", n=k_pre + k_post),
+        denominator=NumeratorDenominator(definition="must-leave declared-interest votes, pooled pre+post", n=r.must_leave_pre_n + r.must_leave_post_n),
+        grade=grade,
+        grade_justification=f"post-minus-pre recusal-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}]",
+        comparison=Comparison(
+            type=COMPARISON_TEMPORAL,
+            reference_definition=f"must-leave recusal rate before the {r.era_label or 'scrutiny'} window",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Must-leave recusal {direction} {r.must_leave_pre_pct}% before scrutiny to {r.must_leave_post_pct}% after",
+            body=f"Pre-scrutiny: {k_pre}/{r.must_leave_pre_n} must-leave votes saw the member recuse "
+                 f"({r.must_leave_pre_pct}%). Post-scrutiny: {k_post}/{r.must_leave_post_n} "
+                 f"({r.must_leave_post_pct}%).",
+            caveats=(
+                "Per-era k is back-derived from a rounded percentage and n (the underlying query "
+                "returns pct+n, not raw counts) — an approximation, not exact.",
+            ),
+        ),
+    )
+
+
+def _t_transparency_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_transparency`. Grades on whether the peak
+    year's confidential share is significantly above the pre-era baseline,
+    using each year's exact raw total/confidential counts (TransparencyYear
+    carries these directly, no back-derivation needed here)."""
+    t = pc.get("transparency") or transparency_by_year(session, council_id)
+    if not t.years:
+        return None
+    cutoff = t.inquiry_window[0] if t.inquiry_window else None
+    pre_years = [y for y in t.years if cutoff is None or y.year < cutoff]
+    peak_year_obj = next((y for y in t.years if y.year == t.peak_year), None)
+    if not pre_years or peak_year_obj is None:
+        return None
+    pre_total = sum(y.total for y in pre_years)
+    pre_conf = sum(y.confidential for y in pre_years)
+    if pre_total == 0 or peak_year_obj.total == 0:
+        return None
+    diff = difference_in_proportions_ci(pre_conf, pre_total, peak_year_obj.confidential, peak_year_obj.total)
+    spike = diff.ci_low > 0
+    return Claim(
+        id="transparency.confidential_share",
+        hypothesis="Is the peak year's confidential-item share significantly above the pre-era baseline?",
+        population=Population(
+            grain="(meeting, item)",
+            definition="decided items recorded confidential or open, pre-era baseline vs. peak year",
+            base_table="motion_fact",
+            filter_chain=(f"year < {cutoff}" if cutoff else "pre-era baseline (no configured scrutiny window)",),
+        ),
+        numerator=NumeratorDenominator(definition="confidential items, pooled baseline+peak year", n=pre_conf + peak_year_obj.confidential),
+        denominator=NumeratorDenominator(definition="decided items, pooled baseline+peak year", n=pre_total + peak_year_obj.total),
+        grade=GRADE_CRITICAL if spike else GRADE_SUPPORTIVE,
+        grade_justification=f"peak-minus-baseline confidential-share 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}]",
+        comparison=Comparison(
+            type=COMPARISON_TEMPORAL,
+            reference_definition="pre-era confidential-item share baseline",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"{t.pre_era_pct}% confidential at baseline vs {t.peak_pct}% in peak year {t.peak_year}",
+            body=f"Baseline: {pre_conf}/{pre_total} items confidential ({round(pre_conf / pre_total * 100)}%). "
+                 f"Peak year {t.peak_year}: {peak_year_obj.confidential}/{peak_year_obj.total} "
+                 f"({round(peak_year_obj.confidential / peak_year_obj.total * 100)}%).",
+            caveats=(COVID_CONFOUND_CAVEAT.strip(),),
+        ),
+    )
+
+
+def _t_question_responsiveness_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_question_responsiveness`. Same era-CI shape
+    as `_t_recusal_trend_claim`; `k` is back-derived from pct+n for the
+    same reason (PQResponsivenessStats doesn't expose raw pre/post counts)."""
+    r = pc.get("pq_responsiveness") or public_question_responsiveness(session, council_id)
+    if r.inquiry_window is None or r.pre_n == 0 or r.post_n == 0:
+        return None
+    k_pre = round(r.pre_pct / 100 * r.pre_n)
+    k_post = round(r.post_pct / 100 * r.post_n)
+    diff = difference_in_proportions_ci(k_pre, r.pre_n, k_post, r.post_n)
+    if diff.ci_low > 0:
+        grade, direction = GRADE_CRITICAL, "rose"
+    elif diff.ci_high < 0:
+        grade, direction = GRADE_SUPPORTIVE, "fell"
+    else:
+        grade, direction = GRADE_NEUTRAL, "held near"
+    return Claim(
+        id="engagement.question_responsiveness",
+        hypothesis="Did the share of public questions deferred ('on notice') change around the "
+                   "council's external-scrutiny window?",
+        population=Population(
+            grain="(meeting, question)",
+            definition="public questions answered live or taken on notice, pre- vs. post-scrutiny era",
+            base_table="question_fact",
+            filter_chain=(f"era in (pre-scrutiny, post-scrutiny per {r.era_label or 'configured window'})",),
+        ),
+        numerator=NumeratorDenominator(definition="questions taken on notice, pooled pre+post", n=k_pre + k_post),
+        denominator=NumeratorDenominator(definition="public questions answered or on notice, pooled pre+post", n=r.pre_n + r.post_n),
+        grade=grade,
+        grade_justification=f"post-minus-pre deferral-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}]",
+        comparison=Comparison(
+            type=COMPARISON_TEMPORAL,
+            reference_definition=f"deferral rate before the {r.era_label or 'scrutiny'} window",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Deferral of public questions {direction} {r.pre_pct}% before scrutiny to {r.post_pct}% after",
+            body=f"Pre-scrutiny: {k_pre}/{r.pre_n} questions taken on notice ({r.pre_pct}%). "
+                 f"Post-scrutiny: {k_post}/{r.post_n} ({r.post_pct}%).",
+            caveats=(
+                "Per-era k is back-derived from a rounded percentage and n, not an exact count.",
+                COVID_CONFOUND_CAVEAT.strip(),
+            ),
+        ),
+    )
+
+
+# ── two-group bucket-comparison claims ───────────────────────────────────
+
+def _t_mayoral_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_mayoral`. `k` for each group is back-derived
+    from `mayor_contest_pct`/`other_contest_pct` + `_moved` (MayoralStats
+    doesn't expose raw contest counts)."""
+    m = pc.get("mayoral") or mayoral_agenda_setting(session, council_id)
+    if m.mayor_moved == 0 or m.other_moved == 0:
+        return None
+    k_mayor = round(m.mayor_contest_pct / 100 * m.mayor_moved)
+    k_other = round(m.other_contest_pct / 100 * m.other_moved)
+    diff = difference_in_proportions_ci(k_other, m.other_moved, k_mayor, m.mayor_moved)
+    captured = diff.ci_high < 0
+    return Claim(
+        id="governance.chair_capture",
+        hypothesis="Do the Mayor's own motions draw significantly less dissent than backbench motions?",
+        population=Population(
+            grain="(meeting, item)",
+            definition="carried motions with a known mover, mayoral vs. backbench",
+            base_table="motion_fact",
+            filter_chain=("mover held a Mayor term covering the meeting date (mayoral group) or not (backbench group)",),
+        ),
+        numerator=NumeratorDenominator(definition="contested (dissented) carried motions, pooled both groups", n=k_mayor + k_other),
+        denominator=NumeratorDenominator(definition="carried motions, pooled both groups", n=m.mayor_moved + m.other_moved),
+        grade=GRADE_CRITICAL if captured else GRADE_SUPPORTIVE,
+        grade_justification=f"mayoral-minus-backbench dissent-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}]",
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="backbench-moved carried motions",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Mayoral motions drew dissent {m.mayor_contest_pct}% of the time vs {m.other_contest_pct}% for backbench motions",
+            body=f"Mayoral: {k_mayor}/{m.mayor_moved} carried motions contested ({m.mayor_contest_pct}%). "
+                 f"Backbench: {k_other}/{m.other_moved} ({m.other_contest_pct}%).",
+            caveats=("Per-group k is back-derived from a rounded percentage and n, not an exact count.",),
+        ),
+    )
+
+
+def _t_oversight_body_capture_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_oversight_body_capture`. Uses exact raw
+    won/n counts (OversightBodyCaptureStats carries these directly)."""
+    r = pc.get("oversight") or oversight_body_capture(session, council_id)
+    if r.n_appointees == 0 or r.appointee_n == 0 or r.non_appointee_n == 0:
+        return None
+    diff = difference_in_proportions_ci(r.non_appointee_won, r.non_appointee_n, r.appointee_won, r.appointee_n)
+    captured = not (diff.ci_low <= 0 <= diff.ci_high)
+    return Claim(
+        id="governance.oversight_body_capture",
+        hypothesis="Do oversight-body appointees win contested votes at a significantly different "
+                   "rate than non-appointees?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition="contested-vote outcomes, oversight-body appointees vs. non-appointees",
+            base_table="vote_fact",
+            filter_chain=("councillor ever appointed to an internal oversight body (appointee group) or not",),
+        ),
+        numerator=NumeratorDenominator(definition="contested votes won, pooled both groups", n=r.appointee_won + r.non_appointee_won),
+        denominator=NumeratorDenominator(definition="contested votes cast, pooled both groups", n=r.appointee_n + r.non_appointee_n),
+        grade=GRADE_CRITICAL if captured else GRADE_SUPPORTIVE,
+        grade_justification=f"appointee-minus-non-appointee win-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}]",
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="non-appointee councillors' win rate on the same contested votes",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method,
+                             clustering_unit=None),
+        narrative=Narrative(
+            headline=f"Contested-vote win rate: oversight-body appointee {r.appointee_win_rate}% "
+                     f"(n={r.appointee_n}) vs non-appointee {r.non_appointee_win_rate}% (n={r.non_appointee_n})",
+            body=f"{r.n_appointees} distinct councillors have ever sat on an oversight body. "
+                 f"Appointees won {r.appointee_won}/{r.appointee_n} contested votes; "
+                 f"non-appointees won {r.non_appointee_won}/{r.non_appointee_n}.",
+            caveats=("Era-pooled (1995-2026); a modern-era shift could still hide in the aggregate.",),
+        ),
+    )
+
+
+def _t_objection_dose_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_objection_dose`. Uses exact raw n/refused
+    counts from the "0" and "5+" objector buckets (ObjectionDoseBucket
+    carries these directly, no back-derivation needed)."""
+    d = pc.get("dose") or objection_dose_response(session, council_id)
+    by = {b.label: b for b in d.buckets}
+    lo, hi = by.get("0"), by.get("5+")
+    if lo is None or hi is None or lo.n == 0 or hi.n == 0:
+        return None
+    diff = difference_in_proportions_ci(lo.refused, lo.n, hi.refused, hi.n)
+    responsive = diff.ci_low > 0
+    return Claim(
+        id="planning.objection_responsiveness",
+        hypothesis="Is the refusal rate on applications with 5+ objectors significantly higher than "
+                   "on applications with none?",
+        population=Population(
+            grain="(application)",
+            definition="decided planning applications, 0 objectors vs. 5+ objectors",
+            base_table="application_fact",
+            filter_chain=("objector count bucketed: 0 vs. 5+",),
+        ),
+        numerator=NumeratorDenominator(definition="refused applications, pooled both groups", n=lo.refused + hi.refused),
+        denominator=NumeratorDenominator(definition="decided applications, pooled both groups", n=lo.n + hi.n),
+        grade=GRADE_SUPPORTIVE if responsive else GRADE_CRITICAL,
+        grade_justification=f"5+-minus-0-objector refusal-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}]",
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="applications with no community objections",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Refusal rate on decided applications: {lo.refusal_pct}% with no objectors vs "
+                     f"{hi.refusal_pct}% with 5+ objectors",
+            body=f"Of decided applications, no objectors: {lo.refused}/{lo.n} refused ({lo.refusal_pct}%). "
+                 f"5+ objectors: {hi.refused}/{hi.n} refused ({hi.refusal_pct}%).",
+            caveats=(
+                "An observational association, not proof the objections themselves changed the "
+                "outcome: a non-compliant application could independently attract both more "
+                "objectors and a higher refusal rate.",
+            ),
+        ),
+    )
+
+
+def _t_big_dollar_leniency_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_big_dollar_leniency`. Compares the two
+    extreme value quartiles (Q1 lowest-$ vs. Q4 highest-$) directly, same
+    pattern as `_t_repeat_applicant_claim`."""
+    rows = (
+        session.query(PlanningApplication.estimated_value, PlanningApplication.status)
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            PlanningApplication.estimated_value.isnot(None),
+            PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]),
+        ).all()
+    )
+    vals = sorted([(v, s) for v, s in rows if v and v > 0], key=lambda t: t[0])
+    if len(vals) < 20:
+        return None
+    q = len(vals) // 4
+    q1, q4 = vals[:q], vals[3 * q:]
+    k1 = sum(1 for _v, s in q1 if s == ApplicationStatus.APPROVED)
+    k4 = sum(1 for _v, s in q4 if s == ApplicationStatus.APPROVED)
+    diff = difference_in_proportions_ci(k1, len(q1), k4, len(q4))
+    flat = diff.ci_low <= 0 <= diff.ci_high
+    return Claim(
+        id="planning.big_dollar_leniency",
+        hypothesis="Is the approval rate for the highest-value quartile of applications different "
+                   "from the lowest-value quartile?",
+        population=Population(
+            grain="(application)",
+            definition="decided planning applications with a recorded value, lowest vs. highest value quartile",
+            base_table="application_fact",
+            filter_chain=("estimated_value quartile: Q1 (lowest) vs. Q4 (highest)",),
+        ),
+        numerator=NumeratorDenominator(definition="approved applications, pooled Q1+Q4", n=k1 + k4),
+        denominator=NumeratorDenominator(definition="decided applications, pooled Q1+Q4", n=len(q1) + len(q4)),
+        grade=GRADE_SUPPORTIVE if flat else GRADE_CONCERN,
+        grade_justification=f"Q4-minus-Q1 approval-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}] "
+                             f"{'contains' if flat else 'excludes'} zero",
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="lowest-value quartile of decided applications",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Approval among decided applications: {round(k4 / len(q4) * 100)}% for the "
+                     f"highest-value quartile vs {round(k1 / len(q1) * 100)}% for the lowest-value quartile",
+            body=f"Of decided applications, lowest-value quartile: {k1}/{len(q1)} approved "
+                 f"({round(k1 / len(q1) * 100)}%). Highest-value quartile: {k4}/{len(q4)} approved "
+                 f"({round(k4 / len(q4) * 100)}%).",
+        ),
+    )
+
+
+def _t_freshman_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_freshman`. Compares first-12-months dissent
+    rate against later-service dissent rate directly."""
+    rows = (
+        session.query(Vote.councillor_id, Vote.choice, Motion.votes_against, Meeting.meeting_date)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                Motion.outcome == MotionOutcome.CARRIED)
+        .all()
+    )
+    first_seen: dict[int, object] = {}
+    for cid, _ch, _va, d in rows:
+        if d and (cid not in first_seen or d < first_seen[cid]):
+            first_seen[cid] = d
+    early_diss = early_n = late_diss = late_n = 0
+    for cid, ch, va, d in rows:
+        if not d or (va or 0) == 0:
+            continue
+        is_against = 1 if ch == VoteChoice.AGAINST else 0
+        days = (d - first_seen[cid]).days if cid in first_seen else 9999
+        if days <= 365:
+            early_diss += is_against
+            early_n += 1
+        else:
+            late_diss += is_against
+            late_n += 1
+    if early_n == 0 or late_n == 0:
+        return None
+    diff = difference_in_proportions_ci(late_diss, late_n, early_diss, early_n)
+    return Claim(
+        id="governance.freshman_effect",
+        hypothesis="Do councillors dissent at a different rate in their first 12 months than later "
+                   "in their service?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition="contested carried-motion votes, first 12 months of service vs. later",
+            base_table="vote_fact",
+            filter_chain=("days since councillor's first recorded vote <= 365 (early) vs. > 365 (late)",),
+        ),
+        numerator=NumeratorDenominator(definition="dissenting (AGAINST) votes, pooled early+late", n=early_diss + late_diss),
+        denominator=NumeratorDenominator(definition="contested carried-motion votes, pooled early+late", n=early_n + late_n),
+        grade=GRADE_NEUTRAL,
+        grade_justification=f"early-minus-late dissent-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}] "
+                             "- reported descriptively, not graded a direction (per the legacy test's own framing)",
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="the same councillors' later-service votes",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Contested-vote dissent in first 12 months {round(early_diss / early_n * 100)}% vs "
+                     f"{round(late_diss / late_n * 100)}% later",
+            body=f"First 12 months: {early_diss}/{early_n} contested-vote dissents "
+                 f"({round(early_diss / early_n * 100)}%). Later service: {late_diss}/{late_n} "
+                 f"({round(late_diss / late_n * 100)}%).",
+            caveats=(
+                "Pooled early-vs-late is confounded by cohort era (freshmen cluster in more "
+                "turbulent modern years) - not corrected for here, same limitation as the legacy test.",
+            ),
+        ),
+    )
+
+
+def _t_election_cycle_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_election_cycle`."""
+    rows = (
+        session.query(Vote.choice, Meeting.meeting_date)
+        .join(Motion, Vote.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes",
+                Motion.outcome == MotionOutcome.CARRIED)
+        .all()
+    )
+    win_d = win_n = oth_d = oth_n = 0
+    for ch, d in rows:
+        if not d:
+            continue
+        is_against = 1 if ch == VoteChoice.AGAINST else 0
+        in_window = (d.year % 2 == 1) and (4 <= d.month <= 10)
+        if in_window:
+            win_d += is_against
+            win_n += 1
+        else:
+            oth_d += is_against
+            oth_n += 1
+    if win_n == 0 or oth_n == 0:
+        return None
+    diff = difference_in_proportions_ci(oth_d, oth_n, win_d, win_n)
+    return Claim(
+        id="governance.election_cycle",
+        hypothesis="Is dissent higher in the pre-election window than the rest of the electoral cycle?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition="carried-motion votes, pre-election window vs. rest of cycle",
+            base_table="vote_fact",
+            filter_chain=("meeting_date in Apr-Oct of an odd year (pre-election) vs. not",),
+        ),
+        numerator=NumeratorDenominator(definition="dissenting (AGAINST) votes, pooled both groups", n=win_d + oth_d),
+        denominator=NumeratorDenominator(definition="carried-motion votes cast, pooled both groups", n=win_n + oth_n),
+        grade=GRADE_NEUTRAL,
+        grade_justification=f"pre-election-minus-rest dissent-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}] "
+                             "- reported descriptively (per the legacy test's own framing)",
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="votes cast in the rest of the electoral cycle",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Dissent on carried-motion votes: {round(win_d / win_n * 100)}% pre-election vs "
+                     f"{round(oth_d / oth_n * 100)}% otherwise",
+            body=f"Pre-election window (Apr-Oct, odd year): {win_d}/{win_n} carried-motion votes were "
+                 f"dissents ({round(win_d / win_n * 100)}%). Rest of cycle: {oth_d}/{oth_n} "
+                 f"({round(oth_d / oth_n * 100)}%).",
+        ),
+    )
+
+
+def _t_deputation_dissent_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_deputation_dissent`."""
+    dep_meetings = {m for (m,) in session.query(Deputation.meeting_id)
+                    .join(Meeting, Deputation.meeting_id == Meeting.id)
+                    .filter(Meeting.council_id == council_id).distinct().all()}
+    rows = _meeting_contestation(session, council_id)
+    with_d = [c for mid, c in rows if mid in dep_meetings]
+    without_d = [c for mid, c in rows if mid not in dep_meetings]
+    if not with_d or not without_d:
+        return None
+    diff = difference_in_proportions_ci(sum(without_d), len(without_d), sum(with_d), len(with_d))
+    return Claim(
+        id="engagement.deputation_dissent",
+        hypothesis="Do meetings with a public deputation see a different contestation rate than "
+                   "meetings without one?",
+        population=Population(
+            grain="(meeting, item)",
+            definition="carried motions, meetings with a deputation vs. without",
+            base_table="motion_fact",
+            filter_chain=("meeting had >=1 recorded Deputation vs. none",),
+        ),
+        numerator=NumeratorDenominator(definition="contested carried motions, pooled both groups", n=sum(with_d) + sum(without_d)),
+        denominator=NumeratorDenominator(definition="carried motions, pooled both groups", n=len(with_d) + len(without_d)),
+        grade=GRADE_NEUTRAL,
+        grade_justification=f"with-minus-without-deputation contestation-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}] "
+                             "- reported descriptively (per the legacy test's own framing)",
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="meetings with no recorded public deputation",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Contestation of carried motions {round(sum(with_d) / len(with_d) * 100)}% with a deputation vs "
+                     f"{round(sum(without_d) / len(without_d) * 100)}% without",
+            body=f"With a deputation: {sum(with_d)}/{len(with_d)} carried motions contested. "
+                 f"Without: {sum(without_d)}/{len(without_d)}.",
+            caveats=(
+                "Confounded by busy meetings having both more deputations and more motions - "
+                "not corrected for here, same limitation as the legacy test.",
+            ),
+        ),
+    )
+
+
+# ── single-proportion claims ─────────────────────────────────────────────
+
+def _t_officer_divergence_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_officer_divergence`. Grades on whether the
+    ratification rate's CI is clearly above the 85% near-total threshold,
+    not a point-estimate cutoff."""
+    pairs = pc.get("divergence") or officer_divergence(session, council_id, None, None)
+    total = len(pairs)
+    if total == 0:
+        return None
+    diverged = sum(1 for p in pairs if p.diverged)
+    lost = sum(1 for p in pairs if p.council_outcome == "lost")
+    deferred = sum(1 for p in pairs if p.council_outcome == "deferred")
+    ratified = total - diverged
+    est = proportion_ci(ratified, total)
+    null_value = 0.85
+    grade = GRADE_CRITICAL if est.ci_low > null_value else GRADE_SUPPORTIVE
+    return Claim(
+        id="governance.officer_ratification",
+        hypothesis="Is council's ratification rate of officer recommendations significantly above 85%?",
+        population=Population(
+            grain="(meeting, item)",
+            definition="agenda-matched motions with an officer recommendation",
+            base_table="motion_fact",
+            filter_chain=("officer recommendation matched to a minutes outcome",),
+        ),
+        numerator=NumeratorDenominator(definition="motions where council adopted the officer recommendation", n=ratified),
+        denominator=NumeratorDenominator(definition="agenda-matched motions with an officer recommendation", n=total),
+        grade=grade,
+        grade_justification=f"ratification-rate 95% CI [{round(est.ci_low, 2)}, {round(est.ci_high, 2)}] "
+                             f"{'excludes' if grade == GRADE_CRITICAL else 'does not clearly exceed'} the 85% near-total threshold",
+        comparison=Comparison(
+            type=COMPARISON_NONE,
+            reference_definition="an 85% near-total-ratification threshold",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"Council adopted the officer recommendation {round(est.value * 100)}% of the time",
+            body=f"Of {diverged} departure(s) from {total} matched items: {lost} LOST outright, "
+                 f"{deferred} DEFERRED (a procedural pause, not necessarily a rejection).",
+            caveats=(
+                "Cannot detect a motion council substantially amended before carrying it - an "
+                "amended-then-carried motion counts as ratification here, not divergence.",
+            ),
+        ),
+    )
+
+
+def _t_threshold_gaming_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_threshold_gaming`. Reframes the legacy
+    below:above mass ratio as a proportion (below / (below+above)) so it
+    has a real CI; null_value=1.6/2.6, the ratio<=1.6 clean threshold
+    expressed as a proportion."""
+    rows = [(a, y) for a, _n, y, _m in _tender_rows(session, council_id) if a and y]
+    modern = [a for a, y in rows if y >= 2015]
+    thr = 250_000
+    below = sum(1 for a in modern if thr * 0.8 <= a < thr)
+    above = sum(1 for a in modern if thr <= a < thr * 1.2)
+    if below + above == 0:
+        return None
+    est = proportion_ci(below, below + above)
+    null_value = 1.6 / 2.6
+    grade = GRADE_CRITICAL if est.ci_low > null_value else GRADE_SUPPORTIVE
+    return Claim(
+        id="procurement.threshold_gaming",
+        hypothesis="Is there excess tender-value mass just below the competitive-tender threshold, "
+                   "beyond a 1.6:1 below:above ratio?",
+        population=Population(
+            grain="(meeting, award)",
+            definition="tender awards from 2015+ valued within 20% of the $250k competitive-tender threshold",
+            base_table="tender_fact",
+            filter_chain=("year >= 2015", "amount in [0.8*250k, 1.2*250k)"),
+        ),
+        numerator=NumeratorDenominator(definition="awards just below the threshold ([0.8x, 1x))", n=below),
+        denominator=NumeratorDenominator(definition="awards within 20% of the threshold on either side", n=below + above),
+        grade=grade,
+        grade_justification=f"below-threshold-share 95% CI [{round(est.ci_low, 2)}, {round(est.ci_high, 2)}] "
+                             f"{'excludes' if grade == GRADE_CRITICAL else 'does not clearly exceed'} "
+                             f"the 1.6:1 ratio's equivalent share ({round(null_value, 2)})",
+        comparison=Comparison(
+            type=COMPARISON_NONE,
+            reference_definition="a below:above mass ratio of 1.6:1 (the McCrary-spike clean threshold)",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"{below} awards just below the $250k threshold vs {above} just above",
+            body=f"Of {below + above} tender awards from 2015+ within 20% of the $250k competitive-tender "
+                 f"threshold, {below} fall just below it and {above} just above.",
+        ),
+    )
+
+
+def _t_unanimity_trend_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_unanimity_trend`. Purely descriptive
+    (legacy test carries no good/bad direction) — grade is always neutral."""
+    rows = _minutes_motions(session, council_id)
+    contested = total = 0
+    for outcome, va, year in rows:
+        if year is None or outcome != MotionOutcome.CARRIED:
+            continue
+        total += 1
+        contested += 1 if (va or 0) > 0 else 0
+    if total == 0:
+        return None
+    est = proportion_ci(contested, total)
+    return Claim(
+        id="governance.unanimity_trend",
+        hypothesis="What share of carried motions draw at least one dissenting vote?",
+        population=Population(
+            grain="(meeting, item)",
+            definition="carried motions in minutes",
+            base_table="motion_fact",
+            filter_chain=("outcome = carried",),
+        ),
+        numerator=NumeratorDenominator(definition="carried motions with at least one dissenting vote", n=contested),
+        denominator=NumeratorDenominator(definition="carried motions in minutes", n=total),
+        grade=GRADE_NEUTRAL,
+        grade_justification="descriptive test, no good/bad direction (per the legacy test's own framing)",
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"{round(est.value * 100)}% of carried motions drew a dissenting vote (chamber-wide)",
+            body=f"Of {total} carried motions in minutes, {contested} drew at least one dissenting vote.",
+        ),
+    )
+
+
+def _t_attendance_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_attendance`. Purely descriptive (legacy
+    test carries no good/bad direction). Splits ABSENT into recusal
+    (declared_interest=True) vs. genuine (declared_interest=False)."""
+    rows = session.query(Vote.choice, Vote.declared_interest).join(Motion, Vote.motion_id == Motion.id) \
+        .join(Meeting, Motion.meeting_id == Meeting.id) \
+        .filter(Meeting.council_id == council_id, Meeting.document_type == "minutes").all()
+    total = len(rows)
+    if total == 0:
+        return None
+    absent = sum(1 for ch, _di in rows if ch == VoteChoice.ABSENT)
+    recusal_abs = sum(1 for ch, di in rows if ch == VoteChoice.ABSENT and di)
+    genuine_abs = absent - recusal_abs
+    est = proportion_ci(genuine_abs, total)
+    return Claim(
+        id="governance.attendance",
+        hypothesis="What share of cast-vote opportunities are genuine (non-recusal) non-attendance?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition="vote rows in minutes",
+            base_table="vote_fact",
+            filter_chain=(),
+        ),
+        numerator=NumeratorDenominator(definition="ABSENT votes with no declared interest (genuine non-attendance)", n=genuine_abs),
+        denominator=NumeratorDenominator(definition="vote rows in minutes", n=total),
+        grade=GRADE_NEUTRAL,
+        grade_justification="descriptive test, no good/bad direction (per the legacy test's own framing)",
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"Genuine (non-recusal) non-attendance is {round(est.value * 100, 2)}% of all vote rows in minutes",
+            body=f"Of {total} vote rows in minutes, {absent} are ABSENT: {recusal_abs} with a declared interest on "
+                 f"that motion (recusal), {genuine_abs} with none (genuine non-attendance).",
+        ),
+    )
+
+
+def _t_delegate_body_conflict_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_delegate_body_conflict`. Reports only the
+    one body with genuine private stakes (Ocean Gardens) as the graded
+    proportion — the legacy test's own finding is the contrast between
+    bodies, which this single-proportion claim shape can't represent; the
+    other bodies' near-zero rates are in the body text instead."""
+    r = pc.get("delegate_body") or delegate_body_conflict(session, council_id)
+    if not r.bodies:
+        return None
+    og = next((b for b in r.bodies if "Ocean Gardens" in b.label), r.bodies[-1])
+    others = [b for b in r.bodies if b is not og]
+    if og.affiliated_votes == 0:
+        return None
+    est = proportion_ci(og.affiliated_declared, og.affiliated_votes)
+    return Claim(
+        id="conflict.delegate_body_conflict",
+        hypothesis="Do council-appointed delegates with a genuine private stake in their body's "
+                   "business declare an interest before voting on it?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition=f"votes by a councillor within their {og.label} appointment window, on {og.label} business",
+            base_table="declaration_fact",
+            filter_chain=(f"councillor appointed to {og.label}", "vote falls within the appointment window"),
+        ),
+        numerator=NumeratorDenominator(definition="votes where the delegate declared an interest", n=og.affiliated_declared),
+        denominator=NumeratorDenominator(definition=f"votes by a {og.label} delegate on {og.label} business", n=og.affiliated_votes),
+        grade=GRADE_SUPPORTIVE,
+        grade_justification=f"declared-interest rate {round(est.value * 100)}% (95% CI [{round(est.ci_low, 2)}, {round(est.ci_high, 2)}])",
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"{og.label}: {og.affiliated_declared}/{og.affiliated_votes} ({round(est.value * 100)}%) "
+                     "declared — the one body with genuine personal stakes",
+            body=f"{og.label} votes: {og.affiliated_declared}/{og.affiliated_votes} declared "
+                 f"({round(est.value * 100)}%). Institutional-delegation bodies (" + "; ".join(
+                f"{b.label} {b.affiliated_declared}/{b.affiliated_votes} ({b.affiliated_declared_pct}%)"
+                for b in others
+            ) + ") correctly attract near-zero declarations.",
+            caveats=(
+                f"Every per-body n is thin ({min(b.affiliated_votes for b in r.bodies)}-"
+                f"{max(b.affiliated_votes for b in r.bodies)} affiliated votes) - directional, not "
+                "precise, for any one body.",
+            ),
+        ),
+    )
+
+
+def _t_decider_supplier_conflict_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_decider_supplier_conflict`. The graded
+    statistic is the tender-award declared-interest rate (exact counts).
+    The legacy test's actual grading driver — raw surname collisions vs. a
+    chance baseline — already has its own bespoke method
+    (`_surname_chance_baseline()`, G-31) and is carried into `grade`
+    directly rather than forced into this schema's CI machinery, which
+    isn't built for a collision-count-vs-expectation comparison."""
+    r = pc.get("decider_supplier") or decider_supplier_conflict(session, council_id)
+    if r.votes_on_tender_motions == 0:
+        return None
+    est = proportion_ci(r.declared_votes, r.votes_on_tender_motions)
+    n_collisions = len(r.collisions)
+    below_chance = n_collisions <= r.expected_collisions_under_chance
+    grade = GRADE_SUPPORTIVE if (n_collisions == 0 or below_chance) else GRADE_NEUTRAL
+    return Claim(
+        id="procurement.decider_supplier_conflict",
+        hypothesis="Do tender-award voters declare an interest at a different rate than the chamber baseline?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition="votes on tender-award motions",
+            base_table="vote_fact",
+            filter_chain=("motion matched as a tender-award motion",),
+        ),
+        numerator=NumeratorDenominator(definition="tender-award votes where the councillor declared an interest", n=r.declared_votes),
+        denominator=NumeratorDenominator(definition="votes on tender-award motions", n=r.votes_on_tender_motions),
+        grade=grade,
+        grade_justification=(
+            f"{n_collisions} raw decider<->winner surname collision(s) across {r.named_awards} named "
+            f"awards, {'at or below' if below_chance else 'above'} the chance baseline of "
+            f"{r.expected_collisions_under_chance}"
+        ),
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"Tender-award votes declare an interest {round(est.value * 100)}% of the time "
+                     f"(chamber base {r.base_declared_pct}%)",
+            body=f"{n_collisions} raw decider<->winner surname collision(s) across {r.named_awards} "
+                 f"named awards and {r.surnames_tested} voting-councillor surnames.",
+            caveats=(
+                "A raw surname collision is a candidate for human review, never itself confirmed "
+                "evidence of a relationship.",
+                "Only separately-moved tender-award motions are visible, not consent-agenda'd awards.",
+            ),
         ),
     )
