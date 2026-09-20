@@ -21,11 +21,12 @@ reading these views only in Step 6.
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from src.analysis.claims import parse_grain
+from src.analysis.claims import Exclusion, Population, parse_grain
 from src.analysis.queries import _normalise_contractor, contractor_display_names
 from src.models import (
     Appointment,
@@ -401,3 +402,109 @@ def motion_fact(session: Session, council_id: int) -> list[MotionFactRow]:
         )
         for mid, item_no, motion_id, mover_id, seconder_id, rec, outcome in rows
     ]
+
+
+# ── population / filter-chain replay (Step 3) ───────────────────────────────
+#
+# `Population.filter_chain` (src/analysis/claims.py) is a plain `[str]` per
+# the target schema — pure data, so a `Claim` stays serializable per
+# "regeneration semantics" (docs/uplift/02-claim-layer.md: "because claims
+# are data..."). But a list of human-readable strings is not a query DSL;
+# nothing can replay it back into a row filter from the strings alone. The
+# executable half lives here instead, as a `FilterStep` that pairs each
+# description with the predicate that produced it. `build_population()` is
+# what keeps the two from drifting apart: it derives `filter_chain` from the
+# same `steps` it actually runs, in the same order.
+#
+# Honest limitation: replay requires the original `FilterStep` predicates,
+# not just a persisted `Population`. A `Claim` loaded cold from storage with
+# only string `filter_chain` entries cannot self-replay — L-08 can only be
+# checked at generation time (Step 6, when the generator still has its own
+# `steps` in hand), not from a claim object alone after the fact. This is a
+# real gap, not a design choice; closing it would need a serializable filter
+# DSL that doesn't exist anywhere in this codebase.
+
+GOLD_TABLE_FUNCS: dict[str, Callable[[Session, int], list]] = {
+    "vote_fact": vote_fact,
+    "declaration_fact": declaration_fact,
+    "tender_fact": tender_fact,
+    "application_fact": application_fact,
+    "question_fact": question_fact,
+    "membership_fact": membership_fact,
+    "motion_fact": motion_fact,
+}
+
+
+@dataclass(frozen=True)
+class FilterStep:
+    """One filter in a population's filter chain. `describe` becomes the
+    matching `Population.filter_chain` entry; `predicate` is applied to each
+    gold-table row (returning `True` to keep it) when the population is
+    built or replayed."""
+    describe: str
+    predicate: Callable[[object], bool]
+
+
+def build_population(
+    session: Session,
+    council_id: int,
+    *,
+    gold_table: str,
+    definition: str,
+    grain: str,
+    steps: Sequence[FilterStep] = (),
+    exclusions: Sequence[Exclusion] = (),
+) -> tuple[list, Population]:
+    """Fetch `gold_table`'s full row set fresh (a real query, not a cached
+    result) and apply `steps` in order. Returns the filtered rows alongside
+    the `Population` object describing exactly how they were produced —
+    `Population.filter_chain` is built from the same `steps` list that was
+    actually run, so the two cannot silently diverge (G-03/L-06/L-08's
+    object)."""
+    if gold_table not in GOLD_TABLE_FUNCS:
+        raise ValueError(
+            f"unknown gold table {gold_table!r}; known: {sorted(GOLD_TABLE_FUNCS)}"
+        )
+    rows = GOLD_TABLE_FUNCS[gold_table](session, council_id)
+    for step in steps:
+        rows = [r for r in rows if step.predicate(r)]
+    population = Population(
+        grain=grain,
+        definition=definition,
+        base_table=gold_table,
+        filter_chain=tuple(step.describe for step in steps),
+        exclusions=tuple(exclusions),
+    )
+    return rows, population
+
+
+def replay_population_n(
+    session: Session,
+    council_id: int,
+    population: Population,
+    steps: Sequence[FilterStep],
+) -> int:
+    """L-08: replay `population` from scratch — re-query `population.
+    base_table` and re-apply `steps` — and return the resulting row count.
+    `steps` must be the same `FilterStep`s (or equivalents producing
+    identical `describe` text) the population was originally built with;
+    this function checks that before trusting the replay, since `steps`
+    could otherwise silently be for a different filter chain than the one
+    `population.filter_chain` records. Raises `ValueError` on a mismatch —
+    a caller passing the wrong `steps` is a bug to surface, not a count to
+    report."""
+    rows, replayed = build_population(
+        session, council_id,
+        gold_table=population.base_table,
+        definition=population.definition,
+        grain=population.grain,
+        steps=steps,
+        exclusions=population.exclusions,
+    )
+    if replayed.filter_chain != population.filter_chain:
+        raise ValueError(
+            "replay steps describe a different filter_chain than the "
+            f"population declares: {replayed.filter_chain!r} != "
+            f"{population.filter_chain!r}"
+        )
+    return len(rows)

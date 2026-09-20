@@ -14,11 +14,15 @@ from src.analysis.gold import (
     POSITION_ABSENT_NON_ATTENDANCE,
     POSITION_ABSENT_RECUSAL,
     POSITION_ABSENT_UNKNOWN,
+    POSITION_FOR,
+    FilterStep,
     application_fact,
+    build_population,
     declaration_fact,
     membership_fact,
     motion_fact,
     question_fact,
+    replay_population_n,
     tender_fact,
     vote_fact,
 )
@@ -237,3 +241,87 @@ def test_motion_fact_reads_mover_seconder_outcome(session, council_id):
     assert rows[0].seconder_id == m2
     assert rows[0].outcome == "carried"
     assert rows[0].amendment_flag is None
+
+
+# ── population / filter-chain replay (Step 3) ───────────────────────────────
+
+def _for_only_step():
+    return FilterStep(describe="position == for", predicate=lambda r: r.position == POSITION_FOR)
+
+
+def test_build_population_filters_rows_and_declares_filter_chain(session, council_id):
+    mid = _meeting(session, council_id)
+    motion_id = _motion(session, mid)
+    c1 = _councillor(session, "A", "B")
+    c2 = _councillor(session, "C", "D")
+    session.add(Vote(motion_id=motion_id, councillor_id=c1, choice=VoteChoice.FOR))
+    session.add(Vote(motion_id=motion_id, councillor_id=c2, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    rows, population = build_population(
+        session, council_id,
+        gold_table="vote_fact", definition="For votes only", grain="(meeting, item, councillor)",
+        steps=[_for_only_step()],
+    )
+    assert len(rows) == 1
+    assert rows[0].councillor_id == c1
+    assert population.filter_chain == ("position == for",)
+    assert population.base_table == "vote_fact"
+
+
+def test_build_population_no_steps_returns_all_rows(session, council_id):
+    mid = _meeting(session, council_id)
+    motion_id = _motion(session, mid)
+    cid = _councillor(session, "A", "B")
+    session.add(Vote(motion_id=motion_id, councillor_id=cid, choice=VoteChoice.FOR))
+    session.flush()
+
+    rows, population = build_population(
+        session, council_id,
+        gold_table="vote_fact", definition="All votes", grain="(meeting, item, councillor)",
+    )
+    assert len(rows) == 1
+    assert population.filter_chain == ()
+
+
+def test_build_population_unknown_gold_table_raises(session, council_id):
+    with pytest.raises(ValueError, match="unknown gold table"):
+        build_population(
+            session, council_id,
+            gold_table="not_a_real_table", definition="x", grain="(meeting, item, councillor)",
+        )
+
+
+def test_replay_population_n_reproduces_row_count(session, council_id):
+    mid = _meeting(session, council_id)
+    motion_id = _motion(session, mid)
+    c1 = _councillor(session, "A", "B")
+    c2 = _councillor(session, "C", "D")
+    session.add(Vote(motion_id=motion_id, councillor_id=c1, choice=VoteChoice.FOR))
+    session.add(Vote(motion_id=motion_id, councillor_id=c2, choice=VoteChoice.AGAINST))
+    session.flush()
+
+    steps = [_for_only_step()]
+    _rows, population = build_population(
+        session, council_id,
+        gold_table="vote_fact", definition="For votes only", grain="(meeting, item, councillor)",
+        steps=steps,
+    )
+    assert replay_population_n(session, council_id, population, steps) == 1
+
+
+def test_replay_population_n_raises_on_mismatched_steps(session, council_id):
+    mid = _meeting(session, council_id)
+    motion_id = _motion(session, mid)
+    cid = _councillor(session, "A", "B")
+    session.add(Vote(motion_id=motion_id, councillor_id=cid, choice=VoteChoice.FOR))
+    session.flush()
+
+    _rows, population = build_population(
+        session, council_id,
+        gold_table="vote_fact", definition="For votes only", grain="(meeting, item, councillor)",
+        steps=[_for_only_step()],
+    )
+    other_step = FilterStep(describe="position == against", predicate=lambda r: r.position == "against")
+    with pytest.raises(ValueError, match="different filter_chain"):
+        replay_population_n(session, council_id, population, [other_step])

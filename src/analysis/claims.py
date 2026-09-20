@@ -78,8 +78,10 @@ class Exclusion:
 class Population:
     """`population.grain`/`definition`/`filter_chain`/`exclusions` —
     G-03's object. `filter_chain` must be sufficient to reproduce
-    `denominator.n` by replay (L-08); that replay is implemented against
-    `src/analysis/gold.py`'s views in Step 3, not here."""
+    `denominator.n` by replay (L-08); that replay is implemented in
+    `src/analysis/gold.py` (`build_population()`/`replay_population_n()`,
+    Step 3), not here — this stays a plain data object so a `Claim` remains
+    serializable per "regeneration semantics" (docs/uplift/02-claim-layer.md)."""
     grain: str
     definition: str
     base_table: str
