@@ -3838,6 +3838,14 @@ def cmd_draft(args) -> None:
         only=only,
     )
 
+    # Step 7 (docs/uplift/migration/02-claim-layer.md): computed here, while
+    # the session is still open — the claim generators query the DB the
+    # same way the TestResult generators inside _generate_snapshots just
+    # did. Checked against the linter further down, after session.close(),
+    # alongside (not replacing) the S7 invariant gate below.
+    from src.analysis.tests import run_claim_battery
+    draft_claims, claim_generation_errors = run_claim_battery(session, council_id)
+
     # Local-review-only: a single-meeting digest for the latest minutes
     # meeting, computed (not yet written — see below) while the session is
     # still open. Never added to `written`/manifest.snapshots, so it's
@@ -3984,6 +3992,58 @@ def cmd_draft(args) -> None:
             style="red",
         ))
         sys.exit(1)
+
+    # Claim linter (Step 7, docs/uplift/migration/02-claim-layer.md) —
+    # alongside the S7 gate above, not replacing it: S7 checks name-
+    # freedom/MIN_N/entity-resolution; this checks a different thing
+    # (population/comparison/statistic validity) on the subset of tests
+    # that emit a real Claim object today (19 of 29 — the other 10 are a
+    # genuinely different statistical shape not built yet, listed in
+    # CLAIM_GENERATOR_COVERAGE_GAP; simply not checked, never treated as a
+    # pass).
+    #
+    # Diagnostic only, never sys.exit — same reasoning and the same
+    # precedent as the digest gate above (`digest_gate_report`). Most of
+    # the 19 migrated claims carry at least one *known, systemic* FAIL
+    # today (L-02: no achieved_power computation exists anywhere yet; L-04:
+    # no clustered two-proportion difference estimator exists; L-11: the
+    # target schema's numerator/denominator pair can't represent a
+    # two-group comparison's per-group rates at all — see
+    # tests/test_claim_migrations_batch2.py's module docstring). Blocking
+    # `council draft` on those would stop every draft from producing a
+    # manifest.json until that machinery is built, which is real,
+    # unstarted future work, not a defect in this run. Flip to blocking
+    # (same shape as the S7 gate above) once those gaps are closed enough
+    # that a FAIL reliably means a real, actionable claim defect again.
+    from src.analysis.claim_linter import LintStatus, lint_batch
+    from src.analysis.tests import CLAIM_GENERATOR_COVERAGE_GAP
+    claim_lint_results = lint_batch(list(draft_claims.values())) if draft_claims else {}
+    claim_lint_failures = [
+        (test_id, r) for test_id, results in claim_lint_results.items()
+        for r in results if r.status == LintStatus.FAIL
+    ]
+    claim_lint_report = {
+        "run_id": run_id,
+        "council": key,
+        "generated_at": generated_at,
+        "n_claims_checked": len(draft_claims),
+        "test_ids_without_a_claim_generator": sorted(CLAIM_GENERATOR_COVERAGE_GAP),
+        "claim_generation_errors": [
+            {"test_id": e.test_id, "error": e.error} for e in claim_generation_errors
+        ],
+        "passed": not claim_lint_failures,
+        "failures": [
+            {"test_id": tid, "rule_id": r.rule_id, "message": r.message}
+            for tid, r in claim_lint_failures
+        ],
+    }
+    (output_dir / "claim_lint_report.json").write_text(_json.dumps(claim_lint_report, indent=2))
+    console.print(
+        f"  [{'green' if claim_lint_report['passed'] else 'yellow'}]"
+        f"{'✓' if claim_lint_report['passed'] else '○'}[/] claim_lint_report.json "
+        f"[dim]— {len(draft_claims)}/{len(draft_claims) + len(CLAIM_GENERATOR_COVERAGE_GAP)} tests "
+        f"checked, {len(claim_lint_failures)} failure(s), diagnostic only, never blocks the draft[/dim]"
+    )
 
     # /watch feed, public projection (docs/frontend/WATCH_FEED_PLAN.md B.3/
     # Step 5) — filters compute_watch_feed()'s deep/public pairs down to

@@ -24,6 +24,7 @@ the heavy ones.
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
@@ -3078,14 +3079,25 @@ def _t_oversight_body_capture_claim(session, council_id, pc) -> Claim | None:
 def _t_objection_dose_claim(session, council_id, pc) -> Claim | None:
     """Claim counterpart to `_t_objection_dose`. Uses exact raw n/refused
     counts from the "0" and "5+" objector buckets (ObjectionDoseBucket
-    carries these directly, no back-derivation needed)."""
+    carries these directly, no back-derivation needed). Grades on whether
+    the CI is entirely above zero (responsive) or entirely below zero
+    (inverted) — a CI containing zero is genuinely inconclusive (NEUTRAL),
+    not CRITICAL: an earlier version of this claim used the legacy test's
+    own two-way supportive/critical split, which is only valid for a point
+    estimate with no CI. Found by running this claim against real data —
+    see project memory, Step 7."""
     d = pc.get("dose") or objection_dose_response(session, council_id)
     by = {b.label: b for b in d.buckets}
     lo, hi = by.get("0"), by.get("5+")
     if lo is None or hi is None or lo.n == 0 or hi.n == 0:
         return None
     diff = difference_in_proportions_ci(lo.refused, lo.n, hi.refused, hi.n)
-    responsive = diff.ci_low > 0
+    if diff.ci_low > 0:
+        grade = GRADE_SUPPORTIVE
+    elif diff.ci_high < 0:
+        grade = GRADE_CRITICAL
+    else:
+        grade = GRADE_NEUTRAL
     return Claim(
         id="planning.objection_responsiveness",
         hypothesis="Is the refusal rate on applications with 5+ objectors significantly higher than "
@@ -3098,7 +3110,7 @@ def _t_objection_dose_claim(session, council_id, pc) -> Claim | None:
         ),
         numerator=NumeratorDenominator(definition="refused applications, pooled both groups", n=lo.refused + hi.refused),
         denominator=NumeratorDenominator(definition="decided applications, pooled both groups", n=lo.n + hi.n),
-        grade=GRADE_SUPPORTIVE if responsive else GRADE_CRITICAL,
+        grade=grade,
         grade_justification=f"5+-minus-0-objector refusal-rate 95% CI [{round(diff.ci_low, 2)}, {round(diff.ci_high, 2)}]",
         comparison=Comparison(
             type=COMPARISON_BETWEEN_SUBJECT,
@@ -3594,3 +3606,70 @@ def _t_decider_supplier_conflict_claim(session, council_id, pc) -> Claim | None:
             ),
         ),
     )
+
+
+# ── claim battery (Step 7, docs/uplift/migration/02-claim-layer.md) ─────────
+# The Claim-object counterpart to _GENERATORS/run_test_battery() above. Only
+# 19 of 29 test_ids have a registered claim generator — the other 10 need a
+# genuinely different statistical shape this schema/inference toolkit
+# doesn't cover yet (a median-value comparison, a categorical lift ratio, a
+# set-overlap boolean, a win-rate hierarchy/spread, a raw count trend with
+# no denominator, one still-hardcoded-prose test, and two with no
+# underlying computation at all) — not attempted, not a placeholder.
+
+_CLAIM_GENERATORS: dict[str, Callable] = {
+    "conflict.recusal_management": _t_recusal_overall_claim,
+    "conflict.recusal_trend": _t_recusal_trend_claim,
+    "conflict.delegate_body_conflict": _t_delegate_body_conflict_claim,
+    "planning.big_dollar_leniency": _t_big_dollar_leniency_claim,
+    "planning.repeat_applicant": _t_repeat_applicant_claim,
+    "planning.objection_responsiveness": _t_objection_dose_claim,
+    "governance.officer_ratification": _t_officer_divergence_claim,
+    "governance.oversight_body_capture": _t_oversight_body_capture_claim,
+    "governance.unanimity_trend": _t_unanimity_trend_claim,
+    "governance.chair_capture": _t_mayoral_claim,
+    "governance.freshman_effect": _t_freshman_claim,
+    "governance.election_cycle": _t_election_cycle_claim,
+    "governance.attendance": _t_attendance_claim,
+    "transparency.confidential_share": _t_transparency_claim,
+    "finance.eoy_spending": _t_eoy_spending_claim,
+    "engagement.deputation_dissent": _t_deputation_dissent_claim,
+    "engagement.question_responsiveness": _t_question_responsiveness_claim,
+    "procurement.threshold_gaming": _t_threshold_gaming_claim,
+    "procurement.decider_supplier_conflict": _t_decider_supplier_conflict_claim,
+}
+
+# test_ids with no claim generator yet, for reporting ("N of 29 checked")
+# without treating absence as either a pass or a failure.
+CLAIM_GENERATOR_COVERAGE_GAP: frozenset[str] = frozenset(_GENERATORS) - frozenset(_CLAIM_GENERATORS)
+
+
+@dataclass(frozen=True)
+class ClaimGenerationError:
+    test_id: str
+    error: str
+
+
+def run_claim_battery(
+    session: Session, council_id: int, precomputed: dict | None = None,
+) -> tuple[dict[str, Claim], list[ClaimGenerationError]]:
+    """Run every registered claim generator and return `{test_id: Claim}`
+    plus any generation errors. A generator returning `None` means "no data
+    to build a claim from" (the `_nodata()` convention's Claim-side
+    analogue) and is simply omitted, not an error. A generator raising is
+    caught and recorded rather than sinking the whole battery — same
+    discipline `run_test_battery()` already applies to `TestResult`
+    generators.
+    """
+    pc = precomputed or {}
+    claims: dict[str, Claim] = {}
+    errors: list[ClaimGenerationError] = []
+    for test_id, fn in _CLAIM_GENERATORS.items():
+        try:
+            claim = fn(session, council_id, pc)
+        except Exception as exc:
+            errors.append(ClaimGenerationError(test_id=test_id, error=f"{type(exc).__name__}: {exc}"))
+            continue
+        if claim is not None:
+            claims[test_id] = claim
+    return claims, errors
