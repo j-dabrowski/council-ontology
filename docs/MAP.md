@@ -69,6 +69,26 @@ Not owned by one track — gates all of them:
   draft`'s snapshot-writing path (not done) and Renderer-generated prose
   (not built) first — see `docs/TESTING.md`'s "Claim battery report"
   section for why that cutover isn't safe yet.
+- **Critic agents** (`docs/uplift/03-critic-agents.md`'s target 11-critic
+  roster; 2026-09-20) — infrastructure only, none of the 11 critic prompts
+  themselves built yet (that's agent-prompt design + calibration work, not
+  attempted this pass): `src/analysis/findings.py` (the typed-findings
+  ledger — `blocking`/`should_fix`/`note` severities, `open`/`closed`/
+  `wontfix` states, `rounds_seen` for regression protection — plus a
+  `DroppedClaim` registry for the per-claim 3-round cap), `critic_routing.py`
+  (`route_claim()` — the trigger table from the target doc, verbatim;
+  `route_cross_panel()` for C-06's separate whole-build trigger), and
+  `cross_panel.py` (**C-06 itself, mechanized** rather than built as an
+  LLM prompt — the target's own division-of-labour rule says a
+  mechanisable critic finding should be "promoted to a linter rule," and
+  C-06's checks — denominator reconciliation, entity-naming consistency —
+  already are: `CP-01` wraps `claim_linter.py`'s existing `check_l06_
+  shared_denominator`; `CP-02` catches the same real person named with
+  two whitespace/case-inconsistent strings across claims). One trigger
+  ("metric is behavioural / could be gamed") isn't mechanically derivable
+  from a `Claim` — exposed as a caller-supplied allow-list, not a
+  fabricated heuristic. See `scripts/render_claim_panels_preview.py` for
+  routing + cross-panel output against real data.
 - `render/` — the S10 audience-rendering stage, after a claim has cleared
   S7/S8 (and S9, for any named-individual claim): **Renderer**, two modes
   (plain-language: institutional product → resident-facing summary;
@@ -372,6 +392,9 @@ The non-obvious edges, spelled out:
 | implementing (or revising) the 2026-08-23 top-down redesign — claim object, invariant gate, tier products, role changes | `INFORMATION_ARCHITECTURE.md` (the flow) + `AGENT_DESIGN.md` (owners, file deltas, §6 build order) — read the coverage audit row above them first |
 | migrating another battery test to a `Claim` object, or improving the linter/inference machinery | `docs/uplift/migration/02-claim-layer.md` Step 6 — add a `_t_<name>_claim` generator to `tests.py` and register it in `_CLAIM_GENERATORS`; new statistical shapes go in `src/analysis/inference.py`, new rules in `src/analysis/claim_linter.py` |
 | turning a `Claim` into panel-ready data (no prose) | `src/analysis/builder.py`'s `build_panel()` — deterministic only; the actual headline/body is a separate, not-yet-built step (the S10 Renderer or a critic-agent loop), not this module's job |
+| deciding which critics a claim should route to | `src/analysis/critic_routing.py`'s `route_claim()` (per-claim) / `route_cross_panel()` (whole-build, C-06 only) |
+| adding a mechanizable cross-panel check (C-06) | `src/analysis/cross_panel.py` — only for checks expressible as a rule over the whole claim batch; anything needing real judgment belongs to a future critic prompt instead, per `03-critic-agents.md`'s own division-of-labour rule |
+| recording or querying a critic's finding | `src/analysis/findings.py` — `Finding`/`load_ledger()`/`save_ledger()`/`record_round()` (regression-safe: re-surfacing in a later round updates the same finding, not a new one) |
 | building a panel or a drill-down | `frontend/INTERACTIVITY.md` — read its hard rule on never hardcoding a councillor name/claim in component source before writing any JSX; a panel is registered in `frontend/src/registry/components.tsx` and renders body-only — the analysis page's shell owns the card, severity chip and Objection/Response |
 | building or changing the `/map` page | `frontend/MAP_PAGE_PLAN.md` |
 | adding or replacing a council's boundary polygon | `council boundary <key>` → `config/council_boundaries/<key>.geojson`; `council boundary --backdrop` rebuilds the shared all-WA context layer — documented as a Council Setup step in `pipeline/PIPELINE.md`, same footing as terms seeding |
