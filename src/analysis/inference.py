@@ -126,6 +126,36 @@ def clustered_proportion(
 
 
 @dataclass(frozen=True)
+class DifferenceEstimate:
+    value: float
+    ci_low: float
+    ci_high: float
+    method: str
+
+
+def difference_in_proportions_ci(
+    k1: int, n1: int, k2: int, n2: int, *, confidence: float = 0.95,
+) -> DifferenceEstimate:
+    """`p2/n2 - p1/n1` with a Wald (normal-approximation) CI — the standard,
+    simple choice for a two-proportion difference; Newcombe's method is more
+    accurate at small n but isn't implemented here. Used to compare two
+    subgroups' rates directly (e.g. repeat vs. one-shot applicants) rather
+    than the single-sample `proportion_ci()`. Raises `ValueError` on
+    `n1 == 0` or `n2 == 0`.
+    """
+    if n1 <= 0 or n2 <= 0:
+        raise ValueError(f"cannot compute a difference-in-proportions CI with n1={n1}, n2={n2}")
+    p1, p2 = k1 / n1, k2 / n2
+    diff = p2 - p1
+    se = math.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2)
+    z = float(stats.norm.ppf(1 - (1 - confidence) / 2))
+    margin = z * se
+    return DifferenceEstimate(
+        value=diff, ci_low=diff - margin, ci_high=diff + margin, method="wald",
+    )
+
+
+@dataclass(frozen=True)
 class PermutationResult:
     observed_diff: float
     p_value: float

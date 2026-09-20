@@ -6,6 +6,7 @@ import pytest
 
 from src.analysis.inference import (
     clustered_proportion,
+    difference_in_proportions_ci,
     permutation_test_difference,
     proportion_ci,
 )
@@ -84,6 +85,25 @@ def test_clustered_proportion_ci_collapses_when_clusters_agree():
     assert est.value == pytest.approx(1.0)
     assert est.ci_low == pytest.approx(1.0)
     assert est.ci_high == pytest.approx(1.0)
+
+
+# ── difference_in_proportions_ci ─────────────────────────────────────────
+
+def test_difference_in_proportions_ci_zero_when_equal():
+    est = difference_in_proportions_ci(50, 100, 50, 100)
+    assert est.value == pytest.approx(0.0)
+    assert est.ci_low < 0 < est.ci_high
+
+
+def test_difference_in_proportions_ci_detects_large_gap():
+    est = difference_in_proportions_ci(10, 100, 90, 100)
+    assert est.value == pytest.approx(0.8)
+    assert est.ci_low > 0
+
+
+def test_difference_in_proportions_ci_rejects_zero_n():
+    with pytest.raises(ValueError, match="n1=0"):
+        difference_in_proportions_ci(0, 0, 5, 10)
 
 
 # ── permutation_test_difference ──────────────────────────────────────────
