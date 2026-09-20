@@ -61,7 +61,14 @@ DEFAULT_MIN_ACHIEVED_POWER = 0.8
 # 81.1% — 0.90 sits between the two, closer to the tuned-era floor than a
 # round number chosen without reference to real corpus numbers.
 DEFAULT_EXTRACTION_PRECISION_THRESHOLD = 0.90
-FIGURE_MATCH_TOLERANCE = 0.05
+# A headline commonly rounds a percentage to the nearest whole number,
+# which can be up to 0.5 percentage points off the underlying figure
+# (e.g. 66.67% rendered as "67%") — 0.05 (found by exercising this rule
+# against a real generated claim, src/analysis/tests.py's
+# _t_recusal_overall_claim) rejected that legitimate rounding as a
+# mismatch. 0.6 tolerates whole-number rounding on the percentage scale
+# without going so loose it stops catching a genuinely wrong figure.
+FIGURE_MATCH_TOLERANCE = 0.6
 
 _NUMBER_RE = re.compile(r"-?\d+(?:\.\d+)?%?")
 _CAUSAL_RE = re.compile(

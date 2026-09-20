@@ -61,6 +61,25 @@ from src.analysis.queries import (
 from src.analysis.divergence import officer_divergence
 from src.council_eras import fiscal_year_start_month
 from src.test_registry import RegistryRow, load_test_registry
+from src.analysis.claims import (
+    COMPARISON_BETWEEN_SUBJECT,
+    COMPARISON_NONE,
+    GRADE_CONCERN,
+    GRADE_CRITICAL,
+    GRADE_NEUTRAL,
+    GRADE_SUPPORTIVE,
+    Claim,
+    Comparison,
+    NumeratorDenominator,
+    Narrative,
+    Population,
+    Statistic,
+)
+from src.analysis.inference import (
+    clustered_proportion,
+    difference_in_proportions_ci,
+    proportion_ci,
+)
 
 # ── valence + grade vocabulary ──────────────────────────────────────────────
 SUPPORTIVE = "supportive"   # the council does well here (a strength / a clean test)
@@ -2524,3 +2543,296 @@ def battery_summary(results: list[TestResult]) -> dict:
         "n_critical": sum(1 for r in ok if r.valence == CRITICAL),
         "n_not_computable": sum(1 for r in results if not r.data_ok),
     }
+
+
+# ════════════════════════════════════════════════════════════════════════════
+# CLAIM-OBJECT COUNTERPARTS (Step 6, docs/uplift/migration/02-claim-layer.md)
+#
+# Additive per that step: TestResult keeps shipping unchanged above. These
+# are new, separate functions producing a Claim (src/analysis/claims.py)
+# for the same underlying question, starting with the three tests
+# 02-claim-layer.md's own migration plan flags as the clearest fix (G-01
+# fiscal-year, G-18 flat-classification, G-12 invalid ratio). 26 of the 29
+# battery tests have no claim-object counterpart yet — not attempted this
+# pass; each remaining one needs its own population/comparison/statistic
+# design, same as these three, not a mechanical pattern that generalizes.
+#
+# None of these are wired into run_test_battery() or council draft (Step 7)
+# — call them directly, or via lint against them in a standalone script/
+# test, until that wiring exists.
+# ════════════════════════════════════════════════════════════════════════════
+
+def _t_eoy_spending_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_eoy_spending` (G-01's clearest fix).
+
+    Reports the EOY award-*count* share, not the dollar-value share the
+    legacy TestResult headlines — `proportion_ci()` needs a binomial count,
+    not a dollar sum; a dollar-weighted CI would need a different estimator
+    (e.g. a bootstrap over award amounts), not built here. Stated as a
+    caveat, not silently substituted.
+
+    Grades CRITICAL only when the observed share's CI clearly excludes the
+    even-spread null (2/12) — pass `LintContext(null_value=2/12)` when
+    linting this claim; the linter's own 0.0 default would under-check it.
+    """
+    from src.models import Council
+
+    rows = [(a, m) for a, _n, _y, m in _tender_rows(session, council_id) if a and m]
+    if not rows:
+        return None
+    council = session.query(Council).filter(Council.id == council_id).first()
+    start_month = fiscal_year_start_month(council.short_name) if council else 7
+    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    fy_order = [(start_month - 1 + i) % 12 + 1 for i in range(12)]
+    eoy_labels = ", ".join(month_names[m - 1] for m in fy_order[-2:])
+    eoy_months = set(fy_order[-2:])
+
+    total_n = len(rows)
+    eoy_n = sum(1 for _a, m in rows if m in eoy_months)
+    null_share = 2 / 12
+    est = proportion_ci(eoy_n, total_n)
+    grade = GRADE_CRITICAL if est.ci_low > null_share else GRADE_NEUTRAL
+    justification = (
+        f"observed EOY award-count share's 95% CI [{round(est.ci_low * 100)}%, "
+        f"{round(est.ci_high * 100)}%] {'excludes' if grade == GRADE_CRITICAL else 'contains'} "
+        f"the even-distribution null of {round(null_share * 100)}%"
+    )
+    return Claim(
+        id="finance.eoy_spending",
+        hypothesis="Do tender awards cluster into the final two months of the fiscal year, "
+                   "beyond what an even monthly spread would predict?",
+        population=Population(
+            grain="(meeting, award)",
+            definition="tender awards with a known amount and a known award month",
+            base_table="tender_fact",
+            filter_chain=("amount is not null", "award month is known"),
+        ),
+        numerator=NumeratorDenominator(
+            definition="tender awards in the two fiscal-year-end months", n=eoy_n,
+        ),
+        denominator=NumeratorDenominator(
+            definition="tender awards with a known amount and month", n=total_n,
+        ),
+        grade=grade,
+        grade_justification=justification,
+        comparison=Comparison(
+            type=COMPARISON_NONE,
+            reference_definition="an even 2/12 monthly share if EOY spending were uniformly distributed",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method),
+        narrative=Narrative(
+            headline=f"{eoy_labels} (fiscal year-end) hold {round(est.value * 100)}% of tender "
+                     f"awards ({eoy_n}/{total_n})",
+            body=f"Of {total_n} tender awards with a known amount and month, {eoy_n} fell in "
+                 f"{eoy_labels}, the two months before the fiscal year-end boundary read from "
+                 "config/fiscal_year.json's fiscal_year_start_month.",
+            caveats=(
+                "This claim tracks award-count share, not dollar-value share; the legacy "
+                "narrative for this test reports a dollar-value share instead, which would need "
+                "a different estimator (e.g. a bootstrap over award amounts), not built here.",
+            ),
+        ),
+    )
+
+
+def _t_repeat_applicant_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_repeat_applicant` (G-18's clearest fix).
+
+    Compares the two extreme frequency buckets (one-shot vs. 7+
+    applications) directly via `difference_in_proportions_ci()`, rather
+    than eyeballing the legacy 4-bucket spread/monotonicity heuristic — a
+    real two-group comparison the linter can check.
+
+    Stated, known gap: no `achieved_power` computation exists for a
+    two-proportion difference (it would need an assumed minimum detectable
+    effect this project hasn't specified anywhere). When the comparison is
+    "flat" (CI contains zero), this claim's narrative says so — and L-13
+    is *expected* to FAIL on the missing power field. That is a real,
+    surfaced gap (this is exactly D-11/D-18's underpowered-null problem),
+    not a bug in this migration to hide.
+    """
+    rows = (
+        session.query(PlanningApplication.applicant_name, PlanningApplication.status)
+        .join(Motion, PlanningApplication.motion_id == Motion.id)
+        .join(Meeting, Motion.meeting_id == Meeting.id)
+        .filter(
+            Meeting.council_id == council_id,
+            PlanningApplication.applicant_name.isnot(None),
+            PlanningApplication.status.in_([ApplicationStatus.APPROVED, ApplicationStatus.REFUSED]),
+        ).all()
+    )
+    freq: dict[str, list] = {}
+    for name, status in rows:
+        nm = (name or "").strip().lower()
+        if not nm:
+            continue
+        freq.setdefault(nm, []).append(status)
+    if not freq:
+        return None
+
+    one_shot = [s for items in freq.values() if len(items) == 1 for s in items]
+    frequent = [s for items in freq.values() if len(items) >= 7 for s in items]
+    if not one_shot or not frequent:
+        return None  # the extreme-bucket comparison needs both ends populated
+
+    k1, n1 = sum(1 for s in one_shot if s == ApplicationStatus.APPROVED), len(one_shot)
+    k2, n2 = sum(1 for s in frequent if s == ApplicationStatus.APPROVED), len(frequent)
+    diff = difference_in_proportions_ci(k1, n1, k2, n2)
+    flat = diff.ci_low <= 0 <= diff.ci_high
+
+    return Claim(
+        id="planning.repeat_applicant",
+        hypothesis="Are repeat applicants (7+ applications) approved at a different rate "
+                   "than one-shot applicants?",
+        population=Population(
+            grain="(application)",
+            definition="decided planning applications with a named applicant",
+            base_table="application_fact",
+            filter_chain=("applicant_name is not null", "status in (approved, refused)"),
+        ),
+        numerator=NumeratorDenominator(
+            definition="approved applications, pooled across the two compared groups", n=k1 + k2,
+        ),
+        denominator=NumeratorDenominator(
+            definition="decided applications, pooled across the two compared groups", n=n1 + n2,
+        ),
+        grade=GRADE_SUPPORTIVE if flat else GRADE_CONCERN,
+        grade_justification=(
+            f"difference in approval rate (7+ minus one-shot) 95% CI [{round(diff.ci_low, 2)}, "
+            f"{round(diff.ci_high, 2)}] {'contains' if flat else 'excludes'} zero"
+        ),
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="one-shot applicants (exactly 1 application)",
+            reference_is_same_event=True,
+        ),
+        statistic=Statistic(value=diff.value, ci_low=diff.ci_low, ci_high=diff.ci_high, method=diff.method),
+        narrative=Narrative(
+            headline=f"Repeat applicants (7+) are approved {round(k2 / n2 * 100)}% of the time vs "
+                     f"{round(k1 / n1 * 100)}% for one-shot applicants",
+            body=(
+                f"Among decided applications with a named applicant, one-shot applicants "
+                f"(n={n1}) were approved {round(k1 / n1 * 100)}% of the time; applicants with 7 "
+                f"or more applications (n={n2}) were approved {round(k2 / n2 * 100)}% of the time."
+                + (" No difference in approval rate is supported by this comparison." if flat else
+                   " A difference in approval rate is supported by this comparison.")
+            ),
+            caveats=(
+                "numerator/denominator here are pooled across the two compared subgroups, not a "
+                "single population — this claim shape (a direct two-group comparison) doesn't map "
+                "cleanly onto a single numerator/denominator pair; the per-group counts are in body.",
+            ),
+        ),
+    )
+
+
+def _t_recusal_overall_claim(session, council_id, pc) -> Claim | None:
+    """Claim counterpart to `_t_recusal_overall` (G-12's clearest fix).
+
+    The legacy TestResult's "declaring lifts recusal {factor}x" headline
+    divides declared_recusal_pct by baseline_recusal_pct — D-12's exact
+    structurally-invalid comparison (different events: a declared-interest
+    recusal vs. an ordinary-vote absence for any reason). This claim does
+    NOT reproduce that ratio as its graded statistic. The graded quantity
+    is the must-leave recusal proportion alone; the baseline is demoted to
+    an explicitly-flagged, caveated `comparison` (L-07), not a headline
+    multiplier.
+
+    Pass `LintContext(null_value=0.5)` when linting a CRITICAL grade from
+    this claim — the interesting question is whether the CI is clearly on
+    one side of "most councillors comply."
+    """
+    s = conflict_recusal_stats(session, council_id, min_declared=1)
+    have_must_leave = s.must_leave_total > 0
+    k = s.must_leave_recused if have_must_leave else s.declared_recused
+    n = s.must_leave_total if have_must_leave else s.declared_total
+    if n == 0:
+        return None
+    population_definition = (
+        "must-leave (financial/proximity) declared-interest votes" if have_must_leave
+        else "declared-interest votes (no must-leave declarations on record, blended fallback)"
+    )
+
+    # Clustering: expand per-councillor profiles into row-level flags.
+    # min_declared=1 above ensures every councillor is profiled, so this
+    # should sum exactly to n — only trust the clustered estimate when it
+    # does; otherwise fall back to the plain (unclustered) CI with a caveat
+    # rather than silently clustering over a partial population.
+    cluster_rows: list[tuple[int, bool]] = []
+    for p in s.profiles:
+        declared, recused = (
+            (p.must_leave_declared, p.must_leave_recused) if have_must_leave
+            else (p.declared_votes, p.recused)
+        )
+        cluster_rows.extend((p.councillor_id, True) for _ in range(recused))
+        cluster_rows.extend((p.councillor_id, False) for _ in range(declared - recused))
+
+    stat_kwargs = {}
+    clustering_caveat = None
+    if len(cluster_rows) == n:
+        try:
+            clustered = clustered_proportion(
+                cluster_rows, cluster_key=lambda r: r[0], is_positive=lambda r: r[1],
+                clustering_unit="councillor",
+            )
+            stat_kwargs = dict(value=clustered.value, ci_low=clustered.ci_low, ci_high=clustered.ci_high,
+                                method=clustered.method, clustering_unit="councillor")
+        except ValueError:
+            clustering_caveat = "Fewer than 2 councillors have a must-leave declaration on record; not clustered."
+    else:
+        clustering_caveat = (
+            f"Per-councillor profiles ({len(cluster_rows)} rows) do not sum to the aggregate n ({n}); "
+            "not clustered rather than clustering over a partial population."
+        )
+    if not stat_kwargs:
+        est = proportion_ci(k, n)
+        stat_kwargs = dict(value=est.value, ci_low=est.ci_low, ci_high=est.ci_high, method=est.method)
+
+    stat = Statistic(**stat_kwargs)
+    managed = stat.value > 0.5
+    caveats = [
+        f"The baseline ordinary-vote absence rate ({s.baseline_recusal_pct}%) is a different event "
+        "from a declared-interest recusal (absence for any reason vs. stepping out on a declared "
+        "conflict) and is not a valid same-event comparator for a ratio.",
+    ]
+    if clustering_caveat:
+        caveats.append(clustering_caveat)
+
+    return Claim(
+        id="conflict.recusal_management",
+        hypothesis="When a legally-mandatory (financial/proximity) interest is declared, is it "
+                   "managed — does the member recuse?",
+        population=Population(
+            grain="(meeting, item, councillor)",
+            definition=population_definition,
+            base_table="declaration_fact",
+            filter_chain=("interest_type in (financial, proximity)",) if have_must_leave else (),
+        ),
+        numerator=NumeratorDenominator(
+            definition=f"{population_definition} where the member recused (stepped out)", n=k,
+        ),
+        denominator=NumeratorDenominator(definition=population_definition, n=n),
+        grade=GRADE_SUPPORTIVE if managed else GRADE_CRITICAL,
+        grade_justification=(
+            f"recusal rate 95% CI [{round(stat.ci_low * 100)}%, {round(stat.ci_high * 100)}%] "
+            f"{'is entirely above' if stat.ci_low > 0.5 else 'is entirely below' if stat.ci_high < 0.5 else 'straddles'} "
+            "the 50% majority-compliance threshold"
+        ),
+        comparison=Comparison(
+            type=COMPARISON_BETWEEN_SUBJECT,
+            reference_definition="the ABSENT rate on ordinary (non declared-interest) votes",
+            reference_is_same_event=False,
+        ),
+        statistic=stat,
+        narrative=Narrative(
+            headline=(
+                f"Members recuse {round(stat.value * 100)}% of the time on {population_definition}"
+                if managed else
+                f"Members stay and vote {round((1 - stat.value) * 100)}% of the time on {population_definition}"
+            ),
+            body=f"Of {n} {population_definition}, the member recused (stepped out) in {k} "
+                 f"({round(stat.value * 100)}%).",
+            caveats=tuple(caveats),
+        ),
+    )
